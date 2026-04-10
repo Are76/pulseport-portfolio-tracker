@@ -184,7 +184,7 @@ function StakingLadder({ stakes }: { stakes: HexStake[] }) {
   };
 
   return (
-    <div style={{ background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: 12, padding: '18px 18px 10px' }}>
+    <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, padding: '18px 18px 10px' }}>
       <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.6px' }}>Staking Ladder</div>
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 24 }}>
@@ -252,10 +252,10 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
   };
 
   return (
-    <div style={{ background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: 12, padding: '18px 18px 10px' }}>
+    <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, padding: '18px 18px 10px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.6px' }}>Stake Distribution</div>
-        <div style={{ fontSize: 12, color: '#555' }}>
+        <div style={{ fontSize: 12, color: '#888' }}>
           <span style={{ color: '#fff', fontWeight: 700 }}>${fmtK(totalUsd)}</span>
           {' · '}<span style={{ color: '#fb923c' }}>{fmtK(totalHex)} HEX</span>
           {' · '}<span style={{ color: '#00c076' }}>{fmtK(totalTShares)} T-Shares</span>
@@ -276,7 +276,7 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#aaa' }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: getColor(i), flexShrink: 0 }} />
             <span>{w.label}</span>
-            <span style={{ color: '#555' }}>({w.count})</span>
+            <span style={{ color: '#888' }}>({w.count})</span>
           </div>
         ))}
       </div>
@@ -2109,10 +2109,10 @@ export default function App() {
   return (
     <div className="min-h-screen bg-dashboard-bg text-white font-sans flex" style={{ fontSize: 14 }}>
       {/* ── SIDEBAR ── */}
-      <aside style={{ width: 220, minWidth: 220, background: '#080808', borderRight: '1px solid #161616' }}
+      <aside style={{ width: 220, minWidth: 220, background: '#080808', borderRight: '1px solid #1f1f1f' }}
         className="hidden md:flex flex-col sticky top-0 h-screen overflow-y-auto custom-scrollbar">
         {/* Logo */}
-        <div style={{ padding: '20px 18px 16px', borderBottom: '1px solid #161616' }} className="flex items-center gap-2.5">
+        <div style={{ padding: '20px 18px 16px', borderBottom: '1px solid #1f1f1f' }} className="flex items-center gap-2.5">
           <div style={{ width: 28, height: 28, background: '#00c076', borderRadius: 8 }} className="flex items-center justify-center shrink-0">
             <Activity size={16} className="text-black" />
           </div>
@@ -2188,7 +2188,7 @@ export default function App() {
       {/* ── MAIN ── */}
       <main className="flex-1 min-w-0 flex flex-col">
         {/* Top Nav */}
-        <header style={{ height: 52, background: '#000', borderBottom: '1px solid #161616', position: 'sticky', top: 0, zIndex: 50 }}
+        <header style={{ height: 52, background: '#000', borderBottom: '1px solid #1f1f1f', position: 'sticky', top: 0, zIndex: 50 }}
           className="flex items-center justify-between px-5 gap-4 shrink-0">
           {/* Mobile logo */}
           <div className="flex md:hidden items-center gap-2">
@@ -2231,7 +2231,7 @@ export default function App() {
             </button>
             <button onClick={fetchPortfolio}
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px',
-                background: '#111', border: '1px solid #1c1c1c', borderRadius: 8,
+                background: '#111', border: '1px solid #252525', borderRadius: 8,
                 color: '#fff', fontSize: 12, fontWeight: 500, cursor: 'pointer', transition: 'all .12s' }}
               onMouseOver={e => (e.currentTarget.style.borderColor = '#333')}
               onMouseOut={e => (e.currentTarget.style.borderColor = '#1c1c1c')}>
@@ -2263,7 +2263,7 @@ export default function App() {
                   return (
                     <div style={{
                       background: 'linear-gradient(135deg, #081a10 0%, #050f09 40%, #060d14 100%)',
-                      border: '1px solid #1a1a1a', borderRadius: 16, padding: '24px 28px', position: 'relative', overflow: 'hidden'
+                      border: '1px solid #242424', borderRadius: 16, padding: '24px 28px', position: 'relative', overflow: 'hidden'
                     }}>
                       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none',
                         background: 'radial-gradient(ellipse at 15% 50%, rgba(0,192,118,.08) 0%, transparent 60%), radial-gradient(ellipse at 85% 50%, rgba(99,102,241,.05) 0%, transparent 60%)' }} />
@@ -2296,17 +2296,17 @@ export default function App() {
                           {/* Stat mini-cards */}
                           <div style={{ display: 'grid', gap: 10 }} className="grid-cols-2 sm:grid-cols-3">
                             <div style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 10, padding: '10px 14px' }}>
-                              <div style={{ fontSize: 10, color: '#666', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Net Investment</div>
+                              <div style={{ fontSize: 10, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Net Investment</div>
                               <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                             </div>
                             <div style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 10, padding: '10px 14px' }}>
-                              <div style={{ fontSize: 10, color: '#666', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Unified PNL</div>
+                              <div style={{ fontSize: 10, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Unified PNL</div>
                               <div style={{ fontSize: 16, fontWeight: 700, color: summary.unifiedPnl >= 0 ? '#00c076' : '#ef4444' }}>
                                 {summary.unifiedPnl >= 0 ? '+' : ''}${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                               </div>
                             </div>
                             <div style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 10, padding: '10px 14px' }}>
-                              <div style={{ fontSize: 10, color: '#666', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 3 }}>Stakes at Maturity</div>
+                              <div style={{ fontSize: 10, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 3 }}>Stakes at Maturity</div>
                               <div style={{ fontSize: 16, fontWeight: 700, color: '#a78bfa' }}>{fmtBigNum(totalHexAtMaturity)} HEX</div>
                               <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>${valueAtMaturity.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                             </div>
@@ -2377,12 +2377,12 @@ export default function App() {
                   };
 
                   return (
-                    <div style={{ background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: 14, overflow: 'hidden' }}>
+                    <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 14, overflow: 'hidden' }}>
                       {/* Header with collapse */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: '1px solid #161616', background: '#0a0a0a' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: '1px solid #1f1f1f', background: '#0e0e0e' }}>
                         <div style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>Price Ticker</div>
                         <button onClick={() => toggleSection('price-ticker')}
-                          style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#555', transition: 'color .12s' }}
+                          style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
                           onMouseOver={e => (e.currentTarget.style.color = '#fff')}
                           onMouseOut={e => (e.currentTarget.style.color = '#555')}
                           title={isCollapsed('price-ticker') ? 'Expand' : 'Collapse'}>
@@ -2391,7 +2391,7 @@ export default function App() {
                       </div>
                       {!isCollapsed('price-ticker') && (<>
                       {/* Filter bar */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '8px 14px', borderBottom: '1px solid #161616', background: '#0a0a0a' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '8px 14px', borderBottom: '1px solid #1f1f1f', background: '#0e0e0e' }}>
                         {([
                           { id: '1h', label: '1H' },
                           { id: '6h', label: '6H' },
@@ -2401,7 +2401,7 @@ export default function App() {
                           <button key={id} onClick={() => setPriceChangePeriod(id)}
                             style={{ padding: '3px 11px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all .1s', border: 'none',
                               background: priceChangePeriod === id ? '#1e1e1e' : 'transparent',
-                              color: priceChangePeriod === id ? '#fff' : '#444',
+                              color: priceChangePeriod === id ? '#fff' : '#777',
                               outline: priceChangePeriod === id ? '1px solid #2a2a2a' : 'none' }}>
                             {label}
                           </button>
@@ -2414,7 +2414,7 @@ export default function App() {
                           <button key={id} onClick={() => setPriceDisplayCurrency(id)}
                             style={{ padding: '3px 11px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all .1s', border: 'none',
                               background: priceDisplayCurrency === id ? '#1e1e1e' : 'transparent',
-                              color: priceDisplayCurrency === id ? '#fff' : '#444',
+                              color: priceDisplayCurrency === id ? '#fff' : '#777',
                               outline: priceDisplayCurrency === id ? '1px solid #2a2a2a' : 'none' }}>
                             {label}
                           </button>
@@ -2427,10 +2427,10 @@ export default function App() {
                           return (
                             <div key={asset.symbol} style={{
                               display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px',
-                              borderRight: i < tickerAssets.length - 1 ? '1px solid #161616' : 'none',
+                              borderRight: i < tickerAssets.length - 1 ? '1px solid #1f1f1f' : 'none',
                               minWidth: 0
                             }}>
-                              <div style={{ width: 26, height: 26, borderRadius: 6, background: '#161616', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+                              <div style={{ width: 26, height: 26, borderRadius: 6, background: '#262626', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
                                 {getTokenLogoUrl(asset) ? (
                                   <img src={getTokenLogoUrl(asset)} alt={asset.symbol}
                                     style={{ width: 22, height: 22, borderRadius: 4, objectFit: 'cover' }}
@@ -2494,11 +2494,11 @@ export default function App() {
                     { label: 'Total eHEX', sub: `${fmtHex(eHexLiquid)} liquid · ${fmtHex(eHexStaked)} staked+yield`, val: fmtHex(eHexTotal), usd: eHexTotal * eHexPrice, color: '#627EEA', dot: '#627EEA' },
                   ];
                   return (
-                    <div style={{ background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: 12, overflow: 'hidden' }}>
-                      <div style={{ padding: '12px 16px', borderBottom: isCollapsed('hex-boxes') ? 'none' : '1px solid #161616', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, overflow: 'hidden' }}>
+                      <div style={{ padding: '12px 16px', borderBottom: isCollapsed('hex-boxes') ? 'none' : '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>HEX Holdings</div>
                         <button onClick={() => toggleSection('hex-boxes')}
-                          style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#555', transition: 'color .12s' }}
+                          style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
                           onMouseOver={e => (e.currentTarget.style.color = '#fff')}
                           onMouseOut={e => (e.currentTarget.style.color = '#555')}
                           title={isCollapsed('hex-boxes') ? 'Expand' : 'Collapse'}>
@@ -2508,14 +2508,14 @@ export default function App() {
                       {!isCollapsed('hex-boxes') && (
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 0 }} className="max-sm:grid-cols-1">
                           {boxes.map(b => (
-                            <div key={b.label} style={{ padding: 16, borderRight: '1px solid #161616' }}>
+                            <div key={b.label} style={{ padding: 16, borderRight: '1px solid #1f1f1f' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                                 <div style={{ width: 7, height: 7, borderRadius: '50%', background: b.dot }} />
                                 <span style={{ fontSize: 11, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px' }}>{b.label}</span>
                               </div>
                               <div style={{ fontSize: 22, fontWeight: 700, color: b.color, letterSpacing: '-0.5px' }}>{b.val}</div>
                               {b.usd !== null && <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>${b.usd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>}
-                              <div style={{ fontSize: 10, color: '#555', marginTop: 6 }}>{b.sub}</div>
+                              <div style={{ fontSize: 10, color: '#888', marginTop: 6 }}>{b.sub}</div>
                             </div>
                           ))}
                         </div>
@@ -2576,8 +2576,8 @@ export default function App() {
                     : 0;
 
                   return (
-                    <div style={{ background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: 14, overflow: 'hidden' }}>
-                      <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, borderBottom: isCollapsed('perf-chart') ? 'none' : '1px solid #161616' }}>
+                    <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 14, overflow: 'hidden' }}>
+                      <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, borderBottom: isCollapsed('perf-chart') ? 'none' : '1px solid #1f1f1f' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>Portfolio Performance</div>
                           <div style={{ fontSize: 12, fontWeight: 700, color: periodChange >= 0 ? '#00c076' : '#ef4444' }}>
@@ -2588,7 +2588,7 @@ export default function App() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           {/* Period tabs */}
                           {!isCollapsed('perf-chart') && (
-                            <div style={{ display: 'flex', gap: 2, background: '#111', border: '1px solid #1c1c1c', borderRadius: 8, padding: 3 }}>
+                            <div style={{ display: 'flex', gap: 2, background: '#111', border: '1px solid #252525', borderRadius: 8, padding: 3 }}>
                               {(['1d','1w','1y','all'] as const).map(p => (
                                 <button key={p} onClick={() => setPerfPeriod(p)}
                                   style={{ padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none', transition: 'all .12s',
@@ -2600,7 +2600,7 @@ export default function App() {
                             </div>
                           )}
                           <button onClick={() => toggleSection('perf-chart')}
-                            style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#555', transition: 'color .12s' }}
+                            style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
                             onMouseOver={e => (e.currentTarget.style.color = '#fff')}
                             onMouseOut={e => (e.currentTarget.style.color = '#555')}
                             title={isCollapsed('perf-chart') ? 'Expand' : 'Collapse'}>
@@ -2648,7 +2648,7 @@ export default function App() {
                     <div style={{ fontSize: 12, color: '#aaa' }}>{currentAssets.length} assets · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} liquid</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', gap: 3, background: '#111', border: '1px solid #1c1c1c', borderRadius: 8, padding: 3 }}>
+                    <div style={{ display: 'flex', gap: 3, background: '#111', border: '1px solid #252525', borderRadius: 8, padding: 3 }}>
                       {([['1h','1H'],['6h','6H'],['24h','24H'],['7d','7D']] as const).map(([p, label]) => (
                         <button key={p} onClick={() => setPriceChangePeriod(p)}
                           style={{ padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all .12s', border: 'none',
@@ -2688,14 +2688,14 @@ export default function App() {
                 </div>
 
                 {/* Token Table */}
-                <div style={{ background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: 12, overflow: 'hidden' }}>
-                  <div style={{ padding: '14px 16px', borderBottom: isCollapsed('assets-table') ? 'none' : '1px solid #161616', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, overflow: 'hidden' }}>
+                  <div style={{ padding: '14px 16px', borderBottom: isCollapsed('assets-table') ? 'none' : '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
                       <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Assets</div>
                       <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{currentAssets.length} tokens · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                     </div>
                     <button onClick={() => toggleSection('assets-table')}
-                      style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#555', transition: 'color .12s' }}
+                      style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
                       onMouseOver={e => (e.currentTarget.style.color = '#fff')}
                       onMouseOut={e => (e.currentTarget.style.color = '#555')}
                       title={isCollapsed('assets-table') ? 'Expand' : 'Collapse'}>
@@ -2706,7 +2706,7 @@ export default function App() {
                   <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                       <thead>
-                        <tr style={{ borderBottom: '1px solid #1a1a1a' }}>
+                        <tr style={{ borderBottom: '1px solid #242424' }}>
                           {[
                             { label: 'Token', field: null, align: 'left' },
                             { label: 'Price', field: null, align: 'right' },
@@ -2760,13 +2760,13 @@ export default function App() {
                             const dsUrl = dexScreenerUrl(asset.chain, addr);
                             return (
                               <tr key={asset.id}
-                                style={{ borderBottom: '1px solid #151515', transition: 'background .1s' }}
+                                style={{ borderBottom: '1px solid #1e1e1e', transition: 'background .1s' }}
                                 onMouseOver={e => (e.currentTarget.style.background = '#111')}
                                 onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                                 <td style={{ padding: '11px 16px', whiteSpace: 'nowrap' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                     {/* Logo */}
-                                    <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#1a1a1a', border: '1px solid #222',
+                                    <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#282828', border: '1px solid #3a3a3a',
                                       display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#fff', flexShrink: 0, overflow: 'hidden' }}>
                                       {logo ? <img src={logo} alt={asset.symbol} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
                                           onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.removeAttribute('hidden'); }} /> : null}
@@ -2787,9 +2787,9 @@ export default function App() {
                                         {addr && addr !== 'native' && (
                                           <button onClick={() => navigator.clipboard.writeText(addr)}
                                             title={`Copy CA: ${addr}`}
-                                            style={{ padding: '1px 3px', background: 'none', border: 'none', cursor: 'pointer', color: '#444', transition: 'color .12s', lineHeight: 1 }}
+                                            style={{ padding: '1px 3px', background: 'none', border: 'none', cursor: 'pointer', color: '#666', transition: 'color .12s', lineHeight: 1 }}
                                             onMouseOver={e => (e.currentTarget.style.color = '#aaa')}
-                                            onMouseOut={e => (e.currentTarget.style.color = '#444')}>
+                                            onMouseOut={e => (e.currentTarget.style.color = '#666')}>
                                             <Copy size={10} />
                                           </button>
                                         )}
@@ -2797,9 +2797,9 @@ export default function App() {
                                         {dsUrl && addr !== 'native' && (
                                           <a href={dsUrl} target="_blank" rel="noopener noreferrer"
                                             title="View on DexScreener"
-                                            style={{ padding: '1px 3px', color: '#444', transition: 'color .12s', lineHeight: 1, display: 'inline-flex' }}
+                                            style={{ padding: '1px 3px', color: '#666', transition: 'color .12s', lineHeight: 1, display: 'inline-flex' }}
                                             onMouseOver={e => (e.currentTarget.style.color = '#f4c542')}
-                                            onMouseOut={e => (e.currentTarget.style.color = '#444')}>
+                                            onMouseOut={e => (e.currentTarget.style.color = '#666')}>
                                             <ExternalLink size={10} />
                                           </a>
                                         )}
@@ -2847,7 +2847,7 @@ export default function App() {
                                       <Calculator size={13} />
                                     </button>
                                     <button onClick={() => setHiddenTokens([...hiddenTokens, asset.id])}
-                                      style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#555', transition: 'color .12s' }}
+                                      style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
                                       onMouseOver={e => (e.currentTarget.style.color = '#ef4444')}
                                       onMouseOut={e => (e.currentTarget.style.color = '#555')}
                                       title="Hide">
@@ -2862,7 +2862,7 @@ export default function App() {
                       </tbody>
                       {currentAssets.length > 0 && (
                         <tfoot>
-                          <tr style={{ borderTop: '1px solid #1c1c1c' }}>
+                          <tr style={{ borderTop: '1px solid #252525' }}>
                             <td colSpan={4} style={{ padding: '10px 16px', fontSize: 11, color: '#aaa', fontWeight: 600 }}>
                               TOTAL LIQUID
                             </td>
@@ -2876,7 +2876,7 @@ export default function App() {
                     </table>
                   </div>
                   {unpricedCount > 0 && (
-                    <div style={{ padding: '10px 16px', borderTop: '1px solid #161616', fontSize: 11, color: '#aaa', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ padding: '10px 16px', borderTop: '1px solid #1f1f1f', fontSize: 11, color: '#aaa', display: 'flex', alignItems: 'center', gap: 6 }}>
                       <Activity size={12} /> {unpricedCount} token{unpricedCount !== 1 ? 's' : ''} with no price data omitted
                     </div>
                   )}
@@ -2959,7 +2959,7 @@ export default function App() {
                             {realizedPnl >= 0 ? '+' : ''}${fmt(realizedPnl)}
                           </div>
                           <button onClick={() => setPnlAsset(null)}
-                            style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#555' }}
+                            style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888' }}
                             onMouseOver={e => (e.currentTarget.style.color = '#fff')}
                             onMouseOut={e => (e.currentTarget.style.color = '#555')}>
                             <X size={16} />
@@ -2974,28 +2974,28 @@ export default function App() {
                           <div style={{ fontSize: 10, fontWeight: 700, color: '#888', letterSpacing: '.8px', marginBottom: 10 }}>REALIZED</div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <div>
-                              <div style={{ fontSize: 10, color: '#666', marginBottom: 2 }}>Cost</div>
+                              <div style={{ fontSize: 10, color: '#999', marginBottom: 2 }}>Cost</div>
                               <div style={{ fontSize: 14, fontWeight: 700, color: '#ef4444' }}>${fmt(realizedCostUsd)}</div>
                             </div>
-                            <div style={{ color: '#444', fontSize: 16, marginTop: 8 }}>→</div>
+                            <div style={{ color: '#666', fontSize: 16, marginTop: 8 }}>→</div>
                             <div>
-                              <div style={{ fontSize: 10, color: '#666', marginBottom: 2 }}>Proceeds</div>
+                              <div style={{ fontSize: 10, color: '#999', marginBottom: 2 }}>Proceeds</div>
                               <div style={{ fontSize: 14, fontWeight: 700, color: '#00c076' }}>${fmt(proceedsUsd)}</div>
                             </div>
                             <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                              <div style={{ fontSize: 10, color: '#666', marginBottom: 2 }}>P&amp;L</div>
+                              <div style={{ fontSize: 10, color: '#999', marginBottom: 2 }}>P&amp;L</div>
                               <div style={{ fontSize: 14, fontWeight: 700, color: realizedPnl >= 0 ? '#00c076' : '#ef4444' }}>
                                 {realizedPnl >= 0 ? '+' : ''}${fmt(realizedPnl)}
                               </div>
                             </div>
                           </div>
-                          <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #1a1a1a', display: 'flex', gap: 16 }}>
+                          <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #242424', display: 'flex', gap: 16 }}>
                             <div>
-                              <div style={{ fontSize: 10, color: '#555' }}>Bought</div>
+                              <div style={{ fontSize: 10, color: '#888' }}>Bought</div>
                               <div style={{ fontSize: 11, color: '#aaa', fontWeight: 600 }}>{fmtTok(totalBought)} {pnlAsset.symbol}</div>
                             </div>
                             <div>
-                              <div style={{ fontSize: 10, color: '#555' }}>Sold</div>
+                              <div style={{ fontSize: 10, color: '#888' }}>Sold</div>
                               <div style={{ fontSize: 11, color: '#aaa', fontWeight: 600 }}>{fmtTok(totalSold)} {pnlAsset.symbol}</div>
                             </div>
                           </div>
@@ -3006,21 +3006,21 @@ export default function App() {
                           <div style={{ fontSize: 10, fontWeight: 700, color: '#888', letterSpacing: '.8px', marginBottom: 10 }}>HOLDINGS</div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div>
-                              <div style={{ fontSize: 10, color: '#555', marginBottom: 2 }}>Balance</div>
+                              <div style={{ fontSize: 10, color: '#888', marginBottom: 2 }}>Balance</div>
                               <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{fmtTok(holdingsBal)} {pnlAsset.symbol}</div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
-                              <div style={{ fontSize: 10, color: '#555', marginBottom: 2 }}>Value</div>
+                              <div style={{ fontSize: 10, color: '#888', marginBottom: 2 }}>Value</div>
                               <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>${fmt(holdingsUsd)}</div>
                             </div>
                           </div>
                           {gasNative > 0 && (
-                            <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #1a1a1a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <div style={{ fontSize: 10, color: '#555', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #242424', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div style={{ fontSize: 10, color: '#888', display: 'flex', alignItems: 'center', gap: 4 }}>
                                 ⛽ Gas paid
                               </div>
                               <div style={{ fontSize: 11, color: '#aaa', fontWeight: 600 }}>
-                                {fmtTok(gasNative)} {chainKey === 'ethereum' ? 'ETH' : 'PLS'} <span style={{ color: '#555' }}>(${fmt(gasUsd)})</span>
+                                {fmtTok(gasNative)} {chainKey === 'ethereum' ? 'ETH' : 'PLS'} <span style={{ color: '#888' }}>(${fmt(gasUsd)})</span>
                               </div>
                             </div>
                           )}
@@ -3029,8 +3029,8 @@ export default function App() {
 
                       {/* Swap list */}
                       {allRows.length > 0 && (
-                        <div style={{ borderTop: '1px solid #161616' }}>
-                          <div style={{ padding: '8px 18px', fontSize: 10, fontWeight: 700, color: '#555', letterSpacing: '.8px' }}>SWAP HISTORY</div>
+                        <div style={{ borderTop: '1px solid #1f1f1f' }}>
+                          <div style={{ padding: '8px 18px', fontSize: 10, fontWeight: 700, color: '#888', letterSpacing: '.8px' }}>SWAP HISTORY</div>
                           <div style={{ maxHeight: 280, overflowY: 'auto' }}>
                             {allRows.map(({ tx, side }, i) => {
                               const isBuy = side === 'buy';
@@ -3055,7 +3055,7 @@ export default function App() {
                                   <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                       {isBuy ? '+' : '-'}{fmtTok(tokenAmt)} {pnlAsset.symbol}
-                                      <span style={{ color: '#555', fontWeight: 400, marginLeft: 6 }}>
+                                      <span style={{ color: '#888', fontWeight: 400, marginLeft: 6 }}>
                                         {isBuy ? 'for' : 'sold for'} {fmtTok(otherAmt)} {otherSym}
                                       </span>
                                     </div>
@@ -3063,14 +3063,14 @@ export default function App() {
                                   {/* Value + date */}
                                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
                                     <div style={{ fontSize: 11, fontWeight: 600, color: '#aaa' }}>${fmt(valUsd)}</div>
-                                    <div style={{ fontSize: 10, color: '#555' }}>{date}</div>
+                                    <div style={{ fontSize: 10, color: '#888' }}>{date}</div>
                                   </div>
                                   {/* Tx link */}
                                   {tx.hash && (
                                     <a href={`${CHAINS[chainKey].explorer}/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer"
-                                      style={{ color: '#444', flexShrink: 0 }}
+                                      style={{ color: '#666', flexShrink: 0 }}
                                       onMouseOver={e => (e.currentTarget.style.color = '#a78bfa')}
-                                      onMouseOut={e => (e.currentTarget.style.color = '#444')}>
+                                      onMouseOut={e => (e.currentTarget.style.color = '#666')}>
                                       <ExternalLink size={11} />
                                     </a>
                                   )}
@@ -3082,7 +3082,7 @@ export default function App() {
                       )}
 
                       {swapCount === 0 && (
-                        <div style={{ padding: '24px', textAlign: 'center', color: '#555', fontSize: 12 }}>
+                        <div style={{ padding: '24px', textAlign: 'center', color: '#888', fontSize: 12 }}>
                           No swaps found for {pnlAsset.symbol} on {chainKey}
                         </div>
                       )}
@@ -3109,11 +3109,11 @@ export default function App() {
                   const eHexTotal = eHexLiquid + eHexStaked;
                   const fmt = (n: number) => Math.round(n).toLocaleString('nb-NO', { maximumFractionDigits: 0 }).replace(/,/g, ' ');
                   return (
-                    <div style={{ background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: 12, overflow: 'hidden' }}>
-                      <div style={{ padding: '12px 16px', borderBottom: isCollapsed('stakes-hex-boxes') ? 'none' : '1px solid #161616', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, overflow: 'hidden' }}>
+                      <div style={{ padding: '12px 16px', borderBottom: isCollapsed('stakes-hex-boxes') ? 'none' : '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>HEX Totals</div>
                         <button onClick={() => toggleSection('stakes-hex-boxes')}
-                          style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#555', transition: 'color .12s' }}
+                          style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
                           onMouseOver={e => (e.currentTarget.style.color = '#fff')}
                           onMouseOut={e => (e.currentTarget.style.color = '#555')}
                           title={isCollapsed('stakes-hex-boxes') ? 'Expand' : 'Collapse'}>
@@ -3126,14 +3126,14 @@ export default function App() {
                             { label: 'Total pHEX', dot: '#fb923c', color: '#fb923c', total: pHexTotal, usd: pHexTotal * pHexPrice, liquid: pHexLiquid, staked: pHexStaked },
                             { label: 'Total eHEX', dot: '#627EEA', color: '#627EEA', total: eHexTotal, usd: eHexTotal * eHexPrice, liquid: eHexLiquid, staked: eHexStaked },
                           ].map(b => (
-                            <div key={b.label} style={{ padding: 16, borderRight: '1px solid #161616' }}>
+                            <div key={b.label} style={{ padding: 16, borderRight: '1px solid #1f1f1f' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                                 <div style={{ width: 7, height: 7, borderRadius: '50%', background: b.dot }} />
                                 <span style={{ fontSize: 11, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px' }}>{b.label}</span>
                               </div>
                               <div style={{ fontSize: 22, fontWeight: 700, color: b.color, letterSpacing: '-0.5px' }}>{fmt(b.total)}</div>
                               <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>${b.usd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                              <div style={{ fontSize: 10, color: '#555', marginTop: 6 }}>{fmt(b.liquid)} liquid · {fmt(b.staked)} staked+yield</div>
+                              <div style={{ fontSize: 10, color: '#888', marginTop: 6 }}>{fmt(b.liquid)} liquid · {fmt(b.staked)} staked+yield</div>
                             </div>
                           ))}
                         </div>
@@ -3168,7 +3168,7 @@ export default function App() {
                     <>
                       {/* Chain toggle pill */}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                        <div style={{ display: 'flex', gap: 3, background: '#111', border: '1px solid #1c1c1c', borderRadius: 8, padding: 3 }}>
+                        <div style={{ display: 'flex', gap: 3, background: '#111', border: '1px solid #252525', borderRadius: 8, padding: 3 }}>
                           {(['all', 'pulsechain', 'ethereum'] as const).map(c => (
                             <button key={c} onClick={() => setStakeChainFilter(c)}
                               style={{ padding: '5px 14px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none', transition: 'all .12s',
@@ -3178,7 +3178,7 @@ export default function App() {
                             </button>
                           ))}
                         </div>
-                        <div style={{ fontSize: 11, color: '#555' }}>
+                        <div style={{ fontSize: 11, color: '#888' }}>
                           {filteredStakes.length} active stake{filteredStakes.length !== 1 ? 's' : ''} · {fTShares.toLocaleString(undefined, { maximumFractionDigits: 2 })} active T-Shares
                         </div>
                       </div>
@@ -3191,7 +3191,7 @@ export default function App() {
                           { label: 'Value at Maturity', val: `$${(fMaturityHex * phexHp).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${fMaturityHex.toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX`, color: '#00c076' },
                           { label: 'Active T-Shares', val: fTShares.toLocaleString(undefined, { maximumFractionDigits: 2 }), sub: `≈ ${(fTShares * 6.2).toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX/day` },
                         ].map(({ label, val, sub, color }) => (
-                          <div key={label} style={{ background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: 12, padding: 18 }}>
+                          <div key={label} style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, padding: 18 }}>
                             <div style={{ fontSize: 10, color: '#aaa', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>{label}</div>
                             <div style={{ fontSize: 18, fontWeight: 700, color: color || '#fff', marginBottom: 2 }}>{val}</div>
                             {sub && <div style={{ fontSize: 11, color: '#aaa' }}>{sub}</div>}
@@ -3215,8 +3215,8 @@ export default function App() {
 
                 {/* LP Positions */}
                 {lpPositions.length > 0 && (
-                  <div style={{ background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: 12, overflow: 'hidden' }}>
-                    <div style={{ padding: '14px 18px', borderBottom: isCollapsed('lp-positions') ? 'none' : '1px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, overflow: 'hidden' }}>
+                    <div style={{ padding: '14px 18px', borderBottom: isCollapsed('lp-positions') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>LP Positions</span>
                         <span style={{ fontSize: 10, background: 'rgba(0,192,118,.1)', color: '#00c076', border: '1px solid rgba(0,192,118,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
@@ -3224,7 +3224,7 @@ export default function App() {
                         </span>
                       </div>
                       <button onClick={() => toggleSection('lp-positions')}
-                        style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#555', transition: 'color .12s' }}
+                        style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
                         onMouseOver={e => (e.currentTarget.style.color = '#fff')}
                         onMouseOut={e => (e.currentTarget.style.color = '#555')}
                         title={isCollapsed('lp-positions') ? 'Expand' : 'Collapse'}>
@@ -3234,7 +3234,7 @@ export default function App() {
                     {!isCollapsed('lp-positions') && <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead>
-                          <tr style={{ borderBottom: '1px solid #1a1a1a' }}>
+                          <tr style={{ borderBottom: '1px solid #242424' }}>
                             {['Pair', 'Token 0', 'Token 1', 'Total USD'].map((h, i) => (
                               <th key={i} style={{ padding: '9px 14px', fontSize: 10, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px', textAlign: i === 0 ? 'left' : 'right', background: '#0d0d0d', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
@@ -3242,17 +3242,17 @@ export default function App() {
                         </thead>
                         <tbody>
                           {lpPositions.map(lp => (
-                            <tr key={lp.pairAddress} style={{ borderBottom: '1px solid #151515' }}
+                            <tr key={lp.pairAddress} style={{ borderBottom: '1px solid #1e1e1e' }}
                               onMouseOver={e => (e.currentTarget.style.background = '#111')}
                               onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                               <td style={{ padding: '9px 14px', fontSize: 13, fontWeight: 600 }}>{lp.pairName}</td>
                               <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13 }}>
                                 <div style={{ color: '#fff' }}>{lp.token0Amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {lp.token0Symbol}</div>
-                                <div style={{ fontSize: 11, color: '#555' }}>${lp.token0Usd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+                                <div style={{ fontSize: 11, color: '#888' }}>${lp.token0Usd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
                               </td>
                               <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13 }}>
                                 <div style={{ color: '#fff' }}>{lp.token1Amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {lp.token1Symbol}</div>
-                                <div style={{ fontSize: 11, color: '#555' }}>${lp.token1Usd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+                                <div style={{ fontSize: 11, color: '#888' }}>${lp.token1Usd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
                               </td>
                               <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 14, fontWeight: 700, color: '#00c076' }}>
                                 ${lp.totalUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}
@@ -3267,8 +3267,8 @@ export default function App() {
 
                 {/* Farm Positions */}
                 {farmPositions.length > 0 && (
-                  <div style={{ background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: 12, overflow: 'hidden' }}>
-                    <div style={{ padding: '14px 18px', borderBottom: isCollapsed('farm-positions') ? 'none' : '1px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, overflow: 'hidden' }}>
+                    <div style={{ padding: '14px 18px', borderBottom: isCollapsed('farm-positions') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>Farm Positions (INC Rewards)</span>
                         <span style={{ fontSize: 10, background: 'rgba(251,146,60,.1)', color: '#fb923c', border: '1px solid rgba(251,146,60,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
@@ -3276,7 +3276,7 @@ export default function App() {
                         </span>
                       </div>
                       <button onClick={() => toggleSection('farm-positions')}
-                        style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#555', transition: 'color .12s' }}
+                        style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
                         onMouseOver={e => (e.currentTarget.style.color = '#fff')}
                         onMouseOut={e => (e.currentTarget.style.color = '#555')}
                         title={isCollapsed('farm-positions') ? 'Expand' : 'Collapse'}>
@@ -3286,7 +3286,7 @@ export default function App() {
                     {!isCollapsed('farm-positions') && <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead>
-                          <tr style={{ borderBottom: '1px solid #1a1a1a' }}>
+                          <tr style={{ borderBottom: '1px solid #242424' }}>
                             {['Pair', 'Staked LP', 'Pending INC', 'INC Value'].map((h, i) => (
                               <th key={i} style={{ padding: '9px 14px', fontSize: 10, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px', textAlign: i === 0 ? 'left' : 'right', background: '#0d0d0d', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
@@ -3294,7 +3294,7 @@ export default function App() {
                         </thead>
                         <tbody>
                           {farmPositions.map(farm => (
-                            <tr key={`${farm.poolId}-${farm.lpAddress}`} style={{ borderBottom: '1px solid #151515' }}
+                            <tr key={`${farm.poolId}-${farm.lpAddress}`} style={{ borderBottom: '1px solid #1e1e1e' }}
                               onMouseOver={e => (e.currentTarget.style.background = '#111')}
                               onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                               <td style={{ padding: '9px 14px', fontSize: 13, fontWeight: 600 }}>{farm.pairName}</td>
@@ -3339,8 +3339,8 @@ export default function App() {
                     return sum + hexMat * hp;
                   }, 0);
                   return (
-                    <div style={{ background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: 12, overflow: 'hidden' }}>
-                      <div style={{ padding: '14px 18px', borderBottom: isCollapsed('stakes-table') ? 'none' : '1px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, overflow: 'hidden' }}>
+                      <div style={{ padding: '14px 18px', borderBottom: isCollapsed('stakes-table') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{chainLabel} Stakes</span>
                           <span style={{ fontSize: 10, background: 'rgba(249,115,22,.12)', color: '#fb923c', border: '1px solid rgba(249,115,22,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
@@ -3348,7 +3348,7 @@ export default function App() {
                           </span>
                         </div>
                         <button onClick={() => toggleSection('stakes-table')}
-                          style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#555', transition: 'color .12s' }}
+                          style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
                           onMouseOver={e => (e.currentTarget.style.color = '#fff')}
                           onMouseOut={e => (e.currentTarget.style.color = '#555')}
                           title={isCollapsed('stakes-table') ? 'Expand' : 'Collapse'}>
@@ -3363,7 +3363,7 @@ export default function App() {
                         <div style={{ overflowX: 'auto' }}>
                           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
-                              <tr style={{ borderBottom: '1px solid #1a1a1a' }}>
+                              <tr style={{ borderBottom: '1px solid #242424' }}>
                                 {['', 'Stake ID', 'Chain', 'HEX Now', 'USD Now', 'HEX @ Maturity', 'USD @ Maturity', 'Progress', 'Days Left'].map((h, i) => (
                                   <th key={i} style={{ padding: '9px 14px', fontSize: 10, fontWeight: 600, color: '#aaa',
                                     textTransform: 'uppercase', letterSpacing: '.5px', textAlign: i <= 2 ? 'left' : 'right',
@@ -3401,7 +3401,7 @@ export default function App() {
                                       onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                                       {/* expand toggle */}
                                       <td style={{ padding: '9px 8px 9px 14px', width: 24 }}>
-                                        <span style={{ fontSize: 14, color: '#555', userSelect: 'none' }}>
+                                        <span style={{ fontSize: 14, color: '#888', userSelect: 'none' }}>
                                           {isExpanded ? '▾' : '☰'}
                                         </span>
                                       </td>
@@ -3437,7 +3437,7 @@ export default function App() {
                                     </tr>
                                     {/* Expandable detail row */}
                                     {isExpanded && (
-                                      <tr style={{ borderBottom: '1px solid #151515' }}>
+                                      <tr style={{ borderBottom: '1px solid #1e1e1e' }}>
                                         <td colSpan={9} style={{ padding: 0, background: '#080808' }}>
                                           <div style={{ padding: '14px 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
                                             {[
@@ -3451,9 +3451,9 @@ export default function App() {
                                               { label: 'Gain vs Principal', val: `${hexAtMaturity > 0 ? ((hexAtMaturity / stakedHex - 1) * 100).toFixed(1) : '0.0'}%`, sub: 'Full yield / staked', color: '#00c076' },
                                             ].map(({ label, val, sub, color }) => (
                                               <div key={label}>
-                                                <div style={{ fontSize: 9, color: '#555', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>{label}</div>
+                                                <div style={{ fontSize: 9, color: '#888', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>{label}</div>
                                                 <div style={{ fontSize: 14, fontWeight: 700, color: color || '#fff' }}>{val}</div>
-                                                <div style={{ fontSize: 10, color: '#555', marginTop: 1 }}>{sub}</div>
+                                                <div style={{ fontSize: 10, color: '#888', marginTop: 1 }}>{sub}</div>
                                               </div>
                                             ))}
                                           </div>
@@ -3497,11 +3497,11 @@ export default function App() {
           <motion.div key="history" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
 
             {/* PNL summary row */}
-            <div style={{ background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: 12, overflow: 'hidden' }}>
-              <div style={{ padding: '12px 16px', borderBottom: isCollapsed('history-stats') ? 'none' : '1px solid #161616', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, overflow: 'hidden' }}>
+              <div style={{ padding: '12px 16px', borderBottom: isCollapsed('history-stats') ? 'none' : '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>Portfolio Stats</div>
                 <button onClick={() => toggleSection('history-stats')}
-                  style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#555', transition: 'color .12s' }}
+                  style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
                   onMouseOver={e => (e.currentTarget.style.color = '#fff')}
                   onMouseOut={e => (e.currentTarget.style.color = '#555')}
                   title={isCollapsed('history-stats') ? 'Expand' : 'Collapse'}>
@@ -3516,7 +3516,7 @@ export default function App() {
                     { label: 'Realized PNL', val: `${summary.realizedPnl >= 0 ? '+' : ''}$${Math.abs(summary.realizedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'From Trades', color: summary.realizedPnl >= 0 ? '#00c076' : '#ef4444' },
                     { label: 'Unrealized PNL', val: `${summary.pnl24h >= 0 ? '+' : ''}$${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: '24h Change', color: summary.pnl24h >= 0 ? '#00c076' : '#ef4444' },
                   ].map(({ label, val, sub, color }) => (
-                    <div key={label} style={{ padding: 18, borderRight: '1px solid #161616' }}>
+                    <div key={label} style={{ padding: 18, borderRight: '1px solid #1f1f1f' }}>
                       <div style={{ fontSize: 10, color: '#aaa', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>{label}</div>
                       <div style={{ fontSize: 20, fontWeight: 700, color, marginBottom: 2 }}>{val}</div>
                       <div style={{ fontSize: 11, color: '#aaa' }}>{sub}</div>
@@ -3527,20 +3527,20 @@ export default function App() {
             </div>
 
             {/* Received Assets History */}
-            <div style={{ background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: 14, overflow: 'hidden' }}>
-              <div style={{ padding: '14px 18px', borderBottom: isCollapsed('received-assets') ? 'none' : '1px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+            <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 14, overflow: 'hidden' }}>
+              <div style={{ padding: '14px 18px', borderBottom: isCollapsed('received-assets') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <ArrowDownLeft size={16} style={{ color: '#627EEA' }} />
                   <span style={{ fontSize: 14, fontWeight: 600 }}>Received Assets History</span>
                   <select value={receivedChainFilter} onChange={e => setReceivedChainFilter(e.target.value)}
-                    style={{ background: '#111', border: '1px solid #1c1c1c', borderRadius: 6, color: '#fff', fontSize: 12, padding: '4px 10px', cursor: 'pointer', outline: 'none' }}>
+                    style={{ background: '#111', border: '1px solid #252525', borderRadius: 6, color: '#fff', fontSize: 12, padding: '4px 10px', cursor: 'pointer', outline: 'none' }}>
                     <option value="all">All Chains</option>
                     <option value="ethereum">Ethereum</option>
                     <option value="base">Base</option>
                     <option value="pulsechain">PulseChain</option>
                   </select>
                   <select value={receivedCoinFilter} onChange={e => setReceivedCoinFilter(e.target.value)}
-                    style={{ background: '#111', border: '1px solid #1c1c1c', borderRadius: 6, color: '#fff', fontSize: 12, padding: '4px 10px', cursor: 'pointer', outline: 'none' }}>
+                    style={{ background: '#111', border: '1px solid #252525', borderRadius: 6, color: '#fff', fontSize: 12, padding: '4px 10px', cursor: 'pointer', outline: 'none' }}>
                     <option value="all">All Coins</option>
                     <option value="ETH">ETH</option>
                     <option value="PLS">PLS</option>
@@ -3556,7 +3556,7 @@ export default function App() {
                     <div style={{ fontSize: 11, color: '#aaa' }}>{receivedAssetsData.list.length} transactions</div>
                   </div>
                   <button onClick={() => toggleSection('received-assets')}
-                    style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#555', transition: 'color .12s', flexShrink: 0 }}
+                    style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s', flexShrink: 0 }}
                     onMouseOver={e => (e.currentTarget.style.color = '#fff')}
                     onMouseOut={e => (e.currentTarget.style.color = '#555')}
                     title={isCollapsed('received-assets') ? 'Expand' : 'Collapse'}>
@@ -3566,9 +3566,9 @@ export default function App() {
               </div>
               {!isCollapsed('received-assets') && (<>
               {receivedAssetsData.list.length > 0 && (
-                <div style={{ display: 'flex', gap: 1, borderBottom: '1px solid #1a1a1a', background: '#0a0a0a' }}>
+                <div style={{ display: 'flex', gap: 1, borderBottom: '1px solid #242424', background: '#0e0e0e' }}>
                   {(Object.entries(receivedAssetsData.byAsset) as [string, { amount: number; valueUsd: number }][]).map(([sym, data]) => (
-                    <div key={sym} style={{ flex: 1, padding: '10px 16px', borderRight: '1px solid #1a1a1a' }}>
+                    <div key={sym} style={{ flex: 1, padding: '10px 16px', borderRight: '1px solid #242424' }}>
                       <div style={{ fontSize: 10, color: '#aaa', marginBottom: 4, fontWeight: 700, letterSpacing: '.5px' }}>{sym}</div>
                       <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>
                         {sym === 'ETH' ? data.amount.toLocaleString(undefined, { maximumFractionDigits: 4 }) : data.amount.toLocaleString(undefined, { maximumFractionDigits: 0 })} {sym}
@@ -3595,7 +3595,7 @@ export default function App() {
                     tx.amount * (prices['usd-coin']?.usd || 1)
                   );
                   return (
-                    <div key={tx.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', borderBottom: '1px solid #151515', transition: 'background .1s' }}
+                    <div key={tx.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', borderBottom: '1px solid #1e1e1e', transition: 'background .1s' }}
                       onMouseOver={e => (e.currentTarget.style.background = '#111')}
                       onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
@@ -3636,8 +3636,8 @@ export default function App() {
             </div>
 
             {/* Recent Activity */}
-            <div style={{ background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: 14, overflow: 'hidden' }}>
-              <div style={{ padding: '14px 18px', borderBottom: isCollapsed('history-txs') ? 'none' : '1px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+            <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 14, overflow: 'hidden' }}>
+              <div style={{ padding: '14px 18px', borderBottom: isCollapsed('history-txs') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ fontSize: 14, fontWeight: 600 }}>Recent Activity</span>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, background: 'rgba(0,192,118,.1)', color: '#00c076', border: '1px solid rgba(0,192,118,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
@@ -3652,12 +3652,12 @@ export default function App() {
                     { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Assets'], ...Array.from(new Set(currentTransactions.map(tx => tx.asset))).sort().map(a => [a,a])] },
                   ].map(({ value, onChange, options }, i) => (
                     <select key={i} value={value} onChange={e => onChange(e.target.value)}
-                      style={{ background: '#111', border: '1px solid #1c1c1c', borderRadius: 6, color: '#fff', fontSize: 12, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
+                      style={{ background: '#111', border: '1px solid #252525', borderRadius: 6, color: '#fff', fontSize: 12, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
                       {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                     </select>
                   ))}
                   <button onClick={() => toggleSection('history-txs')}
-                    style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#555', transition: 'color .12s' }}
+                    style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
                     onMouseOver={e => (e.currentTarget.style.color = '#fff')}
                     onMouseOut={e => (e.currentTarget.style.color = '#555')}
                     title={isCollapsed('history-txs') ? 'Expand' : 'Collapse'}>
@@ -3667,7 +3667,7 @@ export default function App() {
               </div>
               {!isCollapsed('history-txs') && (<>
               {hiddenTxIds.length > 0 && (
-                <div style={{ padding: '6px 18px', borderBottom: '1px solid #151515', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ padding: '6px 18px', borderBottom: '1px solid #1e1e1e', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: 11, color: '#999' }}>{hiddenTxIds.length} hidden transaction{hiddenTxIds.length > 1 ? 's' : ''}</span>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button onClick={() => setShowHiddenTxs(v => !v)}
@@ -3687,7 +3687,7 @@ export default function App() {
                 ) : filteredTransactions.filter(tx => showHiddenTxs || !hiddenTxIds.includes(tx.id)).map((tx) => {
                   const isHidden = hiddenTxIds.includes(tx.id);
                   return (
-                    <div key={tx.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', borderBottom: '1px solid #151515', transition: 'background .1s', opacity: isHidden ? 0.35 : 1 }}
+                    <div key={tx.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', borderBottom: '1px solid #1e1e1e', transition: 'background .1s', opacity: isHidden ? 0.35 : 1 }}
                       onMouseOver={e => (e.currentTarget.style.background = '#111')}
                       onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -3723,9 +3723,9 @@ export default function App() {
                         <button
                           title={isHidden ? 'Unhide' : 'Hide'}
                           onClick={() => setHiddenTxIds(prev => isHidden ? prev.filter(id => id !== tx.id) : [...prev, tx.id])}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: isHidden ? '#00c076' : '#444', padding: 4, flexShrink: 0 }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: isHidden ? '#00c076' : '#666', padding: 4, flexShrink: 0 }}
                           onMouseOver={e => (e.currentTarget.style.color = isHidden ? '#00c076' : '#888')}
-                          onMouseOut={e => (e.currentTarget.style.color = isHidden ? '#00c076' : '#444')}>
+                          onMouseOut={e => (e.currentTarget.style.color = isHidden ? '#00c076' : '#666')}>
                           {isHidden ? <Eye size={14} /> : <EyeOff size={14} />}
                         </button>
                       </div>
@@ -3785,7 +3785,7 @@ export default function App() {
               {/* Hero card */}
               <div style={{ background: 'linear-gradient(135deg, #0a2a1a 0%, #061a10 100%)', borderRadius: 16, padding: '24px', border: '1px solid #1a3a2a' }}>
                 <div style={{ fontSize: 13, color: '#aaa', marginBottom: 8 }}>{isAll ? 'All Wallets' : selWallet?.name}</div>
-                {!isAll && <div style={{ fontSize: 11, color: '#555', fontFamily: 'monospace', marginBottom: 12 }}>{selWallet?.address}</div>}
+                {!isAll && <div style={{ fontSize: 11, color: '#888', fontFamily: 'monospace', marginBottom: 12 }}>{selWallet?.address}</div>}
                 <div style={{ fontSize: 36, fontWeight: 800, color: '#fff', marginBottom: 16 }}>
                   ${totalUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 </div>
@@ -3812,14 +3812,14 @@ export default function App() {
               </div>
 
               {/* Asset list — full Token Positions module */}
-              <div style={{ background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: 12, overflow: 'hidden' }}>
-                <div style={{ padding: '14px 16px', borderBottom: isCollapsed('wallet-holdings') ? 'none' : '1px solid #161616', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+              <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, overflow: 'hidden' }}>
+                <div style={{ padding: '14px 16px', borderBottom: isCollapsed('wallet-holdings') ? 'none' : '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                   <div>
                     <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Token Positions</div>
                     <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{filteredViewAssets.length} tokens · ${walletUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ display: 'flex', gap: 3, background: '#111', border: '1px solid #1c1c1c', borderRadius: 8, padding: 3 }}>
+                    <div style={{ display: 'flex', gap: 3, background: '#111', border: '1px solid #252525', borderRadius: 8, padding: 3 }}>
                       {([['1h','1H'],['6h','6H'],['24h','24H'],['7d','7D']] as const).map(([p, label]) => (
                         <button key={p} onClick={() => setPriceChangePeriod(p)}
                           style={{ padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all .12s', border: 'none',
@@ -3830,7 +3830,7 @@ export default function App() {
                       ))}
                     </div>
                     <button onClick={() => toggleSection('wallet-holdings')}
-                      style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#555', transition: 'color .12s' }}
+                      style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
                       onMouseOver={e => (e.currentTarget.style.color = '#fff')}
                       onMouseOut={e => (e.currentTarget.style.color = '#555')}
                       title={isCollapsed('wallet-holdings') ? 'Expand' : 'Collapse'}>
@@ -3842,7 +3842,7 @@ export default function App() {
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid #1a1a1a' }}>
+                      <tr style={{ borderBottom: '1px solid #242424' }}>
                         {[
                           { label: 'Token', field: null, align: 'left' },
                           { label: 'Price', field: null, align: 'right' },
@@ -3896,12 +3896,12 @@ export default function App() {
                           const dsUrl = dexScreenerUrl(asset.chain, addr);
                           return (
                             <tr key={asset.id}
-                              style={{ borderBottom: '1px solid #151515', transition: 'background .1s' }}
+                              style={{ borderBottom: '1px solid #1e1e1e', transition: 'background .1s' }}
                               onMouseOver={e => (e.currentTarget.style.background = '#111')}
                               onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                               <td style={{ padding: '11px 16px', whiteSpace: 'nowrap' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                  <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#1a1a1a', border: '1px solid #222',
+                                  <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#282828', border: '1px solid #3a3a3a',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#fff', flexShrink: 0, overflow: 'hidden' }}>
                                     {logo ? <img src={logo} alt={asset.symbol} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
                                         onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.removeAttribute('hidden'); }} /> : null}
@@ -3921,18 +3921,18 @@ export default function App() {
                                       {addr && addr !== 'native' && (
                                         <button onClick={() => navigator.clipboard.writeText(addr)}
                                           title={`Copy CA: ${addr}`}
-                                          style={{ padding: '1px 3px', background: 'none', border: 'none', cursor: 'pointer', color: '#444', transition: 'color .12s', lineHeight: 1 }}
+                                          style={{ padding: '1px 3px', background: 'none', border: 'none', cursor: 'pointer', color: '#666', transition: 'color .12s', lineHeight: 1 }}
                                           onMouseOver={e => (e.currentTarget.style.color = '#aaa')}
-                                          onMouseOut={e => (e.currentTarget.style.color = '#444')}>
+                                          onMouseOut={e => (e.currentTarget.style.color = '#666')}>
                                           <Copy size={10} />
                                         </button>
                                       )}
                                       {dsUrl && addr !== 'native' && (
                                         <a href={dsUrl} target="_blank" rel="noopener noreferrer"
                                           title="View on DexScreener"
-                                          style={{ padding: '1px 3px', color: '#444', transition: 'color .12s', lineHeight: 1, display: 'inline-flex' }}
+                                          style={{ padding: '1px 3px', color: '#666', transition: 'color .12s', lineHeight: 1, display: 'inline-flex' }}
                                           onMouseOver={e => (e.currentTarget.style.color = '#f4c542')}
-                                          onMouseOut={e => (e.currentTarget.style.color = '#444')}>
+                                          onMouseOut={e => (e.currentTarget.style.color = '#666')}>
                                           <ExternalLink size={10} />
                                         </a>
                                       )}
@@ -3980,7 +3980,7 @@ export default function App() {
                                     <Calculator size={13} />
                                   </button>
                                   <button onClick={() => setHiddenTokens([...hiddenTokens, asset.id])}
-                                    style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#555', transition: 'color .12s' }}
+                                    style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
                                     onMouseOver={e => (e.currentTarget.style.color = '#ef4444')}
                                     onMouseOut={e => (e.currentTarget.style.color = '#555')}
                                     title="Hide">
@@ -3995,7 +3995,7 @@ export default function App() {
                     </tbody>
                     {filteredViewAssets.length > 0 && (
                       <tfoot>
-                        <tr style={{ borderTop: '1px solid #1c1c1c' }}>
+                        <tr style={{ borderTop: '1px solid #252525' }}>
                           <td colSpan={4} style={{ padding: '10px 16px', fontSize: 11, color: '#aaa', fontWeight: 600 }}>TOTAL LIQUID</td>
                           <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#fff' }}>
                             ${walletUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
@@ -4051,40 +4051,40 @@ export default function App() {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <div style={{ fontSize: 20, fontWeight: 800, color: realizedPnl >= 0 ? '#00c076' : '#ef4444' }}>{realizedPnl >= 0 ? '+' : ''}${fmt(realizedPnl)}</div>
-                        <button onClick={() => setPnlAsset(null)} style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#555' }} onMouseOver={e => (e.currentTarget.style.color = '#fff')} onMouseOut={e => (e.currentTarget.style.color = '#555')}><X size={16} /></button>
+                        <button onClick={() => setPnlAsset(null)} style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888' }} onMouseOver={e => (e.currentTarget.style.color = '#fff')} onMouseOut={e => (e.currentTarget.style.color = '#555')}><X size={16} /></button>
                       </div>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: '0 14px 14px' }}>
                       <div style={{ background: '#111', borderRadius: 10, padding: '14px 16px' }}>
                         <div style={{ fontSize: 10, fontWeight: 700, color: '#888', letterSpacing: '.8px', marginBottom: 10 }}>REALIZED</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div><div style={{ fontSize: 10, color: '#666', marginBottom: 2 }}>Cost</div><div style={{ fontSize: 14, fontWeight: 700, color: '#ef4444' }}>${fmt(realizedCostUsd)}</div></div>
-                          <div style={{ color: '#444', fontSize: 16, marginTop: 8 }}>→</div>
-                          <div><div style={{ fontSize: 10, color: '#666', marginBottom: 2 }}>Proceeds</div><div style={{ fontSize: 14, fontWeight: 700, color: '#00c076' }}>${fmt(proceedsUsd)}</div></div>
-                          <div style={{ marginLeft: 'auto', textAlign: 'right' }}><div style={{ fontSize: 10, color: '#666', marginBottom: 2 }}>P&amp;L</div><div style={{ fontSize: 14, fontWeight: 700, color: realizedPnl >= 0 ? '#00c076' : '#ef4444' }}>{realizedPnl >= 0 ? '+' : ''}${fmt(realizedPnl)}</div></div>
+                          <div><div style={{ fontSize: 10, color: '#999', marginBottom: 2 }}>Cost</div><div style={{ fontSize: 14, fontWeight: 700, color: '#ef4444' }}>${fmt(realizedCostUsd)}</div></div>
+                          <div style={{ color: '#666', fontSize: 16, marginTop: 8 }}>→</div>
+                          <div><div style={{ fontSize: 10, color: '#999', marginBottom: 2 }}>Proceeds</div><div style={{ fontSize: 14, fontWeight: 700, color: '#00c076' }}>${fmt(proceedsUsd)}</div></div>
+                          <div style={{ marginLeft: 'auto', textAlign: 'right' }}><div style={{ fontSize: 10, color: '#999', marginBottom: 2 }}>P&amp;L</div><div style={{ fontSize: 14, fontWeight: 700, color: realizedPnl >= 0 ? '#00c076' : '#ef4444' }}>{realizedPnl >= 0 ? '+' : ''}${fmt(realizedPnl)}</div></div>
                         </div>
-                        <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #1a1a1a', display: 'flex', gap: 16 }}>
-                          <div><div style={{ fontSize: 10, color: '#555' }}>Bought</div><div style={{ fontSize: 11, color: '#aaa', fontWeight: 600 }}>{fmtTok(totalBought)} {pnlAsset.symbol}</div></div>
-                          <div><div style={{ fontSize: 10, color: '#555' }}>Sold</div><div style={{ fontSize: 11, color: '#aaa', fontWeight: 600 }}>{fmtTok(totalSold)} {pnlAsset.symbol}</div></div>
+                        <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #242424', display: 'flex', gap: 16 }}>
+                          <div><div style={{ fontSize: 10, color: '#888' }}>Bought</div><div style={{ fontSize: 11, color: '#aaa', fontWeight: 600 }}>{fmtTok(totalBought)} {pnlAsset.symbol}</div></div>
+                          <div><div style={{ fontSize: 10, color: '#888' }}>Sold</div><div style={{ fontSize: 11, color: '#aaa', fontWeight: 600 }}>{fmtTok(totalSold)} {pnlAsset.symbol}</div></div>
                         </div>
                       </div>
                       <div style={{ background: '#111', borderRadius: 10, padding: '14px 16px' }}>
                         <div style={{ fontSize: 10, fontWeight: 700, color: '#888', letterSpacing: '.8px', marginBottom: 10 }}>HOLDINGS</div>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <div><div style={{ fontSize: 10, color: '#555', marginBottom: 2 }}>Balance</div><div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{fmtTok(pnlAsset.balance)} {pnlAsset.symbol}</div></div>
-                          <div style={{ textAlign: 'right' }}><div style={{ fontSize: 10, color: '#555', marginBottom: 2 }}>Value</div><div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>${fmt(pnlAsset.value)}</div></div>
+                          <div><div style={{ fontSize: 10, color: '#888', marginBottom: 2 }}>Balance</div><div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{fmtTok(pnlAsset.balance)} {pnlAsset.symbol}</div></div>
+                          <div style={{ textAlign: 'right' }}><div style={{ fontSize: 10, color: '#888', marginBottom: 2 }}>Value</div><div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>${fmt(pnlAsset.value)}</div></div>
                         </div>
                         {gasNative > 0 && (
-                          <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #1a1a1a', display: 'flex', justifyContent: 'space-between' }}>
-                            <div style={{ fontSize: 10, color: '#555' }}>⛽ Gas</div>
-                            <div style={{ fontSize: 11, color: '#aaa', fontWeight: 600 }}>{fmtTok(gasNative)} {chainKey === 'ethereum' ? 'ETH' : 'PLS'} <span style={{ color: '#555' }}>(${fmt(gasUsd)})</span></div>
+                          <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #242424', display: 'flex', justifyContent: 'space-between' }}>
+                            <div style={{ fontSize: 10, color: '#888' }}>⛽ Gas</div>
+                            <div style={{ fontSize: 11, color: '#aaa', fontWeight: 600 }}>{fmtTok(gasNative)} {chainKey === 'ethereum' ? 'ETH' : 'PLS'} <span style={{ color: '#888' }}>(${fmt(gasUsd)})</span></div>
                           </div>
                         )}
                       </div>
                     </div>
                     {allRows.length > 0 && (
-                      <div style={{ borderTop: '1px solid #161616' }}>
-                        <div style={{ padding: '8px 18px', fontSize: 10, fontWeight: 700, color: '#555', letterSpacing: '.8px' }}>SWAP HISTORY</div>
+                      <div style={{ borderTop: '1px solid #1f1f1f' }}>
+                        <div style={{ padding: '8px 18px', fontSize: 10, fontWeight: 700, color: '#888', letterSpacing: '.8px' }}>SWAP HISTORY</div>
                         <div style={{ maxHeight: 280, overflowY: 'auto' }}>
                           {allRows.map(({ tx, side }, i) => {
                             const isBuy = side === 'buy';
@@ -4099,21 +4099,21 @@ export default function App() {
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                   <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                     {isBuy ? '+' : '-'}{fmtTok(tokenAmt)} {pnlAsset.symbol}
-                                    <span style={{ color: '#555', fontWeight: 400, marginLeft: 6 }}>{isBuy ? 'for' : 'sold for'} {fmtTok(otherAmt)} {otherSym}</span>
+                                    <span style={{ color: '#888', fontWeight: 400, marginLeft: 6 }}>{isBuy ? 'for' : 'sold for'} {fmtTok(otherAmt)} {otherSym}</span>
                                   </div>
                                 </div>
                                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
                                   <div style={{ fontSize: 11, fontWeight: 600, color: '#aaa' }}>${fmt(tx.valueUsd ?? 0)}</div>
-                                  <div style={{ fontSize: 10, color: '#555' }}>{date}</div>
+                                  <div style={{ fontSize: 10, color: '#888' }}>{date}</div>
                                 </div>
-                                {tx.hash && <a href={`${CHAINS[chainKey].explorer}/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer" style={{ color: '#444', flexShrink: 0 }} onMouseOver={e => (e.currentTarget.style.color = '#a78bfa')} onMouseOut={e => (e.currentTarget.style.color = '#444')}><ExternalLink size={11} /></a>}
+                                {tx.hash && <a href={`${CHAINS[chainKey].explorer}/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer" style={{ color: '#666', flexShrink: 0 }} onMouseOver={e => (e.currentTarget.style.color = '#a78bfa')} onMouseOut={e => (e.currentTarget.style.color = '#666')}><ExternalLink size={11} /></a>}
                               </div>
                             );
                           })}
                         </div>
                       </div>
                     )}
-                    {swapCount === 0 && <div style={{ padding: '24px', textAlign: 'center', color: '#555', fontSize: 12 }}>No swaps found for {pnlAsset.symbol} on {chainKey}</div>}
+                    {swapCount === 0 && <div style={{ padding: '24px', textAlign: 'center', color: '#888', fontSize: 12 }}>No swaps found for {pnlAsset.symbol} on {chainKey}</div>}
                   </div>
                 );
               })()}
@@ -4165,9 +4165,9 @@ export default function App() {
                 const chainDot: Record<string, string> = { pulsechain: '#f739ff', ethereum: '#627EEA', base: '#0052FF' };
 
                 return (
-                  <div style={{ background: '#0d0d0d', borderRadius: 14, border: '1px solid #1a1a1a', overflow: 'hidden' }}>
+                  <div style={{ background: '#0d0d0d', borderRadius: 14, border: '1px solid #242424', overflow: 'hidden' }}>
                     <div style={{ height: 2, background: 'linear-gradient(90deg,#7c3aed,#ec4899)' }} />
-                    <div style={{ padding: '14px 18px', borderBottom: isCollapsed('wallet-pnl') ? 'none' : '1px solid #161616', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ padding: '14px 18px', borderBottom: isCollapsed('wallet-pnl') ? 'none' : '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>Trade P&amp;L</span>
                         <span style={{ fontSize: 10, color: '#aaa', background: '#1a1a1a', padding: '2px 8px', borderRadius: 4 }}>{swaps.length} swaps · approx.</span>
@@ -4175,7 +4175,7 @@ export default function App() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <span style={{ fontSize: 20, fontWeight: 800, color: totalPnl >= 0 ? '#00c076' : '#ef4444' }}>{totalPnl >= 0 ? '+' : ''}${Math.abs(totalPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                         <button onClick={() => toggleSection('wallet-pnl')}
-                          style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#555' }}
+                          style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888' }}
                           onMouseOver={e => (e.currentTarget.style.color = '#fff')} onMouseOut={e => (e.currentTarget.style.color = '#555')}
                           title={isCollapsed('wallet-pnl') ? 'Expand' : 'Collapse'}>
                           {isCollapsed('wallet-pnl') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
@@ -4186,9 +4186,9 @@ export default function App() {
                       <div style={{ overflowX: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 540 }}>
                           <thead>
-                            <tr style={{ borderBottom: '1px solid #161616' }}>
+                            <tr style={{ borderBottom: '1px solid #1f1f1f' }}>
                               {['Token', 'Swaps', 'Bought', 'Sold', 'Proceeds', 'Cost (est.)', 'Realized P&L'].map(h => (
-                                <th key={h} style={{ padding: '9px 14px', textAlign: h === 'Token' ? 'left' : 'right', fontSize: 10, color: '#555', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', whiteSpace: 'nowrap' }}>{h}</th>
+                                <th key={h} style={{ padding: '9px 14px', textAlign: h === 'Token' ? 'left' : 'right', fontSize: 10, color: '#888', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', whiteSpace: 'nowrap' }}>{h}</th>
                               ))}
                             </tr>
                           </thead>
@@ -4214,8 +4214,8 @@ export default function App() {
                             ))}
                           </tbody>
                           <tfoot>
-                            <tr style={{ borderTop: '1px solid #1c1c1c' }}>
-                              <td colSpan={6} style={{ padding: '10px 14px', fontSize: 11, color: '#555', fontWeight: 600 }}>TOTAL REALIZED P&amp;L</td>
+                            <tr style={{ borderTop: '1px solid #252525' }}>
+                              <td colSpan={6} style={{ padding: '10px 14px', fontSize: 11, color: '#888', fontWeight: 600 }}>TOTAL REALIZED P&amp;L</td>
                               <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 800, fontSize: 14, color: totalPnl >= 0 ? '#00c076' : '#ef4444' }}>
                                 {totalPnl >= 0 ? '+' : ''}${Math.abs(totalPnl).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                               </td>
@@ -4242,8 +4242,8 @@ export default function App() {
                 });
                 if (baseTxs.length === 0) return null;
                 return (
-                  <div style={{ background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: 14, overflow: 'hidden' }}>
-                    <div style={{ padding: '14px 18px', borderBottom: isCollapsed('wallet-txs') ? 'none' : '1px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                  <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 14, overflow: 'hidden' }}>
+                    <div style={{ padding: '14px 18px', borderBottom: isCollapsed('wallet-txs') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: 14, fontWeight: 600 }}>Recent Activity</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, background: 'rgba(0,192,118,.1)', color: '#00c076', border: '1px solid rgba(0,192,118,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
@@ -4257,12 +4257,12 @@ export default function App() {
                           { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Assets'], ...Array.from(new Set(baseTxs.map(tx => tx.asset))).sort().map(a => [a,a])] as [string,string][] },
                         ].map(({ value, onChange, options }, i) => (
                           <select key={i} value={value} onChange={e => onChange(e.target.value)}
-                            style={{ background: '#111', border: '1px solid #1c1c1c', borderRadius: 6, color: '#fff', fontSize: 12, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
+                            style={{ background: '#111', border: '1px solid #252525', borderRadius: 6, color: '#fff', fontSize: 12, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
                             {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                           </select>
                         ))}
                         <button onClick={() => toggleSection('wallet-txs')}
-                          style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#555', transition: 'color .12s' }}
+                          style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
                           onMouseOver={e => (e.currentTarget.style.color = '#fff')} onMouseOut={e => (e.currentTarget.style.color = '#555')}
                           title={isCollapsed('wallet-txs') ? 'Expand' : 'Collapse'}>
                           {isCollapsed('wallet-txs') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
@@ -4277,7 +4277,7 @@ export default function App() {
                           const isHidden = hiddenTxIds.includes(tx.id);
                           if (isHidden && !showHiddenTxs) return null;
                           return (
-                            <div key={tx.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', borderBottom: '1px solid #151515', transition: 'background .1s', opacity: isHidden ? 0.35 : 1 }}
+                            <div key={tx.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', borderBottom: '1px solid #1e1e1e', transition: 'background .1s', opacity: isHidden ? 0.35 : 1 }}
                               onMouseOver={e => (e.currentTarget.style.background = '#111')}
                               onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -4313,14 +4313,14 @@ export default function App() {
                                   {tx.valueUsd && <div style={{ fontSize: 10, color: '#aaa' }}>${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>}
                                 </div>
                                 <a href={`${CHAINS[tx.chain].explorer}/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer"
-                                  style={{ color: '#444', padding: 4 }}
-                                  onMouseOver={e => (e.currentTarget.style.color = '#a78bfa')} onMouseOut={e => (e.currentTarget.style.color = '#444')}>
+                                  style={{ color: '#666', padding: 4 }}
+                                  onMouseOver={e => (e.currentTarget.style.color = '#a78bfa')} onMouseOut={e => (e.currentTarget.style.color = '#666')}>
                                   <ExternalLink size={13} />
                                 </a>
                                 <button title={isHidden ? 'Unhide' : 'Hide'}
                                   onClick={() => setHiddenTxIds(prev => isHidden ? prev.filter(id => id !== tx.id) : [...prev, tx.id])}
-                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: isHidden ? '#00c076' : '#444', padding: 4 }}
-                                  onMouseOver={e => (e.currentTarget.style.color = isHidden ? '#00c076' : '#888')} onMouseOut={e => (e.currentTarget.style.color = isHidden ? '#00c076' : '#444')}>
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: isHidden ? '#00c076' : '#666', padding: 4 }}
+                                  onMouseOver={e => (e.currentTarget.style.color = isHidden ? '#00c076' : '#888')} onMouseOut={e => (e.currentTarget.style.color = isHidden ? '#00c076' : '#666')}>
                                   {isHidden ? <Eye size={14} /> : <EyeOff size={14} />}
                                 </button>
                               </div>
@@ -4348,7 +4348,7 @@ export default function App() {
 
       {/* ── MOBILE BOTTOM NAV ── */}
       <nav className="mobile-bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-50 flex"
-        style={{ background: '#080808', borderTop: '1px solid #161616' }}>
+        style={{ background: '#080808', borderTop: '1px solid #1f1f1f' }}>
         {([
           { id: 'overview', label: 'Overview', icon: LayoutDashboard },
           { id: 'assets',   label: 'Assets',   icon: WalletIcon },
@@ -4441,7 +4441,7 @@ export default function App() {
               className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
             <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              style={{ position: 'relative', width: '100%', maxWidth: 480, background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: 20, padding: 28 }}>
+              style={{ position: 'relative', width: '100%', maxWidth: 480, background: '#0d0d0d', border: '1px solid #242424', borderRadius: 20, padding: 28 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
                 <Settings size={18} style={{ color: '#00c076' }} />
                 <span style={{ fontSize: 16, fontWeight: 700 }}>API Keys</span>
@@ -4452,7 +4452,7 @@ export default function App() {
               </p>
               <input type="text" placeholder="Paste your Etherscan API key..."
                 value={apiKeyInput} onChange={e => setApiKeyInput(e.target.value)}
-                style={{ width: '100%', background: '#111', border: '1px solid #1c1c1c', borderRadius: 8,
+                style={{ width: '100%', background: '#111', border: '1px solid #252525', borderRadius: 8,
                   color: '#fff', fontSize: 13, padding: '10px 14px', outline: 'none',
                   fontFamily: 'monospace', boxSizing: 'border-box', marginBottom: 20 }} />
               <div style={{ display: 'flex', gap: 10 }}>
