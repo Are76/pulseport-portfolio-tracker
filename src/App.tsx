@@ -353,7 +353,12 @@ export default function App() {
   const [priceChangePeriod, setPriceChangePeriod] = useState<'1h' | '6h' | '24h' | '7d'>('24h');
   const [assetSortField, setAssetSortField] = useState<'value' | 'change'>('value');
   const [assetSortDir, setAssetSortDir] = useState<'desc' | 'asc'>('desc');
-  const [tokenLogos, setTokenLogos] = useState<Record<string, string>>({});
+  // Hardcoded fallback logos for tokens not listed on CoinGecko
+  const STATIC_LOGOS: Record<string, string> = {
+    '0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d': 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png', // INC
+    '0xf6f8db0aba00007681f8faf16a0fda1c9b030b11': 'https://tokens.app.pulsex.com/images/tokens/0xf6f8dB0ABA00007681F8FAF16a0fdA1C9B030b11.png', // PRVX
+  };
+  const [tokenLogos, setTokenLogos] = useState<Record<string, string>>(STATIC_LOGOS);
   const [stakeChainFilter, setStakeChainFilter] = useState<'all' | 'pulsechain' | 'ethereum'>('all');
   const [expandedStakeIds, setExpandedStakeIds] = useState<Set<string>>(new Set());
   const [priceDisplayCurrency, setPriceDisplayCurrency] = useState<'usd' | 'pls'>('usd');

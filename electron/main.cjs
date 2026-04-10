@@ -3,6 +3,9 @@ const path = require('path');
 
 const isDev = process.env.NODE_ENV === 'development';
 
+// Lock userData to a consistent path so localStorage survives app updates/moves
+app.setPath('userData', path.join(app.getPath('appData'), 'Pulseport'));
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1400,
@@ -13,6 +16,7 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       webSecurity: false,  // Allow cross-origin requests to blockchain APIs (safe for desktop app)
+      partition: 'persist:pulseport', // Named persistent session — survives restarts
     },
     title: 'Pulseport',
     backgroundColor: '#050505',
