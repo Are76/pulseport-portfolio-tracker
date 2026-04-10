@@ -78,10 +78,10 @@
 }
 
 .price-sub {
-  font-size: 0.7em;
+  font-size: 0.8em;
   vertical-align: sub;
   margin: 0 1px;
-  opacity: 0.7;
+  opacity: 0.85;
 }
 
 /* Progress bar */

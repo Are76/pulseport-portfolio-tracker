@@ -189,9 +189,9 @@ function StakingLadder({ stakes }: { stakes: HexStake[] }) {
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 24 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.06)" />
-          <XAxis dataKey="daysRemaining" tick={{ fill: '#777', fontSize: 11 }} axisLine={{ stroke: '#222' }} tickLine={false}
-            label={{ value: 'Days Remaining', position: 'insideBottom', offset: -10, fill: '#555', fontSize: 11 }} />
-          <YAxis tick={{ fill: '#777', fontSize: 11 }} axisLine={false} tickLine={false} scale="log" domain={['auto', 'auto']} allowDataOverflow={false} />
+          <XAxis dataKey="daysRemaining" tick={{ fill: '#777', fontSize: 13 }} axisLine={{ stroke: '#222' }} tickLine={false}
+            label={{ value: 'Days Remaining', position: 'insideBottom', offset: -10, fill: '#555', fontSize: 13 }} />
+          <YAxis tick={{ fill: '#777', fontSize: 13 }} axisLine={false} tickLine={false} scale="log" domain={['auto', 'auto']} allowDataOverflow={false} />
           <RechartsTooltip content={<CustomTip />} />
           <Bar dataKey="totalShares" fill="#00c076" radius={[3, 3, 0, 0]} />
         </BarChart>
@@ -255,7 +255,7 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
     <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, padding: '18px 18px 10px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.6px' }}>Stake Distribution</div>
-        <div style={{ fontSize: 12, color: '#888' }}>
+        <div style={{ fontSize: 13, color: '#888' }}>
           <span style={{ color: '#fff', fontWeight: 700 }}>${fmtK(totalUsd)}</span>
           {' · '}<span style={{ color: '#fb923c' }}>{fmtK(totalHex)} HEX</span>
           {' · '}<span style={{ color: '#00c076' }}>{fmtK(totalTShares)} T-Shares</span>
@@ -273,7 +273,7 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
       </ResponsiveContainer>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px', marginTop: 4 }}>
         {chartData.map((w, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#aaa' }}>
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#aaa' }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: getColor(i), flexShrink: 0 }} />
             <span>{w.label}</span>
             <span style={{ color: '#888' }}>({w.count})</span>
@@ -2151,8 +2151,8 @@ export default function App() {
         {/* Wallets */}
         <div style={{ padding: '16px 8px 8px', marginTop: 'auto' }} className="flex flex-col gap-2">
           <div style={{ padding: '0 10px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 10, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.8px' }}>Wallets</span>
-            <span style={{ fontSize: 10, fontWeight: 600, color: '#00c076', background: 'rgba(0,192,118,.1)', padding: '1px 7px', borderRadius: 100 }}>{wallets.length}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.8px' }}>Wallets</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#00c076', background: 'rgba(0,192,118,.1)', padding: '1px 7px', borderRadius: 100 }}>{wallets.length}</span>
           </div>
           <div className="space-y-1 overflow-y-auto custom-scrollbar" style={{ maxHeight: 200 }}>
             {wallets.map((w) => (
@@ -2161,8 +2161,8 @@ export default function App() {
                 style={{ padding: '8px 10px', borderRadius: 8, background: selectedWalletAddr === w.address.toLowerCase() && activeTab === 'wallets' ? '#141414' : '#0f0f0f', border: `1px solid ${selectedWalletAddr === w.address.toLowerCase() && activeTab === 'wallets' ? '#2a2a2a' : '#1a1a1a'}`, cursor: 'pointer' }}
                 className="group flex items-center justify-between">
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{w.name}</div>
-                  <code style={{ fontSize: 10, color: '#aaa' }}>{w.address.slice(0, 6)}…{w.address.slice(-4)}</code>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{w.name}</div>
+                  <code style={{ fontSize: 13, color: '#aaa' }}>{w.address.slice(0, 6)}…{w.address.slice(-4)}</code>
                 </div>
                 <button onClick={(e) => { e.stopPropagation(); removeWallet(w.address); }}
                   className="opacity-0 group-hover:opacity-100 transition-opacity"
@@ -2215,7 +2215,7 @@ export default function App() {
 
           <div className="flex items-center gap-3">
             {lastUpdated && (
-              <span style={{ fontSize: 11, color: '#aaa' }} className="hidden sm:inline">
+              <span style={{ fontSize: 13, color: '#aaa' }} className="hidden sm:inline">
                 {timeSinceLastUpdate}s ago
               </span>
             )}
@@ -2225,14 +2225,14 @@ export default function App() {
                 background: etherscanApiKey ? 'rgba(0,192,118,.08)' : '#111',
                 border: `1px solid ${etherscanApiKey ? 'rgba(0,192,118,.25)' : '#1c1c1c'}`,
                 borderRadius: 8, color: etherscanApiKey ? '#00c076' : '#555',
-                fontSize: 12, fontWeight: 500, cursor: 'pointer', transition: 'all .12s' }}>
+                fontSize: 13, fontWeight: 500, cursor: 'pointer', transition: 'all .12s' }}>
               <Settings size={13} />
               <span className="hidden sm:inline">{etherscanApiKey ? 'API Key ✓' : 'API Key'}</span>
             </button>
             <button onClick={fetchPortfolio}
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px',
                 background: '#111', border: '1px solid #252525', borderRadius: 8,
-                color: '#fff', fontSize: 12, fontWeight: 500, cursor: 'pointer', transition: 'all .12s' }}
+                color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer', transition: 'all .12s' }}
               onMouseOver={e => (e.currentTarget.style.borderColor = '#333')}
               onMouseOut={e => (e.currentTarget.style.borderColor = '#1c1c1c')}>
               <RefreshCcw size={13} className={isLoading ? 'animate-spin' : ''} />
@@ -2270,7 +2270,7 @@ export default function App() {
                       <div className="hero-grid" style={{ position: 'relative' }}>
                         {/* Left: value + stats */}
                         <div>
-                          <div style={{ fontSize: 11, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 6 }}>Total Portfolio Value</div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 6 }}>Total Portfolio Value</div>
                           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap', marginBottom: 18 }}>
                             <div style={{ fontSize: 52, fontWeight: 800, letterSpacing: '-2px', lineHeight: 1, color: '#fff' }}>
                               ${summary.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
@@ -2279,48 +2279,48 @@ export default function App() {
                               <div style={{ fontSize: 13, color: summary.pnl24h >= 0 ? '#00c076' : '#ef4444', fontWeight: 700 }}>
                                 {summary.pnl24h >= 0 ? '+' : ''}{summary.pnl24hPercent.toFixed(2)}% 24h
                               </div>
-                              <div style={{ fontSize: 12, color: '#aaa' }}>{summary.nativeValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</div>
+                              <div style={{ fontSize: 13, color: '#aaa' }}>{summary.nativeValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</div>
                             </div>
                           </div>
                           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-                            <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 100, background: 'rgba(59,130,246,.15)', color: '#60a5fa', border: '1px solid rgba(59,130,246,.2)' }}>
+                            <span style={{ fontSize: 13, fontWeight: 600, padding: '4px 12px', borderRadius: 100, background: 'rgba(59,130,246,.15)', color: '#60a5fa', border: '1px solid rgba(59,130,246,.2)' }}>
                               Wallet ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </span>
-                            <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 100, background: 'rgba(239,68,68,.12)', color: '#f87171', border: '1px solid rgba(239,68,68,.2)' }}>
+                            <span style={{ fontSize: 13, fontWeight: 600, padding: '4px 12px', borderRadius: 100, background: 'rgba(239,68,68,.12)', color: '#f87171', border: '1px solid rgba(239,68,68,.2)' }}>
                               Stakes ${summary.stakingValueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </span>
-                            <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 100, background: 'rgba(255,255,255,.06)', color: '#fff', border: '1px solid #222' }}>
+                            <span style={{ fontSize: 13, fontWeight: 600, padding: '4px 12px', borderRadius: 100, background: 'rgba(255,255,255,.06)', color: '#fff', border: '1px solid #222' }}>
                               {wallets.length} wallet{wallets.length !== 1 ? 's' : ''}
                             </span>
                           </div>
                           {/* Stat mini-cards */}
                           <div style={{ display: 'grid', gap: 10 }} className="grid-cols-2 sm:grid-cols-3">
                             <div style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 10, padding: '10px 14px' }}>
-                              <div style={{ fontSize: 10, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Net Investment</div>
+                              <div style={{ fontSize: 13, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Net Investment</div>
                               <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                             </div>
                             <div style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 10, padding: '10px 14px' }}>
-                              <div style={{ fontSize: 10, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Unified PNL</div>
+                              <div style={{ fontSize: 13, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Unified PNL</div>
                               <div style={{ fontSize: 16, fontWeight: 700, color: summary.unifiedPnl >= 0 ? '#00c076' : '#ef4444' }}>
                                 {summary.unifiedPnl >= 0 ? '+' : ''}${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                               </div>
                             </div>
                             <div style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 10, padding: '10px 14px' }}>
-                              <div style={{ fontSize: 10, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 3 }}>Stakes at Maturity</div>
+                              <div style={{ fontSize: 13, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 3 }}>Stakes at Maturity</div>
                               <div style={{ fontSize: 16, fontWeight: 700, color: '#a78bfa' }}>{fmtBigNum(totalHexAtMaturity)} HEX</div>
-                              <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>${valueAtMaturity.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                              <div style={{ fontSize: 13, color: '#888', marginTop: 2 }}>${valueAtMaturity.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                             </div>
                           </div>
                         </div>
                         {/* Right: Allocation donut */}
                         <div style={{ width: 200 }} className="max-sm:w-full">
-                          <div style={{ fontSize: 11, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>Allocation</div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>Allocation</div>
                           <ResponsiveContainer width="100%" height={120} debounce={50}>
                             <PieChart>
                               <Pie data={assetAllocation} cx="50%" cy="50%" innerRadius={36} outerRadius={54} paddingAngle={3} dataKey="value">
                                 {assetAllocation.map((_, i) => <Cell key={i} fill={ALLOC_COLORS[i % ALLOC_COLORS.length]} />)}
                               </Pie>
-                              <RechartsTooltip contentStyle={{ background: '#111', border: '1px solid #222', borderRadius: 8, fontSize: 12 }} />
+                              <RechartsTooltip contentStyle={{ background: '#111', border: '1px solid #222', borderRadius: 8, fontSize: 13 }} />
                             </PieChart>
                           </ResponsiveContainer>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 }}>
@@ -2328,9 +2328,9 @@ export default function App() {
                               <div key={`alloc-${a.name}`} style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'space-between' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                                   <div style={{ width: 6, height: 6, borderRadius: 2, background: ALLOC_COLORS[i % ALLOC_COLORS.length], flexShrink: 0 }} />
-                                  <span style={{ fontSize: 10, color: '#ccc' }}>{a.name}</span>
+                                  <span style={{ fontSize: 13, color: '#ccc' }}>{a.name}</span>
                                 </div>
-                                <span style={{ fontSize: 10, color: '#888' }}>{((a.value / summary.totalValue) * 100).toFixed(0)}%</span>
+                                <span style={{ fontSize: 13, color: '#888' }}>{((a.value / summary.totalValue) * 100).toFixed(0)}%</span>
                               </div>
                             ))}
                           </div>
@@ -2380,7 +2380,7 @@ export default function App() {
                     <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 14, overflow: 'hidden' }}>
                       {/* Header with collapse */}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: '1px solid #1f1f1f', background: '#0e0e0e' }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>Price Ticker</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>Price Ticker</div>
                         <button onClick={() => toggleSection('price-ticker')}
                           style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
                           onMouseOver={e => (e.currentTarget.style.color = '#fff')}
@@ -2399,7 +2399,7 @@ export default function App() {
                           { id: '7d', label: '7D' },
                         ] as const).map(({ id, label }) => (
                           <button key={id} onClick={() => setPriceChangePeriod(id)}
-                            style={{ padding: '3px 11px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all .1s', border: 'none',
+                            style={{ padding: '3px 11px', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all .1s', border: 'none',
                               background: priceChangePeriod === id ? '#1e1e1e' : 'transparent',
                               color: priceChangePeriod === id ? '#fff' : '#777',
                               outline: priceChangePeriod === id ? '1px solid #2a2a2a' : 'none' }}>
@@ -2412,7 +2412,7 @@ export default function App() {
                           { id: 'pls', label: 'WPLS' },
                         ] as const).map(({ id, label }) => (
                           <button key={id} onClick={() => setPriceDisplayCurrency(id)}
-                            style={{ padding: '3px 11px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all .1s', border: 'none',
+                            style={{ padding: '3px 11px', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all .1s', border: 'none',
                               background: priceDisplayCurrency === id ? '#1e1e1e' : 'transparent',
                               color: priceDisplayCurrency === id ? '#fff' : '#777',
                               outline: priceDisplayCurrency === id ? '1px solid #2a2a2a' : 'none' }}>
@@ -2436,20 +2436,20 @@ export default function App() {
                                     style={{ width: 22, height: 22, borderRadius: 4, objectFit: 'cover' }}
                                     onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.removeAttribute('hidden'); }} />
                                 ) : null}
-                                <span hidden={!!getTokenLogoUrl(asset)} style={{ fontSize: 9, fontWeight: 700, color: '#fff' }}>{asset.symbol.slice(0,3)}</span>
+                                <span hidden={!!getTokenLogoUrl(asset)} style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{asset.symbol.slice(0,3)}</span>
                               </div>
                               <div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                                  <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>{asset.symbol}</span>
+                                  <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{asset.symbol}</span>
                                   {change !== null ? (
-                                    <span style={{ fontSize: 10, fontWeight: 700, color: change >= 0 ? '#00c076' : '#ef4444' }}>
+                                    <span style={{ fontSize: 13, fontWeight: 700, color: change >= 0 ? '#00c076' : '#ef4444' }}>
                                       {change >= 0 ? '+' : ''}{change.toFixed(2)}%
                                     </span>
                                   ) : (
-                                    <span style={{ fontSize: 10, color: '#333' }}>—</span>
+                                    <span style={{ fontSize: 13, color: '#333' }}>—</span>
                                   )}
                                 </div>
-                                <div style={{ fontSize: 11, color: '#888', fontFamily: 'monospace' }}>
+                                <div style={{ fontSize: 13, color: '#888', fontFamily: 'monospace' }}>
                                   {formatPrice(asset.price)}{priceDisplayCurrency === 'pls' ? ' WPLS' : ''}
                                 </div>
                               </div>
@@ -2511,11 +2511,11 @@ export default function App() {
                             <div key={b.label} style={{ padding: 16, borderRight: '1px solid #1f1f1f' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                                 <div style={{ width: 7, height: 7, borderRadius: '50%', background: b.dot }} />
-                                <span style={{ fontSize: 11, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px' }}>{b.label}</span>
+                                <span style={{ fontSize: 13, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px' }}>{b.label}</span>
                               </div>
                               <div style={{ fontSize: 22, fontWeight: 700, color: b.color, letterSpacing: '-0.5px' }}>{b.val}</div>
-                              {b.usd !== null && <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>${b.usd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>}
-                              <div style={{ fontSize: 10, color: '#888', marginTop: 6 }}>{b.sub}</div>
+                              {b.usd !== null && <div style={{ fontSize: 13, color: '#aaa', marginTop: 2 }}>${b.usd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>}
+                              <div style={{ fontSize: 13, color: '#888', marginTop: 6 }}>{b.sub}</div>
                             </div>
                           ))}
                         </div>
@@ -2580,10 +2580,10 @@ export default function App() {
                       <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, borderBottom: isCollapsed('perf-chart') ? 'none' : '1px solid #1f1f1f' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>Portfolio Performance</div>
-                          <div style={{ fontSize: 12, fontWeight: 700, color: periodChange >= 0 ? '#00c076' : '#ef4444' }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: periodChange >= 0 ? '#00c076' : '#ef4444' }}>
                             {periodChange >= 0 ? '+' : ''}{periodChange.toFixed(2)}%
                           </div>
-                          {isSimulated && <span style={{ fontSize: 10, color: '#aaa', background: '#1a1a1a', padding: '2px 8px', borderRadius: 4 }}>Simulated</span>}
+                          {isSimulated && <span style={{ fontSize: 13, color: '#aaa', background: '#1a1a1a', padding: '2px 8px', borderRadius: 4 }}>Simulated</span>}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           {/* Period tabs */}
@@ -2591,7 +2591,7 @@ export default function App() {
                             <div style={{ display: 'flex', gap: 2, background: '#111', border: '1px solid #252525', borderRadius: 8, padding: 3 }}>
                               {(['1d','1w','1y','all'] as const).map(p => (
                                 <button key={p} onClick={() => setPerfPeriod(p)}
-                                  style={{ padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none', transition: 'all .12s',
+                                  style={{ padding: '4px 10px', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', border: 'none', transition: 'all .12s',
                                     background: perfPeriod === p ? '#00c076' : 'transparent',
                                     color: perfPeriod === p ? '#000' : '#555' }}>
                                   {p.toUpperCase()}
@@ -2623,7 +2623,7 @@ export default function App() {
                                 <XAxis dataKey="day" stroke="#333" fontSize={11} tickLine={false} axisLine={false} tick={{ fill: '#aaa' }} interval={Math.max(0, Math.floor(chartPoints.length / 7) - 1)} />
                                 <YAxis hide />
                                 <RechartsTooltip
-                                  contentStyle={{ background: '#111', border: '1px solid #222', borderRadius: 8, fontSize: 12 }}
+                                  contentStyle={{ background: '#111', border: '1px solid #222', borderRadius: 8, fontSize: 13 }}
                                   formatter={(v: any) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Value']}
                                 />
                                 <Area type="monotone" dataKey="value" stroke="#00c076" fillOpacity={1} fill="url(#colorValue)" strokeWidth={2} dot={false} />
@@ -2645,13 +2645,13 @@ export default function App() {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                   <div>
                     <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 2 }}>Token Positions</div>
-                    <div style={{ fontSize: 12, color: '#aaa' }}>{currentAssets.length} assets · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} liquid</div>
+                    <div style={{ fontSize: 13, color: '#aaa' }}>{currentAssets.length} assets · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} liquid</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', gap: 3, background: '#111', border: '1px solid #252525', borderRadius: 8, padding: 3 }}>
                       {([['1h','1H'],['6h','6H'],['24h','24H'],['7d','7D']] as const).map(([p, label]) => (
                         <button key={p} onClick={() => setPriceChangePeriod(p)}
-                          style={{ padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all .12s', border: 'none',
+                          style={{ padding: '4px 10px', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all .12s', border: 'none',
                             background: priceChangePeriod === p ? '#00c076' : 'transparent',
                             color: priceChangePeriod === p ? '#000' : '#555' }}>
                           {label}
@@ -2661,25 +2661,25 @@ export default function App() {
                     <button onClick={() => setHideDust(!hideDust)}
                       style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid #222',
                         background: hideDust ? '#00c076' : '#111', color: hideDust ? '#000' : '#aaa',
-                        fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all .12s' }}>
+                        fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all .12s' }}>
                       Hide Dust
                     </button>
                     <button onClick={() => setHideSpam(!hideSpam)}
                       style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid #222',
                         background: hideSpam ? '#f739ff22' : '#111', color: hideSpam ? '#f739ff' : '#aaa',
-                        fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all .12s',
+                        fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all .12s',
                         borderColor: hideSpam ? '#f739ff44' : '#222' }}>
                       Hide Spam
                     </button>
                     <button onClick={scanForSpam} disabled={isScanning || wallets.length === 0}
                       style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid #222',
                         background: '#111', color: isScanning ? '#555' : '#aaa',
-                        fontSize: 12, fontWeight: 600, cursor: isScanning || wallets.length === 0 ? 'default' : 'pointer',
+                        fontSize: 13, fontWeight: 600, cursor: isScanning || wallets.length === 0 ? 'default' : 'pointer',
                         transition: 'all .12s', display: 'flex', alignItems: 'center', gap: 5 }}>
                       {isScanning ? '⟳ Scanning…' : 'Scan'}
                       {scanResult !== null && !isScanning && (
                         <span style={{ background: scanResult > 0 ? '#f739ff33' : '#00c07633', color: scanResult > 0 ? '#f739ff' : '#00c076',
-                          borderRadius: 4, padding: '1px 5px', fontSize: 10 }}>
+                          borderRadius: 4, padding: '1px 5px', fontSize: 13 }}>
                           {scanResult > 0 ? `+${scanResult} spam` : '✓ clean'}
                         </span>
                       )}
@@ -2692,7 +2692,7 @@ export default function App() {
                   <div style={{ padding: '14px 16px', borderBottom: isCollapsed('assets-table') ? 'none' : '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
                       <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Assets</div>
-                      <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{currentAssets.length} tokens · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                      <div style={{ fontSize: 13, color: '#aaa', marginTop: 2 }}>{currentAssets.length} tokens · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                     </div>
                     <button onClick={() => toggleSection('assets-table')}
                       style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
@@ -2720,7 +2720,7 @@ export default function App() {
                               if (assetSortField === field) setAssetSortDir(d => d === 'desc' ? 'asc' : 'desc');
                               else { setAssetSortField(field as any); setAssetSortDir('desc'); }
                             } : undefined}
-                              style={{ padding: '11px 16px', fontSize: 10, fontWeight: 600,
+                              style={{ padding: '11px 16px', fontSize: 13, fontWeight: 600,
                                 color: assetSortField === field ? '#00c076' : '#aaa',
                                 textTransform: 'uppercase', letterSpacing: '.5px',
                                 textAlign: align as any, whiteSpace: 'nowrap', background: '#0d0d0d',
@@ -2767,7 +2767,7 @@ export default function App() {
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                     {/* Logo */}
                                     <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#282828', border: '1px solid #3a3a3a',
-                                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#fff', flexShrink: 0, overflow: 'hidden' }}>
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#fff', flexShrink: 0, overflow: 'hidden' }}>
                                       {logo ? <img src={logo} alt={asset.symbol} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
                                           onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.removeAttribute('hidden'); }} /> : null}
                                       <span hidden={!!logo}>{asset.symbol[0]}</span>
@@ -2782,7 +2782,7 @@ export default function App() {
                                               {asset.symbol}
                                             </a>
                                           : <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{asset.symbol}</span>}
-                                        {asset.isBridged && <span style={{ fontSize: 9, background: '#1a1a2a', color: '#6366f1', padding: '1px 5px', borderRadius: 4, fontWeight: 600 }}>bridged</span>}
+                                        {asset.isBridged && <span style={{ fontSize: 13, background: '#1a1a2a', color: '#6366f1', padding: '1px 5px', borderRadius: 4, fontWeight: 600 }}>bridged</span>}
                                         {/* Copy CA */}
                                         {addr && addr !== 'native' && (
                                           <button onClick={() => navigator.clipboard.writeText(addr)}
@@ -2806,7 +2806,7 @@ export default function App() {
                                       </div>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 1 }}>
                                         <div style={{ width: 6, height: 6, borderRadius: '50%', background: CHAIN_COLORS[asset.chain] || '#555' }} />
-                                        <span style={{ fontSize: 10, color: '#aaa' }}>{asset.chain}</span>
+                                        <span style={{ fontSize: 13, color: '#aaa' }}>{asset.chain}</span>
                                       </div>
                                     </div>
                                   </div>
@@ -2815,14 +2815,14 @@ export default function App() {
                                   <PriceDisplay price={asset.price} className="" />
                                 </td>
                                 <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap',
-                                  fontSize: 12, fontWeight: 600, color: pct >= 0 ? '#00c076' : '#ef4444' }}>
+                                  fontSize: 13, fontWeight: 600, color: pct >= 0 ? '#00c076' : '#ef4444' }}>
                                   {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%
                                 </td>
                                 <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                                   <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>
                                     {asset.balance.toLocaleString(undefined, { maximumFractionDigits: 4 })}
                                   </div>
-                                  <div style={{ fontSize: 10, color: '#aaa' }}>{asset.symbol}</div>
+                                  <div style={{ fontSize: 13, color: '#aaa' }}>{asset.symbol}</div>
                                 </td>
                                 <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                                   <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>
@@ -2830,7 +2830,7 @@ export default function App() {
                                   </div>
                                 </td>
                                 <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap', minWidth: 90 }}>
-                                  <div style={{ fontSize: 11, color: '#999', marginBottom: 3 }}>{share.toFixed(1)}%</div>
+                                  <div style={{ fontSize: 13, color: '#999', marginBottom: 3 }}>{share.toFixed(1)}%</div>
                                   <div style={{ height: 2, background: '#1a1a1a', borderRadius: 1 }}>
                                     <div style={{ height: '100%', width: `${Math.min(share, 100)}%`, background: '#00c076', borderRadius: 1 }} />
                                   </div>
@@ -2863,7 +2863,7 @@ export default function App() {
                       {currentAssets.length > 0 && (
                         <tfoot>
                           <tr style={{ borderTop: '1px solid #252525' }}>
-                            <td colSpan={4} style={{ padding: '10px 16px', fontSize: 11, color: '#aaa', fontWeight: 600 }}>
+                            <td colSpan={4} style={{ padding: '10px 16px', fontSize: 13, color: '#aaa', fontWeight: 600 }}>
                               TOTAL LIQUID
                             </td>
                             <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#fff' }}>
@@ -2876,7 +2876,7 @@ export default function App() {
                     </table>
                   </div>
                   {unpricedCount > 0 && (
-                    <div style={{ padding: '10px 16px', borderTop: '1px solid #1f1f1f', fontSize: 11, color: '#aaa', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ padding: '10px 16px', borderTop: '1px solid #1f1f1f', fontSize: 13, color: '#aaa', display: 'flex', alignItems: 'center', gap: 6 }}>
                       <Activity size={12} /> {unpricedCount} token{unpricedCount !== 1 ? 's' : ''} with no price data omitted
                     </div>
                   )}
@@ -2947,11 +2947,11 @@ export default function App() {
                             return logo
                               ? <img src={logo} alt={pnlAsset.symbol} style={{ width: 28, height: 28, borderRadius: '50%' }}
                                   onError={e => { const el = e.target as HTMLImageElement; el.style.display='none'; el.insertAdjacentHTML('afterend', `<div style="width:28px;height:28px;border-radius:50%;background:#2a1a3a;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#a78bfa">${pnlAsset.symbol[0]}</div>`); }} />
-                              : <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#2a1a3a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#a78bfa' }}>{pnlAsset.symbol[0]}</div>;
+                              : <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#2a1a3a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#a78bfa' }}>{pnlAsset.symbol[0]}</div>;
                           })()}
                           <div>
                             <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{assetName} Profit &amp; Loss</div>
-                            <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>{swapCount} swap{swapCount !== 1 ? 's' : ''} analysed · approximate (current prices)</div>
+                            <div style={{ fontSize: 13, color: '#888', marginTop: 1 }}>{swapCount} swap{swapCount !== 1 ? 's' : ''} analysed · approximate (current prices)</div>
                           </div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -2971,19 +2971,19 @@ export default function App() {
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: '0 14px 14px' }}>
                         {/* REALIZED */}
                         <div style={{ background: '#111', borderRadius: 10, padding: '14px 16px' }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, color: '#888', letterSpacing: '.8px', marginBottom: 10 }}>REALIZED</div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#888', letterSpacing: '.8px', marginBottom: 10 }}>REALIZED</div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <div>
-                              <div style={{ fontSize: 10, color: '#999', marginBottom: 2 }}>Cost</div>
+                              <div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>Cost</div>
                               <div style={{ fontSize: 14, fontWeight: 700, color: '#ef4444' }}>${fmt(realizedCostUsd)}</div>
                             </div>
                             <div style={{ color: '#666', fontSize: 16, marginTop: 8 }}>→</div>
                             <div>
-                              <div style={{ fontSize: 10, color: '#999', marginBottom: 2 }}>Proceeds</div>
+                              <div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>Proceeds</div>
                               <div style={{ fontSize: 14, fontWeight: 700, color: '#00c076' }}>${fmt(proceedsUsd)}</div>
                             </div>
                             <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                              <div style={{ fontSize: 10, color: '#999', marginBottom: 2 }}>P&amp;L</div>
+                              <div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>P&amp;L</div>
                               <div style={{ fontSize: 14, fontWeight: 700, color: realizedPnl >= 0 ? '#00c076' : '#ef4444' }}>
                                 {realizedPnl >= 0 ? '+' : ''}${fmt(realizedPnl)}
                               </div>
@@ -2991,35 +2991,35 @@ export default function App() {
                           </div>
                           <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #242424', display: 'flex', gap: 16 }}>
                             <div>
-                              <div style={{ fontSize: 10, color: '#888' }}>Bought</div>
-                              <div style={{ fontSize: 11, color: '#aaa', fontWeight: 600 }}>{fmtTok(totalBought)} {pnlAsset.symbol}</div>
+                              <div style={{ fontSize: 13, color: '#888' }}>Bought</div>
+                              <div style={{ fontSize: 13, color: '#aaa', fontWeight: 600 }}>{fmtTok(totalBought)} {pnlAsset.symbol}</div>
                             </div>
                             <div>
-                              <div style={{ fontSize: 10, color: '#888' }}>Sold</div>
-                              <div style={{ fontSize: 11, color: '#aaa', fontWeight: 600 }}>{fmtTok(totalSold)} {pnlAsset.symbol}</div>
+                              <div style={{ fontSize: 13, color: '#888' }}>Sold</div>
+                              <div style={{ fontSize: 13, color: '#aaa', fontWeight: 600 }}>{fmtTok(totalSold)} {pnlAsset.symbol}</div>
                             </div>
                           </div>
                         </div>
 
                         {/* HOLDINGS */}
                         <div style={{ background: '#111', borderRadius: 10, padding: '14px 16px' }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, color: '#888', letterSpacing: '.8px', marginBottom: 10 }}>HOLDINGS</div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#888', letterSpacing: '.8px', marginBottom: 10 }}>HOLDINGS</div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div>
-                              <div style={{ fontSize: 10, color: '#888', marginBottom: 2 }}>Balance</div>
+                              <div style={{ fontSize: 13, color: '#888', marginBottom: 2 }}>Balance</div>
                               <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{fmtTok(holdingsBal)} {pnlAsset.symbol}</div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
-                              <div style={{ fontSize: 10, color: '#888', marginBottom: 2 }}>Value</div>
+                              <div style={{ fontSize: 13, color: '#888', marginBottom: 2 }}>Value</div>
                               <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>${fmt(holdingsUsd)}</div>
                             </div>
                           </div>
                           {gasNative > 0 && (
                             <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #242424', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <div style={{ fontSize: 10, color: '#888', display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <div style={{ fontSize: 13, color: '#888', display: 'flex', alignItems: 'center', gap: 4 }}>
                                 ⛽ Gas paid
                               </div>
-                              <div style={{ fontSize: 11, color: '#aaa', fontWeight: 600 }}>
+                              <div style={{ fontSize: 13, color: '#aaa', fontWeight: 600 }}>
                                 {fmtTok(gasNative)} {chainKey === 'ethereum' ? 'ETH' : 'PLS'} <span style={{ color: '#888' }}>(${fmt(gasUsd)})</span>
                               </div>
                             </div>
@@ -3030,7 +3030,7 @@ export default function App() {
                       {/* Swap list */}
                       {allRows.length > 0 && (
                         <div style={{ borderTop: '1px solid #1f1f1f' }}>
-                          <div style={{ padding: '8px 18px', fontSize: 10, fontWeight: 700, color: '#888', letterSpacing: '.8px' }}>SWAP HISTORY</div>
+                          <div style={{ padding: '8px 18px', fontSize: 13, fontWeight: 700, color: '#888', letterSpacing: '.8px' }}>SWAP HISTORY</div>
                           <div style={{ maxHeight: 280, overflowY: 'auto' }}>
                             {allRows.map(({ tx, side }, i) => {
                               const isBuy = side === 'buy';
@@ -3045,7 +3045,7 @@ export default function App() {
                                   onMouseOver={e => (e.currentTarget.style.background = '#131313')}
                                   onMouseOut={e => (e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : '#0a0a0a')}>
                                   {/* Side badge */}
-                                  <div style={{ width: 36, flexShrink: 0, textAlign: 'center', fontSize: 9, fontWeight: 800, letterSpacing: '.5px',
+                                  <div style={{ width: 36, flexShrink: 0, textAlign: 'center', fontSize: 13, fontWeight: 800, letterSpacing: '.5px',
                                     padding: '3px 0', borderRadius: 5,
                                     background: isBuy ? 'rgba(0,192,118,0.12)' : 'rgba(239,68,68,0.12)',
                                     color: isBuy ? '#00c076' : '#ef4444' }}>
@@ -3053,7 +3053,7 @@ export default function App() {
                                   </div>
                                   {/* Amounts */}
                                   <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                       {isBuy ? '+' : '-'}{fmtTok(tokenAmt)} {pnlAsset.symbol}
                                       <span style={{ color: '#888', fontWeight: 400, marginLeft: 6 }}>
                                         {isBuy ? 'for' : 'sold for'} {fmtTok(otherAmt)} {otherSym}
@@ -3062,8 +3062,8 @@ export default function App() {
                                   </div>
                                   {/* Value + date */}
                                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                    <div style={{ fontSize: 11, fontWeight: 600, color: '#aaa' }}>${fmt(valUsd)}</div>
-                                    <div style={{ fontSize: 10, color: '#888' }}>{date}</div>
+                                    <div style={{ fontSize: 13, fontWeight: 600, color: '#aaa' }}>${fmt(valUsd)}</div>
+                                    <div style={{ fontSize: 13, color: '#888' }}>{date}</div>
                                   </div>
                                   {/* Tx link */}
                                   {tx.hash && (
@@ -3082,7 +3082,7 @@ export default function App() {
                       )}
 
                       {swapCount === 0 && (
-                        <div style={{ padding: '24px', textAlign: 'center', color: '#888', fontSize: 12 }}>
+                        <div style={{ padding: '24px', textAlign: 'center', color: '#888', fontSize: 13 }}>
                           No swaps found for {pnlAsset.symbol} on {chainKey}
                         </div>
                       )}
@@ -3129,11 +3129,11 @@ export default function App() {
                             <div key={b.label} style={{ padding: 16, borderRight: '1px solid #1f1f1f' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                                 <div style={{ width: 7, height: 7, borderRadius: '50%', background: b.dot }} />
-                                <span style={{ fontSize: 11, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px' }}>{b.label}</span>
+                                <span style={{ fontSize: 13, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px' }}>{b.label}</span>
                               </div>
                               <div style={{ fontSize: 22, fontWeight: 700, color: b.color, letterSpacing: '-0.5px' }}>{fmt(b.total)}</div>
-                              <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>${b.usd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                              <div style={{ fontSize: 10, color: '#888', marginTop: 6 }}>{fmt(b.liquid)} liquid · {fmt(b.staked)} staked+yield</div>
+                              <div style={{ fontSize: 13, color: '#aaa', marginTop: 2 }}>${b.usd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                              <div style={{ fontSize: 13, color: '#888', marginTop: 6 }}>{fmt(b.liquid)} liquid · {fmt(b.staked)} staked+yield</div>
                             </div>
                           ))}
                         </div>
@@ -3171,14 +3171,14 @@ export default function App() {
                         <div style={{ display: 'flex', gap: 3, background: '#111', border: '1px solid #252525', borderRadius: 8, padding: 3 }}>
                           {(['all', 'pulsechain', 'ethereum'] as const).map(c => (
                             <button key={c} onClick={() => setStakeChainFilter(c)}
-                              style={{ padding: '5px 14px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none', transition: 'all .12s',
+                              style={{ padding: '5px 14px', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', border: 'none', transition: 'all .12s',
                                 background: stakeChainFilter === c ? (c === 'pulsechain' ? '#f739ff' : c === 'ethereum' ? '#627EEA' : '#00c076') : 'transparent',
                                 color: stakeChainFilter === c ? '#fff' : '#555' }}>
                               {c === 'all' ? 'All' : c === 'pulsechain' ? 'PulseChain' : 'Ethereum'}
                             </button>
                           ))}
                         </div>
-                        <div style={{ fontSize: 11, color: '#888' }}>
+                        <div style={{ fontSize: 13, color: '#888' }}>
                           {filteredStakes.length} active stake{filteredStakes.length !== 1 ? 's' : ''} · {fTShares.toLocaleString(undefined, { maximumFractionDigits: 2 })} active T-Shares
                         </div>
                       </div>
@@ -3192,9 +3192,9 @@ export default function App() {
                           { label: 'Active T-Shares', val: fTShares.toLocaleString(undefined, { maximumFractionDigits: 2 }), sub: `≈ ${(fTShares * 6.2).toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX/day` },
                         ].map(({ label, val, sub, color }) => (
                           <div key={label} style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, padding: 18 }}>
-                            <div style={{ fontSize: 10, color: '#aaa', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>{label}</div>
+                            <div style={{ fontSize: 13, color: '#aaa', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>{label}</div>
                             <div style={{ fontSize: 18, fontWeight: 700, color: color || '#fff', marginBottom: 2 }}>{val}</div>
-                            {sub && <div style={{ fontSize: 11, color: '#aaa' }}>{sub}</div>}
+                            {sub && <div style={{ fontSize: 13, color: '#aaa' }}>{sub}</div>}
                           </div>
                         ))}
                       </div>
@@ -3219,7 +3219,7 @@ export default function App() {
                     <div style={{ padding: '14px 18px', borderBottom: isCollapsed('lp-positions') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>LP Positions</span>
-                        <span style={{ fontSize: 10, background: 'rgba(0,192,118,.1)', color: '#00c076', border: '1px solid rgba(0,192,118,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
+                        <span style={{ fontSize: 13, background: 'rgba(0,192,118,.1)', color: '#00c076', border: '1px solid rgba(0,192,118,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
                           {lpPositions.length} pairs · ${lpPositions.reduce((a, b) => a + b.totalUsd, 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                         </span>
                       </div>
@@ -3236,7 +3236,7 @@ export default function App() {
                         <thead>
                           <tr style={{ borderBottom: '1px solid #242424' }}>
                             {['Pair', 'Token 0', 'Token 1', 'Total USD'].map((h, i) => (
-                              <th key={i} style={{ padding: '9px 14px', fontSize: 10, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px', textAlign: i === 0 ? 'left' : 'right', background: '#0d0d0d', whiteSpace: 'nowrap' }}>{h}</th>
+                              <th key={i} style={{ padding: '9px 14px', fontSize: 13, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px', textAlign: i === 0 ? 'left' : 'right', background: '#0d0d0d', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
@@ -3248,11 +3248,11 @@ export default function App() {
                               <td style={{ padding: '9px 14px', fontSize: 13, fontWeight: 600 }}>{lp.pairName}</td>
                               <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13 }}>
                                 <div style={{ color: '#fff' }}>{lp.token0Amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {lp.token0Symbol}</div>
-                                <div style={{ fontSize: 11, color: '#888' }}>${lp.token0Usd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+                                <div style={{ fontSize: 13, color: '#888' }}>${lp.token0Usd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
                               </td>
                               <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13 }}>
                                 <div style={{ color: '#fff' }}>{lp.token1Amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {lp.token1Symbol}</div>
-                                <div style={{ fontSize: 11, color: '#888' }}>${lp.token1Usd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+                                <div style={{ fontSize: 13, color: '#888' }}>${lp.token1Usd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
                               </td>
                               <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 14, fontWeight: 700, color: '#00c076' }}>
                                 ${lp.totalUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}
@@ -3271,7 +3271,7 @@ export default function App() {
                     <div style={{ padding: '14px 18px', borderBottom: isCollapsed('farm-positions') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>Farm Positions (INC Rewards)</span>
-                        <span style={{ fontSize: 10, background: 'rgba(251,146,60,.1)', color: '#fb923c', border: '1px solid rgba(251,146,60,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
+                        <span style={{ fontSize: 13, background: 'rgba(251,146,60,.1)', color: '#fb923c', border: '1px solid rgba(251,146,60,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
                           {farmPositions.length} pools · {farmPositions.reduce((a, b) => a + b.pendingInc, 0).toLocaleString(undefined, { maximumFractionDigits: 2 })} INC pending
                         </span>
                       </div>
@@ -3288,7 +3288,7 @@ export default function App() {
                         <thead>
                           <tr style={{ borderBottom: '1px solid #242424' }}>
                             {['Pair', 'Staked LP', 'Pending INC', 'INC Value'].map((h, i) => (
-                              <th key={i} style={{ padding: '9px 14px', fontSize: 10, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px', textAlign: i === 0 ? 'left' : 'right', background: '#0d0d0d', whiteSpace: 'nowrap' }}>{h}</th>
+                              <th key={i} style={{ padding: '9px 14px', fontSize: 13, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px', textAlign: i === 0 ? 'left' : 'right', background: '#0d0d0d', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
@@ -3343,7 +3343,7 @@ export default function App() {
                       <div style={{ padding: '14px 18px', borderBottom: isCollapsed('stakes-table') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{chainLabel} Stakes</span>
-                          <span style={{ fontSize: 10, background: 'rgba(249,115,22,.12)', color: '#fb923c', border: '1px solid rgba(249,115,22,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
+                          <span style={{ fontSize: 13, background: 'rgba(249,115,22,.12)', color: '#fb923c', border: '1px solid rgba(249,115,22,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
                             {filteredStakes.length} active
                           </span>
                         </div>
@@ -3365,7 +3365,7 @@ export default function App() {
                             <thead>
                               <tr style={{ borderBottom: '1px solid #242424' }}>
                                 {['', 'Stake ID', 'Chain', 'HEX Now', 'USD Now', 'HEX @ Maturity', 'USD @ Maturity', 'Progress', 'Days Left'].map((h, i) => (
-                                  <th key={i} style={{ padding: '9px 14px', fontSize: 10, fontWeight: 600, color: '#aaa',
+                                  <th key={i} style={{ padding: '9px 14px', fontSize: 13, fontWeight: 600, color: '#aaa',
                                     textTransform: 'uppercase', letterSpacing: '.5px', textAlign: i <= 2 ? 'left' : 'right',
                                     whiteSpace: 'nowrap', background: '#0d0d0d' }}>
                                     {h}
@@ -3407,7 +3407,7 @@ export default function App() {
                                       </td>
                                       <td style={{ padding: '9px 14px', fontSize: 13, color: '#fff', fontWeight: 600 }}>#{stake.stakeId}</td>
                                       <td style={{ padding: '9px 14px' }}>
-                                        <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 4, fontWeight: 600,
+                                        <span style={{ fontSize: 13, padding: '2px 7px', borderRadius: 4, fontWeight: 600,
                                           background: stake.chain === 'pulsechain' ? 'rgba(247,57,255,.1)' : 'rgba(98,126,234,.1)',
                                           color: stake.chain === 'pulsechain' ? '#f739ff' : '#627EEA' }}>
                                           {stake.chain === 'pulsechain' ? 'PLS' : 'ETH'}
@@ -3426,12 +3426,12 @@ export default function App() {
                                         ${usdAtMaturity.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                       </td>
                                       <td style={{ padding: '9px 14px', textAlign: 'right', minWidth: 100 }}>
-                                        <div style={{ fontSize: 11, color: '#fb923c', marginBottom: 3, textAlign: 'right' }}>{stake.progress}%</div>
+                                        <div style={{ fontSize: 13, color: '#fb923c', marginBottom: 3, textAlign: 'right' }}>{stake.progress}%</div>
                                         <div style={{ height: 3, background: '#1a1a1a', borderRadius: 2 }}>
                                           <div style={{ height: '100%', width: `${stake.progress}%`, background: '#fb923c', borderRadius: 2 }} />
                                         </div>
                                       </td>
-                                      <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 12, color: daysLeft < 365 ? '#00c076' : '#666' }}>
+                                      <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, color: daysLeft < 365 ? '#00c076' : '#666' }}>
                                         {daysLeft.toLocaleString()}
                                       </td>
                                     </tr>
@@ -3451,9 +3451,9 @@ export default function App() {
                                               { label: 'Gain vs Principal', val: `${hexAtMaturity > 0 ? ((hexAtMaturity / stakedHex - 1) * 100).toFixed(1) : '0.0'}%`, sub: 'Full yield / staked', color: '#00c076' },
                                             ].map(({ label, val, sub, color }) => (
                                               <div key={label}>
-                                                <div style={{ fontSize: 9, color: '#888', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>{label}</div>
+                                                <div style={{ fontSize: 13, color: '#888', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>{label}</div>
                                                 <div style={{ fontSize: 14, fontWeight: 700, color: color || '#fff' }}>{val}</div>
-                                                <div style={{ fontSize: 10, color: '#888', marginTop: 1 }}>{sub}</div>
+                                                <div style={{ fontSize: 13, color: '#888', marginTop: 1 }}>{sub}</div>
                                               </div>
                                             ))}
                                           </div>
@@ -3466,7 +3466,7 @@ export default function App() {
                             </tbody>
                             <tfoot>
                               <tr style={{ borderTop: '2px solid #2a2a2a', background: '#111' }}>
-                                <td colSpan={3} style={{ padding: '10px 14px', fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px' }}>
+                                <td colSpan={3} style={{ padding: '10px 14px', fontSize: 13, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px' }}>
                                   TOTAL ({filteredStakes.length} stakes)
                                 </td>
                                 <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#fff' }}>
@@ -3517,9 +3517,9 @@ export default function App() {
                     { label: 'Unrealized PNL', val: `${summary.pnl24h >= 0 ? '+' : ''}$${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: '24h Change', color: summary.pnl24h >= 0 ? '#00c076' : '#ef4444' },
                   ].map(({ label, val, sub, color }) => (
                     <div key={label} style={{ padding: 18, borderRight: '1px solid #1f1f1f' }}>
-                      <div style={{ fontSize: 10, color: '#aaa', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>{label}</div>
+                      <div style={{ fontSize: 13, color: '#aaa', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>{label}</div>
                       <div style={{ fontSize: 20, fontWeight: 700, color, marginBottom: 2 }}>{val}</div>
-                      <div style={{ fontSize: 11, color: '#aaa' }}>{sub}</div>
+                      <div style={{ fontSize: 13, color: '#aaa' }}>{sub}</div>
                     </div>
                   ))}
                 </div>
@@ -3533,14 +3533,14 @@ export default function App() {
                   <ArrowDownLeft size={16} style={{ color: '#627EEA' }} />
                   <span style={{ fontSize: 14, fontWeight: 600 }}>Received Assets History</span>
                   <select value={receivedChainFilter} onChange={e => setReceivedChainFilter(e.target.value)}
-                    style={{ background: '#111', border: '1px solid #252525', borderRadius: 6, color: '#fff', fontSize: 12, padding: '4px 10px', cursor: 'pointer', outline: 'none' }}>
+                    style={{ background: '#111', border: '1px solid #252525', borderRadius: 6, color: '#fff', fontSize: 13, padding: '4px 10px', cursor: 'pointer', outline: 'none' }}>
                     <option value="all">All Chains</option>
                     <option value="ethereum">Ethereum</option>
                     <option value="base">Base</option>
                     <option value="pulsechain">PulseChain</option>
                   </select>
                   <select value={receivedCoinFilter} onChange={e => setReceivedCoinFilter(e.target.value)}
-                    style={{ background: '#111', border: '1px solid #252525', borderRadius: 6, color: '#fff', fontSize: 12, padding: '4px 10px', cursor: 'pointer', outline: 'none' }}>
+                    style={{ background: '#111', border: '1px solid #252525', borderRadius: 6, color: '#fff', fontSize: 13, padding: '4px 10px', cursor: 'pointer', outline: 'none' }}>
                     <option value="all">All Coins</option>
                     <option value="ETH">ETH</option>
                     <option value="PLS">PLS</option>
@@ -3551,9 +3551,9 @@ export default function App() {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 10, color: '#aaa', marginBottom: 2, fontWeight: 600, letterSpacing: '.5px' }}>TOTAL RECEIVED</div>
+                    <div style={{ fontSize: 13, color: '#aaa', marginBottom: 2, fontWeight: 600, letterSpacing: '.5px' }}>TOTAL RECEIVED</div>
                     <div style={{ fontSize: 20, fontWeight: 700, color: '#fff' }}>${receivedAssetsData.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                    <div style={{ fontSize: 11, color: '#aaa' }}>{receivedAssetsData.list.length} transactions</div>
+                    <div style={{ fontSize: 13, color: '#aaa' }}>{receivedAssetsData.list.length} transactions</div>
                   </div>
                   <button onClick={() => toggleSection('received-assets')}
                     style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s', flexShrink: 0 }}
@@ -3569,11 +3569,11 @@ export default function App() {
                 <div style={{ display: 'flex', gap: 1, borderBottom: '1px solid #242424', background: '#0e0e0e' }}>
                   {(Object.entries(receivedAssetsData.byAsset) as [string, { amount: number; valueUsd: number }][]).map(([sym, data]) => (
                     <div key={sym} style={{ flex: 1, padding: '10px 16px', borderRight: '1px solid #242424' }}>
-                      <div style={{ fontSize: 10, color: '#aaa', marginBottom: 4, fontWeight: 700, letterSpacing: '.5px' }}>{sym}</div>
+                      <div style={{ fontSize: 13, color: '#aaa', marginBottom: 4, fontWeight: 700, letterSpacing: '.5px' }}>{sym}</div>
                       <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>
                         {sym === 'ETH' ? data.amount.toLocaleString(undefined, { maximumFractionDigits: 4 }) : data.amount.toLocaleString(undefined, { maximumFractionDigits: 0 })} {sym}
                       </div>
-                      <div style={{ fontSize: 11, color: '#aaa' }}>${data.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                      <div style={{ fontSize: 13, color: '#aaa' }}>${data.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                     </div>
                   ))}
                 </div>
@@ -3607,13 +3607,13 @@ export default function App() {
                         <div>
                           <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>
                             +{(isEth || isPls) ? tx.amount.toLocaleString(undefined, { maximumFractionDigits: 6 }) : tx.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })} {tx.asset}
-                            <span style={{ fontSize: 9, marginLeft: 8, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
+                            <span style={{ fontSize: 13, marginLeft: 8, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
                               background: tx.chain === 'pulsechain' ? 'rgba(247,57,255,.1)' : tx.chain === 'ethereum' ? 'rgba(99,102,241,.12)' : 'rgba(0,82,255,.12)',
                               color: tx.chain === 'pulsechain' ? '#f739ff' : tx.chain === 'ethereum' ? '#818cf8' : '#60a5fa' }}>
                               {tx.chain === 'pulsechain' ? 'PLS' : tx.chain === 'ethereum' ? 'ETH' : 'BASE'}
                             </span>
                           </div>
-                          <div style={{ fontSize: 10, color: '#aaa', fontFamily: 'monospace', marginTop: 1 }}>
+                          <div style={{ fontSize: 13, color: '#aaa', fontFamily: 'monospace', marginTop: 1 }}>
                             {format(new Date(tx.timestamp), 'MMM d, yyyy')} · {tx.from.slice(0, 6)}…{tx.from.slice(-4)}
                           </div>
                         </div>
@@ -3622,7 +3622,7 @@ export default function App() {
                         <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>${displayUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
                         <a href={`${tx.chain === 'pulsechain' ? 'https://scan.pulsechain.com' : tx.chain === 'ethereum' ? 'https://etherscan.io' : 'https://basescan.org'}/tx/${tx.hash}`}
                           target="_blank" rel="noopener noreferrer"
-                          style={{ fontSize: 9, color: '#999', textDecoration: 'none', fontFamily: 'monospace' }}
+                          style={{ fontSize: 13, color: '#999', textDecoration: 'none', fontFamily: 'monospace' }}
                           onMouseOver={e => (e.currentTarget.style.color = '#627EEA')}
                           onMouseOut={e => (e.currentTarget.style.color = '#666')}>
                           {tx.hash.slice(0, 10)}…
@@ -3640,7 +3640,7 @@ export default function App() {
               <div style={{ padding: '14px 18px', borderBottom: isCollapsed('history-txs') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ fontSize: 14, fontWeight: 600 }}>Recent Activity</span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, background: 'rgba(0,192,118,.1)', color: '#00c076', border: '1px solid rgba(0,192,118,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, background: 'rgba(0,192,118,.1)', color: '#00c076', border: '1px solid rgba(0,192,118,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
                     <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#00c076', display: 'inline-block', animation: 'pulse 2s infinite' }} />
                     Live
                   </span>
@@ -3652,7 +3652,7 @@ export default function App() {
                     { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Assets'], ...Array.from(new Set(currentTransactions.map(tx => tx.asset))).sort().map(a => [a,a])] },
                   ].map(({ value, onChange, options }, i) => (
                     <select key={i} value={value} onChange={e => onChange(e.target.value)}
-                      style={{ background: '#111', border: '1px solid #252525', borderRadius: 6, color: '#fff', fontSize: 12, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
+                      style={{ background: '#111', border: '1px solid #252525', borderRadius: 6, color: '#fff', fontSize: 13, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
                       {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                     </select>
                   ))}
@@ -3668,14 +3668,14 @@ export default function App() {
               {!isCollapsed('history-txs') && (<>
               {hiddenTxIds.length > 0 && (
                 <div style={{ padding: '6px 18px', borderBottom: '1px solid #1e1e1e', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 11, color: '#999' }}>{hiddenTxIds.length} hidden transaction{hiddenTxIds.length > 1 ? 's' : ''}</span>
+                  <span style={{ fontSize: 13, color: '#999' }}>{hiddenTxIds.length} hidden transaction{hiddenTxIds.length > 1 ? 's' : ''}</span>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button onClick={() => setShowHiddenTxs(v => !v)}
-                      style={{ fontSize: 11, color: '#aaa', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+                      style={{ fontSize: 13, color: '#aaa', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
                       {showHiddenTxs ? 'Hide' : 'Show'}
                     </button>
                     <button onClick={() => setHiddenTxIds([])}
-                      style={{ fontSize: 11, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+                      style={{ fontSize: 13, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
                       Clear all
                     </button>
                   </div>
@@ -3698,17 +3698,17 @@ export default function App() {
                         </div>
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                            <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
+                            <span style={{ fontSize: 13, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
                               background: tx.type === 'transfer_in' ? 'rgba(0,192,118,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
                               color: tx.type === 'transfer_in' ? '#00c076' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444' }}>
                               {tx.type === 'transfer_in' ? 'Received' : tx.type === 'transfer_out' ? 'Sent' : 'Swap'}
                             </span>
-                            <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 3, fontWeight: 600, background: '#1a1a1a', color: '#aaa' }}>{tx.chain}</span>
+                            <span style={{ fontSize: 13, padding: '1px 6px', borderRadius: 3, fontWeight: 600, background: '#1a1a1a', color: '#aaa' }}>{tx.chain}</span>
                             <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>
                               {tx.type === 'swap' && tx.counterAsset ? `${tx.counterAmount?.toLocaleString()} ${tx.counterAsset} → ${tx.amount.toLocaleString()} ${tx.asset}` : `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`}
                             </span>
                           </div>
-                          <div style={{ fontSize: 10, color: '#aaa', fontFamily: 'monospace' }}>
+                          <div style={{ fontSize: 13, color: '#aaa', fontFamily: 'monospace' }}>
                             {tx.hash.slice(0, 6)}…{tx.hash.slice(-4)} · {format(tx.timestamp, 'MMM d, yyyy HH:mm')}
                           </div>
                         </div>
@@ -3718,7 +3718,7 @@ export default function App() {
                           <div style={{ fontSize: 13, fontWeight: 600, color: tx.type === 'transfer_in' ? '#00c076' : '#fff' }}>
                             {tx.type === 'transfer_in' ? '+' : '-'}{tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {tx.asset}
                           </div>
-                          {tx.valueUsd && <div style={{ fontSize: 10, color: '#aaa' }}>${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>}
+                          {tx.valueUsd && <div style={{ fontSize: 13, color: '#aaa' }}>${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>}
                         </div>
                         <button
                           title={isHidden ? 'Unhide' : 'Hide'}
@@ -3762,7 +3762,7 @@ export default function App() {
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <button
                   onClick={() => setSelectedWalletAddr('all')}
-                  style={{ padding: '6px 16px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: '1px solid', transition: 'all .12s',
+                  style={{ padding: '6px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: '1px solid', transition: 'all .12s',
                     background: isAll ? '#fff' : 'transparent',
                     color: isAll ? '#000' : '#aaa',
                     borderColor: isAll ? '#fff' : '#333' }}>
@@ -3772,7 +3772,7 @@ export default function App() {
                   const isActive = selectedWalletAddr === w.address.toLowerCase();
                   return (
                     <button key={w.address} onClick={() => setSelectedWalletAddr(w.address.toLowerCase())}
-                      style={{ padding: '6px 16px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: '1px solid', transition: 'all .12s',
+                      style={{ padding: '6px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: '1px solid', transition: 'all .12s',
                         background: isActive ? '#fff' : 'transparent',
                         color: isActive ? '#000' : '#aaa',
                         borderColor: isActive ? '#fff' : '#333' }}>
@@ -3785,15 +3785,15 @@ export default function App() {
               {/* Hero card */}
               <div style={{ background: 'linear-gradient(135deg, #0a2a1a 0%, #061a10 100%)', borderRadius: 16, padding: '24px', border: '1px solid #1a3a2a' }}>
                 <div style={{ fontSize: 13, color: '#aaa', marginBottom: 8 }}>{isAll ? 'All Wallets' : selWallet?.name}</div>
-                {!isAll && <div style={{ fontSize: 11, color: '#888', fontFamily: 'monospace', marginBottom: 12 }}>{selWallet?.address}</div>}
+                {!isAll && <div style={{ fontSize: 13, color: '#888', fontFamily: 'monospace', marginBottom: 12 }}>{selWallet?.address}</div>}
                 <div style={{ fontSize: 36, fontWeight: 800, color: '#fff', marginBottom: 16 }}>
                   ${totalUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-                  <span style={{ background: 'rgba(0,192,118,0.15)', color: '#00c076', padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
+                  <span style={{ background: 'rgba(0,192,118,0.15)', color: '#00c076', padding: '4px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600 }}>
                     Wallet ${walletUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </span>
-                  <span style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
+                  <span style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', padding: '4px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600 }}>
                     Staking ${stakingUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </span>
                 </div>
@@ -3801,7 +3801,7 @@ export default function App() {
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   {(['all', 'pulsechain', 'ethereum', 'base'] as const).map(c => (
                     <button key={c} onClick={() => setWalletChainFilter(c)}
-                      style={{ padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: '1px solid', transition: 'all .12s',
+                      style={{ padding: '5px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: '1px solid', transition: 'all .12s',
                         background: walletChainFilter === c ? '#fff' : 'transparent',
                         color: walletChainFilter === c ? '#000' : '#aaa',
                         borderColor: walletChainFilter === c ? '#fff' : '#333' }}>
@@ -3816,13 +3816,13 @@ export default function App() {
                 <div style={{ padding: '14px 16px', borderBottom: isCollapsed('wallet-holdings') ? 'none' : '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                   <div>
                     <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Token Positions</div>
-                    <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{filteredViewAssets.length} tokens · ${walletUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                    <div style={{ fontSize: 13, color: '#aaa', marginTop: 2 }}>{filteredViewAssets.length} tokens · ${walletUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{ display: 'flex', gap: 3, background: '#111', border: '1px solid #252525', borderRadius: 8, padding: 3 }}>
                       {([['1h','1H'],['6h','6H'],['24h','24H'],['7d','7D']] as const).map(([p, label]) => (
                         <button key={p} onClick={() => setPriceChangePeriod(p)}
-                          style={{ padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all .12s', border: 'none',
+                          style={{ padding: '4px 10px', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all .12s', border: 'none',
                             background: priceChangePeriod === p ? '#00c076' : 'transparent',
                             color: priceChangePeriod === p ? '#000' : '#555' }}>
                           {label}
@@ -3856,7 +3856,7 @@ export default function App() {
                             if (assetSortField === field) setAssetSortDir(d => d === 'desc' ? 'asc' : 'desc');
                             else { setAssetSortField(field as any); setAssetSortDir('desc'); }
                           } : undefined}
-                            style={{ padding: '11px 16px', fontSize: 10, fontWeight: 600,
+                            style={{ padding: '11px 16px', fontSize: 13, fontWeight: 600,
                               color: assetSortField === field ? '#00c076' : '#aaa',
                               textTransform: 'uppercase', letterSpacing: '.5px',
                               textAlign: align as any, whiteSpace: 'nowrap', background: '#0d0d0d',
@@ -3902,7 +3902,7 @@ export default function App() {
                               <td style={{ padding: '11px 16px', whiteSpace: 'nowrap' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                   <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#282828', border: '1px solid #3a3a3a',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#fff', flexShrink: 0, overflow: 'hidden' }}>
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#fff', flexShrink: 0, overflow: 'hidden' }}>
                                     {logo ? <img src={logo} alt={asset.symbol} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
                                         onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.removeAttribute('hidden'); }} /> : null}
                                     <span hidden={!!logo}>{asset.symbol[0]}</span>
@@ -3917,7 +3917,7 @@ export default function App() {
                                             {asset.symbol}
                                           </a>
                                         : <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{asset.symbol}</span>}
-                                      {asset.isBridged && <span style={{ fontSize: 9, background: '#1a1a2a', color: '#6366f1', padding: '1px 5px', borderRadius: 4, fontWeight: 600 }}>bridged</span>}
+                                      {asset.isBridged && <span style={{ fontSize: 13, background: '#1a1a2a', color: '#6366f1', padding: '1px 5px', borderRadius: 4, fontWeight: 600 }}>bridged</span>}
                                       {addr && addr !== 'native' && (
                                         <button onClick={() => navigator.clipboard.writeText(addr)}
                                           title={`Copy CA: ${addr}`}
@@ -3939,7 +3939,7 @@ export default function App() {
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 1 }}>
                                       <div style={{ width: 6, height: 6, borderRadius: '50%', background: CHAIN_COLORS[asset.chain] || '#555' }} />
-                                      <span style={{ fontSize: 10, color: '#aaa' }}>{asset.chain}</span>
+                                      <span style={{ fontSize: 13, color: '#aaa' }}>{asset.chain}</span>
                                     </div>
                                   </div>
                                 </div>
@@ -3948,14 +3948,14 @@ export default function App() {
                                 <PriceDisplay price={asset.price} className="" />
                               </td>
                               <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap',
-                                fontSize: 12, fontWeight: 600, color: pct >= 0 ? '#00c076' : '#ef4444' }}>
+                                fontSize: 13, fontWeight: 600, color: pct >= 0 ? '#00c076' : '#ef4444' }}>
                                 {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%
                               </td>
                               <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                                 <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>
                                   {asset.balance.toLocaleString(undefined, { maximumFractionDigits: 4 })}
                                 </div>
-                                <div style={{ fontSize: 10, color: '#aaa' }}>{asset.symbol}</div>
+                                <div style={{ fontSize: 13, color: '#aaa' }}>{asset.symbol}</div>
                               </td>
                               <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                                 <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>
@@ -3963,7 +3963,7 @@ export default function App() {
                                 </div>
                               </td>
                               <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap', minWidth: 90 }}>
-                                <div style={{ fontSize: 11, color: '#999', marginBottom: 3 }}>{share.toFixed(1)}%</div>
+                                <div style={{ fontSize: 13, color: '#999', marginBottom: 3 }}>{share.toFixed(1)}%</div>
                                 <div style={{ height: 2, background: '#1a1a1a', borderRadius: 1 }}>
                                   <div style={{ height: '100%', width: `${Math.min(share, 100)}%`, background: '#00c076', borderRadius: 1 }} />
                                 </div>
@@ -3996,7 +3996,7 @@ export default function App() {
                     {filteredViewAssets.length > 0 && (
                       <tfoot>
                         <tr style={{ borderTop: '1px solid #252525' }}>
-                          <td colSpan={4} style={{ padding: '10px 16px', fontSize: 11, color: '#aaa', fontWeight: 600 }}>TOTAL LIQUID</td>
+                          <td colSpan={4} style={{ padding: '10px 16px', fontSize: 13, color: '#aaa', fontWeight: 600 }}>TOTAL LIQUID</td>
                           <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#fff' }}>
                             ${walletUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                           </td>
@@ -4043,10 +4043,10 @@ export default function App() {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 10px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         {logo2 ? <img src={logo2} alt={pnlAsset.symbol} style={{ width: 28, height: 28, borderRadius: '50%' }}
-                            onError={e => { const el = e.target as HTMLImageElement; el.style.display='none'; el.insertAdjacentHTML('afterend', `<div style="width:28px;height:28px;border-radius:50%;background:#2a1a3a;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#a78bfa">${pnlAsset.symbol[0]}</div>`); }} /> : <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#2a1a3a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#a78bfa' }}>{pnlAsset.symbol[0]}</div>}
+                            onError={e => { const el = e.target as HTMLImageElement; el.style.display='none'; el.insertAdjacentHTML('afterend', `<div style="width:28px;height:28px;border-radius:50%;background:#2a1a3a;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#a78bfa">${pnlAsset.symbol[0]}</div>`); }} /> : <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#2a1a3a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#a78bfa' }}>{pnlAsset.symbol[0]}</div>}
                         <div>
                           <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{assetName} Profit &amp; Loss</div>
-                          <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>{swapCount} swap{swapCount !== 1 ? 's' : ''} · approximate (current prices)</div>
+                          <div style={{ fontSize: 13, color: '#888', marginTop: 1 }}>{swapCount} swap{swapCount !== 1 ? 's' : ''} · approximate (current prices)</div>
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -4056,35 +4056,35 @@ export default function App() {
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: '0 14px 14px' }}>
                       <div style={{ background: '#111', borderRadius: 10, padding: '14px 16px' }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: '#888', letterSpacing: '.8px', marginBottom: 10 }}>REALIZED</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#888', letterSpacing: '.8px', marginBottom: 10 }}>REALIZED</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div><div style={{ fontSize: 10, color: '#999', marginBottom: 2 }}>Cost</div><div style={{ fontSize: 14, fontWeight: 700, color: '#ef4444' }}>${fmt(realizedCostUsd)}</div></div>
+                          <div><div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>Cost</div><div style={{ fontSize: 14, fontWeight: 700, color: '#ef4444' }}>${fmt(realizedCostUsd)}</div></div>
                           <div style={{ color: '#666', fontSize: 16, marginTop: 8 }}>→</div>
-                          <div><div style={{ fontSize: 10, color: '#999', marginBottom: 2 }}>Proceeds</div><div style={{ fontSize: 14, fontWeight: 700, color: '#00c076' }}>${fmt(proceedsUsd)}</div></div>
-                          <div style={{ marginLeft: 'auto', textAlign: 'right' }}><div style={{ fontSize: 10, color: '#999', marginBottom: 2 }}>P&amp;L</div><div style={{ fontSize: 14, fontWeight: 700, color: realizedPnl >= 0 ? '#00c076' : '#ef4444' }}>{realizedPnl >= 0 ? '+' : ''}${fmt(realizedPnl)}</div></div>
+                          <div><div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>Proceeds</div><div style={{ fontSize: 14, fontWeight: 700, color: '#00c076' }}>${fmt(proceedsUsd)}</div></div>
+                          <div style={{ marginLeft: 'auto', textAlign: 'right' }}><div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>P&amp;L</div><div style={{ fontSize: 14, fontWeight: 700, color: realizedPnl >= 0 ? '#00c076' : '#ef4444' }}>{realizedPnl >= 0 ? '+' : ''}${fmt(realizedPnl)}</div></div>
                         </div>
                         <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #242424', display: 'flex', gap: 16 }}>
-                          <div><div style={{ fontSize: 10, color: '#888' }}>Bought</div><div style={{ fontSize: 11, color: '#aaa', fontWeight: 600 }}>{fmtTok(totalBought)} {pnlAsset.symbol}</div></div>
-                          <div><div style={{ fontSize: 10, color: '#888' }}>Sold</div><div style={{ fontSize: 11, color: '#aaa', fontWeight: 600 }}>{fmtTok(totalSold)} {pnlAsset.symbol}</div></div>
+                          <div><div style={{ fontSize: 13, color: '#888' }}>Bought</div><div style={{ fontSize: 13, color: '#aaa', fontWeight: 600 }}>{fmtTok(totalBought)} {pnlAsset.symbol}</div></div>
+                          <div><div style={{ fontSize: 13, color: '#888' }}>Sold</div><div style={{ fontSize: 13, color: '#aaa', fontWeight: 600 }}>{fmtTok(totalSold)} {pnlAsset.symbol}</div></div>
                         </div>
                       </div>
                       <div style={{ background: '#111', borderRadius: 10, padding: '14px 16px' }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: '#888', letterSpacing: '.8px', marginBottom: 10 }}>HOLDINGS</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#888', letterSpacing: '.8px', marginBottom: 10 }}>HOLDINGS</div>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <div><div style={{ fontSize: 10, color: '#888', marginBottom: 2 }}>Balance</div><div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{fmtTok(pnlAsset.balance)} {pnlAsset.symbol}</div></div>
-                          <div style={{ textAlign: 'right' }}><div style={{ fontSize: 10, color: '#888', marginBottom: 2 }}>Value</div><div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>${fmt(pnlAsset.value)}</div></div>
+                          <div><div style={{ fontSize: 13, color: '#888', marginBottom: 2 }}>Balance</div><div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{fmtTok(pnlAsset.balance)} {pnlAsset.symbol}</div></div>
+                          <div style={{ textAlign: 'right' }}><div style={{ fontSize: 13, color: '#888', marginBottom: 2 }}>Value</div><div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>${fmt(pnlAsset.value)}</div></div>
                         </div>
                         {gasNative > 0 && (
                           <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #242424', display: 'flex', justifyContent: 'space-between' }}>
-                            <div style={{ fontSize: 10, color: '#888' }}>⛽ Gas</div>
-                            <div style={{ fontSize: 11, color: '#aaa', fontWeight: 600 }}>{fmtTok(gasNative)} {chainKey === 'ethereum' ? 'ETH' : 'PLS'} <span style={{ color: '#888' }}>(${fmt(gasUsd)})</span></div>
+                            <div style={{ fontSize: 13, color: '#888' }}>⛽ Gas</div>
+                            <div style={{ fontSize: 13, color: '#aaa', fontWeight: 600 }}>{fmtTok(gasNative)} {chainKey === 'ethereum' ? 'ETH' : 'PLS'} <span style={{ color: '#888' }}>(${fmt(gasUsd)})</span></div>
                           </div>
                         )}
                       </div>
                     </div>
                     {allRows.length > 0 && (
                       <div style={{ borderTop: '1px solid #1f1f1f' }}>
-                        <div style={{ padding: '8px 18px', fontSize: 10, fontWeight: 700, color: '#888', letterSpacing: '.8px' }}>SWAP HISTORY</div>
+                        <div style={{ padding: '8px 18px', fontSize: 13, fontWeight: 700, color: '#888', letterSpacing: '.8px' }}>SWAP HISTORY</div>
                         <div style={{ maxHeight: 280, overflowY: 'auto' }}>
                           {allRows.map(({ tx, side }, i) => {
                             const isBuy = side === 'buy';
@@ -4095,16 +4095,16 @@ export default function App() {
                             return (
                               <div key={tx.id + i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 18px', borderBottom: '1px solid #111', background: i % 2 === 0 ? 'transparent' : '#0a0a0a' }}
                                 onMouseOver={e => (e.currentTarget.style.background = '#131313')} onMouseOut={e => (e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : '#0a0a0a')}>
-                                <div style={{ width: 36, flexShrink: 0, textAlign: 'center', fontSize: 9, fontWeight: 800, letterSpacing: '.5px', padding: '3px 0', borderRadius: 5, background: isBuy ? 'rgba(0,192,118,0.12)' : 'rgba(239,68,68,0.12)', color: isBuy ? '#00c076' : '#ef4444' }}>{isBuy ? 'BUY' : 'SELL'}</div>
+                                <div style={{ width: 36, flexShrink: 0, textAlign: 'center', fontSize: 13, fontWeight: 800, letterSpacing: '.5px', padding: '3px 0', borderRadius: 5, background: isBuy ? 'rgba(0,192,118,0.12)' : 'rgba(239,68,68,0.12)', color: isBuy ? '#00c076' : '#ef4444' }}>{isBuy ? 'BUY' : 'SELL'}</div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                     {isBuy ? '+' : '-'}{fmtTok(tokenAmt)} {pnlAsset.symbol}
                                     <span style={{ color: '#888', fontWeight: 400, marginLeft: 6 }}>{isBuy ? 'for' : 'sold for'} {fmtTok(otherAmt)} {otherSym}</span>
                                   </div>
                                 </div>
                                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                  <div style={{ fontSize: 11, fontWeight: 600, color: '#aaa' }}>${fmt(tx.valueUsd ?? 0)}</div>
-                                  <div style={{ fontSize: 10, color: '#888' }}>{date}</div>
+                                  <div style={{ fontSize: 13, fontWeight: 600, color: '#aaa' }}>${fmt(tx.valueUsd ?? 0)}</div>
+                                  <div style={{ fontSize: 13, color: '#888' }}>{date}</div>
                                 </div>
                                 {tx.hash && <a href={`${CHAINS[chainKey].explorer}/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer" style={{ color: '#666', flexShrink: 0 }} onMouseOver={e => (e.currentTarget.style.color = '#a78bfa')} onMouseOut={e => (e.currentTarget.style.color = '#666')}><ExternalLink size={11} /></a>}
                               </div>
@@ -4113,7 +4113,7 @@ export default function App() {
                         </div>
                       </div>
                     )}
-                    {swapCount === 0 && <div style={{ padding: '24px', textAlign: 'center', color: '#888', fontSize: 12 }}>No swaps found for {pnlAsset.symbol} on {chainKey}</div>}
+                    {swapCount === 0 && <div style={{ padding: '24px', textAlign: 'center', color: '#888', fontSize: 13 }}>No swaps found for {pnlAsset.symbol} on {chainKey}</div>}
                   </div>
                 );
               })()}
@@ -4170,7 +4170,7 @@ export default function App() {
                     <div style={{ padding: '14px 18px', borderBottom: isCollapsed('wallet-pnl') ? 'none' : '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>Trade P&amp;L</span>
-                        <span style={{ fontSize: 10, color: '#aaa', background: '#1a1a1a', padding: '2px 8px', borderRadius: 4 }}>{swaps.length} swaps · approx.</span>
+                        <span style={{ fontSize: 13, color: '#aaa', background: '#1a1a1a', padding: '2px 8px', borderRadius: 4 }}>{swaps.length} swaps · approx.</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <span style={{ fontSize: 20, fontWeight: 800, color: totalPnl >= 0 ? '#00c076' : '#ef4444' }}>{totalPnl >= 0 ? '+' : ''}${Math.abs(totalPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
@@ -4188,7 +4188,7 @@ export default function App() {
                           <thead>
                             <tr style={{ borderBottom: '1px solid #1f1f1f' }}>
                               {['Token', 'Swaps', 'Bought', 'Sold', 'Proceeds', 'Cost (est.)', 'Realized P&L'].map(h => (
-                                <th key={h} style={{ padding: '9px 14px', textAlign: h === 'Token' ? 'left' : 'right', fontSize: 10, color: '#888', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', whiteSpace: 'nowrap' }}>{h}</th>
+                                <th key={h} style={{ padding: '9px 14px', textAlign: h === 'Token' ? 'left' : 'right', fontSize: 13, color: '#888', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', whiteSpace: 'nowrap' }}>{h}</th>
                               ))}
                             </tr>
                           </thead>
@@ -4202,11 +4202,11 @@ export default function App() {
                                     <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{r.sym}</span>
                                   </div>
                                 </td>
-                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 12, color: '#aaa' }}>{r.swapCount}</td>
-                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 12, color: '#aaa' }}>{r.bought > 1e6 ? `${(r.bought/1e6).toFixed(2)}M` : r.bought.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 12, color: '#aaa' }}>{r.sold > 1e6 ? `${(r.sold/1e6).toFixed(2)}M` : r.sold.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 12, color: '#00c076' }}>${r.proceedsUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 12, color: '#ef4444' }}>${r.realizedCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#aaa' }}>{r.swapCount}</td>
+                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#aaa' }}>{r.bought > 1e6 ? `${(r.bought/1e6).toFixed(2)}M` : r.bought.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#aaa' }}>{r.sold > 1e6 ? `${(r.sold/1e6).toFixed(2)}M` : r.sold.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#00c076' }}>${r.proceedsUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#ef4444' }}>${r.realizedCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
                                 <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontSize: 13, color: r.realizedPnl >= 0 ? '#00c076' : '#ef4444' }}>
                                   {r.realizedPnl >= 0 ? '+' : ''}${r.realizedPnl.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                 </td>
@@ -4215,7 +4215,7 @@ export default function App() {
                           </tbody>
                           <tfoot>
                             <tr style={{ borderTop: '1px solid #252525' }}>
-                              <td colSpan={6} style={{ padding: '10px 14px', fontSize: 11, color: '#888', fontWeight: 600 }}>TOTAL REALIZED P&amp;L</td>
+                              <td colSpan={6} style={{ padding: '10px 14px', fontSize: 13, color: '#888', fontWeight: 600 }}>TOTAL REALIZED P&amp;L</td>
                               <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 800, fontSize: 14, color: totalPnl >= 0 ? '#00c076' : '#ef4444' }}>
                                 {totalPnl >= 0 ? '+' : ''}${Math.abs(totalPnl).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                               </td>
@@ -4246,7 +4246,7 @@ export default function App() {
                     <div style={{ padding: '14px 18px', borderBottom: isCollapsed('wallet-txs') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: 14, fontWeight: 600 }}>Recent Activity</span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, background: 'rgba(0,192,118,.1)', color: '#00c076', border: '1px solid rgba(0,192,118,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, background: 'rgba(0,192,118,.1)', color: '#00c076', border: '1px solid rgba(0,192,118,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
                           <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#00c076', display: 'inline-block' }} />
                           {baseTxs.length} txs
                         </span>
@@ -4257,7 +4257,7 @@ export default function App() {
                           { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Assets'], ...Array.from(new Set(baseTxs.map(tx => tx.asset))).sort().map(a => [a,a])] as [string,string][] },
                         ].map(({ value, onChange, options }, i) => (
                           <select key={i} value={value} onChange={e => onChange(e.target.value)}
-                            style={{ background: '#111', border: '1px solid #252525', borderRadius: 6, color: '#fff', fontSize: 12, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
+                            style={{ background: '#111', border: '1px solid #252525', borderRadius: 6, color: '#fff', fontSize: 13, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
                             {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                           </select>
                         ))}
@@ -4288,19 +4288,19 @@ export default function App() {
                                 </div>
                                 <div>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                                    <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
+                                    <span style={{ fontSize: 13, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
                                       background: tx.type === 'transfer_in' ? 'rgba(0,192,118,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
                                       color: tx.type === 'transfer_in' ? '#00c076' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444' }}>
                                       {tx.type === 'transfer_in' ? 'Received' : tx.type === 'transfer_out' ? 'Sent' : 'Swap'}
                                     </span>
-                                    <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 3, fontWeight: 600, background: '#1a1a1a', color: '#aaa' }}>{tx.chain}</span>
+                                    <span style={{ fontSize: 13, padding: '1px 6px', borderRadius: 3, fontWeight: 600, background: '#1a1a1a', color: '#aaa' }}>{tx.chain}</span>
                                     <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>
                                       {tx.type === 'swap' && tx.counterAsset
                                         ? `${tx.counterAmount?.toLocaleString()} ${tx.counterAsset} → ${tx.amount.toLocaleString()} ${tx.asset}`
                                         : `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`}
                                     </span>
                                   </div>
-                                  <div style={{ fontSize: 10, color: '#aaa', fontFamily: 'monospace' }}>
+                                  <div style={{ fontSize: 13, color: '#aaa', fontFamily: 'monospace' }}>
                                     {tx.hash.slice(0, 6)}…{tx.hash.slice(-4)} · {format(tx.timestamp, 'MMM d, yyyy HH:mm')}
                                   </div>
                                 </div>
@@ -4310,7 +4310,7 @@ export default function App() {
                                   <div style={{ fontSize: 13, fontWeight: 600, color: tx.type === 'transfer_in' ? '#00c076' : '#fff' }}>
                                     {tx.type === 'transfer_in' ? '+' : '-'}{tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {tx.asset}
                                   </div>
-                                  {tx.valueUsd && <div style={{ fontSize: 10, color: '#aaa' }}>${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>}
+                                  {tx.valueUsd && <div style={{ fontSize: 13, color: '#aaa' }}>${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>}
                                 </div>
                                 <a href={`${CHAINS[tx.chain].explorer}/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer"
                                   style={{ color: '#666', padding: 4 }}
@@ -4368,7 +4368,7 @@ export default function App() {
               transition: 'color .12s',
             }}>
             <Icon size={20} />
-            <span style={{ fontSize: 10, fontWeight: activeTab === id ? 700 : 500, lineHeight: 1 }}>{label}</span>
+            <span style={{ fontSize: 13, fontWeight: activeTab === id ? 700 : 500, lineHeight: 1 }}>{label}</span>
           </button>
         ))}
       </nav>
@@ -4446,7 +4446,7 @@ export default function App() {
                 <Settings size={18} style={{ color: '#00c076' }} />
                 <span style={{ fontSize: 16, fontWeight: 700 }}>API Keys</span>
               </div>
-              <p style={{ fontSize: 12, color: '#aaa', marginBottom: 14, lineHeight: 1.6 }}>
+              <p style={{ fontSize: 13, color: '#aaa', marginBottom: 14, lineHeight: 1.6 }}>
                 One key covers both Ethereum and Base.<br/>
                 Get yours free at <span style={{ color: '#627EEA' }}>etherscan.io/myapikey</span>
               </p>
