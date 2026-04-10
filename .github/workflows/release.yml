@@ -25,7 +25,10 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: windows-release
-          path: release/*.{exe,zip}
+          path: |
+            release/*.exe
+            release/*.zip
+            release/*.blockmap
 
   build-mac:
     runs-on: macos-latest
@@ -43,16 +46,27 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: mac-release
-          path: release/*.{dmg,zip}
+          path: |
+            release/*.dmg
+            release/*.zip
 
   build-linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libarchive-tools \
+            libfuse2 \
+            fakeroot \
+            rpm \
+            dpkg
       - run: npm ci
       - run: npm run electron:build:linux
         env:
@@ -60,7 +74,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: linux-release
-          path: release/*.{AppImage,deb}
+          path: |
+            release/*.AppImage
+            release/*.deb
 
   publish:
     needs: [build-windows, build-mac, build-linux]
