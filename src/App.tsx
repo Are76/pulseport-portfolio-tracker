@@ -2201,7 +2201,7 @@ export default function App() {
 
           <div className="flex items-center gap-3">
             {lastUpdated && (
-              <span style={{ fontSize: 11, color: '#aaa' }}>
+              <span style={{ fontSize: 11, color: '#aaa' }} className="hidden sm:inline">
                 {timeSinceLastUpdate}s ago
               </span>
             )}
@@ -2213,7 +2213,7 @@ export default function App() {
                 borderRadius: 8, color: etherscanApiKey ? '#00c076' : '#555',
                 fontSize: 12, fontWeight: 500, cursor: 'pointer', transition: 'all .12s' }}>
               <Settings size={13} />
-              {etherscanApiKey ? 'API Key ✓' : 'API Key'}
+              <span className="hidden sm:inline">{etherscanApiKey ? 'API Key ✓' : 'API Key'}</span>
             </button>
             <button onClick={fetchPortfolio}
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px',
@@ -2222,13 +2222,13 @@ export default function App() {
               onMouseOver={e => (e.currentTarget.style.borderColor = '#333')}
               onMouseOut={e => (e.currentTarget.style.borderColor = '#1c1c1c')}>
               <RefreshCcw size={13} className={isLoading ? 'animate-spin' : ''} />
-              Refresh
+              <span className="hidden sm:inline">Refresh</span>
             </button>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
-          <div style={{ maxWidth: 1400, margin: '0 auto', padding: '24px 20px' }} className="space-y-5">
+        <div className="flex-1 overflow-y-auto custom-scrollbar pb-16 md:pb-0">
+          <div style={{ maxWidth: 1400, margin: '0 auto' }} className="space-y-5 px-3 py-4 sm:px-5 sm:py-6">
 
           <AnimatePresence mode="wait">
             {activeTab === 'overview' && (
@@ -2253,7 +2253,7 @@ export default function App() {
                     }}>
                       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none',
                         background: 'radial-gradient(ellipse at 15% 50%, rgba(0,192,118,.08) 0%, transparent 60%), radial-gradient(ellipse at 85% 50%, rgba(99,102,241,.05) 0%, transparent 60%)' }} />
-                      <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr auto', gap: 24, alignItems: 'start' }}>
+                      <div className="hero-grid" style={{ position: 'relative' }}>
                         {/* Left: value + stats */}
                         <div>
                           <div style={{ fontSize: 11, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 6 }}>Total Portfolio Value</div>
@@ -2280,7 +2280,7 @@ export default function App() {
                             </span>
                           </div>
                           {/* Stat mini-cards */}
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                          <div style={{ display: 'grid', gap: 10 }} className="grid-cols-2 sm:grid-cols-3">
                             <div style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 10, padding: '10px 14px' }}>
                               <div style={{ fontSize: 10, color: '#666', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Net Investment</div>
                               <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
@@ -2299,7 +2299,7 @@ export default function App() {
                           </div>
                         </div>
                         {/* Right: Allocation donut */}
-                        <div style={{ width: 200 }}>
+                        <div style={{ width: 200 }} className="max-sm:w-full">
                           <div style={{ fontSize: 11, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>Allocation</div>
                           <ResponsiveContainer width="100%" height={120} debounce={50}>
                             <PieChart>
@@ -2563,7 +2563,7 @@ export default function App() {
 
                   return (
                     <div style={{ background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: 14, overflow: 'hidden' }}>
-                      <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: isCollapsed('perf-chart') ? 'none' : '1px solid #161616' }}>
+                      <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, borderBottom: isCollapsed('perf-chart') ? 'none' : '1px solid #161616' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>Portfolio Performance</div>
                           <div style={{ fontSize: 12, fontWeight: 700, color: periodChange >= 0 ? '#00c076' : '#ef4444' }}>
@@ -2631,9 +2631,9 @@ export default function App() {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                   <div>
                     <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 2 }}>Token Positions</div>
-                    <div style={{ fontSize: 12, color: '#aaa' }}>{currentAssets.length} assets · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} liquid</div>
+                   <div style={{ fontSize: 12, color: '#aaa' }}>{currentAssets.length} assets · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} liquid</div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', gap: 3, background: '#111', border: '1px solid #1c1c1c', borderRadius: 8, padding: 3 }}>
                       {([['1h','1H'],['6h','6H'],['24h','24H'],['7d','7D']] as const).map(([p, label]) => (
                         <button key={p} onClick={() => setPriceChangePeriod(p)}
@@ -4331,6 +4331,33 @@ export default function App() {
           </footer>
         </div>
       </main>
+
+      {/* ── MOBILE BOTTOM NAV ── */}
+      <nav className="mobile-bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-50 flex"
+        style={{ background: '#080808', borderTop: '1px solid #161616' }}>
+        {([
+          { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+          { id: 'assets',   label: 'Assets',   icon: WalletIcon },
+          { id: 'stakes',   label: 'Stakes',   icon: Layers },
+          { id: 'history',  label: 'History',  icon: History },
+          { id: 'wallets',  label: 'Wallets',  icon: User },
+        ] as const).map(({ id, label, icon: Icon }) => (
+          <button key={id} onClick={() => setActiveTab(id)}
+            className="flex-1 flex flex-col items-center justify-center gap-1"
+            style={{
+              minHeight: 56,
+              padding: '10px 4px',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: activeTab === id ? '#00c076' : '#555',
+              transition: 'color .12s',
+            }}>
+            <Icon size={20} />
+            <span style={{ fontSize: 10, fontWeight: activeTab === id ? 700 : 500, lineHeight: 1 }}>{label}</span>
+          </button>
+        ))}
+      </nav>
 
       {/* Add Wallet Modal */}
       <AnimatePresence>

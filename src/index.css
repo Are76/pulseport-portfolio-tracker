@@ -96,3 +96,43 @@
   border-radius: 2px;
   background: var(--color-green);
 }
+
+/* ── RESPONSIVE LAYOUT ─────────────────────────────────────────────────── */
+
+/* Hero card two-column grid: stack to single column on mobile */
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 640px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+/* iOS momentum scrolling */
+.custom-scrollbar,
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Remove tap highlight on interactive elements for cleaner mobile UX */
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Mobile bottom nav: safe area support for iPhone home indicator */
+.mobile-bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Prevent full-page horizontal scroll on mobile */
+@media (max-width: 768px) {
+  body {
+    overflow-x: hidden;
+  }
+}
