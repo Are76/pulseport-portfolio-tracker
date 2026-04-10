@@ -657,11 +657,12 @@ export default function App() {
           try {
             if (chainKey === 'pulsechain') {
               // PulseChain uses Blockscout V2 API.
-              // In dev (browser) the Vite proxy at /proxy/pulsechain forwards to scan.pulsechain.com
-              // avoiding the missing CORS headers. In Electron (prod) webSecurity:false allows direct.
-              const bsBase = import.meta.env.DEV
-                ? '/proxy/pulsechain/api/v2'
-                : 'https://api.scan.pulsechain.com/api/v2';
+              // scan.pulsechain.com has no CORS headers, so browsers need a proxy.
+              // Dev: Vite proxy | Electron: direct (webSecurity:false) | Vercel: vercel.json rewrite
+              const isElectron = /electron/i.test(navigator.userAgent);
+              const bsBase = isElectron
+                ? 'https://api.scan.pulsechain.com/api/v2'
+                : '/proxy/pulsechain/api/v2';
               const nativePrice = fetchedPrices['pulsechain']?.usd || 0;
 
               const fetchPcV2Pages = async (endpoint: string, maxPages = 50): Promise<any[]> => {
@@ -698,10 +699,10 @@ export default function App() {
                 return results;
               };
 
-              // Etherscan-compat base (same proxy target, different path)
-              const esBase = import.meta.env.DEV
-                ? '/proxy/pulsechain/api'
-                : 'https://api.scan.pulsechain.com/api';
+              // Etherscan-compat base — same proxy logic as above
+              const esBase = isElectron
+                ? 'https://api.scan.pulsechain.com/api'
+                : '/proxy/pulsechain/api';
 
               // Fetch per-token transfers in parallel using Etherscan-compat API.
               // Per-token queries use a contract index and are ~instant even for active wallets,

@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/proxy/pulsechain/:path*",
+      "destination": "https://api.scan.pulsechain.com/:path*"
+    }
+  ]
+}
