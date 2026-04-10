@@ -1139,16 +1139,19 @@ export default function App() {
                 assetMap[assetKey].balance += balanceNum;
                 assetMap[assetKey].value += balanceNum * price;
               } else {
-                // Logo: CoinGecko image → Trust Wallet (ETH/Base) → Blockscout scan URL (PulseChain)
+                // Logo: CoinGecko image → Trust Wallet (ETH/Base) → PulseX CDN (PulseChain)
+                // All CDN paths require EIP-55 checksummed addresses — use getAddress() to ensure that.
                 const cgLogo = priceData?.image || fetchedPrices[token.coinGeckoId]?.image;
                 const twChain = chainKey === 'ethereum' ? 'ethereum' : chainKey === 'base' ? 'base' : null;
-                const twLogo = twChain && token.address !== 'native'
-                  ? `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${twChain}/assets/${token.address}/logo.png`
-                  : null;
-                const bsLogo = chainKey === 'pulsechain' && token.address !== 'native'
-                  ? `https://scan.pulsechain.com/token-images/${token.address.toLowerCase()}.png`
-                  : null;
-                const logoUrl = cgLogo || twLogo || bsLogo || null;
+                let twLogo: string | null = null;
+                if (twChain && token.address !== 'native') {
+                  try { twLogo = `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${twChain}/assets/${getAddress(token.address)}/logo.png`; } catch { /* invalid address */ }
+                }
+                let pulsexLogo: string | null = null;
+                if (chainKey === 'pulsechain' && token.address !== 'native') {
+                  try { pulsexLogo = `https://tokens.app.pulsex.com/images/tokens/${getAddress(token.address)}.png`; } catch { /* invalid address */ }
+                }
+                const logoUrl = cgLogo || twLogo || pulsexLogo || null;
 
                 assetMap[assetKey] = {
                   id: assetKey,
@@ -2074,19 +2077,30 @@ export default function App() {
   };
 
   const getTokenLogoUrl = (asset: Asset): string => {
-    // Native tokens
+    // 1. Use any logo already fetched and stored on the asset (CoinGecko / DeFi Llama)
+    if ((asset as any).logoUrl) return (asset as any).logoUrl;
+    // 2. Well-known native / base tokens
     if (asset.symbol === 'ETH') return 'https://assets.coingecko.com/coins/images/279/small/ethereum.png';
     if (asset.symbol === 'PLS' || asset.symbol === 'WPLS') return 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png';
-    // PulseChain tokens via PulseX CDN
+    // 3. PulseChain tokens via PulseX CDN (URL path is case-sensitive — must use checksummed address)
     if (asset.chain === 'pulsechain') {
       const tokenConfig = TOKENS.pulsechain.find(t => t.symbol === asset.symbol);
-      if (tokenConfig && tokenConfig.address !== 'native') return `https://tokens.app.pulsex.com/images/tokens/${tokenConfig.address}.png`;
+      if (tokenConfig && tokenConfig.address !== 'native') {
+        try { return `https://tokens.app.pulsex.com/images/tokens/${getAddress(tokenConfig.address)}.png`; } catch { /* invalid address */ }
+      }
+      // Also try the address stored directly on the asset (for discovered tokens)
+      const addrOnAsset = (asset as any).address;
+      if (addrOnAsset && addrOnAsset !== 'native') {
+        try { return `https://tokens.app.pulsex.com/images/tokens/${getAddress(addrOnAsset)}.png`; } catch { /* invalid address */ }
+      }
     }
-    // Ethereum + Base tokens via TrustWallet
+    // 4. Ethereum + Base tokens via TrustWallet (also case-sensitive)
     if (asset.chain === 'ethereum' || asset.chain === 'base') {
       const chainName = asset.chain === 'base' ? 'base' : 'ethereum';
       const tokenConfig = (TOKENS[asset.chain] as any[]).find((t: any) => t.symbol === asset.symbol);
-      if (tokenConfig && tokenConfig.address !== 'native') return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${chainName}/assets/${tokenConfig.address}/logo.png`;
+      if (tokenConfig && tokenConfig.address !== 'native') {
+        try { return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${chainName}/assets/${getAddress(tokenConfig.address)}/logo.png`; } catch { /* invalid address */ }
+      }
     }
     return '';
   };
@@ -2741,7 +2755,7 @@ export default function App() {
                             const addr = (asset as any).address;
                             const logo = (asset as any).logoUrl
                               || tokenLogos[(asset as any).address?.toLowerCase?.()]
-                              || tokenLogos[asset.coinGeckoId || ''];
+                              || getTokenLogoUrl(asset);
                             const explUrl = explorerUrl(asset.chain, addr);
                             const dsUrl = dexScreenerUrl(asset.chain, addr);
                             return (
@@ -2754,10 +2768,9 @@ export default function App() {
                                     {/* Logo */}
                                     <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#1a1a1a', border: '1px solid #222',
                                       display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#fff', flexShrink: 0, overflow: 'hidden' }}>
-                                      {logo
-                                        ? <img src={logo} alt={asset.symbol} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
-                                            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).parentElement!.innerText = asset.symbol[0]; }} />
-                                        : asset.symbol[0]}
+                                      {logo ? <img src={logo} alt={asset.symbol} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                                          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.removeAttribute('hidden'); }} /> : null}
+                                      <span hidden={!!logo}>{asset.symbol[0]}</span>
                                     </div>
                                     <div>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -2930,9 +2943,10 @@ export default function App() {
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 10px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           {(() => {
-                            const logo = (pnlAsset as any).logoUrl || tokenLogos[(pnlAsset as any).address?.toLowerCase?.()] || tokenLogos[pnlAsset.coinGeckoId || ''];
+                            const logo = (pnlAsset as any).logoUrl || tokenLogos[(pnlAsset as any).address?.toLowerCase?.()] || getTokenLogoUrl(pnlAsset);
                             return logo
-                              ? <img src={logo} alt={pnlAsset.symbol} style={{ width: 28, height: 28, borderRadius: '50%' }} />
+                              ? <img src={logo} alt={pnlAsset.symbol} style={{ width: 28, height: 28, borderRadius: '50%' }}
+                                  onError={e => { const el = e.target as HTMLImageElement; el.style.display='none'; el.insertAdjacentHTML('afterend', `<div style="width:28px;height:28px;border-radius:50%;background:#2a1a3a;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#a78bfa">${pnlAsset.symbol[0]}</div>`); }} />
                               : <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#2a1a3a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#a78bfa' }}>{pnlAsset.symbol[0]}</div>;
                           })()}
                           <div>
@@ -3877,7 +3891,7 @@ export default function App() {
                           const addr = (asset as any).address;
                           const logo = (asset as any).logoUrl
                             || tokenLogos[(asset as any).address?.toLowerCase?.()]
-                            || tokenLogos[asset.coinGeckoId || ''];
+                            || getTokenLogoUrl(asset);
                           const explUrl = explorerUrl(asset.chain, addr);
                           const dsUrl = dexScreenerUrl(asset.chain, addr);
                           return (
@@ -3889,10 +3903,9 @@ export default function App() {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                   <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#1a1a1a', border: '1px solid #222',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#fff', flexShrink: 0, overflow: 'hidden' }}>
-                                    {logo
-                                      ? <img src={logo} alt={asset.symbol} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
-                                          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).parentElement!.innerText = asset.symbol[0]; }} />
-                                      : asset.symbol[0]}
+                                    {logo ? <img src={logo} alt={asset.symbol} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                                        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.removeAttribute('hidden'); }} /> : null}
+                                    <span hidden={!!logo}>{asset.symbol[0]}</span>
                                   </div>
                                   <div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -4023,13 +4036,14 @@ export default function App() {
                 const fmt = (n: number, dp = 2) => n.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp });
                 const fmtTok = (n: number) => n > 1e6 ? `${(n/1e6).toFixed(2)}M` : n > 1000 ? `${(n/1000).toFixed(2)}K` : n.toLocaleString(undefined, { maximumFractionDigits: 4 });
                 const allRows = [...buys.map(tx => ({ tx, side: 'buy' as const })), ...sells.map(tx => ({ tx, side: 'sell' as const }))].sort((a, b) => b.tx.timestamp - a.tx.timestamp);
-                const logo2 = (pnlAsset as any).logoUrl || tokenLogos[(pnlAsset as any).address?.toLowerCase?.()] || tokenLogos[pnlAsset.coinGeckoId || ''];
+                const logo2 = (pnlAsset as any).logoUrl || tokenLogos[(pnlAsset as any).address?.toLowerCase?.()] || getTokenLogoUrl(pnlAsset);
                 return (
                   <div style={{ background: '#0d0d0d', border: '1px solid #2a1a3a', borderRadius: 14, overflow: 'hidden' }}>
                     <div style={{ height: 2, background: 'linear-gradient(90deg,#7c3aed,#ec4899)' }} />
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 10px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        {logo2 ? <img src={logo2} alt={pnlAsset.symbol} style={{ width: 28, height: 28, borderRadius: '50%' }} /> : <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#2a1a3a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#a78bfa' }}>{pnlAsset.symbol[0]}</div>}
+                        {logo2 ? <img src={logo2} alt={pnlAsset.symbol} style={{ width: 28, height: 28, borderRadius: '50%' }}
+                            onError={e => { const el = e.target as HTMLImageElement; el.style.display='none'; el.insertAdjacentHTML('afterend', `<div style="width:28px;height:28px;border-radius:50%;background:#2a1a3a;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#a78bfa">${pnlAsset.symbol[0]}</div>`); }} /> : <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#2a1a3a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#a78bfa' }}>{pnlAsset.symbol[0]}</div>}
                         <div>
                           <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{assetName} Profit &amp; Loss</div>
                           <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>{swapCount} swap{swapCount !== 1 ? 's' : ''} · approximate (current prices)</div>
