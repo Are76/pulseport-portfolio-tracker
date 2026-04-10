@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Brand Colors */
+  --color-midnight: #0f172a;
+  --color-indigo-brand: #1e293b;
+  --color-turquoise: #00c076;
+  --color-mandarin: #f97316;
+  --color-ruby: #ef4444;
+
+  /* Dashboard Backgrounds */
+  --color-dashboard-bg: #050505;
+  --color-card-bg: #0d0d0d;
+  --color-border-brand: rgba(255, 255, 255, 0.06);
+  --color-green: #00c076;
+  --color-red: #ef4444;
+  --color-gray1: #aaaaaa;
+  --color-gray2: #555555;
+  --color-gray3: #222222;
+}
+
+@layer base {
+  body {
+    @apply bg-dashboard-bg text-white antialiased;
+    font-size: 14px;
+  }
+}
+
+@layer components {
+  .panel {
+    background: var(--color-card-bg);
+    border: 1px solid var(--color-border-brand);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--color-border-brand);
+  }
+
+  .glass-card {
+    @apply bg-card-bg border border-border-brand rounded-xl overflow-hidden;
+  }
+
+  .btn-pill {
+    @apply px-4 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-2;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.price-sub {
+  font-size: 0.7em;
+  vertical-align: sub;
+  margin: 0 1px;
+  opacity: 0.7;
+}
+
+/* Progress bar */
+.progress-bar {
+  height: 3px;
+  background: #1a1a1a;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--color-green);
+}

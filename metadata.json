@@ -1,0 +1,5 @@
+{
+  "name": "PulsePort - Multi-Chain Portfolio Tracker",
+  "description": "A comprehensive portfolio tracker for PulseChain, Ethereum, and Base with HEX stake monitoring and PNL analytics.",
+  "requestFramePermissions": []
+}
