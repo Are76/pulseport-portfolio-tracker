@@ -2078,7 +2078,7 @@ export default function App() {
 
   const getTokenLogoUrl = (asset: Asset): string => {
     // 1. Use any logo already fetched and stored on the asset (CoinGecko / DeFi Llama)
-    if ((asset as any).logoUrl) return (asset as any).logoUrl;
+    if (asset.logoUrl) return asset.logoUrl;
     // 2. Well-known native / base tokens
     if (asset.symbol === 'ETH') return 'https://assets.coingecko.com/coins/images/279/small/ethereum.png';
     if (asset.symbol === 'PLS' || asset.symbol === 'WPLS') return 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png';
@@ -2645,7 +2645,7 @@ export default function App() {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                   <div>
                     <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 2 }}>Token Positions</div>
-                   <div style={{ fontSize: 12, color: '#aaa' }}>{currentAssets.length} assets · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} liquid</div>
+                    <div style={{ fontSize: 12, color: '#aaa' }}>{currentAssets.length} assets · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} liquid</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', gap: 3, background: '#111', border: '1px solid #1c1c1c', borderRadius: 8, padding: 3 }}>
