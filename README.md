@@ -1,72 +1,43 @@
-# Pulseport — Portfolio Tracker
+# PulsePort Portfolio Tracker
 
-A desktop portfolio tracker for **PulseChain, Ethereum and Base**. Track balances, HEX stakes, token prices, swap history and trade P&L — all in one place.
+## Overview
+PulsePort is a powerful tool designed for tracking your investment portfolio in real time. With intuitive features and robust analytics, you can make informed decisions about your investment strategies.
 
-## Features
+## Real-Time Portfolio Tracking
+Stay updated with live market data that allows you to see the performance of your assets instantly. Our portfolio tracker synchronizes with multiple data sources to provide accurate pricing and market trends.
 
-- **Multi-chain support** — PulseChain, Ethereum and Base in one dashboard
-- **Live token prices** — PLS, PLSX, HEX, INC, PRVX, eHEX, ETH, USDC and more
-- **HEX stakes** — view all active stakes with T-shares, progress and estimated value
-- **Trade P&L** — realized profit/loss calculated from on-chain swap history
-- **Transaction history** — filter by chain, asset and type (received / sent / swaps)
-- **Portfolio performance chart** — track your total value over time
-- **Multiple wallets** — add and label as many wallets as you like
-- **No account required** — all data is fetched directly from public blockchain APIs
+## Detailed Analytics Features
+- **Performance Metrics:** Analyze the returns of your investments over different periods and identify emerging trends.
+- **Risk Assessment:** Evaluate the risk profile of your portfolio with detailed metrics and alerts.
+- **Custom Reports:** Generate comprehensive reports that help you assess the performance of your investments.
 
-## Download
+## Installation Guide
+To get started with PulsePort, follow these steps:
+1. **Clone the Repository:**
+   ```bash
+   git clone https://github.com/Are76/pulseport-portfolio-tracker.git
+   ```
+2. **Navigate to the Directory:**
+   ```bash
+   cd pulseport-portfolio-tracker
+   ```
+3. **Install Dependencies:**
+   ```bash
+   npm install
+   ```
+4. **Run the Application:**
+   ```bash
+   npm start
+   ```
 
-Go to [Releases](../../releases/latest) and download for your platform:
+## Usage
+Once you have the application running, you can start adding your investments and monitoring the performance in real-time. You will also have access to detailed analytics that will guide you in your investment decisions.
 
-| Platform | File |
-|----------|------|
-| Windows (installer) | `Pulseport Setup x.x.x.exe` |
-| Windows (portable) | `Pulseport x.x.x.exe` |
-| macOS (Intel + Apple Silicon) | `Pulseport-x.x.x.dmg` |
-| Linux | `Pulseport-x.x.x.AppImage` or `.deb` |
+## Contribution
+We welcome contributions! Please fork the repository and submit your pull requests for any improvements or bug fixes.
 
-## Run from source
+## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-**Prerequisites:** Node.js 20+
-
-```bash
-git clone https://github.com/Are76/pulseport-portfolio-tracker.git
-cd pulseport-portfolio-tracker
-npm install
-npm run dev
-```
-
-Open http://localhost:5174 in your browser.
-
-### Desktop app (Electron)
-
-```bash
-# Run in Electron
-npm run electron:dev
-
-# Build installer for your platform
-npm run electron:build        # Windows
-npm run electron:build:mac    # macOS
-npm run electron:build:linux  # Linux
-```
-
-## API Keys
-
-For Ethereum and Base transaction history you need free API keys from:
-- **Etherscan** — https://etherscan.io/apis (Ethereum)
-- **Basescan** — https://basescan.org/apis (Base)
-
-Add them via the **API Key** button in the app. PulseChain data requires no key.
-
-## Tech Stack
-
-- React 19 + TypeScript
-- Vite + Tailwind CSS v4
-- Electron 41
-- Recharts (charts)
-- Viem (blockchain calls)
-- PulseChain Blockscout API
-- Etherscan-compatible APIs
-
-## Privacy
-
-No data leaves your machine except direct calls to public blockchain APIs. No analytics, no tracking, no backend.
+---
+Feel free to reach out to us if you have questions or need help with the application!
