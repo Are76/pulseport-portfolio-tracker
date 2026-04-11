@@ -2294,6 +2294,17 @@ export default function App() {
   };
 
   // ── RENDER ────────────────────────────────────────────────────────────────
+
+  // Shared compact price formatter — used by both the header ticker and core-coins panel
+  const fmtPrice = (p: number) => {
+    if (p === 0) return '—';
+    if (p < 0.00001) return `$${p.toFixed(10)}`;
+    if (p < 0.001)   return `$${p.toFixed(8)}`;
+    if (p < 0.01)    return `$${p.toFixed(6)}`;
+    if (p < 1)       return `$${p.toFixed(4)}`;
+    return `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  };
+
   return (
     <div className="min-h-screen font-sans flex" style={{ fontSize: 14, background: t.surface, color: t.text }}>
       {/* ── SIDEBAR ── */}
@@ -2301,7 +2312,7 @@ export default function App() {
         className="hidden md:flex flex-col sticky top-0 h-screen overflow-y-auto custom-scrollbar">
         {/* Logo */}
         <div style={{ padding: '20px 18px 16px', borderBottom: `1px solid ${t.borderLight}` }} className="flex items-center gap-2.5">
-          <div style={{ width: 28, height: 28, background: '#00c076', borderRadius: 8 }} className="flex items-center justify-center shrink-0">
+          <div style={{ width: 28, height: 28, background: '#00c076', borderRadius: 8, boxShadow: '0 0 0 1px rgba(0,192,118,.3), 0 0 12px rgba(0,192,118,.15)' }} className="flex items-center justify-center shrink-0">
             <Activity size={16} className="text-black" />
           </div>
           <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.3px' }}>
@@ -2320,6 +2331,7 @@ export default function App() {
             { id: 'wallets',  label: 'Wallets',  icon: User },
           ] as const).map(({ id, label, icon: Icon }) => (
             <button key={id} onClick={() => setActiveTab(id)}
+              className={activeTab === id ? 'nav-item-active' : ''}
               style={{
                 display: 'flex', alignItems: 'center', gap: 10,
                 padding: '9px 12px', borderRadius: 8,
@@ -2328,7 +2340,7 @@ export default function App() {
                 fontWeight: activeTab === id ? 600 : 500,
                 fontSize: 13, border: 'none', cursor: 'pointer',
                 transition: 'all .12s', width: '100%', textAlign: 'left',
-                borderLeft: activeTab === id ? '2px solid #00c076' : '2px solid transparent',
+                borderLeft: activeTab === id ? undefined : '2px solid transparent',
               }}
             >
               <Icon size={16} />
@@ -2356,7 +2368,7 @@ export default function App() {
               <span style={{ fontWeight: 600 }}>Wallets</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: '#00c076', background: 'rgba(0,192,118,.1)', padding: '1px 6px', borderRadius: 100 }}>{wallets.length}</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#00c076', background: 'rgba(0,192,118,.15)', padding: '1px 6px', borderRadius: 100, border: '1px solid rgba(0,192,118,.25)' }}>{wallets.length}</span>
               {sidebarWalletsOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
             </div>
           </button>
@@ -2410,11 +2422,38 @@ export default function App() {
           className="flex items-center justify-between px-5 gap-4 shrink-0">
           {/* Mobile logo */}
           <div className="flex md:hidden items-center gap-2">
-            <div style={{ width: 24, height: 24, background: '#00c076', borderRadius: 6 }} className="flex items-center justify-center">
+            <div style={{ width: 24, height: 24, background: '#00c076', borderRadius: 6, boxShadow: '0 0 0 1px rgba(0,192,118,.3), 0 0 8px rgba(0,192,118,.15)' }} className="flex items-center justify-center">
               <Activity size={14} className="text-black" />
             </div>
             <span style={{ fontWeight: 800, fontSize: 14 }}>PULSEPORT</span>
           </div>
+
+          {/* Live price ticker — desktop only, shown once prices load */}
+          {Object.keys(prices).length > 0 && (
+            <div className="ticker-wrapper hidden sm:flex flex-1 mx-4" style={{ height: 52, alignItems: 'center' }}>
+              <div className="ticker-track" style={{ gap: 32 }}>
+                {/* Duplicate the array so the CSS animation loops seamlessly */}
+                {[
+                  { sym: 'PLS',  price: prices['pulsechain']?.usd || 0, change: prices['pulsechain']?.usd_24h_change },
+                  { sym: 'PLSX', price: prices['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd || prices['pulsex']?.usd || 0, change: prices['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd_24h_change ?? prices['pulsex']?.usd_24h_change },
+                  { sym: 'HEX',  price: prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || 0, change: prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd_24h_change ?? prices['hex']?.usd_24h_change },
+                  { sym: 'INC',  price: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd || prices['incentive']?.usd || 0, change: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd_24h_change ?? prices['incentive']?.usd_24h_change },
+                  { sym: 'eHEX', price: prices['hex']?.usd || 0, change: prices['hex']?.usd_24h_change },
+                  { sym: 'ETH',  price: prices['ethereum']?.usd || 0, change: prices['ethereum']?.usd_24h_change },
+                ].flatMap(c => [c, { ...c }]).map((coin, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: t.textSecondary }}>{coin.sym}</span>
+                    <span style={{ fontSize: 12, fontFamily: 'monospace', color: t.text }}>{fmtPrice(coin.price)}</span>
+                    {coin.change != null && (
+                      <span style={{ fontSize: 11, fontWeight: 600, color: coin.change >= 0 ? '#00c076' : '#ef4444' }}>
+                        {coin.change >= 0 ? '▲' : '▼'}{Math.abs(coin.change).toFixed(1)}%
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Tab strip */}
           <div className="hidden md:flex items-center gap-0">
@@ -2517,10 +2556,9 @@ export default function App() {
                   const fmtBigNum = (n: number) => Math.round(n).toLocaleString('nb-NO', { maximumFractionDigits: 0 }).replace(/,/g, ' ');
                   return (
                     <>
-                    <div style={{
-                      background: t.gradientHero,
+                    <div className={`md-elevation-1 ${theme === 'dark' ? 'hero-bg-dark' : 'hero-bg-light'}`} style={{
                       border: `1px solid ${t.border}`, borderRadius: 16, padding: '24px 28px', position: 'relative', overflow: 'hidden'
-                    }} className="md-elevation-1">
+                    }}>
                       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none',
                         background: 'radial-gradient(ellipse at 15% 50%, rgba(0,192,118,.08) 0%, transparent 60%), radial-gradient(ellipse at 85% 50%, rgba(99,102,241,.05) 0%, transparent 60%)' }} />
                       <div className="hero-grid" style={{ position: 'relative' }}>
@@ -2528,7 +2566,7 @@ export default function App() {
                         <div>
                           <div style={{ fontSize: 13, fontWeight: 600, color: t.textSecondary, textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 6 }}>Total Portfolio Value</div>
                           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap', marginBottom: 18 }}>
-                            <div style={{ fontSize: 52, fontWeight: 800, letterSpacing: '-2px', lineHeight: 1, color: t.text, fontVariantNumeric: 'tabular-nums' }}>
+                            <div className="value-hero" style={{ color: t.text }}>
                               ${summary.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingBottom: 6 }}>
@@ -2551,12 +2589,18 @@ export default function App() {
                           <div style={{ height: 1, background: theme === 'dark' ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.08)', margin: '16px 0 14px' }} />
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }} className="max-sm:grid-cols-1">
                             {[
-                              { label: 'Net Investment', val: `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Capital deployed', color: t.text },
-                              { label: 'Unified PNL', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${summary.unifiedPnl >= 0 ? '+' : ''}${summary.totalValue > 0 ? ((summary.unifiedPnl / Math.max(summary.netInvestment, 1)) * 100).toFixed(1) : '0.0'}% vs invested`, color: summary.unifiedPnl >= 0 ? '#00c076' : '#ef4444' },
-                              { label: 'Stakes at Maturity', val: `$${valueAtMaturity.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${fmtBigNum(totalHexAtMaturity)} HEX`, color: '#8b5cf6' },
-                            ].map(({ label, val, sub, color }) => (
-                              <div key={label} style={{ background: theme === 'dark' ? 'rgba(255,255,255,.03)' : 'rgba(0,0,0,.03)', borderRadius: 10, padding: '12px 14px' }}>
-                                <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 4 }}>{label}</div>
+                              { label: 'Net Investment', val: `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Capital deployed', color: t.text,
+                                icon: <TrendingUp size={13} color={t.textMuted} /> },
+                              { label: 'Unified PNL', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${summary.unifiedPnl >= 0 ? '+' : ''}${summary.totalValue > 0 ? ((summary.unifiedPnl / Math.max(summary.netInvestment, 1)) * 100).toFixed(1) : '0.0'}% vs invested`, color: summary.unifiedPnl >= 0 ? '#00c076' : '#ef4444',
+                                icon: <ArrowUpRight size={13} color={summary.unifiedPnl >= 0 ? '#00c076' : '#ef4444'} /> },
+                              { label: 'Stakes at Maturity', val: `$${valueAtMaturity.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${fmtBigNum(totalHexAtMaturity)} HEX`, color: '#8b5cf6',
+                                icon: <Layers size={13} color="#8b5cf6" /> },
+                            ].map(({ label, val, sub, color, icon }) => (
+                              <div key={label} className="stat-card">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
+                                  {icon}
+                                  <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.8px' }}>{label}</div>
+                                </div>
                                 <div style={{ fontSize: 18, fontWeight: 700, color, fontVariantNumeric: 'tabular-nums' }}>{val}</div>
                                 <div style={{ fontSize: 12, color: t.textTertiary, marginTop: 2 }}>{sub}</div>
                               </div>
@@ -2575,21 +2619,16 @@ export default function App() {
                               { symbol: 'PRVX', price: prices['pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11']?.usd || 0, change24h: null, logo: 'https://tokens.app.pulsex.com/images/tokens/0xf6f8dB0ABA00007681F8FAF16a0fdA1C9B030b11.png', fallbackLogo: 'https://raw.githubusercontent.com/nicemans1/pulsechain-assets/main/tokens/0xf6f8dB0ABA00007681F8FAF16a0fdA1C9B030b11/logo.png' },
                               { symbol: 'eHEX', price: prices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['hex']?.usd || 0, change24h: prices['hex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x57fde0a71132198bbec939b98976993d8d89d225.png', fallbackLogo: 'https://assets.coingecko.com/coins/images/4086/small/HEX-logo.png' },
                             ];
-                            const fmtCoinPrice = (p: number) => {
-                              if (p === 0) return '—';
-                              if (p < 0.00001) return `$${p.toFixed(10)}`;
-                              if (p < 0.001) return `$${p.toFixed(8)}`;
-                              if (p < 1) return `$${p.toFixed(5)}`;
-                              return `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-                            };
+                            // Delegate to shared fmtPrice helper defined at render scope
+                            const fmtCoinPrice = fmtPrice;
                             return (
                               <div style={{ marginBottom: 16 }}>
-                                <div style={{ fontSize: 11, fontWeight: 700, color: t.textSecondary, textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 10 }}>Core Coins</div>
-                                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: t.textSecondary, textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 8 }}>Live Prices</div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                                   {corePriceCoins.map(coin => (
-                                    <div key={coin.symbol} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 50 }}>
-                                      <div style={{ width: 42, height: 42, borderRadius: '50%', background: t.cardHighest, overflow: 'hidden', border: `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <img src={coin.logo} alt={coin.symbol} style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover' }}
+                                    <div key={coin.symbol} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 8px', borderRadius: 6, background: t.cardHigh }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                                        <img src={coin.logo} alt={coin.symbol} style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }}
                                           onError={e => {
                                             const img = e.target as HTMLImageElement;
                                             if (coin.fallbackLogo && img.src !== coin.fallbackLogo) {
@@ -2598,11 +2637,16 @@ export default function App() {
                                               img.style.display = 'none';
                                             }
                                           }} />
+                                        <span style={{ fontSize: 12, fontWeight: 700, color: t.text }}>{coin.symbol}</span>
                                       </div>
-                                      <span style={{ fontSize: 10, fontWeight: 700, color: t.textSecondary, letterSpacing: '.3px' }}>{coin.symbol}</span>
-                                      <span style={{ fontSize: 10, fontFamily: 'monospace', color: coin.change24h !== null ? (coin.change24h >= 0 ? '#00c076' : '#ef4444') : t.textSecondary }}>
-                                        {fmtCoinPrice(coin.price)}
-                                      </span>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <span style={{ fontSize: 11, fontFamily: 'monospace', color: t.textSecondary }}>{fmtCoinPrice(coin.price)}</span>
+                                        {coin.change24h !== null && (
+                                          <span style={{ fontSize: 10, fontWeight: 700, color: coin.change24h >= 0 ? '#00c076' : '#ef4444', minWidth: 36, textAlign: 'right' }}>
+                                            {coin.change24h >= 0 ? '+' : ''}{coin.change24h.toFixed(1)}%
+                                          </span>
+                                        )}
+                                      </div>
                                     </div>
                                   ))}
                                 </div>
@@ -2698,13 +2742,13 @@ export default function App() {
                     { label: 'Total eHEX', sub: `${fmtHex(eHexLiquid)} liquid · ${fmtHex(eHexStaked)} staked+yield`, val: fmtHex(eHexTotal), usd: eHexTotal * eHexPrice, color: '#627EEA', dot: '#627EEA' },
                   ];
                   return (
-                    <div style={{ background: 'radial-gradient(ellipse at top left, #111118 0%, #0d0d0d 100%)', border: '1px solid #242424', borderRadius: 12, overflow: 'hidden' }}>
-                      <div style={{ padding: '12px 16px', borderBottom: isCollapsed('hex-boxes') ? 'none' : '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>HEX Holdings</div>
+                    <div style={{ background: theme === 'dark' ? 'radial-gradient(ellipse at top left, #111118 0%, #0d0d0d 100%)' : t.card, border: `1px solid ${t.border}`, borderRadius: 12, overflow: 'hidden' }}>
+                      <div style={{ padding: '12px 16px', borderBottom: isCollapsed('hex-boxes') ? 'none' : `1px solid ${t.borderLight}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: t.text }}>HEX Holdings</div>
                         <button onClick={() => toggleSection('hex-boxes')}
-                          style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
-                          onMouseOver={e => (e.currentTarget.style.color = '#fff')}
-                          onMouseOut={e => (e.currentTarget.style.color = '#555')}
+                          style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: t.textMuted, transition: 'color .12s' }}
+                          onMouseOver={e => (e.currentTarget.style.color = t.text)}
+                          onMouseOut={e => (e.currentTarget.style.color = t.textMuted)}
                           title={isCollapsed('hex-boxes') ? 'Expand' : 'Collapse'}>
                           {isCollapsed('hex-boxes') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
                         </button>
@@ -2712,14 +2756,14 @@ export default function App() {
                       {!isCollapsed('hex-boxes') && (
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 0 }} className="max-sm:grid-cols-1">
                           {boxes.map(b => (
-                            <div key={b.label} style={{ padding: 16, borderRight: '1px solid #1f1f1f' }}>
+                            <div key={b.label} style={{ padding: 16, borderRight: `1px solid ${t.borderLight}` }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                                 <div style={{ width: 7, height: 7, borderRadius: '50%', background: b.dot }} />
-                                <span style={{ fontSize: 13, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px' }}>{b.label}</span>
+                                <span style={{ fontSize: 13, fontWeight: 600, color: t.textSecondary, textTransform: 'uppercase', letterSpacing: '.5px' }}>{b.label}</span>
                               </div>
                               <div style={{ fontSize: 22, fontWeight: 700, color: b.color, letterSpacing: '-0.5px' }}>{b.val}</div>
-                              {b.usd !== null && <div style={{ fontSize: 13, color: '#aaa', marginTop: 2 }}>${b.usd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>}
-                              <div style={{ fontSize: 13, color: '#888', marginTop: 6 }}>{b.sub}</div>
+                              {b.usd !== null && <div style={{ fontSize: 13, color: t.textSecondary, marginTop: 2 }}>${b.usd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>}
+                              <div style={{ fontSize: 13, color: t.textMuted, marginTop: 6 }}>{b.sub}</div>
                             </div>
                           ))}
                         </div>
@@ -2780,33 +2824,33 @@ export default function App() {
                     : 0;
 
                   return (
-                    <div style={{ background: 'radial-gradient(ellipse at top left, #111118 0%, #0d0d0d 100%)', border: '1px solid #242424', borderRadius: 14, overflow: 'hidden' }}>
-                      <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, borderBottom: isCollapsed('perf-chart') ? 'none' : '1px solid #1f1f1f' }}>
+                    <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, overflow: 'hidden' }}>
+                      <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, borderBottom: isCollapsed('perf-chart') ? 'none' : `1px solid ${t.borderLight}` }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>Portfolio Performance</div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: t.text }}>Portfolio Performance</div>
                           <div style={{ fontSize: 13, fontWeight: 700, color: periodChange >= 0 ? '#00c076' : '#ef4444' }}>
                             {periodChange >= 0 ? '+' : ''}{periodChange.toFixed(2)}%
                           </div>
-                          {isSimulated && <span style={{ fontSize: 13, color: '#aaa', background: '#1a1a1a', padding: '2px 8px', borderRadius: 4 }}>Simulated</span>}
+                          {isSimulated && <span style={{ fontSize: 13, color: t.textSecondary, background: t.cardHigh, padding: '2px 8px', borderRadius: 4 }}>Simulated</span>}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           {/* Period tabs */}
                           {!isCollapsed('perf-chart') && (
-                            <div style={{ display: 'flex', gap: 2, background: '#111', border: '1px solid #252525', borderRadius: 8, padding: 3 }}>
+                            <div style={{ display: 'flex', gap: 2, background: t.cardHigh, border: `1px solid ${t.border}`, borderRadius: 8, padding: 3 }}>
                               {(['1d','1w','1y','all'] as const).map(p => (
                                 <button key={p} onClick={() => setPerfPeriod(p)}
                                   style={{ padding: '4px 10px', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', border: 'none', transition: 'all .12s',
                                     background: perfPeriod === p ? '#00c076' : 'transparent',
-                                    color: perfPeriod === p ? '#000' : '#555' }}>
+                                    color: perfPeriod === p ? '#000' : t.textMuted }}>
                                   {p.toUpperCase()}
                                 </button>
                               ))}
                             </div>
                           )}
                           <button onClick={() => toggleSection('perf-chart')}
-                            style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
-                            onMouseOver={e => (e.currentTarget.style.color = '#fff')}
-                            onMouseOut={e => (e.currentTarget.style.color = '#555')}
+                            style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: t.textMuted, transition: 'color .12s' }}
+                            onMouseOver={e => (e.currentTarget.style.color = t.text)}
+                            onMouseOut={e => (e.currentTarget.style.color = t.textMuted)}
                             title={isCollapsed('perf-chart') ? 'Expand' : 'Collapse'}>
                             {isCollapsed('perf-chart') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
                           </button>
@@ -2823,11 +2867,11 @@ export default function App() {
                                     <stop offset="95%" stopColor="#00c076" stopOpacity={0}/>
                                   </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#1a1a1a" vertical={false} />
-                                <XAxis dataKey="day" stroke="#333" fontSize={11} tickLine={false} axisLine={false} tick={{ fill: '#aaa' }} interval={Math.max(0, Math.floor(chartPoints.length / 7) - 1)} />
+                                <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#1a1a1a' : '#e8e8e8'} vertical={false} />
+                                <XAxis dataKey="day" stroke={theme === 'dark' ? '#333' : '#ccc'} fontSize={11} tickLine={false} axisLine={false} tick={{ fill: t.textSecondary }} interval={Math.max(0, Math.floor(chartPoints.length / 7) - 1)} />
                                 <YAxis hide />
                                 <RechartsTooltip
-                                  contentStyle={{ background: '#111', border: '1px solid #222', borderRadius: 8, fontSize: 13 }}
+                                  contentStyle={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 13, color: t.text }}
                                   formatter={(v: any) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Value']}
                                 />
                                 <Area type="monotone" dataKey="value" stroke="#00c076" fillOpacity={1} fill="url(#colorValue)" strokeWidth={2} dot={false} />
@@ -2848,36 +2892,36 @@ export default function App() {
                 {/* Header row */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                   <div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 2 }}>Token Positions</div>
-                    <div style={{ fontSize: 13, color: '#aaa' }}>{currentAssets.length} assets · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} liquid</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: t.text, marginBottom: 2 }}>Token Positions</div>
+                    <div style={{ fontSize: 13, color: t.textSecondary }}>{currentAssets.length} assets · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} liquid</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', gap: 3, background: '#111', border: '1px solid #252525', borderRadius: 8, padding: 3 }}>
+                    <div style={{ display: 'flex', gap: 3, background: t.cardHigh, border: `1px solid ${t.border}`, borderRadius: 8, padding: 3 }}>
                       {([['1h','1H'],['6h','6H'],['24h','24H'],['7d','7D']] as const).map(([p, label]) => (
                         <button key={p} onClick={() => setPriceChangePeriod(p)}
                           style={{ padding: '4px 10px', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all .12s', border: 'none',
                             background: priceChangePeriod === p ? '#00c076' : 'transparent',
-                            color: priceChangePeriod === p ? '#000' : '#555' }}>
+                            color: priceChangePeriod === p ? '#000' : t.textMuted }}>
                           {label}
                         </button>
                       ))}
                     </div>
                     <button onClick={() => setHideDust(!hideDust)}
-                      style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid #222',
-                        background: hideDust ? '#00c076' : '#111', color: hideDust ? '#000' : '#aaa',
+                      style={{ padding: '6px 14px', borderRadius: 8, border: `1px solid ${t.border}`,
+                        background: hideDust ? '#00c076' : t.cardHigh, color: hideDust ? '#000' : t.textSecondary,
                         fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all .12s' }}>
                       Hide Dust
                     </button>
                     <button onClick={() => setHideSpam(!hideSpam)}
-                      style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid #222',
-                        background: hideSpam ? '#f739ff22' : '#111', color: hideSpam ? '#f739ff' : '#aaa',
+                      style={{ padding: '6px 14px', borderRadius: 8,
+                        background: hideSpam ? '#f739ff22' : t.cardHigh, color: hideSpam ? '#f739ff' : t.textSecondary,
                         fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all .12s',
-                        borderColor: hideSpam ? '#f739ff44' : '#222' }}>
+                        border: hideSpam ? '1px solid #f739ff44' : `1px solid ${t.border}` }}>
                       Hide Spam
                     </button>
                     <button onClick={scanForSpam} disabled={isScanning || wallets.length === 0}
-                      style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid #222',
-                        background: '#111', color: isScanning ? '#555' : '#aaa',
+                      style={{ padding: '6px 14px', borderRadius: 8, border: `1px solid ${t.border}`,
+                        background: t.cardHigh, color: isScanning ? t.textMuted : t.textSecondary,
                         fontSize: 13, fontWeight: 600, cursor: isScanning || wallets.length === 0 ? 'default' : 'pointer',
                         transition: 'all .12s', display: 'flex', alignItems: 'center', gap: 5 }}>
                       {isScanning ? '⟳ Scanning…' : 'Scan'}
@@ -2910,7 +2954,7 @@ export default function App() {
                   <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                       <thead>
-                        <tr style={{ borderBottom: '1px solid #242424' }}>
+                        <tr style={{ borderBottom: `1px solid ${t.border}` }}>
                           {[
                             { label: 'Token', field: null, align: 'left' },
                             { label: 'Price', field: null, align: 'right' },
@@ -2925,9 +2969,9 @@ export default function App() {
                               else { setAssetSortField(field as any); setAssetSortDir('desc'); }
                             } : undefined}
                               style={{ padding: '11px 16px', fontSize: 13, fontWeight: 600,
-                                color: assetSortField === field ? '#00c076' : '#aaa',
+                                color: assetSortField === field ? '#00c076' : t.textSecondary,
                                 textTransform: 'uppercase', letterSpacing: '.5px',
-                                textAlign: align as any, whiteSpace: 'nowrap', background: '#0d0d0d',
+                                textAlign: align as any, whiteSpace: 'nowrap', background: t.card,
                                 cursor: field ? 'pointer' : 'default', userSelect: 'none' }}>
                               {label}{field && assetSortField === field ? (assetSortDir === 'desc' ? ' ↓' : ' ↑') : ''}
                             </th>
@@ -3512,7 +3556,7 @@ export default function App() {
 
                 {/* Daily Yield Banner */}
                 {currentStakes.length > 0 && (
-                  <div style={{ background: 'linear-gradient(90deg, rgba(139,92,246,.08) 0%, rgba(0,192,118,.06) 100%)', border: '1px solid rgba(139,92,246,.2)', borderRadius: 12, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                  <div style={{ background: theme === 'dark' ? 'linear-gradient(90deg, rgba(139,92,246,.08) 0%, rgba(0,192,118,.06) 100%)' : 'linear-gradient(90deg, rgba(139,92,246,.05) 0%, rgba(0,160,102,.04) 100%)', border: theme === 'dark' ? '1px solid rgba(139,92,246,.2)' : '1px solid rgba(139,92,246,.15)', borderRadius: 12, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#8b5cf6', animation: 'pulse 2s infinite' }} />
                       <span style={{ fontSize: 13, fontWeight: 600, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: '.6px' }}>Daily HEX Yield</span>
@@ -3553,13 +3597,13 @@ export default function App() {
                   const eHexTotal = eHexLiquid + eHexStaked;
                   const fmt = (n: number) => Math.round(n).toLocaleString('nb-NO', { maximumFractionDigits: 0 }).replace(/,/g, ' ');
                   return (
-                    <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, overflow: 'hidden' }}>
-                      <div style={{ padding: '12px 16px', borderBottom: isCollapsed('stakes-hex-boxes') ? 'none' : '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>HEX Totals</div>
+                    <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, overflow: 'hidden' }}>
+                      <div style={{ padding: '12px 16px', borderBottom: isCollapsed('stakes-hex-boxes') ? 'none' : `1px solid ${t.borderLight}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: t.text }}>HEX Totals</div>
                         <button onClick={() => toggleSection('stakes-hex-boxes')}
-                          style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
-                          onMouseOver={e => (e.currentTarget.style.color = '#fff')}
-                          onMouseOut={e => (e.currentTarget.style.color = '#555')}
+                          style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: t.textMuted, transition: 'color .12s' }}
+                          onMouseOver={e => (e.currentTarget.style.color = t.text)}
+                          onMouseOut={e => (e.currentTarget.style.color = t.textMuted)}
                           title={isCollapsed('stakes-hex-boxes') ? 'Expand' : 'Collapse'}>
                           {isCollapsed('stakes-hex-boxes') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
                         </button>
@@ -3570,14 +3614,14 @@ export default function App() {
                             { label: 'Total pHEX', dot: '#fb923c', color: '#fb923c', total: pHexTotal, usd: pHexTotal * pHexPrice, liquid: pHexLiquid, staked: pHexStaked },
                             { label: 'Total eHEX', dot: '#627EEA', color: '#627EEA', total: eHexTotal, usd: eHexTotal * eHexPrice, liquid: eHexLiquid, staked: eHexStaked },
                           ].map(b => (
-                            <div key={b.label} style={{ padding: 16, borderRight: '1px solid #1f1f1f' }}>
+                            <div key={b.label} style={{ padding: 16, borderRight: `1px solid ${t.borderLight}` }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                                 <div style={{ width: 7, height: 7, borderRadius: '50%', background: b.dot }} />
-                                <span style={{ fontSize: 13, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px' }}>{b.label}</span>
+                                <span style={{ fontSize: 13, fontWeight: 600, color: t.textSecondary, textTransform: 'uppercase', letterSpacing: '.5px' }}>{b.label}</span>
                               </div>
                               <div style={{ fontSize: 22, fontWeight: 700, color: b.color, letterSpacing: '-0.5px' }}>{fmt(b.total)}</div>
-                              <div style={{ fontSize: 13, color: '#aaa', marginTop: 2 }}>${b.usd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                              <div style={{ fontSize: 13, color: '#888', marginTop: 6 }}>{fmt(b.liquid)} liquid · {fmt(b.staked)} staked+yield</div>
+                              <div style={{ fontSize: 13, color: t.textSecondary, marginTop: 2 }}>${b.usd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                              <div style={{ fontSize: 13, color: t.textMuted, marginTop: 6 }}>{fmt(b.liquid)} liquid · {fmt(b.staked)} staked+yield</div>
                             </div>
                           ))}
                         </div>
@@ -3612,17 +3656,17 @@ export default function App() {
                     <>
                       {/* Chain toggle pill */}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                        <div style={{ display: 'flex', gap: 3, background: '#111', border: '1px solid #252525', borderRadius: 8, padding: 3 }}>
+                        <div style={{ display: 'flex', gap: 3, background: t.cardHigh, border: `1px solid ${t.border}`, borderRadius: 8, padding: 3 }}>
                           {(['all', 'pulsechain', 'ethereum'] as const).map(c => (
                             <button key={c} onClick={() => setStakeChainFilter(c)}
                               style={{ padding: '5px 14px', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', border: 'none', transition: 'all .12s',
                                 background: stakeChainFilter === c ? (c === 'pulsechain' ? '#f739ff' : c === 'ethereum' ? '#627EEA' : '#00c076') : 'transparent',
-                                color: stakeChainFilter === c ? '#fff' : '#555' }}>
+                                color: stakeChainFilter === c ? '#fff' : t.textMuted }}>
                               {c === 'all' ? 'All' : c === 'pulsechain' ? 'PulseChain' : 'Ethereum'}
                             </button>
                           ))}
                         </div>
-                        <div style={{ fontSize: 13, color: '#888' }}>
+                        <div style={{ fontSize: 13, color: t.textSecondary }}>
                           {filteredStakes.length} active stake{filteredStakes.length !== 1 ? 's' : ''} · {fTShares.toLocaleString(undefined, { maximumFractionDigits: 2 })} active T-Shares
                         </div>
                       </div>
@@ -3635,10 +3679,10 @@ export default function App() {
                           { label: 'Value at Maturity', val: `$${(fMaturityHex * phexHp).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${fMaturityHex.toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX`, color: '#00c076' },
                           { label: 'Active T-Shares', val: fTShares.toLocaleString(undefined, { maximumFractionDigits: 2 }), sub: `≈ ${(fTShares * 6.2).toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX/day` },
                         ].map(({ label, val, sub, color }) => (
-                          <div key={label} style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, padding: 18 }}>
-                            <div style={{ fontSize: 13, color: '#aaa', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>{label}</div>
-                            <div style={{ fontSize: 18, fontWeight: 700, color: color || '#fff', marginBottom: 2 }}>{val}</div>
-                            {sub && <div style={{ fontSize: 13, color: '#aaa' }}>{sub}</div>}
+                          <div key={label} style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, padding: 18 }}>
+                            <div style={{ fontSize: 13, color: t.textSecondary, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>{label}</div>
+                            <div style={{ fontSize: 18, fontWeight: 700, color: color || t.text, marginBottom: 2 }}>{val}</div>
+                            {sub && <div style={{ fontSize: 13, color: t.textSecondary }}>{sub}</div>}
                           </div>
                         ))}
                       </div>
@@ -5389,8 +5433,8 @@ export default function App() {
       </main>
 
       {/* ── MOBILE BOTTOM NAV ── */}
-      <nav className="mobile-bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-50 flex"
-        style={{ background: '#080808', borderTop: '1px solid #1f1f1f' }}>
+      <nav className="mobile-bottom-nav bottom-nav-blur md:hidden fixed bottom-0 left-0 right-0 z-50 flex"
+        style={{ background: theme === 'dark' ? 'rgba(8,8,8,0.92)' : 'rgba(255,255,255,0.92)', borderTop: `1px solid ${t.borderLight}` }}>
         {([
           { id: 'overview', label: 'Overview', icon: LayoutDashboard },
           { id: 'assets',   label: 'Assets',   icon: WalletIcon },
@@ -5400,18 +5444,20 @@ export default function App() {
           { id: 'wallets',  label: 'Wallets',  icon: User },
         ] as const).map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setActiveTab(id)}
-            className="flex-1 flex flex-col items-center justify-center gap-1"
+            className="flex-1 flex flex-col items-center justify-center"
             style={{
-              minHeight: 56,
-              padding: '10px 4px',
+              minHeight: 60,
+              padding: '8px 4px',
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: activeTab === id ? '#00c076' : '#555',
+              color: activeTab === id ? '#00c076' : t.textMuted,
               transition: 'color .12s',
             }}>
-            <Icon size={20} />
-            <span style={{ fontSize: 13, fontWeight: activeTab === id ? 700 : 500, lineHeight: 1 }}>{label}</span>
+            <div className={activeTab === id ? 'bottom-nav-dot' : ''}>
+              <Icon size={22} />
+            </div>
+            <span style={{ fontSize: 10, fontWeight: activeTab === id ? 700 : 500, lineHeight: 1, marginTop: 2 }}>{label}</span>
           </button>
         ))}
       </nav>
