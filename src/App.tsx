@@ -3009,7 +3009,7 @@ export default function App() {
                             const logo = (pnlAsset as any).logoUrl || tokenLogos[(pnlAsset as any).address?.toLowerCase?.()] || getTokenLogoUrl(pnlAsset);
                             return logo
                               ? <img src={logo} alt={pnlAsset.symbol} style={{ width: 28, height: 28, borderRadius: '50%' }}
-                                  onError={e => { const el = e.target as HTMLImageElement; el.style.display='none'; el.insertAdjacentHTML('afterend', `<div style="width:28px;height:28px;border-radius:50%;background:#2a1a3a;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#a78bfa">${pnlAsset.symbol[0]}</div>`); }} />
+                                  onError={e => { const el = e.target as HTMLImageElement; el.style.display='none'; const fb = document.createElement('div'); Object.assign(fb.style, { width: '28px', height: '28px', borderRadius: '50%', background: '#2a1a3a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '800', color: '#a78bfa' }); fb.textContent = pnlAsset.symbol[0]; el.parentNode?.insertBefore(fb, el.nextSibling); }} />
                               : <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#2a1a3a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#a78bfa' }}>{pnlAsset.symbol[0]}</div>;
                           })()}
                           <div>
@@ -4143,7 +4143,7 @@ export default function App() {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 10px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         {logo2 ? <img src={logo2} alt={pnlAsset.symbol} style={{ width: 28, height: 28, borderRadius: '50%' }}
-                            onError={e => { const el = e.target as HTMLImageElement; el.style.display='none'; el.insertAdjacentHTML('afterend', `<div style="width:28px;height:28px;border-radius:50%;background:#2a1a3a;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#a78bfa">${pnlAsset.symbol[0]}</div>`); }} /> : <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#2a1a3a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#a78bfa' }}>{pnlAsset.symbol[0]}</div>}
+                            onError={e => { const el = e.target as HTMLImageElement; el.style.display='none'; const fb = document.createElement('div'); Object.assign(fb.style, { width: '28px', height: '28px', borderRadius: '50%', background: '#2a1a3a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '800', color: '#a78bfa' }); fb.textContent = pnlAsset.symbol[0]; el.parentNode?.insertBefore(fb, el.nextSibling); }} /> : <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#2a1a3a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#a78bfa' }}>{pnlAsset.symbol[0]}</div>}
                         <div>
                           <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{assetName} Profit &amp; Loss</div>
                           <div style={{ fontSize: 13, color: '#888', marginTop: 1 }}>{swapCount} swap{swapCount !== 1 ? 's' : ''} · approximate (current prices)</div>
