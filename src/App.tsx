@@ -2784,14 +2784,11 @@ export default function App() {
                 })()}
 
                 {/* ── ASSET GRID (3×3) ── */}
-                {/* TODO: Replace SPARKLINE_BASE_VARIANCE mock data with live 7-day OHLCV data
-                    from on-chain LP reserves (PulseX getReserves, snapshots per day).
-                    Track in: https://github.com/Are76/pulseport-portfolio-tracker/issues */}
                 {(() => {
-                  // Named constants for mock sparkline generation (replaces with live data TODO above)
-                  const SPARKLINE_VARIANCE_SCALE = 0.9;   // base multiplier (90% of value)
-                  const SPARKLINE_SIN_AMPLITUDE = 0.10;   // ±10% sine wave oscillation
-                  const SPARKLINE_TREND_STEP = 0.01;      // 1% per point upward trend
+                  // Named constants for mock sparkline generation
+                  const SPARKLINE_VARIANCE_SCALE = 0.9;
+                  const SPARKLINE_SIN_AMPLITUDE = 0.10;
+                  const SPARKLINE_TREND_STEP = 0.01;
                   const ASSET_COLORS: Record<string, string> = {
                     PLS: '#00FF9F', PLSX: '#f739ff', HEX: '#fb923c',
                     INC: '#22d3ee', eHEX: '#627EEA', PRVX: '#a855f7',
@@ -2803,89 +2800,122 @@ export default function App() {
 
                   if (displayAssets.length === 0) return null;
 
+                  const totalShown = displayAssets.reduce((s, a) => s + a.value, 0);
+
                   return (
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                        <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--fg)', letterSpacing: '-0.02em' }}>Asset Positions</div>
-                        <button onClick={() => setActiveTab('assets')}
-                          style={{ fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                          View all <ChevronRight size={13} />
-                        </button>
+                      {/* Section header with gradient accent */}
+                      <div style={{ position: 'relative', marginBottom: 18 }}>
+                        <div style={{ height: 2, background: 'linear-gradient(90deg, var(--accent) 0%, rgba(0,255,159,0.2) 60%, transparent 100%)', borderRadius: 2, marginBottom: 14 }} />
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div>
+                            <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--fg)', letterSpacing: '-0.02em' }}>Asset Positions</div>
+                            <div style={{ fontSize: 12, color: 'var(--fg-subtle)', marginTop: 2 }}>
+                              {displayAssets.length} assets · ${totalShown.toLocaleString(undefined, { maximumFractionDigits: 0 })} total
+                            </div>
+                          </div>
+                          <button onClick={() => setActiveTab('assets')}
+                            style={{ fontSize: 12, color: 'var(--accent)', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 8, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', transition: 'all .15s' }}
+                            onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,255,159,0.18)'; }}
+                            onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent-dim)'; }}>
+                            View all <ChevronRight size={13} />
+                          </button>
+                        </div>
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }} className="max-sm:grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+                      <div className="asset-grid-3col">
                         {displayAssets.map((asset) => {
                           const pct = asset.priceChange24h ?? asset.pnl24h ?? 0;
                           const share = ((asset.value / (summary.totalValue || 1)) * 100);
                           const accentColor = ASSET_COLORS[asset.symbol] || '#8b5cf6';
                           const logo = (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()];
-                          const sparkData = Array.from({ length: 7 }, (_, i) => ({
+                          const sparkData = Array.from({ length: 10 }, (_, i) => ({
                             v: asset.value * (SPARKLINE_VARIANCE_SCALE + Math.sin(i * 0.8 + asset.value % 3) * SPARKLINE_SIN_AMPLITUDE + i * SPARKLINE_TREND_STEP),
                           }));
                           const chainLabel = asset.chain === 'pulsechain' ? 'PLS' : asset.chain === 'ethereum' ? 'ETH' : 'BASE';
                           const chainColor = asset.chain === 'pulsechain' ? 'var(--chain-pulse)' : asset.chain === 'ethereum' ? 'var(--chain-eth)' : 'var(--chain-base)';
                           const chainBg = asset.chain === 'pulsechain' ? 'rgba(247,57,255,0.1)' : asset.chain === 'ethereum' ? 'rgba(138,164,240,0.1)' : 'rgba(96,165,250,0.1)';
+                          const unitPrice = (asset as any).price;
                           return (
-                            <div key={asset.id} className="asset-card" onClick={() => setActiveTab('assets')}>
-                              {/* Top row: logo + symbol + chain badge */}
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                            <div key={asset.id} className="asset-card-premium" onClick={() => setActiveTab('assets')}>
+                              {/* Accent top border */}
+                              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${accentColor}88 0%, ${accentColor}33 60%, transparent 100%)`, borderRadius: '16px 16px 0 0', opacity: 0.6, transition: 'opacity .2s' }} className="card-top-accent" />
+
+                              {/* Row 1: Logo + symbol/name + chain badge */}
+                              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14, padding: '20px 18px 0' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
                                   <div style={{
-                                    width: 36, height: 36, borderRadius: '50%',
-                                    background: `${accentColor}18`, border: `1.5px solid ${accentColor}33`,
+                                    width: 44, height: 44, borderRadius: '50%',
+                                    background: `${accentColor}15`, border: `2px solid ${accentColor}44`,
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: 13, fontWeight: 800, color: accentColor,
+                                    fontSize: 15, fontWeight: 800, color: accentColor,
                                     overflow: 'hidden', flexShrink: 0,
-                                    boxShadow: `0 0 12px ${accentColor}22`,
+                                    boxShadow: `0 0 20px ${accentColor}30, 0 0 6px ${accentColor}20`,
                                   }}>
-                                    {logo ? <img src={logo} alt={asset.symbol} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
-                                      onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /> : asset.symbol[0]}
+                                    {logo ? (
+                                      <img src={logo} alt={asset.symbol}
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                                        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                    ) : asset.symbol[0]}
                                   </div>
-                                  <div>
-                                    <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--fg)', letterSpacing: '-0.01em' }}>{asset.symbol}</div>
-                                    <div style={{ fontSize: 11, color: 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace' }}>
-                                      {(asset as any).price ? `$${(asset as any).price < 0.001 ? (asset as any).price.toFixed(6) : (asset as any).price < 1 ? (asset as any).price.toFixed(4) : (asset as any).price.toFixed(2)}` : '—'}
-                                    </div>
+                                  <div style={{ minWidth: 0 }}>
+                                    <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--fg)', letterSpacing: '-0.01em', lineHeight: 1.2 }}>{asset.symbol}</div>
+                                    <div style={{ fontSize: 11, color: 'var(--fg-subtle)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 100, marginTop: 1 }}>{asset.name}</div>
                                   </div>
                                 </div>
                                 <span style={{
                                   fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
-                                  padding: '3px 7px', borderRadius: 999,
-                                  background: chainBg, color: chainColor, border: `1px solid ${chainColor}33`,
+                                  padding: '3px 8px', borderRadius: 999, flexShrink: 0,
+                                  background: chainBg, color: chainColor, border: `1px solid ${chainColor}44`,
                                 }}>
                                   {chainLabel}
                                 </span>
                               </div>
-                              {/* Balance + USD Value */}
-                              <div style={{ marginBottom: 10 }}>
-                                <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
-                                  {asset.balance >= 1e9 ? `${(asset.balance/1e9).toFixed(2)}B` : asset.balance >= 1e6 ? `${(asset.balance/1e6).toFixed(2)}M` : asset.balance >= 1e3 ? `${(asset.balance/1e3).toFixed(1)}K` : asset.balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}{' '}
-                                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--fg-subtle)' }}>{asset.symbol}</span>
+
+                              {/* Row 2: USD value (primary hero) + balance + unit price */}
+                              <div style={{ padding: '0 18px', marginBottom: 12 }}>
+                                <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.03em', lineHeight: 1 }}>
+                                  ${asset.value >= 1e6 ? `${(asset.value/1e6).toFixed(2)}M` : asset.value >= 1e3 ? `${(asset.value/1e3).toFixed(1)}K` : asset.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                 </div>
-                                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg-muted)', fontFamily: 'JetBrains Mono, monospace', marginTop: 2 }}>${asset.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                                <div style={{ fontSize: 12, color: 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace', marginTop: 5, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <span>
+                                    {asset.balance >= 1e9 ? `${(asset.balance/1e9).toFixed(2)}B` : asset.balance >= 1e6 ? `${(asset.balance/1e6).toFixed(2)}M` : asset.balance >= 1e3 ? `${(asset.balance/1e3).toFixed(1)}K` : asset.balance.toLocaleString(undefined, { maximumFractionDigits: 2 })} {asset.symbol}
+                                  </span>
+                                  {unitPrice > 0 && (
+                                    <span style={{ color: 'var(--fg-subtle)', opacity: 0.7 }}>
+                                      @{unitPrice < 0.001 ? unitPrice.toFixed(6) : unitPrice < 1 ? unitPrice.toFixed(4) : `$${unitPrice.toFixed(2)}`}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
-                              {/* Bottom row: change badge + portfolio % + sparkline */}
-                              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                                  <span className={pct >= 0 ? 'change-badge-pos' : 'change-badge-neg'}>
-                                    {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(1)}%
-                                  </span>
-                                  <span style={{ fontSize: 10, color: 'var(--fg-subtle)', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 999, border: '1px solid rgba(255,255,255,0.08)', fontFamily: 'JetBrains Mono, monospace' }}>
-                                    {share.toFixed(1)}%
-                                  </span>
-                                </div>
-                                <div className="sparkline-container" style={{ width: 76, height: 36 }}>
-                                  <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={sparkData} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
-                                      <defs>
-                                        <linearGradient id={`spark-${asset.id}`} x1="0" y1="0" x2="0" y2="1">
-                                          <stop offset="0%" stopColor={pct >= 0 ? '#00FF9F' : '#f43f5e'} stopOpacity={0.35} />
-                                          <stop offset="100%" stopColor={pct >= 0 ? '#00FF9F' : '#f43f5e'} stopOpacity={0} />
-                                        </linearGradient>
-                                      </defs>
-                                      <Area type="monotone" dataKey="v" stroke={pct >= 0 ? '#00FF9F' : '#f43f5e'} strokeWidth={1.5} fill={`url(#spark-${asset.id})`} dot={false} isAnimationActive={false} />
-                                    </AreaChart>
-                                  </ResponsiveContainer>
-                                </div>
+
+                              {/* Row 3: change badge + portfolio % */}
+                              <div style={{ padding: '0 18px', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                                <span className={pct >= 0 ? 'change-badge-pos' : 'change-badge-neg'}>
+                                  {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(1)}%
+                                </span>
+                                <span style={{
+                                  fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)',
+                                  background: 'rgba(255,255,255,0.05)', padding: '2px 7px',
+                                  borderRadius: 999, border: '1px solid rgba(255,255,255,0.08)',
+                                  fontFamily: 'JetBrains Mono, monospace',
+                                }}>
+                                  {share.toFixed(1)}% of portfolio
+                                </span>
+                              </div>
+
+                              {/* Row 4: Full-bleed sparkline */}
+                              <div className="sparkline-container" style={{ margin: '0 0 0', height: 52 }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <AreaChart data={sparkData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                                    <defs>
+                                      <linearGradient id={`spark-${asset.id}`} x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor={pct >= 0 ? accentColor : '#f43f5e'} stopOpacity={0.4} />
+                                        <stop offset="100%" stopColor={pct >= 0 ? accentColor : '#f43f5e'} stopOpacity={0} />
+                                      </linearGradient>
+                                    </defs>
+                                    <Area type="monotone" dataKey="v" stroke={pct >= 0 ? accentColor : '#f43f5e'} strokeWidth={2} fill={`url(#spark-${asset.id})`} dot={false} isAnimationActive={false} />
+                                  </AreaChart>
+                                </ResponsiveContainer>
                               </div>
                             </div>
                           );

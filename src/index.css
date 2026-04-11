@@ -498,7 +498,7 @@ button, a {
   transform: translateY(-2px);
 }
 
-/* ── ASSET CARD ──────────────────────────────────────────────────────── */
+/* ── ASSET CARD (legacy — kept for other usages) ─────────────────────── */
 .asset-card {
   background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
   backdrop-filter: blur(12px);
@@ -512,7 +512,6 @@ button, a {
   cursor: pointer;
   will-change: transform;
 }
-/* Top shimmer line — appears on hover */
 .asset-card::before {
   content: '';
   position: absolute;
@@ -522,7 +521,6 @@ button, a {
   opacity: 0;
   transition: opacity 0.2s var(--ease-spring);
 }
-/* Ambient glow orb — bottom right */
 .asset-card::after {
   content: '';
   position: absolute;
@@ -542,6 +540,57 @@ button, a {
 .asset-card:hover::before { opacity: 1; }
 .asset-card:hover::after  { opacity: 1; }
 .asset-card:active { transform: translateY(-1px) scale(0.99); }
+
+/* ── PREMIUM ASSET CARD (overview 3×3 grid) ──────────────────────────── */
+.asset-card-premium {
+  background: linear-gradient(160deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0.018) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 18px;
+  padding: 0;
+  transition: border-color 0.22s var(--ease-spring), box-shadow 0.28s var(--ease-spring), transform 0.22s var(--ease-spring);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  will-change: transform;
+}
+/* Ambient inner glow — bottom */
+.asset-card-premium::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 60%;
+  background: radial-gradient(ellipse at 50% 110%, rgba(0,255,159,0.05) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s var(--ease-spring);
+  pointer-events: none;
+}
+.asset-card-premium:hover {
+  border-color: rgba(0,255,159,0.30);
+  box-shadow:
+    0 0 0 1px rgba(0,255,159,0.10),
+    0 2px 12px rgba(0,255,159,0.14),
+    0 12px 40px rgba(0,0,0,0.50),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+  transform: translateY(-4px);
+}
+.asset-card-premium:hover .card-top-accent { opacity: 1 !important; }
+.asset-card-premium:hover::after { opacity: 1; }
+.asset-card-premium:active { transform: translateY(-1px) scale(0.99); }
+
+/* ── ASSET GRID 3-COLUMN RESPONSIVE ──────────────────────────────────── */
+.asset-grid-3col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+@media (max-width: 900px) {
+  .asset-grid-3col { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 540px) {
+  .asset-grid-3col { grid-template-columns: 1fr; }
+}
 
 /* ── CHART TOOLTIP ───────────────────────────────────────────────────── */
 .chart-tooltip {
