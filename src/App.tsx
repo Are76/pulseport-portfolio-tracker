@@ -2518,45 +2518,62 @@ export default function App() {
                   return (
                     <>
                     <div style={{
-                      background: 'linear-gradient(135deg, #081a10 0%, #050f09 40%, #060d14 100%)',
-                      border: '1px solid #242424', borderRadius: 16, padding: '24px 28px', position: 'relative', overflow: 'hidden'
-                    }}>
+                      background: t.gradientHero,
+                      border: `1px solid ${t.border}`, borderRadius: 16, padding: '24px 28px', position: 'relative', overflow: 'hidden'
+                    }} className="md-elevation-1">
                       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none',
                         background: 'radial-gradient(ellipse at 15% 50%, rgba(0,192,118,.08) 0%, transparent 60%), radial-gradient(ellipse at 85% 50%, rgba(99,102,241,.05) 0%, transparent 60%)' }} />
                       <div className="hero-grid" style={{ position: 'relative' }}>
-                        {/* Left: value + stats */}
+                        {/* Left: Portfolio Value + Stats */}
                         <div>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 6 }}>Total Portfolio Value</div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: t.textSecondary, textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 6 }}>Total Portfolio Value</div>
                           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap', marginBottom: 18 }}>
-                            <div style={{ fontSize: 52, fontWeight: 800, letterSpacing: '-2px', lineHeight: 1, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>
+                            <div style={{ fontSize: 52, fontWeight: 800, letterSpacing: '-2px', lineHeight: 1, color: t.text, fontVariantNumeric: 'tabular-nums' }}>
                               ${summary.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingBottom: 6 }}>
                               <div style={{ fontSize: 13, color: summary.pnl24h >= 0 ? '#00c076' : '#ef4444', fontWeight: 700 }}>
                                 {summary.pnl24h >= 0 ? '+' : '-'}${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })} / {summary.pnl24h >= 0 ? '+' : '-'}{summary.pnl24hPercent.toFixed(2)}%
                               </div>
-                              <div style={{ fontSize: 13, color: '#aaa' }}>{summary.nativeValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</div>
+                              <div style={{ fontSize: 13, color: t.textSecondary }}>{summary.nativeValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</div>
                             </div>
                           </div>
-                          {/* Separator + compact stats */}
-                          <div style={{ height: 1, background: 'rgba(255,255,255,.06)', margin: '18px 0 14px' }} />
+                          {/* Compact stats */}
+                          <div style={{ height: 1, background: theme === 'dark' ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.08)', margin: '18px 0 14px' }} />
                           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: 12, color: '#666' }}>Liquid: <span style={{ color: '#aaa', fontWeight: 600 }}>${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></span>
-                            <span style={{ fontSize: 12, color: '#444' }}>·</span>
-                            <span style={{ fontSize: 12, color: '#666' }}>Staked: <span style={{ color: '#aaa', fontWeight: 600 }}>${summary.stakingValueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></span>
-                            <span style={{ fontSize: 12, color: '#444' }}>·</span>
-                            <span style={{ fontSize: 12, color: '#666' }}>Wallets: <span style={{ color: '#aaa', fontWeight: 600 }}>{wallets.length}</span></span>
+                            <span style={{ fontSize: 12, color: t.textTertiary }}>Liquid: <span style={{ color: t.textSecondary, fontWeight: 600 }}>${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></span>
+                            <span style={{ fontSize: 12, color: t.textMuted }}>·</span>
+                            <span style={{ fontSize: 12, color: t.textTertiary }}>Staked: <span style={{ color: t.textSecondary, fontWeight: 600 }}>${summary.stakingValueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></span>
+                            <span style={{ fontSize: 12, color: t.textMuted }}>·</span>
+                            <span style={{ fontSize: 12, color: t.textTertiary }}>Wallets: <span style={{ color: t.textSecondary, fontWeight: 600 }}>{wallets.length}</span></span>
                           </div>
-                          {/* Core coin icons row */}
+                          {/* Net Investment / PNL / Stakes at Maturity — inside hero under price */}
+                          <div style={{ height: 1, background: theme === 'dark' ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.08)', margin: '16px 0 14px' }} />
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }} className="max-sm:grid-cols-1">
+                            {[
+                              { label: 'Net Investment', val: `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Capital deployed', color: t.text },
+                              { label: 'Unified PNL', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${summary.unifiedPnl >= 0 ? '+' : ''}${summary.totalValue > 0 ? ((summary.unifiedPnl / Math.max(summary.netInvestment, 1)) * 100).toFixed(1) : '0.0'}% vs invested`, color: summary.unifiedPnl >= 0 ? '#00c076' : '#ef4444' },
+                              { label: 'Stakes at Maturity', val: `$${valueAtMaturity.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${fmtBigNum(totalHexAtMaturity)} HEX`, color: '#8b5cf6' },
+                            ].map(({ label, val, sub, color }) => (
+                              <div key={label} style={{ background: theme === 'dark' ? 'rgba(255,255,255,.03)' : 'rgba(0,0,0,.03)', borderRadius: 10, padding: '12px 14px' }}>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 4 }}>{label}</div>
+                                <div style={{ fontSize: 18, fontWeight: 700, color, fontVariantNumeric: 'tabular-nums' }}>{val}</div>
+                                <div style={{ fontSize: 12, color: t.textTertiary, marginTop: 2 }}>{sub}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        {/* Right: Core Coin Icons + Portfolio Allocation */}
+                        <div style={{ minWidth: 230 }} className="max-sm:w-full">
+                          {/* Core coin icons */}
                           {(() => {
-                            const plsPriceH = prices['pulsechain']?.usd || 0;
                             const corePriceCoins = [
-                              { symbol: 'PLS',  price: plsPriceH, change24h: prices['pulsechain']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png' },
+                              { symbol: 'PLS',  price: prices['pulsechain']?.usd || 0, change24h: prices['pulsechain']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png' },
                               { symbol: 'PLSX', price: prices['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd || prices['pulsex']?.usd || 0, change24h: prices['pulsex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x95B303987A60C71504D99Aa1b13B4DA07b0790ab.png' },
                               { symbol: 'INC',  price: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd || prices['incentive']?.usd || 0, change24h: prices['incentive']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png' },
                               { symbol: 'HEX',  price: prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0, change24h: prices['hex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39.png' },
-                              { symbol: 'PRVX', price: prices['pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11']?.usd || 0, change24h: null, logo: 'https://tokens.app.pulsex.com/images/tokens/0xf6f8dB0ABA00007681F8FAF16a0fdA1C9B030b11.png' },
-                              { symbol: 'eHEX', price: prices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['hex']?.usd || 0, change24h: prices['hex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x57fde0a71132198bbec939b98976993d8d89d225.png' },
+                              { symbol: 'PRVX', price: prices['pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11']?.usd || 0, change24h: null, logo: 'https://tokens.app.pulsex.com/images/tokens/0xf6f8dB0ABA00007681F8FAF16a0fdA1C9B030b11.png', fallbackLogo: 'https://raw.githubusercontent.com/nicemans1/pulsechain-assets/main/tokens/0xf6f8dB0ABA00007681F8FAF16a0fdA1C9B030b11/logo.png' },
+                              { symbol: 'eHEX', price: prices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['hex']?.usd || 0, change24h: prices['hex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x57fde0a71132198bbec939b98976993d8d89d225.png', fallbackLogo: 'https://assets.coingecko.com/coins/images/4086/small/HEX-logo.png' },
                             ];
                             const fmtCoinPrice = (p: number) => {
                               if (p === 0) return '—';
@@ -2566,92 +2583,84 @@ export default function App() {
                               return `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
                             };
                             return (
-                              <>
-                                <div style={{ height: 1, background: 'rgba(255,255,255,.06)', margin: '20px 0 16px' }} />
-                                <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+                              <div style={{ marginBottom: 16 }}>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: t.textSecondary, textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 10 }}>Core Coins</div>
+                                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                                   {corePriceCoins.map(coin => (
-                                    <div key={coin.symbol} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, minWidth: 54 }}>
-                                      <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#1e1e1e', overflow: 'hidden', border: '1px solid #333', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <img src={coin.logo} alt={coin.symbol} style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover' }}
-                                          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                    <div key={coin.symbol} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 50 }}>
+                                      <div style={{ width: 42, height: 42, borderRadius: '50%', background: t.cardHighest, overflow: 'hidden', border: `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <img src={coin.logo} alt={coin.symbol} style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover' }}
+                                          onError={e => {
+                                            const img = e.target as HTMLImageElement;
+                                            if ((coin as any).fallbackLogo && img.src !== (coin as any).fallbackLogo) {
+                                              img.src = (coin as any).fallbackLogo;
+                                            } else {
+                                              img.style.display = 'none';
+                                            }
+                                          }} />
                                       </div>
-                                      <span style={{ fontSize: 11, fontWeight: 700, color: '#ccc', letterSpacing: '.3px' }}>{coin.symbol}</span>
-                                      <span style={{ fontSize: 11, fontFamily: 'monospace', color: coin.change24h !== null ? (coin.change24h >= 0 ? '#00c076' : '#ef4444') : '#aaa' }}>
+                                      <span style={{ fontSize: 10, fontWeight: 700, color: t.textSecondary, letterSpacing: '.3px' }}>{coin.symbol}</span>
+                                      <span style={{ fontSize: 10, fontFamily: 'monospace', color: coin.change24h !== null ? (coin.change24h >= 0 ? '#00c076' : '#ef4444') : t.textSecondary }}>
                                         {fmtCoinPrice(coin.price)}
                                       </span>
                                     </div>
                                   ))}
                                 </div>
-                              </>
+                              </div>
+                            );
+                          })()}
+                          {/* Portfolio Allocation */}
+                          {(() => {
+                            const ALLOC_COLORS2 = ['#00c076','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
+                            const alloc = assetAllocation.length > 0 ? assetAllocation : [];
+                            return (
+                              <div>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: t.textSecondary, textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                  <span>Portfolio Allocation</span>
+                                  <div style={{ display: 'flex', gap: 4 }}>
+                                    {(['1h','24h','7d'] as const).map(id => (
+                                      <button key={id} onClick={() => setPriceChangePeriod(id)}
+                                        style={{ padding: '2px 8px', borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
+                                          background: priceChangePeriod === id ? '#00c076' : t.cardHigh,
+                                          color: priceChangePeriod === id ? '#000' : t.textMuted }}>
+                                        {id.toUpperCase()}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                                {alloc.length > 0 ? (
+                                  <>
+                                    <div style={{ width: 130, height: 130, margin: '0 auto' }}>
+                                      <ResponsiveContainer width="100%" height="100%" debounce={50}>
+                                        <PieChart>
+                                          <Pie data={alloc} cx="50%" cy="50%" innerRadius={38} outerRadius={58} paddingAngle={3} dataKey="value">
+                                            {alloc.map((_, i) => <Cell key={i} fill={ALLOC_COLORS2[i % ALLOC_COLORS2.length]} />)}
+                                          </Pie>
+                                          <RechartsTooltip contentStyle={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 13, color: t.text }} />
+                                        </PieChart>
+                                      </ResponsiveContainer>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 8 }}>
+                                      {alloc.map((a, i) => {
+                                        const pct = (a.value / (summary.totalValue || 1)) * 100;
+                                        return (
+                                          <div key={a.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <div style={{ width: 7, height: 7, borderRadius: 2, background: ALLOC_COLORS2[i % ALLOC_COLORS2.length], flexShrink: 0 }} />
+                                            <span style={{ fontSize: 12, color: t.textSecondary, minWidth: 48 }}>{a.name}</span>
+                                            <span style={{ fontSize: 12, color: t.textSecondary, fontVariantNumeric: 'tabular-nums', minWidth: 36 }}>{pct.toFixed(1)}%</span>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </>
+                                ) : (
+                                  <div style={{ fontSize: 12, color: t.textMuted, textAlign: 'center', padding: '20px 0' }}>Add wallets to see allocation</div>
+                                )}
+                              </div>
                             );
                           })()}
                         </div>
-                        {/* Right: Portfolio Allocation */}
-                        {(() => {
-                          const ALLOC_COLORS2 = ['#00c076','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
-                          const alloc = assetAllocation.length > 0 ? assetAllocation : [];
-                          return (
-                            <div style={{ minWidth: 230 }} className="max-sm:w-full">
-                              <div style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <span>Portfolio Allocation</span>
-                                <div style={{ display: 'flex', gap: 4 }}>
-                                  {(['1h','24h','7d'] as const).map(id => (
-                                    <button key={id} onClick={() => setPriceChangePeriod(id)}
-                                      style={{ padding: '2px 8px', borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
-                                        background: priceChangePeriod === id ? '#00c076' : '#111',
-                                        color: priceChangePeriod === id ? '#000' : '#555' }}>
-                                      {id.toUpperCase()}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                              {alloc.length > 0 ? (
-                                <>
-                                  <div style={{ width: 130, height: 130, margin: '0 auto' }}>
-                                    <ResponsiveContainer width="100%" height="100%" debounce={50}>
-                                      <PieChart>
-                                        <Pie data={alloc} cx="50%" cy="50%" innerRadius={38} outerRadius={58} paddingAngle={3} dataKey="value">
-                                          {alloc.map((_, i) => <Cell key={i} fill={ALLOC_COLORS2[i % ALLOC_COLORS2.length]} />)}
-                                        </Pie>
-                                        <RechartsTooltip contentStyle={{ background: '#111', border: '1px solid #222', borderRadius: 8, fontSize: 13 }} />
-                                      </PieChart>
-                                    </ResponsiveContainer>
-                                  </div>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 8 }}>
-                                    {alloc.map((a, i) => {
-                                      const pct = (a.value / (summary.totalValue || 1)) * 100;
-                                      return (
-                                        <div key={a.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                          <div style={{ width: 7, height: 7, borderRadius: 2, background: ALLOC_COLORS2[i % ALLOC_COLORS2.length], flexShrink: 0 }} />
-                                          <span style={{ fontSize: 12, color: '#ccc', minWidth: 48 }}>{a.name}</span>
-                                          <span style={{ fontSize: 12, color: '#aaa', fontVariantNumeric: 'tabular-nums', minWidth: 36 }}>{pct.toFixed(1)}%</span>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                </>
-                              ) : (
-                                <div style={{ fontSize: 12, color: '#555', textAlign: 'center', padding: '20px 0' }}>Add wallets to see allocation</div>
-                              )}
-                            </div>
-                          );
-                        })()}
                       </div>
-                    </div>
-
-                    {/* ── STAT ROW ── */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, background: '#242424', borderRadius: 12, overflow: 'hidden', border: '1px solid #242424' }} className="max-sm:grid-cols-1">
-                      {[
-                        { label: 'Net Investment', val: `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Capital deployed', color: '#fff' },
-                        { label: 'Unified PNL', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${summary.unifiedPnl >= 0 ? '+' : ''}${summary.totalValue > 0 ? ((summary.unifiedPnl / Math.max(summary.netInvestment, 1)) * 100).toFixed(1) : '0.0'}% vs invested`, color: summary.unifiedPnl >= 0 ? '#00c076' : '#ef4444' },
-                        { label: 'Stakes at Maturity', val: `$${valueAtMaturity.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${fmtBigNum(totalHexAtMaturity)} HEX`, color: '#8b5cf6' },
-                      ].map(({ label, val, sub, color }) => (
-                        <div key={label} style={{ background: '#0d0d0d', padding: '16px 20px' }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 6 }}>{label}</div>
-                          <div style={{ fontSize: 20, fontWeight: 700, color, fontVariantNumeric: 'tabular-nums' }}>{val}</div>
-                          <div style={{ fontSize: 12, color: '#888', marginTop: 3 }}>{sub}</div>
-                        </div>
-                      ))}
                     </div>
                     </>
                   );
