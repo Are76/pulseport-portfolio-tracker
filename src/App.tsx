@@ -375,7 +375,7 @@ export default function App() {
   // Hardcoded fallback logos for tokens not listed on CoinGecko
   const STATIC_LOGOS: Record<string, string> = {
     '0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d': 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png', // INC
-    '0xf6f8db0aba00007681f8faf16a0fda1c9b030b11': 'https://tokens.app.pulsex.com/images/tokens/0xf6f8dB0ABA00007681F8FAF16a0fdA1C9B030b11.png', // PRVX
+    '0xf6f8db0aba00007681f8faf16a0fda1c9b030b11': 'https://cdn.dexscreener.com/cms/images/ODHYYN7yppDHnd6u?width=64&height=64&fit=crop&quality=95&format=auto', // PRVX
   };
   const [tokenLogos, setTokenLogos] = useState<Record<string, string>>(STATIC_LOGOS);
   const [stakeChainFilter, setStakeChainFilter] = useState<'all' | 'pulsechain' | 'ethereum'>('all');
@@ -2720,8 +2720,8 @@ export default function App() {
                                { symbol: 'PLSX', price: prices['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd || prices['pulsex']?.usd || 0, change24h: prices['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd_24h_change ?? prices['pulsex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x95B303987A60C71504D99Aa1b13B4DA07b0790ab.png', dexUrl: 'https://dexscreener.com/pulsechain/0x1b45b9148791d3a104184cd5dfe5ce57193a3ee9' },
                                { symbol: 'INC',  price: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd || prices['incentive']?.usd || 0, change24h: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd_24h_change ?? prices['incentive']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png', dexUrl: 'https://dexscreener.com/pulsechain/0xf808bb6265e9ca27002c0a04562bf50d4fe37eaa' },
                                { symbol: 'HEX',  price: prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0, change24h: prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd_24h_change ?? prices['hex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39.png', dexUrl: 'https://dexscreener.com/pulsechain/0xf1f4ee610b2babb05c635f726ef8b0c568c8dc65' },
-                               { symbol: 'PRVX', price: prices['pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11']?.usd || 0, change24h: prices['pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0xf6f8dB0ABA00007681F8FAF16a0fdA1C9B030b11.png', fallbackLogo: 'https://raw.githubusercontent.com/nicemans1/pulsechain-assets/main/tokens/0xf6f8dB0ABA00007681F8FAF16a0fdA1C9B030b11/logo.png', dexUrl: 'https://dexscreener.com/pulsechain/0x7f681a5ad615238357ba148c281e2eaefd2de55a' },
-                               { symbol: 'eHEX', price: prices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['hex']?.usd || 0, change24h: prices['hex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x57fde0a71132198bbec939b98976993d8d89d225.png', fallbackLogo: 'https://assets.coingecko.com/coins/images/4086/small/HEX-logo.png', dexUrl: 'https://dexscreener.com/pulsechain/0xf0ea3efe42c11c8819948ec2d3179f4084863d3f' },
+                               { symbol: 'PRVX', price: prices['pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11']?.usd || 0, change24h: prices['pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11']?.usd_24h_change ?? null, logo: 'https://cdn.dexscreener.com/cms/images/ODHYYN7yppDHnd6u?width=64&height=64&fit=crop&quality=95&format=auto', dexUrl: 'https://dexscreener.com/pulsechain/0x7f681a5ad615238357ba148c281e2eaefd2de55a' },
+                               { symbol: 'eHEX', price: prices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['hex']?.usd || 0, change24h: prices['hex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x57fde0a71132198BBeC939B98976993d8D89D225.png', fallbackLogo: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39/logo.png', dexUrl: 'https://dexscreener.com/pulsechain/0xf0ea3efe42c11c8819948ec2d3179f4084863d3f' },
                              ];
                              const fmtCoinPrice = fmtPrice;
                              return (
@@ -4781,75 +4781,6 @@ export default function App() {
 
           return (
             <motion.div key="wallets" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
-
-              {/* ── Wallet Management Card ── */}
-              <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, overflow: 'hidden' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: wallets.length > 0 ? `1px solid ${t.borderLight}` : 'none' }}>
-                  <div>
-                    <span style={{ fontSize: 15, fontWeight: 700, color: t.text }}>Connected Wallets</span>
-                    <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, color: '#00FF9F', background: 'rgba(0,255,159,.12)', padding: '1px 7px', borderRadius: 100, border: '1px solid rgba(0,255,159,.2)' }}>{wallets.length}</span>
-                  </div>
-                  <button
-                    onClick={() => setIsAddingWallet(true)}
-                    aria-label="Add wallet"
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', minHeight: 36,
-                      background: 'rgba(0,255,159,.1)', color: '#00FF9F', fontWeight: 700, fontSize: 12,
-                      border: '1px solid rgba(0,255,159,.2)', borderRadius: 8, cursor: 'pointer', transition: 'all .12s' }}
-                    onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,255,159,.18)'; }}
-                    onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,255,159,.1)'; }}>
-                    <Plus size={13} /> Add Wallet
-                  </button>
-                </div>
-                {wallets.length === 0 && (
-                  <div style={{ padding: '20px 16px', textAlign: 'center' }}>
-                    <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(0,255,159,0.08)', border: '1px solid rgba(0,255,159,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
-                      <WalletIcon size={20} color="#00FF9F" />
-                    </div>
-                    <div style={{ fontSize: 13, color: t.textMuted }}>No wallets added yet.</div>
-                    <div style={{ fontSize: 12, color: t.textMuted, marginTop: 4 }}>Tap "Add Wallet" to get started.</div>
-                  </div>
-                )}
-                {wallets.map((w, idx) => (
-                  <div key={w.address}
-                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px',
-                      borderBottom: idx < wallets.length - 1 ? `1px solid ${t.borderLight}` : 'none',
-                      background: selectedWalletAddr === w.address.toLowerCase() ? t.cardHigh : 'transparent',
-                      transition: 'background .12s' }}
-                  >
-                    <div onClick={() => setSelectedWalletAddr(w.address.toLowerCase())}
-                      style={{ flex: 1, cursor: 'pointer', minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: t.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.name}</div>
-                      <code style={{ fontSize: 11, color: t.textMuted }}>{w.address.slice(0, 6)}…{w.address.slice(-4)}</code>
-                    </div>
-                    <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
-                      <button
-                        onClick={() => { setEditingWalletAddress(w.address); setEditWalletName(w.name); }}
-                        title="Rename wallet"
-                        aria-label={`Rename ${w.name}`}
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          minWidth: 36, minHeight: 36, padding: 6,
-                          background: 'none', border: 'none', cursor: 'pointer',
-                          color: t.textMuted, borderRadius: 6, transition: 'color .12s' }}
-                        onMouseOver={e => (e.currentTarget.style.color = t.text)}
-                        onMouseOut={e => (e.currentTarget.style.color = t.textMuted)}>
-                        <Pencil size={13} />
-                      </button>
-                      <button
-                        onClick={() => removeWallet(w.address)}
-                        title="Remove wallet"
-                        aria-label={`Remove ${w.name}`}
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          minWidth: 36, minHeight: 36, padding: 6,
-                          background: 'none', border: 'none', cursor: 'pointer',
-                          color: t.textMuted, borderRadius: 6, transition: 'color .12s' }}
-                        onMouseOver={e => (e.currentTarget.style.color = '#ef4444')}
-                        onMouseOut={e => (e.currentTarget.style.color = t.textMuted)}>
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
 
               {/* ── View filter: wallet pills + chain filter ── */}
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
