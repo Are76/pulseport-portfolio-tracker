@@ -2482,7 +2482,8 @@ export default function App() {
                                 {corePriceCoins.map(coin => (
                                   <div key={coin.symbol} style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                                      <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#1e1e1e', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                      <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#1e1e1e', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                        aria-label={coin.symbol}>
                                         <img src={coin.logo} alt={coin.symbol} style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }}
                                           onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                                       </div>
@@ -2548,7 +2549,7 @@ export default function App() {
                           <button onClick={() => toggleSection('alloc-chart')}
                             style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888' }}
                             onMouseOver={e => (e.currentTarget.style.color = '#fff')}
-                            onMouseOut={e => (e.currentTarget.style.color = '#555')}
+                            onMouseOut={e => (e.currentTarget.style.color = '#888')}
                             title={isCollapsed('alloc-chart') ? 'Expand' : 'Collapse'}>
                             {isCollapsed('alloc-chart') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
                           </button>
@@ -3089,7 +3090,7 @@ export default function App() {
                                       {/* PLS-denominated PnL (if entry set) */}
                                       {pnlPls !== null && (
                                         <div style={{ background: '#111', borderRadius: 8, padding: '12px 14px' }}>
-                                          <div style={{ fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>PLS P&amp;L</div>
+                                          <div style={{ fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>PLS P&L</div>
                                           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                               <span style={{ fontSize: 12, color: '#888' }}>Entry</span>
@@ -3110,7 +3111,7 @@ export default function App() {
                                       )}
                                       {/* Links */}
                                       <div style={{ background: '#111', borderRadius: 8, padding: '12px 14px' }}>
-                                        <div style={{ fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Links &amp; Info</div>
+                                        <div style={{ fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Links & Info</div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
                                           {addr && addr !== 'native' && (
                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
@@ -4079,7 +4080,7 @@ export default function App() {
               <div style={{ padding: '14px 18px', borderBottom: isCollapsed('pls-swaps') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <RefreshCcw size={16} style={{ color: '#f739ff' }} />
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>PLS Movement &amp; P&amp;L Tracker</span>
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>PLS Movement & P&L Tracker</span>
                   <span style={{ fontSize: 13, padding: '1px 7px', borderRadius: 4, background: 'rgba(247,57,255,.1)', color: '#f739ff', fontWeight: 600 }}>
                     {plsSwapData.rows.length} txs
                   </span>
