@@ -30,7 +30,8 @@ import {
   ChevronDown,
   ChevronUp,
   Sun,
-  Moon
+  Moon,
+  Pencil
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -303,6 +304,8 @@ export default function App() {
   const [newWalletAddress, setNewWalletAddress] = useState('');
   const [newWalletName, setNewWalletName] = useState('');
   const [isAddingWallet, setIsAddingWallet] = useState(false);
+  const [editingWalletAddress, setEditingWalletAddress] = useState<string | null>(null);
+  const [editWalletName, setEditWalletName] = useState('');
   const [isCustomCoinsModalOpen, setIsCustomCoinsModalOpen] = useState(false);
   const [customCoins, setCustomCoins] = useState<any[]>(() => {
     const saved = localStorage.getItem('custom_coins');
@@ -1720,6 +1723,13 @@ export default function App() {
 
   const removeWallet = (address: string) => {
     setWallets(wallets.filter(w => w.address !== address));
+  };
+
+  const renameWallet = (address: string, name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setWallets(wallets.map(w => w.address === address ? { ...w, name: trimmed } : w));
+    setEditingWalletAddress(null);
   };
 
   const scanForSpam = async () => {
@@ -4773,14 +4783,82 @@ export default function App() {
 
           return (
             <motion.div key="wallets" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
-              {/* Wallet selector tabs */}
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+
+              {/* ── Wallet Management Card ── */}
+              <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: wallets.length > 0 ? `1px solid ${t.borderLight}` : 'none' }}>
+                  <div>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: t.text }}>Wallets</span>
+                    <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, color: '#00c076', background: 'rgba(0,192,118,.12)', padding: '1px 7px', borderRadius: 100, border: '1px solid rgba(0,192,118,.2)' }}>{wallets.length}</span>
+                  </div>
+                  <button
+                    onClick={() => setIsAddingWallet(true)}
+                    aria-label="Add wallet"
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', minHeight: 36,
+                      background: 'rgba(0,192,118,.1)', color: '#00c076', fontWeight: 700, fontSize: 12,
+                      border: '1px solid rgba(0,192,118,.2)', borderRadius: 8, cursor: 'pointer', transition: 'all .12s' }}
+                    onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,192,118,.18)'; }}
+                    onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,192,118,.1)'; }}>
+                    <Plus size={13} /> Add Wallet
+                  </button>
+                </div>
+                {wallets.length === 0 && (
+                  <div style={{ padding: '20px 16px', textAlign: 'center' }}>
+                    <div style={{ fontSize: 28, marginBottom: 8 }}>👛</div>
+                    <div style={{ fontSize: 13, color: t.textMuted }}>No wallets added yet.</div>
+                    <div style={{ fontSize: 12, color: t.textMuted, marginTop: 4 }}>Tap "Add Wallet" to get started.</div>
+                  </div>
+                )}
+                {wallets.map((w, idx) => (
+                  <div key={w.address}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px',
+                      borderBottom: idx < wallets.length - 1 ? `1px solid ${t.borderLight}` : 'none',
+                      background: selectedWalletAddr === w.address.toLowerCase() ? t.cardHigh : 'transparent',
+                      transition: 'background .12s' }}
+                  >
+                    <div onClick={() => setSelectedWalletAddr(w.address.toLowerCase())}
+                      style={{ flex: 1, cursor: 'pointer', minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: t.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.name}</div>
+                      <code style={{ fontSize: 11, color: t.textMuted }}>{w.address.slice(0, 6)}…{w.address.slice(-4)}</code>
+                    </div>
+                    <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
+                      <button
+                        onClick={() => { setEditingWalletAddress(w.address); setEditWalletName(w.name); }}
+                        title="Rename wallet"
+                        aria-label={`Rename ${w.name}`}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          minWidth: 36, minHeight: 36, padding: 6,
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          color: t.textMuted, borderRadius: 6, transition: 'color .12s' }}
+                        onMouseOver={e => (e.currentTarget.style.color = t.text)}
+                        onMouseOut={e => (e.currentTarget.style.color = t.textMuted)}>
+                        <Pencil size={13} />
+                      </button>
+                      <button
+                        onClick={() => removeWallet(w.address)}
+                        title="Remove wallet"
+                        aria-label={`Remove ${w.name}`}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          minWidth: 36, minHeight: 36, padding: 6,
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          color: t.textMuted, borderRadius: 6, transition: 'color .12s' }}
+                        onMouseOver={e => (e.currentTarget.style.color = '#ef4444')}
+                        onMouseOut={e => (e.currentTarget.style.color = t.textMuted)}>
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* ── View filter: wallet pills + chain filter ── */}
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                 <button
                   onClick={() => setSelectedWalletAddr('all')}
                   style={{ padding: '6px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: '1px solid', transition: 'all .12s',
                     background: isAll ? '#fff' : 'transparent',
                     color: isAll ? '#000' : '#aaa',
-                    borderColor: isAll ? '#fff' : '#333' }}>
+                    borderColor: isAll ? '#fff' : '#333', minHeight: 36 }}>
                   All Wallets
                 </button>
                 {wallets.map(w => {
@@ -4790,7 +4868,7 @@ export default function App() {
                       style={{ padding: '6px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: '1px solid', transition: 'all .12s',
                         background: isActive ? '#fff' : 'transparent',
                         color: isActive ? '#000' : '#aaa',
-                        borderColor: isActive ? '#fff' : '#333' }}>
+                        borderColor: isActive ? '#fff' : '#333', minHeight: 36 }}>
                       {w.name}
                     </button>
                   );
@@ -5465,7 +5543,7 @@ export default function App() {
       {/* Add Wallet Modal */}
       <AnimatePresence>
         {isAddingWallet && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+          <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-6">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -5474,47 +5552,141 @@ export default function App() {
               className="absolute inset-0 bg-black/80 backdrop-blur-sm"
             />
             <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-md bg-[#121216] border border-white/10 rounded-[32px] p-8 shadow-2xl"
+              initial={{ opacity: 0, y: '100%' }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: '100%' }}
+              transition={{ type: 'spring', damping: 20, stiffness: 90 }}
+              style={{
+                position: 'relative', width: '100%', maxWidth: 480,
+                background: t.card, border: `1px solid ${t.border}`,
+                borderRadius: '20px 20px 0 0', padding: 28,
+              }}
+              className="sm:rounded-[20px]"
             >
-              <h2 className="text-2xl font-bold mb-6">Add New Wallet</h2>
+              {/* Drag handle (mobile) */}
+              <div className="sm:hidden" style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+                <div style={{ width: 36, height: 4, borderRadius: 2, background: t.border }} />
+              </div>
+              <h2 style={{ fontSize: 20, fontWeight: 800, color: t.text, marginBottom: 20 }}>Add New Wallet</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-white/40 uppercase mb-2 ml-1">Wallet Address</label>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 }}>
+                    Wallet Address
+                  </label>
                   <input 
                     type="text" 
                     placeholder="0x..."
+                    inputMode="text"
                     value={newWalletAddress}
                     onChange={(e) => setNewWalletAddress(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500/50 transition-all font-mono"
+                    style={{ width: '100%', background: t.cardHigh, border: `1px solid ${t.border}`,
+                      borderRadius: 10, color: t.text, fontSize: 14, padding: '11px 14px',
+                      outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace', transition: 'border-color .15s' }}
+                    onFocus={e => (e.currentTarget.style.borderColor = '#00c076')}
+                    onBlur={e => (e.currentTarget.style.borderColor = t.border)}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-white/40 uppercase mb-2 ml-1">Wallet Name (Optional)</label>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 }}>
+                    Wallet Name <span style={{ color: t.textMuted, fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
+                  </label>
                   <input 
                     type="text" 
                     placeholder="My Main Wallet"
                     value={newWalletName}
                     onChange={(e) => setNewWalletName(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500/50 transition-all"
+                    onKeyDown={e => { if (e.key === 'Enter') addWallet(); }}
+                    style={{ width: '100%', background: t.cardHigh, border: `1px solid ${t.border}`,
+                      borderRadius: 10, color: t.text, fontSize: 14, padding: '11px 14px',
+                      outline: 'none', boxSizing: 'border-box', transition: 'border-color .15s' }}
+                    onFocus={e => (e.currentTarget.style.borderColor = '#00c076')}
+                    onBlur={e => (e.currentTarget.style.borderColor = t.border)}
                   />
                 </div>
-                <div className="pt-4 flex gap-3">
+                <div style={{ paddingTop: 8, display: 'flex', gap: 10 }}>
                   <button 
                     onClick={() => setIsAddingWallet(false)}
-                    className="flex-1 py-3 rounded-2xl bg-white/5 hover:bg-white/10 font-bold text-sm transition-all"
+                    style={{ flex: 1, minHeight: 44, borderRadius: 10, background: t.cardHigh,
+                      border: `1px solid ${t.border}`, color: t.text, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
                   >
                     Cancel
                   </button>
                   <button 
                     onClick={addWallet}
-                    className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 font-bold text-sm hover:opacity-90 transition-all"
+                    style={{ flex: 1, minHeight: 44, borderRadius: 10, background: '#00c076',
+                      border: 'none', color: '#000', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
                   >
                     Add Wallet
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Wallet Modal */}
+      <AnimatePresence>
+        {editingWalletAddress && (
+          <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setEditingWalletAddress(null)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: '100%' }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: '100%' }}
+              transition={{ type: 'spring', damping: 20, stiffness: 90 }}
+              style={{
+                position: 'relative', width: '100%', maxWidth: 480,
+                background: t.card, border: `1px solid ${t.border}`,
+                borderRadius: '20px 20px 0 0', padding: 24,
+              }}
+              className="sm:rounded-[20px]"
+            >
+              {/* Drag handle (mobile) */}
+              <div className="sm:hidden" style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+                <div style={{ width: 36, height: 4, borderRadius: 2, background: t.border }} />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                <Pencil size={18} style={{ color: '#00c076' }} />
+                <span style={{ fontSize: 16, fontWeight: 700, color: t.text }}>Rename Wallet</span>
+              </div>
+              <div style={{ fontSize: 12, color: t.textMuted, fontFamily: 'monospace', marginBottom: 16, padding: '6px 10px', background: t.cardHigh, borderRadius: 6 }}>
+                {editingWalletAddress}
+              </div>
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 }}>
+                  Wallet Name
+                </label>
+                <input
+                  type="text"
+                  value={editWalletName}
+                  onChange={e => setEditWalletName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') renameWallet(editingWalletAddress, editWalletName); }}
+                  autoFocus
+                  style={{ width: '100%', background: t.cardHigh, border: `1px solid ${t.border}`,
+                    borderRadius: 10, color: t.text, fontSize: 14, padding: '11px 14px',
+                    outline: 'none', boxSizing: 'border-box', transition: 'border-color .15s' }}
+                  onFocus={e => (e.currentTarget.style.borderColor = '#00c076')}
+                  onBlur={e => (e.currentTarget.style.borderColor = t.border)}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={() => setEditingWalletAddress(null)}
+                  style={{ flex: 1, padding: '11px 0', borderRadius: 10, background: t.cardHigh,
+                    border: `1px solid ${t.border}`, color: t.text, fontWeight: 600, fontSize: 13, cursor: 'pointer', minHeight: 44 }}>
+                  Cancel
+                </button>
+                <button onClick={() => renameWallet(editingWalletAddress, editWalletName)}
+                  style={{ flex: 1, padding: '11px 0', borderRadius: 10, background: '#00c076',
+                    border: 'none', color: '#000', fontWeight: 700, fontSize: 13, cursor: 'pointer', minHeight: 44 }}>
+                  Save
+                </button>
               </div>
             </motion.div>
           </div>

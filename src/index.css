@@ -117,8 +117,8 @@
   }
 
   .glass-secondary {
-    background: linear-gradient(135deg, #0d0d0d 0%, #111115 100%);
-    border: 1px solid rgba(255,255,255,0.06);
+    background: linear-gradient(135deg, var(--md-sys-color-surface-container) 0%, var(--md-sys-color-surface-container-high) 100%);
+    border: 1px solid var(--md-sys-color-outline);
     border-radius: 12px;
     overflow: hidden;
   }
@@ -197,12 +197,12 @@
 .type-subheading {
   font-size: 15px;
   font-weight: 600;
-  color: #fff;
+  color: var(--md-sys-color-on-surface);
 }
 .type-heading {
   font-size: 18px;
   font-weight: 700;
-  color: #fff;
+  color: var(--md-sys-color-on-surface);
 }
 .tabular-nums {
   font-variant-numeric: tabular-nums;
@@ -232,7 +232,7 @@
 /* Progress bar */
 .progress-bar {
   height: 3px;
-  background: #1a1a1a;
+  background: var(--md-sys-color-outline);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -268,6 +268,25 @@
 button,
 a {
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Mobile / Desktop visibility utilities */
+.mobile-only {
+  display: block;
+}
+@media (min-width: 768px) {
+  .mobile-only {
+    display: none;
+  }
+}
+.desktop-only {
+  display: none;
+}
+@media (min-width: 768px) {
+  .desktop-only {
+    display: block;
+  }
 }
 
 /* Mobile bottom nav: safe area support for iPhone home indicator */
