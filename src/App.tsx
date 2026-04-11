@@ -2567,7 +2567,7 @@ export default function App() {
                         <div style={{ minWidth: 230 }} className="max-sm:w-full">
                           {/* Core coin icons */}
                           {(() => {
-                            const corePriceCoins = [
+                            const corePriceCoins: { symbol: string; price: number; change24h: number | null; logo: string; fallbackLogo?: string }[] = [
                               { symbol: 'PLS',  price: prices['pulsechain']?.usd || 0, change24h: prices['pulsechain']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png' },
                               { symbol: 'PLSX', price: prices['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd || prices['pulsex']?.usd || 0, change24h: prices['pulsex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x95B303987A60C71504D99Aa1b13B4DA07b0790ab.png' },
                               { symbol: 'INC',  price: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd || prices['incentive']?.usd || 0, change24h: prices['incentive']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png' },
@@ -2592,8 +2592,8 @@ export default function App() {
                                         <img src={coin.logo} alt={coin.symbol} style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover' }}
                                           onError={e => {
                                             const img = e.target as HTMLImageElement;
-                                            if ((coin as any).fallbackLogo && img.src !== (coin as any).fallbackLogo) {
-                                              img.src = (coin as any).fallbackLogo;
+                                            if (coin.fallbackLogo && img.src !== coin.fallbackLogo) {
+                                              img.src = coin.fallbackLogo;
                                             } else {
                                               img.style.display = 'none';
                                             }
