@@ -318,6 +318,7 @@ export default function App() {
   const removeCustomCoin = (id: string) => {
     setCustomCoins(customCoins.filter(c => c.id !== id));
   };
+  const [sidebarWalletsOpen, setSidebarWalletsOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const isFetchingRef = useRef(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'assets' | 'stakes' | 'history' | 'wallets'>('overview');
@@ -2149,39 +2150,68 @@ export default function App() {
         </nav>
 
         {/* Wallets */}
-        <div style={{ padding: '16px 8px 8px', marginTop: 'auto' }} className="flex flex-col gap-2">
-          <div style={{ padding: '0 10px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.8px' }}>Wallets</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#00c076', background: 'rgba(0,192,118,.1)', padding: '1px 7px', borderRadius: 100 }}>{wallets.length}</span>
-          </div>
-          <div className="space-y-1 overflow-y-auto custom-scrollbar" style={{ maxHeight: 200 }}>
-            {wallets.map((w) => (
-              <div key={w.address}
-                onClick={() => { setSelectedWalletAddr(w.address.toLowerCase()); setActiveTab('wallets'); }}
-                style={{ padding: '8px 10px', borderRadius: 8, background: selectedWalletAddr === w.address.toLowerCase() && activeTab === 'wallets' ? '#141414' : '#0f0f0f', border: `1px solid ${selectedWalletAddr === w.address.toLowerCase() && activeTab === 'wallets' ? '#2a2a2a' : '#1a1a1a'}`, cursor: 'pointer' }}
-                className="group flex items-center justify-between">
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{w.name}</div>
-                  <code style={{ fontSize: 13, color: '#aaa' }}>{w.address.slice(0, 6)}…{w.address.slice(-4)}</code>
-                </div>
-                <button onClick={(e) => { e.stopPropagation(); removeWallet(w.address); }}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity"
-                  style={{ color: '#aaa', padding: 4, cursor: 'pointer', border: 'none', background: 'none' }}>
-                  <Trash2 size={12} />
+        <div style={{ padding: '8px 8px 0', borderTop: '1px solid #1a1a1a', marginTop: 'auto' }}>
+          <button
+            onClick={() => setSidebarWalletsOpen(v => !v)}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              width: '100%', padding: '9px 12px', borderRadius: 8,
+              background: 'transparent', color: '#555',
+              fontSize: 13, border: 'none', cursor: 'pointer',
+              transition: 'all .12s',
+            }}
+            onMouseOver={e => (e.currentTarget.style.color = '#aaa')}
+            onMouseOut={e => (e.currentTarget.style.color = '#555')}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <WalletIcon size={16} />
+              <span style={{ fontWeight: 600 }}>Wallets</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#00c076', background: 'rgba(0,192,118,.1)', padding: '1px 6px', borderRadius: 100 }}>{wallets.length}</span>
+              {sidebarWalletsOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+            </div>
+          </button>
+          {sidebarWalletsOpen && (
+            <div style={{ paddingBottom: 8 }}>
+              <div className="space-y-1 overflow-y-auto custom-scrollbar" style={{ maxHeight: 180, padding: '2px 0' }}>
+                {wallets.map((w) => (
+                  <div key={w.address}
+                    onClick={() => { setSelectedWalletAddr(w.address.toLowerCase()); setActiveTab('wallets'); }}
+                    style={{ padding: '7px 10px', borderRadius: 8,
+                      background: selectedWalletAddr === w.address.toLowerCase() && activeTab === 'wallets' ? '#141414' : 'transparent',
+                      border: `1px solid ${selectedWalletAddr === w.address.toLowerCase() && activeTab === 'wallets' ? '#2a2a2a' : 'transparent'}`,
+                      cursor: 'pointer' }}
+                    className="group flex items-center justify-between">
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#ccc', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.name}</div>
+                      <code style={{ fontSize: 11, color: '#555' }}>{w.address.slice(0,6)}…{w.address.slice(-4)}</code>
+                    </div>
+                    <button onClick={(e) => { e.stopPropagation(); removeWallet(w.address); }}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ color: '#666', padding: 4, cursor: 'pointer', border: 'none', background: 'none', flexShrink: 0 }}>
+                      <Trash2 size={11} />
+                    </button>
+                  </div>
+                ))}
+                {wallets.length === 0 && (
+                  <div style={{ padding: '8px 10px', fontSize: 12, color: '#444', fontStyle: 'italic' }}>No wallets added yet</div>
+                )}
+              </div>
+              <div style={{ padding: '4px 2px 8px' }}>
+                <button onClick={() => setIsAddingWallet(true)}
+                  title="Add Wallet"
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    background: 'rgba(0,192,118,.1)', color: '#00c076', fontWeight: 700, fontSize: 12,
+                    border: '1px solid rgba(0,192,118,.2)', borderRadius: 8, padding: '7px 0', cursor: 'pointer',
+                    transition: 'all .12s', width: '100%' }}
+                  onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,192,118,.18)'; }}
+                  onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,192,118,.1)'; }}>
+                  <Plus size={13} /> Add Wallet
                 </button>
               </div>
-            ))}
-          </div>
-
-          <button onClick={() => setIsAddingWallet(true)}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              background: '#00c076', color: '#000', fontWeight: 700, fontSize: 13,
-              border: 'none', borderRadius: 8, padding: '9px 0', cursor: 'pointer',
-              transition: 'opacity .12s', margin: '4px 2px 12px' }}
-            onMouseOver={e => (e.currentTarget.style.opacity = '0.85')}
-            onMouseOut={e => (e.currentTarget.style.opacity = '1')}>
-            <Plus size={15} /> Add Wallet
-          </button>
+            </div>
+          )}
         </div>
       </aside>
 
@@ -2215,7 +2245,8 @@ export default function App() {
 
           <div className="flex items-center gap-3">
             {lastUpdated && (
-              <span style={{ fontSize: 13, color: '#aaa' }} className="hidden sm:inline">
+              <span style={{ fontSize: 12, color: '#555', display: 'flex', alignItems: 'center', gap: 5 }} className="hidden sm:inline-flex">
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00c076', display: 'inline-block', animation: 'pulse 2s infinite' }} />
                 {timeSinceLastUpdate}s ago
               </span>
             )}
@@ -2230,6 +2261,7 @@ export default function App() {
               <span className="hidden sm:inline">{etherscanApiKey ? 'API Key ✓' : 'API Key'}</span>
             </button>
             <button onClick={fetchPortfolio}
+              className={isLoading ? 'btn-loading' : ''}
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px',
                 background: '#111', border: '1px solid #252525', borderRadius: 8,
                 color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer', transition: 'all .12s' }}
@@ -2248,7 +2280,38 @@ export default function App() {
             {activeTab === 'overview' && (
               <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
 
-                {/* ── HERO CARD (full width) with Allocation inside ── */}
+                {/* ── ONBOARDING ── */}
+                {wallets.length === 0 && (
+                  <div style={{ background: 'linear-gradient(135deg, #0a1a2a 0%, #050f09 100%)', border: '1px solid #1a3a2a', borderRadius: 20, padding: '40px 32px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 0%, rgba(0,192,118,.08) 0%, transparent 60%)', pointerEvents: 'none' }} />
+                    <div style={{ fontSize: 32, marginBottom: 12 }}>👛</div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 8 }}>Welcome to PulsePort</div>
+                    <div style={{ fontSize: 14, color: '#888', marginBottom: 32, maxWidth: 400, margin: '0 auto 32px' }}>
+                      Track your PulseChain, Ethereum, and Base portfolios in real time. Add your first wallet to get started.
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, marginBottom: 36, flexWrap: 'wrap' }}>
+                      {[
+                        { step: '1', label: 'Add wallet address', icon: '🔑' },
+                        { step: '2', label: 'Fetch portfolio data', icon: '⚡' },
+                        { step: '3', label: 'View your portfolio', icon: '📊' },
+                      ].map(({ step, label, icon }) => (
+                        <div key={step} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                          <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(0,192,118,.1)', border: '1px solid rgba(0,192,118,.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>{icon}</div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: '#00c076', textTransform: 'uppercase', letterSpacing: '.5px' }}>Step {step}</div>
+                          <div style={{ fontSize: 13, color: '#aaa' }}>{label}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <button onClick={() => setIsAddingWallet(true)}
+                      style={{ padding: '14px 36px', borderRadius: 12, background: '#00c076', color: '#000', fontWeight: 800, fontSize: 15, border: 'none', cursor: 'pointer', transition: 'opacity .12s' }}
+                      onMouseOver={e => (e.currentTarget.style.opacity = '0.88')}
+                      onMouseOut={e => (e.currentTarget.style.opacity = '1')}>
+                      Add Your First Wallet →
+                    </button>
+                  </div>
+                )}
+
+                {/* ── HERO CARD (full width) with Allocation inside + STAT ROW ── */}
                 {(() => {
                   const ALLOC_COLORS = ['#00c076','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
                   // Value at Maturity from stakes
@@ -2261,6 +2324,7 @@ export default function App() {
                   }, 0);
                   const fmtBigNum = (n: number) => Math.round(n).toLocaleString('nb-NO', { maximumFractionDigits: 0 }).replace(/,/g, ' ');
                   return (
+                    <>
                     <div style={{
                       background: 'linear-gradient(135deg, #081a10 0%, #050f09 40%, #060d14 100%)',
                       border: '1px solid #242424', borderRadius: 16, padding: '24px 28px', position: 'relative', overflow: 'hidden'
@@ -2272,44 +2336,24 @@ export default function App() {
                         <div>
                           <div style={{ fontSize: 13, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 6 }}>Total Portfolio Value</div>
                           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap', marginBottom: 18 }}>
-                            <div style={{ fontSize: 52, fontWeight: 800, letterSpacing: '-2px', lineHeight: 1, color: '#fff' }}>
+                            <div style={{ fontSize: 52, fontWeight: 800, letterSpacing: '-2px', lineHeight: 1, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>
                               ${summary.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingBottom: 6 }}>
                               <div style={{ fontSize: 13, color: summary.pnl24h >= 0 ? '#00c076' : '#ef4444', fontWeight: 700 }}>
-                                {summary.pnl24h >= 0 ? '+' : ''}{summary.pnl24hPercent.toFixed(2)}% 24h
+                                {summary.pnl24h >= 0 ? '+' : '-'}${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })} / {summary.pnl24h >= 0 ? '+' : ''}{summary.pnl24hPercent.toFixed(2)}%
                               </div>
                               <div style={{ fontSize: 13, color: '#aaa' }}>{summary.nativeValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</div>
                             </div>
                           </div>
-                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-                            <span style={{ fontSize: 13, fontWeight: 600, padding: '4px 12px', borderRadius: 100, background: 'rgba(59,130,246,.15)', color: '#60a5fa', border: '1px solid rgba(59,130,246,.2)' }}>
-                              Wallet ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                            </span>
-                            <span style={{ fontSize: 13, fontWeight: 600, padding: '4px 12px', borderRadius: 100, background: 'rgba(239,68,68,.12)', color: '#f87171', border: '1px solid rgba(239,68,68,.2)' }}>
-                              Stakes ${summary.stakingValueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                            </span>
-                            <span style={{ fontSize: 13, fontWeight: 600, padding: '4px 12px', borderRadius: 100, background: 'rgba(255,255,255,.06)', color: '#fff', border: '1px solid #222' }}>
-                              {wallets.length} wallet{wallets.length !== 1 ? 's' : ''}
-                            </span>
-                          </div>
-                          {/* Stat mini-cards */}
-                          <div style={{ display: 'grid', gap: 10 }} className="grid-cols-2 sm:grid-cols-3">
-                            <div style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 10, padding: '10px 14px' }}>
-                              <div style={{ fontSize: 13, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Net Investment</div>
-                              <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                            </div>
-                            <div style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 10, padding: '10px 14px' }}>
-                              <div style={{ fontSize: 13, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Unified PNL</div>
-                              <div style={{ fontSize: 16, fontWeight: 700, color: summary.unifiedPnl >= 0 ? '#00c076' : '#ef4444' }}>
-                                {summary.unifiedPnl >= 0 ? '+' : ''}${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                              </div>
-                            </div>
-                            <div style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 10, padding: '10px 14px' }}>
-                              <div style={{ fontSize: 13, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 3 }}>Stakes at Maturity</div>
-                              <div style={{ fontSize: 16, fontWeight: 700, color: '#a78bfa' }}>{fmtBigNum(totalHexAtMaturity)} HEX</div>
-                              <div style={{ fontSize: 13, color: '#888', marginTop: 2 }}>${valueAtMaturity.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                            </div>
+                          {/* Separator + compact stats */}
+                          <div style={{ height: 1, background: 'rgba(255,255,255,.06)', margin: '18px 0 14px' }} />
+                          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: 12, color: '#666' }}>Liquid: <span style={{ color: '#aaa', fontWeight: 600 }}>${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></span>
+                            <span style={{ fontSize: 12, color: '#444' }}>·</span>
+                            <span style={{ fontSize: 12, color: '#666' }}>Staked: <span style={{ color: '#aaa', fontWeight: 600 }}>${summary.stakingValueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></span>
+                            <span style={{ fontSize: 12, color: '#444' }}>·</span>
+                            <span style={{ fontSize: 12, color: '#666' }}>Wallets: <span style={{ color: '#aaa', fontWeight: 600 }}>{wallets.length}</span></span>
                           </div>
                         </div>
                         {/* Right: Allocation donut */}
@@ -2337,6 +2381,22 @@ export default function App() {
                         </div>
                       </div>
                     </div>
+
+                    {/* ── STAT ROW ── */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, background: '#242424', borderRadius: 12, overflow: 'hidden', border: '1px solid #242424' }} className="max-sm:grid-cols-1">
+                      {[
+                        { label: 'Net Investment', val: `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Capital deployed', color: '#fff' },
+                        { label: 'Unified PNL', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${summary.unifiedPnl >= 0 ? '+' : ''}${summary.totalValue > 0 ? ((summary.unifiedPnl / Math.max(summary.netInvestment, 1)) * 100).toFixed(1) : '0.0'}% vs invested`, color: summary.unifiedPnl >= 0 ? '#00c076' : '#ef4444' },
+                        { label: 'Stakes at Maturity', val: `$${valueAtMaturity.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${fmtBigNum(totalHexAtMaturity)} HEX`, color: '#8b5cf6' },
+                      ].map(({ label, val, sub, color }) => (
+                        <div key={label} style={{ background: '#0d0d0d', padding: '16px 20px' }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 6 }}>{label}</div>
+                          <div style={{ fontSize: 20, fontWeight: 700, color, fontVariantNumeric: 'tabular-nums' }}>{val}</div>
+                          <div style={{ fontSize: 12, color: '#888', marginTop: 3 }}>{sub}</div>
+                        </div>
+                      ))}
+                    </div>
+                    </>
                   );
                 })()}
 
@@ -2378,18 +2438,10 @@ export default function App() {
 
                   return (
                     <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 14, overflow: 'hidden' }}>
-                      {/* Header with collapse */}
+                      {/* Header */}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: '1px solid #1f1f1f', background: '#0e0e0e' }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>Price Ticker</div>
-                        <button onClick={() => toggleSection('price-ticker')}
-                          style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
-                          onMouseOver={e => (e.currentTarget.style.color = '#fff')}
-                          onMouseOut={e => (e.currentTarget.style.color = '#555')}
-                          title={isCollapsed('price-ticker') ? 'Expand' : 'Collapse'}>
-                          {isCollapsed('price-ticker') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-                        </button>
                       </div>
-                      {!isCollapsed('price-ticker') && (<>
                       {/* Filter bar */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '8px 14px', borderBottom: '1px solid #1f1f1f', background: '#0e0e0e' }}>
                         {([
@@ -2420,44 +2472,34 @@ export default function App() {
                           </button>
                         ))}
                       </div>
-                      {/* Ticker row */}
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 0, padding: '4px 4px' }}>
-                        {tickerAssets.map(({ asset }, i) => {
-                          const change = getChange(asset);
-                          return (
-                            <div key={asset.symbol} style={{
-                              display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px',
-                              borderRight: i < tickerAssets.length - 1 ? '1px solid #1f1f1f' : 'none',
-                              minWidth: 0
-                            }}>
-                              <div style={{ width: 26, height: 26, borderRadius: 6, background: '#262626', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
-                                {getTokenLogoUrl(asset) ? (
-                                  <img src={getTokenLogoUrl(asset)} alt={asset.symbol}
-                                    style={{ width: 22, height: 22, borderRadius: 4, objectFit: 'cover' }}
-                                    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.removeAttribute('hidden'); }} />
-                                ) : null}
-                                <span hidden={!!getTokenLogoUrl(asset)} style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{asset.symbol.slice(0,3)}</span>
-                              </div>
-                              <div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                                  <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{asset.symbol}</span>
-                                  {change !== null ? (
-                                    <span style={{ fontSize: 13, fontWeight: 700, color: change >= 0 ? '#00c076' : '#ef4444' }}>
-                                      {change >= 0 ? '+' : ''}{change.toFixed(2)}%
-                                    </span>
-                                  ) : (
-                                    <span style={{ fontSize: 13, color: '#333' }}>—</span>
-                                  )}
+                      {/* Ticker marquee */}
+                      <div style={{ overflow: 'hidden', borderTop: '1px solid #1a1a1a' }}>
+                        <div className="ticker-track">
+                          {[...tickerAssets, ...tickerAssets].map(({ asset }, i) => {
+                            const change = getChange(asset);
+                            return (
+                              <div key={`${asset.symbol}-${i}`} style={{
+                                display: 'flex', alignItems: 'center', gap: 8, padding: '8px 20px',
+                                borderRight: '1px solid #1a1a1a', flexShrink: 0
+                              }}>
+                                <div style={{ width: 22, height: 22, borderRadius: 5, background: '#1e1e1e', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+                                  {getTokenLogoUrl(asset) ? (
+                                    <img src={getTokenLogoUrl(asset)} alt={asset.symbol} style={{ width: 18, height: 18, borderRadius: 3, objectFit: 'cover' }}
+                                      onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                  ) : <span style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>{asset.symbol.slice(0,2)}</span>}
                                 </div>
-                                <div style={{ fontSize: 13, color: '#888', fontFamily: 'monospace' }}>
-                                  {formatPrice(asset.price)}{priceDisplayCurrency === 'pls' ? ' WPLS' : ''}
-                                </div>
+                                <span style={{ fontSize: 12, fontWeight: 700, color: '#ccc', whiteSpace: 'nowrap' }}>{asset.symbol}</span>
+                                <span style={{ fontSize: 12, color: '#888', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{formatPrice(asset.price)}</span>
+                                {change !== null && (
+                                  <span style={{ fontSize: 12, fontWeight: 700, color: change >= 0 ? '#00c076' : '#ef4444', whiteSpace: 'nowrap' }}>
+                                    {change >= 0 ? '▲' : '▼'} {Math.abs(change).toFixed(2)}%
+                                  </span>
+                                )}
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
+                        </div>
                       </div>
-                      </>)}
                     </div>
                   );
                 })()}
@@ -2494,7 +2536,7 @@ export default function App() {
                     { label: 'Total eHEX', sub: `${fmtHex(eHexLiquid)} liquid · ${fmtHex(eHexStaked)} staked+yield`, val: fmtHex(eHexTotal), usd: eHexTotal * eHexPrice, color: '#627EEA', dot: '#627EEA' },
                   ];
                   return (
-                    <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, overflow: 'hidden' }}>
+                    <div style={{ background: 'radial-gradient(ellipse at top left, #111118 0%, #0d0d0d 100%)', border: '1px solid #242424', borderRadius: 12, overflow: 'hidden' }}>
                       <div style={{ padding: '12px 16px', borderBottom: isCollapsed('hex-boxes') ? 'none' : '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>HEX Holdings</div>
                         <button onClick={() => toggleSection('hex-boxes')}
@@ -2576,7 +2618,7 @@ export default function App() {
                     : 0;
 
                   return (
-                    <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 14, overflow: 'hidden' }}>
+                    <div style={{ background: 'radial-gradient(ellipse at top left, #111118 0%, #0d0d0d 100%)', border: '1px solid #242424', borderRadius: 14, overflow: 'hidden' }}>
                       <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, borderBottom: isCollapsed('perf-chart') ? 'none' : '1px solid #1f1f1f' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>Portfolio Performance</div>
@@ -2731,6 +2773,24 @@ export default function App() {
                         </tr>
                       </thead>
                       <tbody>
+                        {isLoading && wallets.length > 0 && [...Array(5)].map((_, i) => (
+                          <tr key={`skel-${i}`}>
+                            <td style={{ padding: '11px 16px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div className="skeleton" style={{ width: 34, height: 34, borderRadius: '50%' }} />
+                                <div>
+                                  <div className="skeleton" style={{ width: 60, height: 13, marginBottom: 4 }} />
+                                  <div className="skeleton" style={{ width: 80, height: 11 }} />
+                                </div>
+                              </div>
+                            </td>
+                            {[...Array(6)].map((_, j) => (
+                              <td key={j} style={{ padding: '11px 16px', textAlign: 'right' }}>
+                                <div className="skeleton" style={{ height: 13, width: 60, marginLeft: 'auto' }} />
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
                         {currentAssets.length === 0 ? (
                           <tr>
                             <td colSpan={7} style={{ padding: '60px 20px', textAlign: 'center', color: '#777', fontSize: 13 }}>
@@ -2746,7 +2806,7 @@ export default function App() {
                               : x.value;
                             const diff = getVal(b) - getVal(a);
                             return assetSortDir === 'desc' ? diff : -diff;
-                          }).map((asset) => {
+                          }).map((asset, idx) => {
                             const pct = priceChangePeriod === '1h' ? (asset.priceChange1h ?? 0)
                               : priceChangePeriod === '7d' ? (asset.priceChange7d ?? 0)
                               : priceChangePeriod === '6h' ? 0
@@ -2759,8 +2819,11 @@ export default function App() {
                             const explUrl = explorerUrl(asset.chain, addr);
                             const dsUrl = dexScreenerUrl(asset.chain, addr);
                             return (
-                              <tr key={asset.id}
-                                style={{ borderBottom: '1px solid #1e1e1e', transition: 'background .1s' }}
+                              <motion.tr key={asset.id}
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: idx * 0.03, duration: 0.2 }}
+                                style={{ borderBottom: '1px solid #1e1e1e', transition: 'background .1s', borderLeft: `3px solid ${CHAIN_COLORS[asset.chain] || '#333'}` }}
                                 onMouseOver={e => (e.currentTarget.style.background = '#111')}
                                 onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                                 <td style={{ padding: '11px 16px', whiteSpace: 'nowrap' }}>
@@ -2855,7 +2918,7 @@ export default function App() {
                                     </button>
                                   </div>
                                 </td>
-                              </tr>
+                              </motion.tr>
                             );
                           })
                         )}
@@ -3095,6 +3158,36 @@ export default function App() {
 
             {activeTab === 'stakes' && (
               <motion.div key="stakes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+
+                {/* Daily Yield Banner */}
+                {currentStakes.length > 0 && (
+                  <div style={{ background: 'linear-gradient(90deg, rgba(139,92,246,.08) 0%, rgba(0,192,118,.06) 100%)', border: '1px solid rgba(139,92,246,.2)', borderRadius: 12, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#8b5cf6', animation: 'pulse 2s infinite' }} />
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: '.6px' }}>Daily HEX Yield</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: 20, fontWeight: 800, color: '#8b5cf6', fontVariantNumeric: 'tabular-nums' }}>
+                          {stakeSummary.estimatedDailyPayoutHex.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        </div>
+                        <div style={{ fontSize: 11, color: '#777', textTransform: 'uppercase', letterSpacing: '.5px' }}>HEX/day</div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: 20, fontWeight: 800, color: '#00c076', fontVariantNumeric: 'tabular-nums' }}>
+                          ${stakeSummary.estimatedDailyPayoutUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                        </div>
+                        <div style={{ fontSize: 11, color: '#777', textTransform: 'uppercase', letterSpacing: '.5px' }}>USD/day</div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: 20, fontWeight: 800, color: '#f97316', fontVariantNumeric: 'tabular-nums' }}>
+                          ${(stakeSummary.estimatedDailyPayoutUsd * 365).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        </div>
+                        <div style={{ fontSize: 11, color: '#777', textTransform: 'uppercase', letterSpacing: '.5px' }}>Projected/year</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* pHEX / eHEX total boxes */}
                 {(() => {
@@ -3431,8 +3524,15 @@ export default function App() {
                                           <div style={{ height: '100%', width: `${stake.progress}%`, background: '#fb923c', borderRadius: 2 }} />
                                         </div>
                                       </td>
-                                      <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, color: daysLeft < 365 ? '#00c076' : '#666' }}>
-                                        {daysLeft.toLocaleString()}
+                                      <td style={{ padding: '9px 14px', textAlign: 'right' }}>
+                                        <div style={{ fontSize: 13, fontWeight: 700, color: daysLeft < 14 ? '#ef4444' : daysLeft < 90 ? '#f97316' : daysLeft < 365 ? '#00c076' : '#666' }}>
+                                          {daysLeft.toLocaleString()}d
+                                        </div>
+                                        {daysLeft < 90 && (
+                                          <div style={{ fontSize: 11, color: daysLeft < 14 ? '#ef4444' : '#f97316', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.3px' }}>
+                                            {daysLeft < 14 ? '🔴 Expiring' : '⚠️ Soon'}
+                                          </div>
+                                        )}
                                       </td>
                                     </tr>
                                     {/* Expandable detail row */}
