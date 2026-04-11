@@ -3464,10 +3464,21 @@ export default function App() {
                                           </div>
                                         </div>
                                       </div>
-                                      {/* PLS-denominated PnL (if entry set) */}
-                                      {pnlPls !== null && (
-                                        <div style={{ background: t.cardHigh, borderRadius: 8, padding: '12px 14px' }}>
-                                          <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>PLS P&L</div>
+                                      {/* PLS-denominated PnL */}
+                                      <div style={{ background: t.cardHigh, borderRadius: 8, padding: '12px 14px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                                          <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.7px' }}>PLS P&L</div>
+                                          {entryPls && entryPls > 0 && (
+                                            <button onClick={e => { e.stopPropagation(); setManualEntries(prev => { const n = { ...prev }; delete n[asset.id]; return n; }); }}
+                                              title="Clear entry"
+                                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', padding: 2, display: 'flex', alignItems: 'center', transition: 'color .12s' }}
+                                              onMouseOver={e => (e.currentTarget.style.color = '#ef4444')}
+                                              onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
+                                              <X size={13} />
+                                            </button>
+                                          )}
+                                        </div>
+                                        {pnlPls !== null ? (
                                           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                               <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Entry</span>
@@ -3484,8 +3495,16 @@ export default function App() {
                                               </span>
                                             </div>
                                           </div>
-                                        </div>
-                                      )}
+                                        ) : (
+                                          <div>
+                                            <div style={{ fontSize: 12, color: 'var(--fg-subtle)', marginBottom: 8 }}>Set entry to track P&L</div>
+                                            <input type="number" placeholder="Entry PLS amount"
+                                              style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--fg)', fontSize: 12, padding: '5px 8px', outline: 'none' }}
+                                              onClick={e => e.stopPropagation()}
+                                              onBlur={e => { const v = parseFloat(e.target.value); if (!isNaN(v) && v > 0) setManualEntries(prev => ({ ...prev, [asset.id]: v })); }} />
+                                          </div>
+                                        )}
+                                      </div>
                                       {/* Links */}
                                       <div style={{ background: t.cardHigh, borderRadius: 8, padding: '12px 14px' }}>
                                         <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Links & Info</div>
@@ -5319,7 +5338,18 @@ export default function App() {
                                       </div>
                                       {/* P&L card */}
                                       <div style={{ background: 'var(--bg-elevated)', borderRadius: 8, padding: '12px 14px' }}>
-                                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>P&amp;L (PLS basis)</div>
+                                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                          <span>P&amp;L (PLS basis)</span>
+                                          {wEntryPls && (
+                                            <button onClick={e => { e.stopPropagation(); setManualEntries(prev => { const n = { ...prev }; delete n[asset.id]; return n; }); }}
+                                              title="Clear entry"
+                                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', padding: 2, display: 'flex', alignItems: 'center', transition: 'color .12s' }}
+                                              onMouseOver={e => (e.currentTarget.style.color = '#ef4444')}
+                                              onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
+                                              <X size={13} />
+                                            </button>
+                                          )}
+                                        </div>
                                         {wEntryPls ? (
                                           <>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
