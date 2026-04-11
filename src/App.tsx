@@ -330,6 +330,8 @@ export default function App() {
   const [txTypeFilter, setTxTypeFilter] = useState<string>('all');
   const [txAssetFilter, setTxAssetFilter] = useState<string>('all');
   const [txChainFilter, setTxChainFilter] = useState<string>('all');
+  const [txYearFilter, setTxYearFilter] = useState<string>('all');
+  const [txCoinCategory, setTxCoinCategory] = useState<string>('all');
   const [receivedCoinFilter, setReceivedCoinFilter] = useState<string>('all');
   const [receivedChainFilter, setReceivedChainFilter] = useState<string>('all');
   const [timeSinceLastUpdate, setTimeSinceLastUpdate] = useState<number>(0);
@@ -1768,9 +1770,27 @@ export default function App() {
       const matchesType = txTypeFilter === 'all' || tx.type === txTypeFilter;
       const matchesAsset = txAssetFilter === 'all' || tx.asset === txAssetFilter;
       const matchesChain = txChainFilter === 'all' || tx.chain === txChainFilter;
-      return matchesType && matchesAsset && matchesChain;
+      // Year filter
+      const txYear = new Date(tx.timestamp).getFullYear().toString();
+      const matchesYear = txYearFilter === 'all' || txYear === txYearFilter;
+      // Coin category filter
+      const au = tx.asset.toUpperCase();
+      let matchesCoin = true;
+      if (txCoinCategory === 'stablecoins') {
+        matchesCoin = au.includes('USDC') || au.includes('USDT') || au.includes('DAI') ||
+                      au.includes('TETHER') || au.includes('USD COIN') || au.includes('USDBC');
+      } else if (txCoinCategory === 'eth_weth') {
+        matchesCoin = au === 'ETH' || au === 'WETH';
+      } else if (txCoinCategory === 'hex') {
+        matchesCoin = au === 'HEX' || au === 'EHEX' || au.includes('HEX');
+      } else if (txCoinCategory === 'pls_wpls') {
+        matchesCoin = au === 'PLS' || au === 'WPLS';
+      } else if (txCoinCategory === 'bridged') {
+        matchesCoin = !!(tx as any).bridged;
+      }
+      return matchesType && matchesAsset && matchesChain && matchesYear && matchesCoin;
     });
-  }, [currentTransactions, txTypeFilter, txAssetFilter, txChainFilter]);
+  }, [currentTransactions, txTypeFilter, txAssetFilter, txChainFilter, txYearFilter, txCoinCategory]);
 
   const summary = useMemo(() => {
     const assets = currentAssets;
@@ -1824,21 +1844,58 @@ export default function App() {
              u.includes('USDT') || u.includes('TETHER') ||
              u.includes('DAI');
     };
-    const netInvestment = currentTransactions.reduce((acc, tx) => {
-      if (tx.type !== 'transfer_in') return acc;
-      // Only count Ethereum/Base inflows — PulseChain stables are bridged copies
-      // and would double-count the same capital already tracked on Ethereum
-      if (tx.chain === 'pulsechain') return acc;
+    // Normalise asset name to a canonical category for bridge-echo matching
+    const assetCategory = (asset: string) => {
+      const u = asset.toUpperCase();
+      if (u.includes('USDC') || u.includes('USD COIN') || u.includes('USDBC')) return 'USDC';
+      if (u.includes('USDT') || u.includes('TETHER')) return 'USDT';
+      if (u.includes('DAI')) return 'DAI';
+      if (u === 'ETH') return 'ETH';
+      return u;
+    };
+    // Collect all qualifying inflows first
+    const qualifiedInflows = currentTransactions.filter(tx => {
+      if (tx.type !== 'transfer_in') return false;
+      if (tx.chain === 'pulsechain') return false; // always exclude; already counted via ETH/Base
       const assetUpper = tx.asset.toUpperCase();
       const isEth = assetUpper === 'ETH';
       const isStable = isStableAsset(tx.asset);
-      if (!isEth && !isStable) return acc;
-      // Only external inflows: from not own wallet, to own wallet
+      if (!isEth && !isStable) return false;
       const fromOwn = ownAddrs.has(tx.from.toLowerCase());
       const toOwn = ownAddrs.has(tx.to.toLowerCase());
-      if (fromOwn || !toOwn) return acc; // skip own-to-own and unrelated
-      // Stables at face value; ETH at stored valueUsd (matches Total Received calculation)
-      if (isStable) return acc + tx.amount;
+      if (fromOwn || !toOwn) return false;
+      return true;
+    }).sort((a, b) => a.timestamp - b.timestamp); // oldest first
+
+    // Bridge-echo deduplication:
+    // If the same asset+amount (within 1%) is received on a different chain within 12h,
+    // treat the later one as a bridge echo and exclude it from netInvestment.
+    const BRIDGE_WINDOW_MS = 12 * 60 * 60 * 1000; // 12 hours
+    const deduped = new Set<string>();
+    qualifiedInflows.forEach((tx, i) => {
+      if (deduped.has(tx.id)) return; // already marked as echo
+      const cat = assetCategory(tx.asset);
+      const usd = tx.valueUsd || tx.amount;
+      for (let j = i + 1; j < qualifiedInflows.length; j++) {
+        const other = qualifiedInflows[j];
+        if (deduped.has(other.id)) continue;
+        if (other.chain === tx.chain) continue; // same chain: not a bridge
+        if (other.timestamp - tx.timestamp > BRIDGE_WINDOW_MS) break; // time window exceeded
+        const otherCat = assetCategory(other.asset);
+        if (otherCat !== cat) continue;
+        const otherUsd = other.valueUsd || other.amount;
+        const maxVal = Math.max(usd, otherUsd, 1);
+        if (Math.abs(usd - otherUsd) / maxVal <= 0.01) {
+          deduped.add(other.id); // mark later occurrence as bridge echo
+        }
+      }
+    });
+
+    const netInvestment = qualifiedInflows.reduce((acc, tx) => {
+      if (deduped.has(tx.id)) return acc; // skip bridge echoes
+      const assetUpper = tx.asset.toUpperCase();
+      const isEth = assetUpper === 'ETH';
+      if (isStableAsset(tx.asset)) return acc + tx.amount;
       if (isEth) return acc + (tx.valueUsd || 0);
       return acc;
     }, 0);
@@ -2056,6 +2113,29 @@ export default function App() {
 
     return { list, totalValue, byAsset };
   }, [currentTransactions, prices, receivedCoinFilter, receivedChainFilter]);
+
+  // PLS/WPLS Swap Tracker — shows every swap that involves PLS or WPLS on either leg
+  const plsSwapData = useMemo(() => {
+    const isPls = (sym: string) => {
+      const u = (sym || '').toUpperCase();
+      return u === 'PLS' || u === 'WPLS';
+    };
+    const rows = currentTransactions
+      .filter(tx => tx.type === 'swap' && (isPls(tx.asset) || isPls(tx.counterAsset || '')))
+      .map(tx => {
+        // "received" leg = the `asset` field (inTx side); "spent" leg = counterAsset (outTx side)
+        const plsReceived = isPls(tx.asset) ? tx.amount : 0;
+        const plsSpent = isPls(tx.counterAsset || '') ? (tx.counterAmount || 0) : 0;
+        const netPls = plsReceived - plsSpent;
+        return { tx, plsReceived, plsSpent, netPls };
+      })
+      .sort((a, b) => b.tx.timestamp - a.tx.timestamp);
+
+    const totalReceived = rows.reduce((s, r) => s + r.plsReceived, 0);
+    const totalSpent = rows.reduce((s, r) => s + r.plsSpent, 0);
+    const totalNet = totalReceived - totalSpent;
+    return { rows, totalReceived, totalSpent, totalNet };
+  }, [currentTransactions]);
 
   const CHAIN_COLORS: Record<string, string> = {
     pulsechain: '#f739ff',
@@ -3746,16 +3826,20 @@ export default function App() {
                   </span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {!isCollapsed('history-txs') && [
-                    { value: txTypeFilter, onChange: setTxTypeFilter, options: [['all','All Types'],['transfer_in','Received'],['transfer_out','Sent'],['swap','Swaps']] },
-                    { value: txChainFilter, onChange: setTxChainFilter, options: [['all','All Chains'],['pulsechain','PulseChain'],['ethereum','Ethereum'],['base','Base']] },
-                    { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Assets'], ...Array.from(new Set(currentTransactions.map(tx => tx.asset))).sort().map(a => [a,a])] },
-                  ].map(({ value, onChange, options }, i) => (
-                    <select key={i} value={value} onChange={e => onChange(e.target.value)}
-                      style={{ background: '#111', border: '1px solid #252525', borderRadius: 6, color: '#fff', fontSize: 13, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
-                      {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                    </select>
-                  ))}
+                  {!isCollapsed('history-txs') && (<>
+                    {[
+                      { value: txTypeFilter, onChange: setTxTypeFilter, options: [['all','All Types'],['transfer_in','Received'],['transfer_out','Sent'],['swap','Swaps']] as [string,string][] },
+                      { value: txChainFilter, onChange: setTxChainFilter, options: [['all','All Chains'],['pulsechain','PulseChain'],['ethereum','Ethereum'],['base','Base']] as [string,string][] },
+                      { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Assets'], ...Array.from(new Set(currentTransactions.map(tx => tx.asset))).sort().map(a => [a,a])] as [string,string][] },
+                      { value: txYearFilter, onChange: setTxYearFilter, options: [['all','All Years'],['2026','2026'],['2025','2025'],['2024','2024'],['2023','2023'],['2022','2022'],['2021','2021']] as [string,string][] },
+                      { value: txCoinCategory, onChange: setTxCoinCategory, options: [['all','All Coins'],['stablecoins','Stablecoins'],['eth_weth','ETH/WETH'],['hex','HEX/eHEX'],['pls_wpls','PLS/WPLS'],['bridged','Bridged']] as [string,string][] },
+                    ].map(({ value, onChange, options }, i) => (
+                      <select key={i} value={value} onChange={e => onChange(e.target.value)}
+                        style={{ background: '#111', border: '1px solid #252525', borderRadius: 6, color: '#fff', fontSize: 13, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
+                        {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                      </select>
+                    ))}
+                  </>)}
                   <button onClick={() => toggleSection('history-txs')}
                     style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
                     onMouseOver={e => (e.currentTarget.style.color = '#fff')}
@@ -3834,6 +3918,101 @@ export default function App() {
                 })}
               </div>
               </>)}
+            </div>
+
+            {/* PLS / WPLS Swap Tracker */}
+            <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 14, overflow: 'hidden' }}>
+              <div style={{ padding: '14px 18px', borderBottom: isCollapsed('pls-swaps') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <RefreshCcw size={16} style={{ color: '#f739ff' }} />
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>PLS / WPLS Swap Tracker</span>
+                  <span style={{ fontSize: 13, padding: '1px 7px', borderRadius: 4, background: 'rgba(247,57,255,.1)', color: '#f739ff', fontWeight: 600 }}>
+                    {plsSwapData.rows.length} swaps
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 12, color: '#aaa', fontWeight: 600, letterSpacing: '.5px', textTransform: 'uppercase', marginBottom: 2 }}>Net PLS</div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: plsSwapData.totalNet >= 0 ? '#00c076' : '#ef4444' }}>
+                      {plsSwapData.totalNet >= 0 ? '+' : ''}{plsSwapData.totalNet < 0 ? '-' : ''}{Math.abs(plsSwapData.totalNet).toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS
+                    </div>
+                  </div>
+                  <button onClick={() => toggleSection('pls-swaps')}
+                    style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
+                    onMouseOver={e => (e.currentTarget.style.color = '#fff')}
+                    onMouseOut={e => (e.currentTarget.style.color = '#555')}
+                    title={isCollapsed('pls-swaps') ? 'Expand' : 'Collapse'}>
+                    {isCollapsed('pls-swaps') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                  </button>
+                </div>
+              </div>
+              {!isCollapsed('pls-swaps') && (
+                plsSwapData.rows.length === 0 ? (
+                  <div style={{ padding: '40px 20px', textAlign: 'center', color: '#aaa', fontSize: 13 }}>
+                    {wallets.length === 0 ? 'Add wallets to see PLS swap history.' : 'No PLS or WPLS swaps found.'}
+                  </div>
+                ) : (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid #242424' }}>
+                          {['Date', 'Swap', 'PLS/WPLS Spent', 'PLS/WPLS Received', 'Net PLS'].map((h, i) => (
+                            <th key={i} style={{ padding: '10px 16px', fontSize: 12, fontWeight: 700, color: '#666', textTransform: 'uppercase', letterSpacing: '.5px', textAlign: i === 0 || i === 1 ? 'left' : 'right', background: '#0d0d0d', whiteSpace: 'nowrap' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {plsSwapData.rows.map(({ tx, plsSpent, plsReceived, netPls }) => (
+                          <tr key={tx.id} style={{ borderBottom: '1px solid #1a1a1a', transition: 'background .1s' }}
+                            onMouseOver={e => (e.currentTarget.style.background = '#111')}
+                            onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
+                            <td style={{ padding: '10px 16px', fontSize: 13, color: '#aaa', whiteSpace: 'nowrap' }}>
+                              {format(tx.timestamp, 'MMM d, yyyy')}
+                            </td>
+                            <td style={{ padding: '10px 16px', fontSize: 13, color: '#fff', whiteSpace: 'nowrap' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span style={{ color: '#aaa' }}>{tx.counterAsset}</span>
+                                <ArrowRight size={12} style={{ color: '#555' }} />
+                                <span>{tx.asset}</span>
+                                <a href={`${tx.chain === 'pulsechain' ? 'https://scan.pulsechain.com' : tx.chain === 'ethereum' ? 'https://etherscan.io' : 'https://basescan.org'}/tx/${tx.hash}`}
+                                  target="_blank" rel="noopener noreferrer"
+                                  style={{ color: '#555', marginLeft: 4 }}
+                                  onMouseOver={e => (e.currentTarget.style.color = '#a78bfa')}
+                                  onMouseOut={e => (e.currentTarget.style.color = '#555')}>
+                                  <ExternalLink size={11} />
+                                </a>
+                              </div>
+                            </td>
+                            <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: 13, fontWeight: 600, color: plsSpent > 0 ? '#ef4444' : '#555' }}>
+                              {plsSpent > 0 ? `-${plsSpent.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—'}
+                            </td>
+                            <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: 13, fontWeight: 600, color: plsReceived > 0 ? '#00c076' : '#555' }}>
+                              {plsReceived > 0 ? `+${plsReceived.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—'}
+                            </td>
+                            <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: netPls >= 0 ? '#00c076' : '#ef4444' }}>
+                              {netPls >= 0 ? '+' : ''}{netPls.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr style={{ borderTop: '2px solid #303030', background: '#111' }}>
+                          <td colSpan={2} style={{ padding: '11px 16px', fontSize: 13, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px' }}>Total</td>
+                          <td style={{ padding: '11px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#ef4444' }}>
+                            -{plsSwapData.totalSpent.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS
+                          </td>
+                          <td style={{ padding: '11px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#00c076' }}>
+                            +{plsSwapData.totalReceived.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS
+                          </td>
+                          <td style={{ padding: '11px 16px', textAlign: 'right', fontSize: 15, fontWeight: 800, color: plsSwapData.totalNet >= 0 ? '#00c076' : '#ef4444' }}>
+                            {plsSwapData.totalNet >= 0 ? '+' : ''}{plsSwapData.totalNet.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )
+              )}
             </div>
           </motion.div>
         )}
