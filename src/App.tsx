@@ -1870,6 +1870,8 @@ export default function App() {
     // Bridge-echo deduplication:
     // If the same asset+amount (within 1%) is received on a different chain within 12h,
     // treat the later one as a bridge echo and exclude it from netInvestment.
+    // 1% tolerance for matching bridge echo amounts across chains
+    const BRIDGE_AMOUNT_TOLERANCE = 0.01;
     const BRIDGE_WINDOW_MS = 12 * 60 * 60 * 1000; // 12 hours
     const deduped = new Set<string>();
     qualifiedInflows.forEach((tx, i) => {
@@ -1885,7 +1887,7 @@ export default function App() {
         if (otherCat !== cat) continue;
         const otherUsd = other.valueUsd || other.amount;
         const maxVal = Math.max(usd, otherUsd, 1);
-        if (Math.abs(usd - otherUsd) / maxVal <= 0.01) {
+        if (Math.abs(usd - otherUsd) / maxVal <= BRIDGE_AMOUNT_TOLERANCE) {
           deduped.add(other.id); // mark later occurrence as bridge echo
         }
       }
@@ -3934,7 +3936,7 @@ export default function App() {
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: 12, color: '#aaa', fontWeight: 600, letterSpacing: '.5px', textTransform: 'uppercase', marginBottom: 2 }}>Net PLS</div>
                     <div style={{ fontSize: 20, fontWeight: 800, color: plsSwapData.totalNet >= 0 ? '#00c076' : '#ef4444' }}>
-                      {plsSwapData.totalNet >= 0 ? '+' : ''}{plsSwapData.totalNet < 0 ? '-' : ''}{Math.abs(plsSwapData.totalNet).toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS
+                      {plsSwapData.totalNet >= 0 ? '+' : ''}{plsSwapData.totalNet.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS
                     </div>
                   </div>
                   <button onClick={() => toggleSection('pls-swaps')}
