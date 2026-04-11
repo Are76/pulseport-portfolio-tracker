@@ -555,28 +555,27 @@ export default function App() {
       }
       
       // 1a2. Fetch DexScreener 24h % change for PulseChain tokens (INC, PRVX, etc.)
-      // CoinGecko often lacks data for these — DexScreener has reliable 24h change from PulseX pairs
+      // Use specific pair addresses (pairs endpoint) — more reliable than the token endpoint
+      // which requires chainId filtering that can fail when DexScreener rate-limits or changes format.
       const dexScreenerChanges: Record<string, number> = {};
       try {
-        const dsTokenAddrs = [
-          '0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d', // INC
-          '0xf6f8db0aba00007681f8faf16a0fda1c9b030b11', // PRVX
-          '0x95b303987a60c71504d99aa1b13b4da07b0790ab', // PLSX
-          '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39', // pHEX
-          '0xa1077a294dde1b09bb078844df40758a5d0f9a27', // WPLS (PLS)
+        const dsPairs: Array<{ tokenAddr: string; pairAddr: string }> = [
+          { tokenAddr: '0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d', pairAddr: '0xf808bb6265e9ca27002c0a04562bf50d4fe37eaa' }, // INC/WPLS
+          { tokenAddr: '0xf6f8db0aba00007681f8faf16a0fda1c9b030b11', pairAddr: '0x7f681a5ad615238357ba148c281e2eaefd2de55a' }, // PRVX/USDC
+          { tokenAddr: '0x95b303987a60c71504d99aa1b13b4da07b0790ab', pairAddr: '0x1b45b9148791d3a104184cd5dfe5ce57193a3ee9' }, // PLSX/WPLS
+          { tokenAddr: '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39', pairAddr: '0xf1f4ee610b2babb05c635f726ef8b0c568c8dc65' }, // pHEX/WPLS
+          { tokenAddr: '0xa1077a294dde1b09bb078844df40758a5d0f9a27', pairAddr: '0x322df7921f28f1146cdf62afdac0d6bc0ab80711' }, // WPLS/USDT
         ];
-        const dsResults = await Promise.allSettled(
-          dsTokenAddrs.map(addr =>
-            fetch(`https://api.dexscreener.com/latest/dex/tokens/${addr}`)
+        await Promise.allSettled(
+          dsPairs.map(({ tokenAddr, pairAddr }) =>
+            fetch(`https://api.dexscreener.com/latest/dex/pairs/pulsechain/${pairAddr}`)
               .then(r => r.ok ? r.json() : null)
               .then(data => {
-                if (!data?.pairs?.length) return;
-                // Pick the pair with highest liquidity on PulseChain
-                const pcPairs = data.pairs.filter((p: any) => p.chainId === 'pulsechain');
-                if (pcPairs.length === 0) return;
-                const best = pcPairs.sort((a: any, b: any) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
-                if (best?.priceChange?.h24 != null) {
-                  dexScreenerChanges[addr] = parseFloat(best.priceChange.h24);
+                // Pair endpoint returns { pairs: [...] } — use first entry directly
+                const pair = data?.pairs?.[0] ?? data?.pair ?? (Array.isArray(data) ? data[0] : null);
+                const change = pair?.priceChange?.h24;
+                if (change != null) {
+                  dexScreenerChanges[tokenAddr] = parseFloat(change);
                 }
               })
           )
@@ -2832,114 +2831,111 @@ export default function App() {
                           })()}
                         </div>
                       </div>
-                    {/* ── ASSET GRID (3×3) — stat-card style inside hero ── */}
-                    {(() => {
-                      const SPARKLINE_VARIANCE_SCALE = 0.9;
-                      const SPARKLINE_SIN_AMPLITUDE = 0.10;
-                      const SPARKLINE_TREND_STEP = 0.01;
-                      const ASSET_COLORS: Record<string, string> = {
-                        PLS: '#00FF9F', PLSX: '#f739ff', HEX: '#fb923c',
-                        INC: '#22d3ee', eHEX: '#627EEA', PRVX: '#a855f7',
-                        ETH: '#627EEA', WBTC: '#f7931a', USDC: '#2775ca',
-                      };
-                      const displayAssets = currentAssets.length > 0
-                        ? [...currentAssets].sort((a, b) => b.value - a.value).slice(0, 9)
-                        : MOCK_ASSETS.slice(0, 9);
-
-                      if (displayAssets.length === 0) return null;
-
-                      const totalShown = displayAssets.reduce((s, a) => s + a.value, 0);
-
-                      return (
-                        <div style={{ position: 'relative', marginTop: 20 }}>
-                          <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', marginBottom: 14 }} />
-                          {/* Section header */}
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                            <div>
-                              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.8px' }}>Asset Positions</div>
-                              <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 2 }}>
-                                {displayAssets.length} assets · ${totalShown.toLocaleString(undefined, { maximumFractionDigits: 0 })} total
-                              </div>
-                            </div>
-                            <button onClick={() => setActiveTab('assets')}
-                              style={{ fontSize: 11, color: 'var(--accent)', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 8, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', transition: 'all .15s' }}
-                              onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,255,159,0.18)'; }}
-                              onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent-dim)'; }}>
-                              View all <ChevronRight size={12} />
-                            </button>
-                          </div>
-                          <div className="asset-grid-3col">
-                            {displayAssets.map((asset) => {
-                              const pct = asset.priceChange24h ?? asset.pnl24h ?? 0;
-                              const share = ((asset.value / (summary.totalValue || 1)) * 100);
-                              const accentColor = ASSET_COLORS[asset.symbol] || '#8b5cf6';
-                              const logo = (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()];
-                              const sparkData = Array.from({ length: 10 }, (_, i) => ({
-                                v: asset.value * (SPARKLINE_VARIANCE_SCALE + Math.sin(i * 0.8 + asset.value % 3) * SPARKLINE_SIN_AMPLITUDE + i * SPARKLINE_TREND_STEP),
-                              }));
-                              const unitPrice = (asset as any).price;
-                              return (
-                                <div key={asset.id} className="asset-card-premium" onClick={() => setActiveTab('assets')}>
-                                  <div style={{ padding: '14px 14px 0' }}>
-                                    {/* Row 1: Logo + symbol */}
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                                      <div style={{
-                                        width: 30, height: 30, borderRadius: '50%',
-                                        background: `${accentColor}15`, border: `1.5px solid ${accentColor}44`,
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        fontSize: 12, fontWeight: 800, color: accentColor,
-                                        overflow: 'hidden', flexShrink: 0,
-                                      }}>
-                                        {logo ? (
-                                          <img src={logo} alt={asset.symbol}
-                                            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
-                                            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                                        ) : asset.symbol[0]}
-                                      </div>
-                                      <div style={{ minWidth: 0, flex: 1 }}>
-                                        <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--fg)', letterSpacing: '-0.01em', lineHeight: 1.2 }}>{asset.symbol}</div>
-                                      </div>
-                                      <span style={{ fontSize: 11, fontWeight: 700, color: pct >= 0 ? t.green : t.red, fontFamily: 'JetBrains Mono, monospace', whiteSpace: 'nowrap' }}>
-                                        {pct >= 0 ? '+' : ''}{pct.toFixed(1)}%
-                                      </span>
-                                    </div>
-                                    {/* Row 2: Large balance amount */}
-                                    <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 4 }}>
-                                      {asset.balance >= 1e9 ? `${(asset.balance/1e9).toFixed(2)}B` : asset.balance >= 1e6 ? `${(asset.balance/1e6).toFixed(2)}M` : asset.balance >= 1e3 ? `${(asset.balance/1e3).toFixed(1)}K` : asset.balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                    </div>
-                                    {/* Row 3: USD value + portfolio % */}
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4, marginBottom: 6 }}>
-                                      <span style={{ fontSize: 12, color: 'var(--fg-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
-                                        ${asset.value >= 1e6 ? `${(asset.value/1e6).toFixed(2)}M` : asset.value >= 1e3 ? `${(asset.value/1e3).toFixed(1)}K` : asset.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                                      </span>
-                                      <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace' }}>
-                                        {share.toFixed(1)}%
-                                      </span>
-                                    </div>
-                                  </div>
-                                  {/* Row 4: Compact sparkline at bottom */}
-                                  <div className="sparkline-container" style={{ height: 32 }}>
-                                    <ResponsiveContainer width="100%" height="100%">
-                                      <AreaChart data={sparkData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                                        <defs>
-                                          <linearGradient id={`spark-${asset.id}`} x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stopColor={pct >= 0 ? accentColor : '#f43f5e'} stopOpacity={0.35} />
-                                            <stop offset="100%" stopColor={pct >= 0 ? accentColor : '#f43f5e'} stopOpacity={0} />
-                                          </linearGradient>
-                                        </defs>
-                                        <Area type="monotone" dataKey="v" stroke={pct >= 0 ? accentColor : '#f43f5e'} strokeWidth={1.5} fill={`url(#spark-${asset.id})`} dot={false} isAnimationActive={false} />
-                                      </AreaChart>
-                                    </ResponsiveContainer>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })()}
                     </div>
                     </>
+                  );
+                })()}
+
+                {/* ── ASSET POSITIONS GRID (3×3) — standalone section below hero ── */}
+                {(() => {
+                  const SPARKLINE_VARIANCE_SCALE = 0.9;
+                  const SPARKLINE_SIN_AMPLITUDE = 0.10;
+                  const SPARKLINE_TREND_STEP = 0.01;
+                  const ASSET_COLORS: Record<string, string> = {
+                    PLS: '#00FF9F', PLSX: '#f739ff', HEX: '#fb923c',
+                    INC: '#22d3ee', eHEX: '#627EEA', PRVX: '#a855f7',
+                    ETH: '#627EEA', WBTC: '#f7931a', USDC: '#2775ca',
+                  };
+                  const displayAssets = currentAssets.length > 0
+                    ? [...currentAssets].sort((a, b) => b.value - a.value).slice(0, 9)
+                    : MOCK_ASSETS.slice(0, 9);
+                  if (displayAssets.length === 0) return null;
+                  const totalShown = displayAssets.reduce((s, a) => s + a.value, 0);
+                  return (
+                    <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 16, overflow: 'hidden' }}>
+                      <div style={{ padding: '14px 18px', borderBottom: `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>Asset Positions</div>
+                          <div style={{ fontSize: 12, color: t.textSecondary, marginTop: 2 }}>
+                            Top {displayAssets.length} by value · ${totalShown.toLocaleString(undefined, { maximumFractionDigits: 0 })} shown
+                          </div>
+                        </div>
+                        <button onClick={() => setActiveTab('assets')}
+                          style={{ fontSize: 12, color: 'var(--accent)', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 8, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', transition: 'all .15s' }}
+                          onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,255,159,0.18)'; }}
+                          onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent-dim)'; }}>
+                          View all <ChevronRight size={12} />
+                        </button>
+                      </div>
+                      <div style={{ padding: '16px 18px' }}>
+                        <div className="asset-grid-3col">
+                          {displayAssets.map((asset) => {
+                            const pct = asset.priceChange24h ?? asset.pnl24h ?? 0;
+                            const share = ((asset.value / (summary.totalValue || 1)) * 100);
+                            const accentColor = ASSET_COLORS[asset.symbol] || '#8b5cf6';
+                            const logo = (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()];
+                            const sparkData = Array.from({ length: 10 }, (_, i) => ({
+                              v: asset.value * (SPARKLINE_VARIANCE_SCALE + Math.sin(i * 0.8 + asset.value % 3) * SPARKLINE_SIN_AMPLITUDE + i * SPARKLINE_TREND_STEP),
+                            }));
+                            return (
+                              <div key={asset.id} className="asset-card-premium" onClick={() => setActiveTab('assets')}>
+                                <div style={{ padding: '14px 14px 0' }}>
+                                  {/* Row 1: Logo + symbol + 24h % */}
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                                    <div style={{
+                                      width: 30, height: 30, borderRadius: '50%',
+                                      background: `${accentColor}15`, border: `1.5px solid ${accentColor}44`,
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      fontSize: 12, fontWeight: 800, color: accentColor,
+                                      overflow: 'hidden', flexShrink: 0,
+                                    }}>
+                                      {logo ? (
+                                        <img src={logo} alt={asset.symbol}
+                                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                                          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                      ) : asset.symbol[0]}
+                                    </div>
+                                    <div style={{ minWidth: 0, flex: 1 }}>
+                                      <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--fg)', letterSpacing: '-0.01em', lineHeight: 1.2 }}>{asset.symbol}</div>
+                                    </div>
+                                    <span style={{ fontSize: 11, fontWeight: 700, color: pct >= 0 ? t.green : t.red, fontFamily: 'JetBrains Mono, monospace', whiteSpace: 'nowrap' }}>
+                                      {pct >= 0 ? '+' : ''}{pct.toFixed(1)}%
+                                    </span>
+                                  </div>
+                                  {/* Row 2: Large balance amount */}
+                                  <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 4 }}>
+                                    {asset.balance >= 1e9 ? `${(asset.balance/1e9).toFixed(2)}B` : asset.balance >= 1e6 ? `${(asset.balance/1e6).toFixed(2)}M` : asset.balance >= 1e3 ? `${(asset.balance/1e3).toFixed(1)}K` : asset.balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                  </div>
+                                  {/* Row 3: USD value + portfolio % */}
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4, marginBottom: 6 }}>
+                                    <span style={{ fontSize: 12, color: 'var(--fg-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                                      ${asset.value >= 1e6 ? `${(asset.value/1e6).toFixed(2)}M` : asset.value >= 1e3 ? `${(asset.value/1e3).toFixed(1)}K` : asset.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                    </span>
+                                    <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace' }}>
+                                      {share.toFixed(1)}%
+                                    </span>
+                                  </div>
+                                </div>
+                                {/* Row 4: Sparkline at bottom */}
+                                <div className="sparkline-container" style={{ height: 32 }}>
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={sparkData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                                      <defs>
+                                        <linearGradient id={`spark-${asset.id}`} x1="0" y1="0" x2="0" y2="1">
+                                          <stop offset="0%" stopColor={pct >= 0 ? accentColor : '#f43f5e'} stopOpacity={0.35} />
+                                          <stop offset="100%" stopColor={pct >= 0 ? accentColor : '#f43f5e'} stopOpacity={0} />
+                                        </linearGradient>
+                                      </defs>
+                                      <Area type="monotone" dataKey="v" stroke={pct >= 0 ? accentColor : '#f43f5e'} strokeWidth={1.5} fill={`url(#spark-${asset.id})`} dot={false} isAnimationActive={false} />
+                                    </AreaChart>
+                                  </ResponsiveContainer>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
                   );
                 })()}
 
