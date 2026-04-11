@@ -376,6 +376,7 @@ export default function App() {
   const STATIC_LOGOS: Record<string, string> = {
     '0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d': 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png', // INC
     '0xf6f8db0aba00007681f8faf16a0fda1c9b030b11': 'https://cdn.dexscreener.com/cms/images/ODHYYN7yppDHnd6u?width=64&height=64&fit=crop&quality=95&format=auto', // PRVX
+    '0xefd766ccb38eaf1dfd701853bfce31359239f305': 'https://cdn.dexscreener.com/cms/images/f5d7803513d354423216d2e075a923570577681f0a877bde8e7e3a0f56d0ca1d?width=64&height=64&fit=crop&quality=95&format=auto', // pDAI
   };
   const [tokenLogos, setTokenLogos] = useState<Record<string, string>>(STATIC_LOGOS);
   const [stakeChainFilter, setStakeChainFilter] = useState<'all' | 'pulsechain' | 'ethereum'>('all');
@@ -2841,7 +2842,7 @@ export default function App() {
                     <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 16, overflow: 'hidden' }}>
                       <div style={{ padding: '14px 18px', borderBottom: `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>Asset Positions</div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>Token Positions</div>
                           <div style={{ fontSize: 12, color: t.textSecondary, marginTop: 2 }}>
                             Top {displayAssets.length} by value · ${totalShown.toLocaleString(undefined, { maximumFractionDigits: 0 })} shown
                           </div>
