@@ -184,7 +184,7 @@ function StakingLadder({ stakes }: { stakes: HexStake[] }) {
     if (!active || !payload?.length) return null;
     const d = payload[0].payload;
     return (
-      <div style={{ background: 'rgba(0,0,0,.9)', border: '1px solid rgba(255,255,255,.2)', borderRadius: 8, padding: 12, color: '#fff', fontSize: 13 }}>
+      <div className="chart-tooltip" style={{ fontSize: 13 }}>
         <div style={{ fontWeight: 700, color: '#00FF9F', marginBottom: 6 }}>Days: {d.bucketRange}</div>
         <div>T-Shares: {d.totalShares.toFixed(2)}</div>
         <div>Stakes: {d.stakeCount}</div>
@@ -194,13 +194,13 @@ function StakingLadder({ stakes }: { stakes: HexStake[] }) {
 
   return (
     <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 18px 10px' }}>
-      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.6px' }}>Staking Ladder</div>
+      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.6px' }}>Staking Ladder</div>
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 24 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-          <XAxis dataKey="daysRemaining" tick={{ fill: '#7c8798', fontSize: 13 }} axisLine={{ stroke: '#222' }} tickLine={false}
-            label={{ value: 'Days Remaining', position: 'insideBottom', offset: -10, fill: '#7c8798', fontSize: 13 }} />
-          <YAxis tick={{ fill: '#7c8798', fontSize: 13 }} axisLine={false} tickLine={false} scale="log" domain={['auto', 'auto']} allowDataOverflow={false} />
+          <XAxis dataKey="daysRemaining" tick={{ fill: 'var(--fg-subtle)', fontSize: 13 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false}
+            label={{ value: 'Days Remaining', position: 'insideBottom', offset: -10, fill: 'var(--fg-subtle)', fontSize: 13 }} />
+          <YAxis tick={{ fill: 'var(--fg-subtle)', fontSize: 13 }} axisLine={false} tickLine={false} scale="log" domain={['auto', 'auto']} allowDataOverflow={false} />
           <RechartsTooltip content={<CustomTip />} />
           <Bar dataKey="totalShares" fill="#00FF9F" radius={[3, 3, 0, 0]} />
         </BarChart>
@@ -252,9 +252,9 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
     const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload } = props;
     return (
       <g>
-        <text x={cx} y={cy - 14} textAnchor="middle" fill="#aaa" fontSize="12">{payload.label}</text>
-        <text x={cx} y={cy + 8} textAnchor="middle" fill="#fff" fontSize="18" fontWeight="700">{fmtK(payload.tShares)}</text>
-        <text x={cx} y={cy + 24} textAnchor="middle" fill="#555" fontSize="11">T-Shares</text>
+        <text x={cx} y={cy - 14} textAnchor="middle" fill="var(--fg-subtle)" fontSize="12">{payload.label}</text>
+        <text x={cx} y={cy + 8} textAnchor="middle" fill="var(--fg)" fontSize="18" fontWeight="700">{fmtK(payload.tShares)}</text>
+        <text x={cx} y={cy + 24} textAnchor="middle" fill="var(--fg-subtle)" fontSize="11">T-Shares</text>
         <Pie data={[]} cx={cx} cy={cy} innerRadius={innerRadius} outerRadius={outerRadius + 6} startAngle={startAngle} endAngle={endAngle} fill={fill} dataKey="value" />
       </g>
     );
@@ -263,9 +263,9 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
   return (
     <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 18px 10px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.6px' }}>Stake Distribution</div>
-        <div style={{ fontSize: 13, color: '#888' }}>
-          <span style={{ color: '#fff', fontWeight: 700 }}>${fmtK(totalUsd)}</span>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.6px' }}>Stake Distribution</div>
+        <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>
+          <span style={{ color: 'var(--fg)', fontWeight: 700 }}>${fmtK(totalUsd)}</span>
           {' · '}<span style={{ color: '#fb923c' }}>{fmtK(totalHex)} HEX</span>
           {' · '}<span style={{ color: '#00FF9F' }}>{fmtK(totalTShares)} T-Shares</span>
         </div>
@@ -282,10 +282,10 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
       </ResponsiveContainer>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px', marginTop: 4 }}>
         {chartData.map((w, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#aaa' }}>
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--fg-muted)' }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: getColor(i), flexShrink: 0 }} />
             <span>{w.label}</span>
-            <span style={{ color: '#888' }}>({w.count})</span>
+            <span style={{ color: 'var(--fg-subtle)' }}>({w.count})</span>
           </div>
         ))}
       </div>
@@ -2581,13 +2581,13 @@ export default function App() {
 
                 {/* ── ONBOARDING ── */}
                 {wallets.length === 0 && (
-                  <div style={{ background: 'linear-gradient(135deg, #0a1a2a 0%, #050f09 100%)', border: '1px solid rgba(0,255,159,0.12)', borderRadius: 20, padding: '40px 32px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+                  <div className={theme === 'dark' ? 'hero-bg-dark' : 'hero-bg-light'} style={{ border: '1px solid rgba(0,255,159,0.12)', borderRadius: 20, padding: '40px 32px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 0%, rgba(0,255,159,.10) 0%, transparent 55%), radial-gradient(ellipse at 80% 80%, rgba(99,70,255,.06) 0%, transparent 50%)', pointerEvents: 'none' }} />
                     <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(0,255,159,0.1)', border: '1px solid rgba(0,255,159,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 0 24px rgba(0,255,159,0.12)' }}>
                       <WalletIcon size={24} color="#00FF9F" />
                     </div>
-                    <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 8, letterSpacing: '-0.02em' }}>Welcome to PulsePort</div>
-                    <div style={{ fontSize: 14, color: '#888', marginBottom: 32, maxWidth: 400, margin: '0 auto 32px' }}>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--fg)', marginBottom: 8, letterSpacing: '-0.02em' }}>Welcome to PulsePort</div>
+                    <div style={{ fontSize: 14, color: 'var(--fg-muted)', marginBottom: 32, maxWidth: 400, margin: '0 auto 32px' }}>
                       Track your PulseChain, Ethereum, and Base portfolios in real time. Add your first wallet to get started.
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, marginBottom: 36, flexWrap: 'wrap' }}>
@@ -2598,8 +2598,8 @@ export default function App() {
                       ].map(({ step, label, Icon }) => (
                         <div key={step} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
                           <div className="onboarding-step-icon"><Icon size={20} /></div>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: '#00FF9F', textTransform: 'uppercase', letterSpacing: '.5px' }}>Step {step}</div>
-                          <div style={{ fontSize: 13, color: '#aaa' }}>{label}</div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Step {step}</div>
+                          <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>{label}</div>
                         </div>
                       ))}
                     </div>
@@ -2753,7 +2753,7 @@ export default function App() {
                                           <Pie data={alloc} cx="50%" cy="50%" innerRadius={48} outerRadius={70} paddingAngle={3} dataKey="value" strokeWidth={0}>
                                             {alloc.map((_, i) => <Cell key={i} fill={ALLOC_COLORS2[i % ALLOC_COLORS2.length]} />)}
                                           </Pie>
-                                          <RechartsTooltip contentStyle={{ background: 'rgba(10,10,22,0.96)', border: '1px solid rgba(0,255,159,0.15)', borderRadius: 10, fontSize: 12, color: 'var(--fg)', boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }} />
+                                          <RechartsTooltip contentStyle={{ background: 'var(--bg-surface)', border: '1px solid rgba(0,255,159,0.15)', borderRadius: 10, fontSize: 12, color: 'var(--fg)', boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }} />
                                         </PieChart>
                                       </ResponsiveContainer>
                                     </div>
@@ -2882,7 +2882,7 @@ export default function App() {
                                   </span>
                                   {unitPrice > 0 && (
                                     <span style={{ color: 'var(--fg-subtle)', opacity: 0.7 }}>
-                                      @{unitPrice < 0.001 ? unitPrice.toFixed(6) : unitPrice < 1 ? unitPrice.toFixed(4) : `$${unitPrice.toFixed(2)}`}
+                                      @{unitPrice < 0.001 ? unitPrice.toFixed(6) : unitPrice < 1 ? unitPrice.toFixed(4) : unitPrice.toFixed(2)}
                                     </span>
                                   )}
                                 </div>
@@ -3153,8 +3153,8 @@ export default function App() {
                       <div style={{ fontSize: 13, color: t.textSecondary, marginTop: 2 }}>{currentAssets.length} tokens · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                     </div>
                     <button onClick={() => toggleSection('assets-table')}
-                      style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
-                      onMouseOver={e => (e.currentTarget.style.color = '#fff')}
+                      style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s' }}
+                      onMouseOver={e => (e.currentTarget.style.color = 'var(--fg)')}
                       onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}
                       title={isCollapsed('assets-table') ? 'Expand' : 'Collapse'}>
                       {isCollapsed('assets-table') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
@@ -3246,15 +3246,15 @@ export default function App() {
                                 initial={{ opacity: 0, y: 8 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: Math.min(idx * 0.03, 0.5), duration: 0.2 }}
-                                style={{ borderBottom: isExpanded ? 'none' : '1px solid #1e1e1e', transition: 'background .1s', borderLeft: `3px solid ${CHAIN_COLORS[asset.chain] || '#333'}`, cursor: 'pointer' }}
+                                style={{ borderBottom: isExpanded ? 'none' : '1px solid var(--border)', transition: 'background .1s', borderLeft: `3px solid ${CHAIN_COLORS[asset.chain] || '#333'}`, cursor: 'pointer' }}
                                 onClick={() => setExpandedAssetIds(prev => { const s = new Set(prev); s.has(asset.id) ? s.delete(asset.id) : s.add(asset.id); return s; })}
-                                onMouseOver={e => (e.currentTarget.style.background = '#111')}
-                                onMouseOut={e => (e.currentTarget.style.background = isExpanded ? '#0f0f0f' : 'transparent')}>
+                                onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
+                                onMouseOut={e => (e.currentTarget.style.background = isExpanded ? 'var(--bg-elevated)' : 'transparent')}>
                                 <td style={{ padding: '11px 16px', whiteSpace: 'nowrap' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                     {/* Logo */}
-                                    <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#282828', border: '1px solid #3a3a3a',
-                                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#fff', flexShrink: 0, overflow: 'hidden' }}>
+                                    <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: 'var(--fg)', flexShrink: 0, overflow: 'hidden' }}>
                                       {logo ? <img src={logo} alt={asset.symbol} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
                                           onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.removeAttribute('hidden'); }} /> : null}
                                       <span hidden={!!logo}>{asset.symbol[0]}</span>
@@ -3263,13 +3263,13 @@ export default function App() {
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                                         {explUrl
                                           ? <a href={explUrl} target="_blank" rel="noopener noreferrer"
-                                              style={{ fontSize: 14, fontWeight: 600, color: '#fff', textDecoration: 'none' }}
+                                              style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)', textDecoration: 'none' }}
                                               onClick={e => e.stopPropagation()}
                                               onMouseOver={e => (e.currentTarget.style.color = '#00FF9F')}
-                                              onMouseOut={e => (e.currentTarget.style.color = '#fff')}>
+                                              onMouseOut={e => (e.currentTarget.style.color = 'var(--fg)')}>
                                               {asset.symbol}
                                             </a>
-                                          : <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{asset.symbol}</span>}
+                                          : <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>{asset.symbol}</span>}
                                         {asset.isBridged && <span style={{ fontSize: 13, background: 'rgba(99,102,241,0.15)', color: '#a5b4fc', padding: '1px 5px', borderRadius: 4, fontWeight: 600 }}>bridged</span>}
                                         {/* Copy CA */}
                                         {addr && addr !== 'native' && (
@@ -3295,7 +3295,7 @@ export default function App() {
                                       </div>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 1 }}>
                                         <div style={{ width: 6, height: 6, borderRadius: '50%', background: CHAIN_COLORS[asset.chain] || '#555' }} />
-                                        <span style={{ fontSize: 13, color: '#aaa' }}>{asset.chain}</span>
+                                        <span style={{ fontSize: 13, color: 'var(--fg-muted)' }}>{asset.chain}</span>
                                       </div>
                                     </div>
                                   </div>
@@ -3308,19 +3308,19 @@ export default function App() {
                                   {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%
                                 </td>
                                 <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                                  <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>
+                                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>
                                     {asset.balance.toLocaleString(undefined, { maximumFractionDigits: 4 })}
                                   </div>
-                                  <div style={{ fontSize: 13, color: '#aaa' }}>{asset.symbol}</div>
+                                  <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>{asset.symbol}</div>
                                 </td>
                                 <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                                  <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>
+                                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>
                                     ${asset.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                   </div>
                                 </td>
                                 <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap', minWidth: 90 }}>
-                                  <div style={{ fontSize: 13, color: '#999', marginBottom: 3 }}>{share.toFixed(1)}%</div>
-                                  <div style={{ height: 2, background: '#1a1a1a', borderRadius: 1 }}>
+                                  <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 3 }}>{share.toFixed(1)}%</div>
+                                  <div style={{ height: 2, background: 'var(--border)', borderRadius: 1 }}>
                                     <div style={{ height: '100%', width: `${Math.min(share, 100)}%`, background: '#00FF9F', borderRadius: 1 }} />
                                   </div>
                                 </td>
@@ -3336,7 +3336,7 @@ export default function App() {
                                       <Calculator size={13} />
                                     </button>
                                     <button onClick={e => { e.stopPropagation(); setHiddenTokens([...hiddenTokens, asset.id]); }}
-                                      style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
+                                      style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s' }}
                                       onMouseOver={e => (e.currentTarget.style.color = '#ef4444')}
                                       onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}
                                       title="Hide">
@@ -3358,12 +3358,12 @@ export default function App() {
                                         <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Price Details</div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <span style={{ fontSize: 12, color: '#888' }}>USD</span>
-                                            <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', fontFamily: 'monospace' }}><PriceDisplay price={asset.price} /></span>
+                                            <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>USD</span>
+                                            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)', fontFamily: 'monospace' }}><PriceDisplay price={asset.price} /></span>
                                           </div>
                                           {priceInPls > 0 && (
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                              <span style={{ fontSize: 12, color: '#888' }}>in PLS</span>
+                                              <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>in PLS</span>
                                               <span style={{ fontSize: 13, fontWeight: 700, color: '#f739ff', fontFamily: 'monospace' }}>
                                                 {priceInPls >= 1e6 ? `${(priceInPls/1e6).toFixed(2)}M` : priceInPls >= 1e3 ? `${(priceInPls/1e3).toFixed(2)}K` : priceInPls >= 1 ? priceInPls.toFixed(2) : priceInPls < 0.001 ? priceInPls.toFixed(8) : priceInPls.toFixed(6)} PLS
                                               </span>
@@ -3371,21 +3371,21 @@ export default function App() {
                                           )}
                                           {(asset.priceChange1h ?? null) !== null && (
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                              <span style={{ fontSize: 12, color: '#888' }}>1H</span>
+                                              <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>1H</span>
                                               <span style={{ fontSize: 12, fontWeight: 700, color: (asset.priceChange1h ?? 0) >= 0 ? '#00FF9F' : '#ef4444' }}>
                                                 {(asset.priceChange1h ?? 0) >= 0 ? '▲' : '▼'} {Math.abs(asset.priceChange1h ?? 0).toFixed(2)}%
                                               </span>
                                             </div>
                                           )}
                                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <span style={{ fontSize: 12, color: '#888' }}>24H</span>
+                                            <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>24H</span>
                                             <span style={{ fontSize: 12, fontWeight: 700, color: (asset.priceChange24h ?? asset.pnl24h ?? 0) >= 0 ? '#00FF9F' : '#ef4444' }}>
                                               {(asset.priceChange24h ?? asset.pnl24h ?? 0) >= 0 ? '▲' : '▼'} {Math.abs(asset.priceChange24h ?? asset.pnl24h ?? 0).toFixed(2)}%
                                             </span>
                                           </div>
                                           {(asset.priceChange7d ?? null) !== null && (
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                              <span style={{ fontSize: 12, color: '#888' }}>7D</span>
+                                              <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>7D</span>
                                               <span style={{ fontSize: 12, fontWeight: 700, color: (asset.priceChange7d ?? 0) >= 0 ? '#00FF9F' : '#ef4444' }}>
                                                 {(asset.priceChange7d ?? 0) >= 0 ? '▲' : '▼'} {Math.abs(asset.priceChange7d ?? 0).toFixed(2)}%
                                               </span>
@@ -3403,26 +3403,26 @@ export default function App() {
                                             return (
                                               <>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                  <span style={{ fontSize: 12, color: '#888' }}>Native Price</span>
-                                                  <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', fontFamily: 'monospace' }}>
+                                                  <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Native Price</span>
+                                                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)', fontFamily: 'monospace' }}>
                                                     {md?.nativePriceUsd ? `${parseFloat(md.nativePriceUsd).toFixed(4)}` : '—'}
                                                   </span>
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                  <span style={{ fontSize: 12, color: '#888' }}>Liquidity</span>
+                                                  <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Liquidity</span>
                                                   <span style={{ fontSize: 13, fontWeight: 700, color: '#00FF9F' }}>{md ? fmtNum(md.liquidity) : <span style={{ color: 'var(--fg-subtle)' }}>—</span>}</span>
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                  <span style={{ fontSize: 12, color: '#888' }}>24H Volume</span>
-                                                  <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{md ? fmtNum(md.volume24h) : <span style={{ color: 'var(--fg-subtle)' }}>—</span>}</span>
+                                                  <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>24H Volume</span>
+                                                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>{md ? fmtNum(md.volume24h) : <span style={{ color: 'var(--fg-subtle)' }}>—</span>}</span>
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                  <span style={{ fontSize: 12, color: '#888' }}>Pools</span>
-                                                  <span style={{ fontSize: 13, fontWeight: 700, color: '#aaa' }}>{md ? md.pools : <span style={{ color: 'var(--fg-subtle)' }}>—</span>}</span>
+                                                  <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Pools</span>
+                                                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-muted)' }}>{md ? md.pools : <span style={{ color: 'var(--fg-subtle)' }}>—</span>}</span>
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                  <span style={{ fontSize: 12, color: '#888' }}>24H Txns</span>
-                                                  <span style={{ fontSize: 13, fontWeight: 700, color: '#aaa' }}>{md?.txns24h != null ? md.txns24h.toLocaleString() : <span style={{ color: 'var(--fg-subtle)' }}>—</span>}</span>
+                                                  <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>24H Txns</span>
+                                                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-muted)' }}>{md?.txns24h != null ? md.txns24h.toLocaleString() : <span style={{ color: 'var(--fg-subtle)' }}>—</span>}</span>
                                                 </div>
                                               </>
                                             );
@@ -3434,26 +3434,26 @@ export default function App() {
                                         <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Holdings</div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <span style={{ fontSize: 12, color: '#888' }}>Balance</span>
-                                            <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>
+                                            <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Balance</span>
+                                            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>
                                               {asset.balance >= 1e6 ? `${(asset.balance/1e6).toFixed(2)}M` : asset.balance >= 1e3 ? `${(asset.balance/1e3).toFixed(2)}K` : asset.balance.toLocaleString(undefined, { maximumFractionDigits: 4 })} {asset.symbol}
                                             </span>
                                           </div>
                                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <span style={{ fontSize: 12, color: '#888' }}>Value USD</span>
-                                            <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>${asset.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                                            <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Value USD</span>
+                                            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>${asset.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                                           </div>
                                           {priceInPls > 0 && (
                                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                              <span style={{ fontSize: 12, color: '#888' }}>Value PLS</span>
+                                              <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Value PLS</span>
                                               <span style={{ fontSize: 13, fontWeight: 600, color: '#f739ff' }}>
                                                 {currentPlsValue >= 1e6 ? `${(currentPlsValue/1e6).toFixed(2)}M` : currentPlsValue >= 1e3 ? `${(currentPlsValue/1e3).toFixed(2)}K` : currentPlsValue.toFixed(0)} PLS
                                               </span>
                                             </div>
                                           )}
                                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <span style={{ fontSize: 12, color: '#888' }}>Portfolio %</span>
-                                            <span style={{ fontSize: 13, fontWeight: 600, color: '#aaa' }}>{share.toFixed(2)}%</span>
+                                            <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Portfolio %</span>
+                                            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)' }}>{share.toFixed(2)}%</span>
                                           </div>
                                         </div>
                                       </div>
@@ -3463,15 +3463,15 @@ export default function App() {
                                           <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>PLS P&L</div>
                                           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                              <span style={{ fontSize: 12, color: '#888' }}>Entry</span>
-                                              <span style={{ fontSize: 13, fontWeight: 600, color: '#aaa' }}>{(entryPls!).toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</span>
+                                              <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Entry</span>
+                                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)' }}>{(entryPls!).toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</span>
                                             </div>
                                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                              <span style={{ fontSize: 12, color: '#888' }}>Now</span>
-                                              <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{currentPlsValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</span>
+                                              <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Now</span>
+                                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{currentPlsValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</span>
                                             </div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 4, borderTop: '1px solid #222', marginTop: 2 }}>
-                                              <span style={{ fontSize: 12, color: '#888', fontWeight: 700 }}>Net PnL</span>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 4, borderTop: '1px solid var(--border)', marginTop: 2 }}>
+                                              <span style={{ fontSize: 12, color: 'var(--fg-subtle)', fontWeight: 700 }}>Net PnL</span>
                                               <span style={{ fontSize: 14, fontWeight: 800, color: pnlPls >= 0 ? '#00FF9F' : '#ef4444' }}>
                                                 {pnlPls >= 0 ? '+' : ''}{pnlPls.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS
                                               </span>
@@ -3485,9 +3485,9 @@ export default function App() {
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
                                           {addr && addr !== 'native' && (
                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
-                                              <span style={{ fontSize: 12, color: '#888' }}>Contract</span>
+                                              <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Contract</span>
                                               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                                <span style={{ fontSize: 12, fontFamily: 'monospace', color: '#aaa' }}>{addr.slice(0,6)}…{addr.slice(-4)}</span>
+                                                <span style={{ fontSize: 12, fontFamily: 'monospace', color: 'var(--fg-muted)' }}>{addr.slice(0,6)}…{addr.slice(-4)}</span>
                                                 <button onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(addr); }}
                                                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', padding: 2 }}
                                                   onMouseOver={e => (e.currentTarget.style.color = '#aaa')}
@@ -3515,7 +3515,7 @@ export default function App() {
                                           )}
                                           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                                             <div style={{ width: 8, height: 8, borderRadius: '50%', background: CHAIN_COLORS[asset.chain] || '#555' }} />
-                                            <span style={{ fontSize: 12, color: '#888', textTransform: 'capitalize' }}>{asset.chain}</span>
+                                            <span style={{ fontSize: 12, color: 'var(--fg-subtle)', textTransform: 'capitalize' }}>{asset.chain}</span>
                                           </div>
                                         </div>
                                       </div>
@@ -3530,11 +3530,11 @@ export default function App() {
                       </tbody>
                       {currentAssets.length > 0 && (
                         <tfoot>
-                          <tr style={{ borderTop: '1px solid #252525' }}>
-                            <td colSpan={4} style={{ padding: '10px 16px', fontSize: 13, color: '#aaa', fontWeight: 600 }}>
+                          <tr style={{ borderTop: '1px solid var(--border)' }}>
+                            <td colSpan={4} style={{ padding: '10px 16px', fontSize: 13, color: 'var(--fg-muted)', fontWeight: 600 }}>
                               TOTAL LIQUID
                             </td>
-                            <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#fff' }}>
+                            <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>
                               ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </td>
                             <td colSpan={2} />
@@ -3544,7 +3544,7 @@ export default function App() {
                     </table>
                   </div>
                   {unpricedCount > 0 && (
-                    <div style={{ padding: '10px 16px', borderTop: '1px solid #1f1f1f', fontSize: 13, color: '#aaa', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', fontSize: 13, color: 'var(--fg-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
                       <Activity size={12} /> {unpricedCount} token{unpricedCount !== 1 ? 's' : ''} with no price data omitted
                     </div>
                   )}
@@ -3614,8 +3614,8 @@ export default function App() {
                               : <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#2a1a3a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#a78bfa' }}>{pnlAsset.symbol[0]}</div>;
                           })()}
                           <div>
-                            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{assetName} Profit &amp; Loss</div>
-                            <div style={{ fontSize: 13, color: '#888', marginTop: 1 }}>{swapCount} swap{swapCount !== 1 ? 's' : ''} analysed · approximate (current prices)</div>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)' }}>{assetName} Profit &amp; Loss</div>
+                            <div style={{ fontSize: 13, color: 'var(--fg-subtle)', marginTop: 1 }}>{swapCount} swap{swapCount !== 1 ? 's' : ''} analysed · approximate (current prices)</div>
                           </div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -3623,8 +3623,8 @@ export default function App() {
                             {realizedPnl >= 0 ? '+' : ''}${fmtDec(realizedPnl)}
                           </div>
                           <button onClick={() => setPnlAsset(null)}
-                            style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888' }}
-                            onMouseOver={e => (e.currentTarget.style.color = '#fff')}
+                            style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)' }}
+                            onMouseOver={e => (e.currentTarget.style.color = 'var(--fg)')}
                             onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
                             <X size={16} />
                           </button>
@@ -3634,20 +3634,20 @@ export default function App() {
                       {/* Stats row */}
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: '0 14px 14px' }}>
                         {/* REALIZED */}
-                        <div style={{ background: '#111', borderRadius: 10, padding: '14px 16px' }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: '#888', letterSpacing: '.8px', marginBottom: 10 }}>REALIZED</div>
+                        <div style={{ background: 'var(--bg-elevated)', borderRadius: 10, padding: '14px 16px' }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-subtle)', letterSpacing: '.8px', marginBottom: 10 }}>REALIZED</div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <div>
-                              <div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>Cost</div>
+                              <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 2 }}>Cost</div>
                               <div style={{ fontSize: 14, fontWeight: 700, color: '#ef4444' }}>${fmtDec(realizedCostUsd)}</div>
                             </div>
                             <div style={{ color: 'var(--fg-subtle)', fontSize: 16, marginTop: 8 }}>→</div>
                             <div>
-                              <div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>Proceeds</div>
+                              <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 2 }}>Proceeds</div>
                               <div style={{ fontSize: 14, fontWeight: 700, color: '#00FF9F' }}>${fmtDec(proceedsUsd)}</div>
                             </div>
                             <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                              <div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>P&amp;L</div>
+                              <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 2 }}>P&amp;L</div>
                               <div style={{ fontSize: 14, fontWeight: 700, color: realizedPnl >= 0 ? '#00FF9F' : '#ef4444' }}>
                                 {realizedPnl >= 0 ? '+' : ''}${fmtDec(realizedPnl)}
                               </div>
@@ -3655,36 +3655,36 @@ export default function App() {
                           </div>
                           <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #242424', display: 'flex', gap: 16 }}>
                             <div>
-                              <div style={{ fontSize: 13, color: '#888' }}>Bought</div>
-                              <div style={{ fontSize: 13, color: '#aaa', fontWeight: 600 }}>{fmtTok(totalBought)} {pnlAsset.symbol}</div>
+                              <div style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>Bought</div>
+                              <div style={{ fontSize: 13, color: 'var(--fg-muted)', fontWeight: 600 }}>{fmtTok(totalBought)} {pnlAsset.symbol}</div>
                             </div>
                             <div>
-                              <div style={{ fontSize: 13, color: '#888' }}>Sold</div>
-                              <div style={{ fontSize: 13, color: '#aaa', fontWeight: 600 }}>{fmtTok(totalSold)} {pnlAsset.symbol}</div>
+                              <div style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>Sold</div>
+                              <div style={{ fontSize: 13, color: 'var(--fg-muted)', fontWeight: 600 }}>{fmtTok(totalSold)} {pnlAsset.symbol}</div>
                             </div>
                           </div>
                         </div>
 
                         {/* HOLDINGS */}
-                        <div style={{ background: '#111', borderRadius: 10, padding: '14px 16px' }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: '#888', letterSpacing: '.8px', marginBottom: 10 }}>HOLDINGS</div>
+                        <div style={{ background: 'var(--bg-elevated)', borderRadius: 10, padding: '14px 16px' }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-subtle)', letterSpacing: '.8px', marginBottom: 10 }}>HOLDINGS</div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div>
-                              <div style={{ fontSize: 13, color: '#888', marginBottom: 2 }}>Balance</div>
-                              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{fmtTok(holdingsBal)} {pnlAsset.symbol}</div>
+                              <div style={{ fontSize: 13, color: 'var(--fg-subtle)', marginBottom: 2 }}>Balance</div>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>{fmtTok(holdingsBal)} {pnlAsset.symbol}</div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
-                              <div style={{ fontSize: 13, color: '#888', marginBottom: 2 }}>Value</div>
-                              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>${fmtDec(holdingsUsd)}</div>
+                              <div style={{ fontSize: 13, color: 'var(--fg-subtle)', marginBottom: 2 }}>Value</div>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>${fmtDec(holdingsUsd)}</div>
                             </div>
                           </div>
                           {gasNative > 0 && (
                             <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #242424', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <div style={{ fontSize: 13, color: '#888', display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <div style={{ fontSize: 13, color: 'var(--fg-subtle)', display: 'flex', alignItems: 'center', gap: 4 }}>
                                 ⛽ Gas paid
                               </div>
-                              <div style={{ fontSize: 13, color: '#aaa', fontWeight: 600 }}>
-                                {fmtTok(gasNative)} {chainKey === 'ethereum' ? 'ETH' : 'PLS'} <span style={{ color: '#888' }}>(${fmtDec(gasUsd)})</span>
+                              <div style={{ fontSize: 13, color: 'var(--fg-muted)', fontWeight: 600 }}>
+                                {fmtTok(gasNative)} {chainKey === 'ethereum' ? 'ETH' : 'PLS'} <span style={{ color: 'var(--fg-subtle)' }}>(${fmtDec(gasUsd)})</span>
                               </div>
                             </div>
                           )}
@@ -3693,8 +3693,8 @@ export default function App() {
 
                       {/* Swap list */}
                       {allRows.length > 0 && (
-                        <div style={{ borderTop: '1px solid #1f1f1f' }}>
-                          <div style={{ padding: '8px 18px', fontSize: 13, fontWeight: 700, color: '#888', letterSpacing: '.8px' }}>SWAP HISTORY</div>
+                        <div style={{ borderTop: '1px solid var(--border)' }}>
+                          <div style={{ padding: '8px 18px', fontSize: 13, fontWeight: 700, color: 'var(--fg-subtle)', letterSpacing: '.8px' }}>SWAP HISTORY</div>
                           <div style={{ maxHeight: 280, overflowY: 'auto' }}>
                             {allRows.map(({ tx, side }, i) => {
                               const isBuy = side === 'buy';
@@ -3705,9 +3705,9 @@ export default function App() {
                               const valUsd = tx.valueUsd ?? 0;
                               return (
                                 <div key={tx.id + i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 18px',
-                                  borderBottom: '1px solid #111', background: i % 2 === 0 ? 'transparent' : '#0a0a0a' }}
-                                  onMouseOver={e => (e.currentTarget.style.background = '#131313')}
-                                  onMouseOut={e => (e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : '#0a0a0a')}>
+                                  borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--bg-elevated)' }}
+                                  onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
+                                  onMouseOut={e => (e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'var(--bg-elevated)')}>
                                   {/* Side badge */}
                                   <div style={{ width: 36, flexShrink: 0, textAlign: 'center', fontSize: 13, fontWeight: 800, letterSpacing: '.5px',
                                     padding: '3px 0', borderRadius: 5,
@@ -3717,17 +3717,17 @@ export default function App() {
                                   </div>
                                   {/* Amounts */}
                                   <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                       {isBuy ? '+' : '-'}{fmtTok(tokenAmt)} {pnlAsset.symbol}
-                                      <span style={{ color: '#888', fontWeight: 400, marginLeft: 6 }}>
+                                      <span style={{ color: 'var(--fg-subtle)', fontWeight: 400, marginLeft: 6 }}>
                                         {isBuy ? 'for' : 'sold for'} {fmtTok(otherAmt)} {otherSym}
                                       </span>
                                     </div>
                                   </div>
                                   {/* Value + date */}
                                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                    <div style={{ fontSize: 13, fontWeight: 600, color: '#aaa' }}>${fmtDec(valUsd)}</div>
-                                    <div style={{ fontSize: 13, color: '#888' }}>{date}</div>
+                                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)' }}>${fmtDec(valUsd)}</div>
+                                    <div style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>{date}</div>
                                   </div>
                                   {/* Tx link */}
                                   {tx.hash && (
@@ -3746,7 +3746,7 @@ export default function App() {
                       )}
 
                       {swapCount === 0 && (
-                        <div style={{ padding: '24px', textAlign: 'center', color: '#888', fontSize: 13 }}>
+                        <div style={{ padding: '24px', textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 13 }}>
                           No swaps found for {pnlAsset.symbol} on {chainKey}
                         </div>
                       )}
@@ -3880,7 +3880,7 @@ export default function App() {
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }} className="max-sm:grid-cols-2">
                         {[
                           { label: (stakeChainFilter === 'ethereum' ? 'eHEX' : stakeChainFilter === 'pulsechain' ? 'pHEX' : 'HEX') + ' Staked', val: `${fStakedHex.toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX`, sub: `+${fInterestHex.toLocaleString(undefined, { maximumFractionDigits: 0 })} interest` },
-                          { label: 'Value Now', val: `$${fValueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${(fStakedHex + fInterestHex).toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX`, color: '#fff' },
+                          { label: 'Value Now', val: `$${fValueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${(fStakedHex + fInterestHex).toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX`, color: 'var(--fg)' },
                           { label: 'Value at Maturity', val: `$${(fMaturityHex * phexHp).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${fMaturityHex.toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX`, color: '#00FF9F' },
                           { label: 'Active T-Shares', val: fTShares.toLocaleString(undefined, { maximumFractionDigits: 2 }), sub: `≈ ${(fTShares * 6.2).toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX/day` },
                         ].map(({ label, val, sub, color }) => (
@@ -3911,14 +3911,14 @@ export default function App() {
                   <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
                     <div style={{ padding: '14px 18px', borderBottom: isCollapsed('lp-positions') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>LP Positions</span>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>LP Positions</span>
                         <span style={{ fontSize: 13, background: 'rgba(0,255,159,.1)', color: '#00FF9F', border: '1px solid rgba(0,255,159,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
                           {lpPositions.length} pairs · ${lpPositions.reduce((a, b) => a + b.totalUsd, 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                         </span>
                       </div>
                       <button onClick={() => toggleSection('lp-positions')}
-                        style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
-                        onMouseOver={e => (e.currentTarget.style.color = '#fff')}
+                        style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s' }}
+                        onMouseOver={e => (e.currentTarget.style.color = 'var(--fg)')}
                         onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}
                         title={isCollapsed('lp-positions') ? 'Expand' : 'Collapse'}>
                         {isCollapsed('lp-positions') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
@@ -3927,25 +3927,25 @@ export default function App() {
                     {!isCollapsed('lp-positions') && <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead>
-                          <tr style={{ borderBottom: '1px solid #242424' }}>
+                          <tr style={{ borderBottom: '1px solid var(--border)' }}>
                             {['Pair', 'Token 0', 'Token 1', 'Total USD'].map((h, i) => (
-                              <th key={i} style={{ padding: '9px 14px', fontSize: 13, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px', textAlign: i === 0 ? 'left' : 'right', background: 'var(--bg-surface)', whiteSpace: 'nowrap' }}>{h}</th>
+                              <th key={i} style={{ padding: '9px 14px', fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.5px', textAlign: i === 0 ? 'left' : 'right', background: 'var(--bg-surface)', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {lpPositions.map(lp => (
-                            <tr key={lp.pairAddress} style={{ borderBottom: '1px solid #1e1e1e' }}
-                              onMouseOver={e => (e.currentTarget.style.background = '#111')}
+                            <tr key={lp.pairAddress} style={{ borderBottom: '1px solid var(--border)' }}
+                              onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
                               onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                               <td style={{ padding: '9px 14px', fontSize: 13, fontWeight: 600 }}>{lp.pairName}</td>
                               <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13 }}>
-                                <div style={{ color: '#fff' }}>{lp.token0Amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {lp.token0Symbol}</div>
-                                <div style={{ fontSize: 13, color: '#888' }}>${lp.token0Usd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+                                <div style={{ color: 'var(--fg)' }}>{lp.token0Amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {lp.token0Symbol}</div>
+                                <div style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>${lp.token0Usd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
                               </td>
                               <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13 }}>
-                                <div style={{ color: '#fff' }}>{lp.token1Amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {lp.token1Symbol}</div>
-                                <div style={{ fontSize: 13, color: '#888' }}>${lp.token1Usd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+                                <div style={{ color: 'var(--fg)' }}>{lp.token1Amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {lp.token1Symbol}</div>
+                                <div style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>${lp.token1Usd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
                               </td>
                               <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 14, fontWeight: 700, color: '#00FF9F' }}>
                                 ${lp.totalUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}
@@ -3963,14 +3963,14 @@ export default function App() {
                   <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
                     <div style={{ padding: '14px 18px', borderBottom: isCollapsed('farm-positions') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>Farm Positions (INC Rewards)</span>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>Farm Positions (INC Rewards)</span>
                         <span style={{ fontSize: 13, background: 'rgba(251,146,60,.1)', color: '#fb923c', border: '1px solid rgba(251,146,60,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
                           {farmPositions.length} pools · {farmPositions.reduce((a, b) => a + b.pendingInc, 0).toLocaleString(undefined, { maximumFractionDigits: 2 })} INC pending
                         </span>
                       </div>
                       <button onClick={() => toggleSection('farm-positions')}
-                        style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
-                        onMouseOver={e => (e.currentTarget.style.color = '#fff')}
+                        style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s' }}
+                        onMouseOver={e => (e.currentTarget.style.color = 'var(--fg)')}
                         onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}
                         title={isCollapsed('farm-positions') ? 'Expand' : 'Collapse'}>
                         {isCollapsed('farm-positions') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
@@ -3979,19 +3979,19 @@ export default function App() {
                     {!isCollapsed('farm-positions') && <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead>
-                          <tr style={{ borderBottom: '1px solid #242424' }}>
+                          <tr style={{ borderBottom: '1px solid var(--border)' }}>
                             {['Pair', 'Staked LP', 'Pending INC', 'INC Value'].map((h, i) => (
-                              <th key={i} style={{ padding: '9px 14px', fontSize: 13, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px', textAlign: i === 0 ? 'left' : 'right', background: 'var(--bg-surface)', whiteSpace: 'nowrap' }}>{h}</th>
+                              <th key={i} style={{ padding: '9px 14px', fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.5px', textAlign: i === 0 ? 'left' : 'right', background: 'var(--bg-surface)', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {farmPositions.map(farm => (
-                            <tr key={`${farm.poolId}-${farm.lpAddress}`} style={{ borderBottom: '1px solid #1e1e1e' }}
-                              onMouseOver={e => (e.currentTarget.style.background = '#111')}
+                            <tr key={`${farm.poolId}-${farm.lpAddress}`} style={{ borderBottom: '1px solid var(--border)' }}
+                              onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
                               onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                               <td style={{ padding: '9px 14px', fontSize: 13, fontWeight: 600 }}>{farm.pairName}</td>
-                              <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, color: '#fff' }}>{farm.stakedLp.toLocaleString(undefined, { maximumFractionDigits: 4 })}</td>
+                              <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, color: 'var(--fg)' }}>{farm.stakedLp.toLocaleString(undefined, { maximumFractionDigits: 4 })}</td>
                               <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, color: '#fb923c', fontWeight: 600 }}>{farm.pendingInc.toLocaleString(undefined, { maximumFractionDigits: 4 })} INC</td>
                               <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 14, fontWeight: 700, color: '#00FF9F' }}>
                                 ${farm.pendingIncUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
@@ -4035,14 +4035,14 @@ export default function App() {
                     <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
                       <div style={{ padding: '14px 18px', borderBottom: isCollapsed('stakes-table') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{chainLabel} Stakes</span>
+                          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>{chainLabel} Stakes</span>
                           <span style={{ fontSize: 13, background: 'rgba(249,115,22,.12)', color: '#fb923c', border: '1px solid rgba(249,115,22,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
                             {filteredStakes.length} active
                           </span>
                         </div>
                         <button onClick={() => toggleSection('stakes-table')}
-                          style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
-                          onMouseOver={e => (e.currentTarget.style.color = '#fff')}
+                          style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s' }}
+                          onMouseOver={e => (e.currentTarget.style.color = 'var(--fg)')}
                           onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}
                           title={isCollapsed('stakes-table') ? 'Expand' : 'Collapse'}>
                           {isCollapsed('stakes-table') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
@@ -4056,9 +4056,9 @@ export default function App() {
                         <div style={{ overflowX: 'auto' }}>
                           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
-                              <tr style={{ borderBottom: '1px solid #242424' }}>
+                              <tr style={{ borderBottom: '1px solid var(--border)' }}>
                                 {['', 'Stake ID', 'Chain', 'HEX Now', 'USD Now', 'HEX @ Maturity', 'USD @ Maturity', 'Progress', 'Days Left'].map((h, i) => (
-                                  <th key={i} style={{ padding: '9px 14px', fontSize: 13, fontWeight: 600, color: '#aaa',
+                                  <th key={i} style={{ padding: '9px 14px', fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)',
                                     textTransform: 'uppercase', letterSpacing: '.5px', textAlign: i <= 2 ? 'left' : 'right',
                                     whiteSpace: 'nowrap', background: 'var(--bg-surface)' }}>
                                     {h}
@@ -4090,15 +4090,15 @@ export default function App() {
                                         next.has(stake.id) ? next.delete(stake.id) : next.add(stake.id);
                                         return next;
                                       })}
-                                      onMouseOver={e => (e.currentTarget.style.background = '#111')}
+                                      onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
                                       onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                                       {/* expand toggle */}
                                       <td style={{ padding: '9px 8px 9px 14px', width: 24 }}>
-                                        <span style={{ fontSize: 14, color: '#888', userSelect: 'none' }}>
+                                        <span style={{ fontSize: 14, color: 'var(--fg-subtle)', userSelect: 'none' }}>
                                           {isExpanded ? '▾' : '☰'}
                                         </span>
                                       </td>
-                                      <td style={{ padding: '9px 14px', fontSize: 13, color: '#fff', fontWeight: 600 }}>#{stake.stakeId}</td>
+                                      <td style={{ padding: '9px 14px', fontSize: 13, color: 'var(--fg)', fontWeight: 600 }}>#{stake.stakeId}</td>
                                       <td style={{ padding: '9px 14px' }}>
                                         <span style={{ fontSize: 13, padding: '2px 7px', borderRadius: 4, fontWeight: 600,
                                           background: stake.chain === 'pulsechain' ? 'rgba(247,57,255,.1)' : 'rgba(98,126,234,.1)',
@@ -4106,7 +4106,7 @@ export default function App() {
                                           {stake.chain === 'pulsechain' ? 'PLS' : 'ETH'}
                                         </span>
                                       </td>
-                                      <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, fontWeight: 600, color: '#fff' }}>
+                                      <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>
                                         {hexNow.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                       </td>
                                       <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#fb923c' }}>
@@ -4120,7 +4120,7 @@ export default function App() {
                                       </td>
                                       <td style={{ padding: '9px 14px', textAlign: 'right', minWidth: 100 }}>
                                         <div style={{ fontSize: 13, color: '#fb923c', marginBottom: 3, textAlign: 'right' }}>{stake.progress}%</div>
-                                        <div style={{ height: 3, background: '#1a1a1a', borderRadius: 2 }}>
+                                        <div style={{ height: 3, background: 'var(--border)', borderRadius: 2 }}>
                                           <div style={{ height: '100%', width: `${stake.progress}%`, background: '#fb923c', borderRadius: 2 }} />
                                         </div>
                                       </td>
@@ -4137,7 +4137,7 @@ export default function App() {
                                     </tr>
                                     {/* Expandable detail row */}
                                     {isExpanded && (
-                                      <tr style={{ borderBottom: '1px solid #1e1e1e' }}>
+                                      <tr style={{ borderBottom: '1px solid var(--border)' }}>
                                         <td colSpan={9} style={{ padding: 0, background: '#080808' }}>
                                           <div style={{ padding: '14px 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
                                             {[
@@ -4151,9 +4151,9 @@ export default function App() {
                                               { label: 'Total ROI', val: `${hexAtMaturity > 0 ? ((hexAtMaturity / stakedHex - 1) * 100).toFixed(1) : '0.0'}%`, sub: 'Full return on maturity', color: '#00FF9F' },
                                             ].map(({ label, val, sub, color }) => (
                                               <div key={label}>
-                                                <div style={{ fontSize: 13, color: '#888', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>{label}</div>
+                                                <div style={{ fontSize: 13, color: 'var(--fg-subtle)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>{label}</div>
                                                 <div style={{ fontSize: 14, fontWeight: 700, color: color || '#fff' }}>{val}</div>
-                                                <div style={{ fontSize: 13, color: '#888', marginTop: 1 }}>{sub}</div>
+                                                <div style={{ fontSize: 13, color: 'var(--fg-subtle)', marginTop: 1 }}>{sub}</div>
                                               </div>
                                             ))}
                                           </div>
@@ -4165,11 +4165,11 @@ export default function App() {
                               })}
                             </tbody>
                             <tfoot>
-                              <tr style={{ borderTop: '2px solid #2a2a2a', background: '#111' }}>
-                                <td colSpan={3} style={{ padding: '10px 14px', fontSize: 13, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px' }}>
+                              <tr style={{ borderTop: '2px solid #2a2a2a', background: 'var(--bg-elevated)' }}>
+                                <td colSpan={3} style={{ padding: '10px 14px', fontSize: 13, fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.5px' }}>
                                   TOTAL ({filteredStakes.length} stakes)
                                 </td>
-                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#fff' }}>
+                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>
                                   {totHexNow.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                 </td>
                                 <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#fb923c' }}>
@@ -4199,23 +4199,23 @@ export default function App() {
             {/* Page header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 0 }}>
               <div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 2 }}>Portfolio History</div>
-                <div style={{ fontSize: 13, color: '#aaa' }}>Performance tracking &amp; transaction history</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)', marginBottom: 2 }}>Portfolio History</div>
+                <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Performance tracking &amp; transaction history</div>
               </div>
             </div>
 
             {/* Stats grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }} className="max-sm:grid-cols-2">
               {[
-                { label: 'Total Invested', val: `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'All-time capital invested', color: '#fff' },
+                { label: 'Total Invested', val: `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'All-time capital invested', color: 'var(--fg)' },
                 { label: 'Total P&L', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'All-time profit & loss', color: summary.unifiedPnl >= 0 ? '#00FF9F' : '#ef4444' },
                 { label: 'Realized P&L', val: `${summary.realizedPnl >= 0 ? '+' : ''}$${Math.abs(summary.realizedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Closed trade profit', color: summary.realizedPnl >= 0 ? '#00FF9F' : '#ef4444' },
                 { label: 'Unrealized P&L', val: `${summary.pnl24h >= 0 ? '+' : ''}$${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: "Today's portfolio change", color: summary.pnl24h >= 0 ? '#00FF9F' : '#ef4444' },
               ].map(({ label, val, sub, color }) => (
                 <div key={label} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 18 }}>
-                  <div style={{ fontSize: 13, color: '#aaa', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>{label}</div>
+                  <div style={{ fontSize: 13, color: 'var(--fg-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>{label}</div>
                   <div style={{ fontSize: 20, fontWeight: 700, color, marginBottom: 2 }}>{val}</div>
-                  <div style={{ fontSize: 13, color: '#aaa' }}>{sub}</div>
+                  <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>{sub}</div>
                 </div>
               ))}
             </div>
@@ -4248,8 +4248,8 @@ export default function App() {
                 return (
                   <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 18px 10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.6px' }}>Portfolio Performance</div>
-                      <div style={{ display: 'flex', gap: 2, background: '#111', border: '1px solid #252525', borderRadius: 8, padding: 3 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.6px' }}>Portfolio Performance</div>
+                      <div style={{ display: 'flex', gap: 2, background: 'var(--bg-elevated)', border: '1px solid #252525', borderRadius: 8, padding: 3 }}>
                         {(['1d','1w','1y','all'] as const).map(p => (
                           <button key={p} onClick={() => setPerfPeriod(p)}
                             style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
@@ -4271,7 +4271,7 @@ export default function App() {
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                         <XAxis dataKey="day" tick={{ fill: '#7c8798', fontSize: 11 }} axisLine={{ stroke: '#222' }} tickLine={false} interval={Math.max(0, Math.floor(histChartPoints.length / 6) - 1)} />
                         <YAxis hide />
-                        <RechartsTooltip contentStyle={{ background: '#111', border: '1px solid #222', borderRadius: 8, fontSize: 13 }}
+                        <RechartsTooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13 }}
                           formatter={(v: any) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Value']} />
                         <Area type="monotone" dataKey="value" stroke="#00FF9F" fillOpacity={1} fill="url(#histColorValue)" strokeWidth={2} dot={false} />
                       </AreaChart>
@@ -4281,13 +4281,13 @@ export default function App() {
               })()}
               {/* Right: Monthly P&L bar chart */}
               <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 18px 10px' }}>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.6px' }}>Monthly P&amp;L</div>
+                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.6px' }}>Monthly P&amp;L</div>
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={monthlyPnlData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                     <XAxis dataKey="month" tick={{ fill: '#7c8798', fontSize: 11 }} axisLine={{ stroke: '#222' }} tickLine={false} />
                     <YAxis tick={{ fill: '#7c8798', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <RechartsTooltip contentStyle={{ background: '#111', border: '1px solid #222', borderRadius: 8, fontSize: 13 }}
+                    <RechartsTooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13 }}
                       formatter={(v: any) => [`${Number(v) >= 0 ? '+' : ''}$${Math.abs(Number(v)).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Profit / Loss']} />
                     <Bar dataKey="pnl" radius={[3, 3, 0, 0]}>
                       {monthlyPnlData.map((_entry: any, index: number) => (
@@ -4306,14 +4306,14 @@ export default function App() {
                   <ArrowDownLeft size={16} style={{ color: '#627EEA' }} />
                   <span style={{ fontSize: 14, fontWeight: 600 }}>Received Assets History</span>
                   <select value={receivedChainFilter} onChange={e => setReceivedChainFilter(e.target.value)}
-                    style={{ background: '#111', border: '1px solid #252525', borderRadius: 6, color: '#fff', fontSize: 13, padding: '4px 10px', cursor: 'pointer', outline: 'none' }}>
+                    style={{ background: 'var(--bg-elevated)', border: '1px solid #252525', borderRadius: 6, color: 'var(--fg)', fontSize: 13, padding: '4px 10px', cursor: 'pointer', outline: 'none' }}>
                     <option value="all">All Chains</option>
                     <option value="ethereum">Ethereum</option>
                     <option value="base">Base</option>
                     <option value="pulsechain">PulseChain</option>
                   </select>
                   <select value={receivedCoinFilter} onChange={e => setReceivedCoinFilter(e.target.value)}
-                    style={{ background: '#111', border: '1px solid #252525', borderRadius: 6, color: '#fff', fontSize: 13, padding: '4px 10px', cursor: 'pointer', outline: 'none' }}>
+                    style={{ background: 'var(--bg-elevated)', border: '1px solid #252525', borderRadius: 6, color: 'var(--fg)', fontSize: 13, padding: '4px 10px', cursor: 'pointer', outline: 'none' }}>
                     <option value="all">All Coins</option>
                     <option value="ETH">ETH</option>
                     <option value="PLS">PLS</option>
@@ -4324,13 +4324,13 @@ export default function App() {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 13, color: '#aaa', marginBottom: 2, fontWeight: 600, letterSpacing: '.5px' }}>TOTAL RECEIVED</div>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: '#fff' }}>${receivedAssetsData.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                    <div style={{ fontSize: 13, color: '#aaa' }}>{receivedAssetsData.list.length} transactions</div>
+                    <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 2, fontWeight: 600, letterSpacing: '.5px' }}>TOTAL RECEIVED</div>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--fg)' }}>${receivedAssetsData.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                    <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>{receivedAssetsData.list.length} transactions</div>
                   </div>
                   <button onClick={() => toggleSection('received-assets')}
-                    style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s', flexShrink: 0 }}
-                    onMouseOver={e => (e.currentTarget.style.color = '#fff')}
+                    style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s', flexShrink: 0 }}
+                    onMouseOver={e => (e.currentTarget.style.color = 'var(--fg)')}
                     onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}
                     title={isCollapsed('received-assets') ? 'Expand' : 'Collapse'}>
                     {isCollapsed('received-assets') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
@@ -4339,21 +4339,21 @@ export default function App() {
               </div>
               {!isCollapsed('received-assets') && (<>
               {receivedAssetsData.list.length > 0 && (
-                <div style={{ display: 'flex', gap: 1, borderBottom: '1px solid #242424', background: '#0e0e0e' }}>
+                <div style={{ display: 'flex', gap: 1, borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)' }}>
                   {(Object.entries(receivedAssetsData.byAsset) as [string, { amount: number; valueUsd: number }][]).map(([sym, data]) => (
                     <div key={sym} style={{ flex: 1, padding: '10px 16px', borderRight: '1px solid #242424' }}>
-                      <div style={{ fontSize: 13, color: '#aaa', marginBottom: 4, fontWeight: 700, letterSpacing: '.5px' }}>{sym}</div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>
+                      <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 4, fontWeight: 700, letterSpacing: '.5px' }}>{sym}</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>
                         {sym === 'ETH' ? data.amount.toLocaleString(undefined, { maximumFractionDigits: 4 }) : data.amount.toLocaleString(undefined, { maximumFractionDigits: 0 })} {sym}
                       </div>
-                      <div style={{ fontSize: 13, color: '#aaa' }}>${data.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                      <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>${data.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                     </div>
                   ))}
                 </div>
               )}
               <div style={{ maxHeight: 480, overflowY: 'auto' }} className="custom-scrollbar">
                 {receivedAssetsData.list.length === 0 ? (
-                  <div style={{ padding: '48px 20px', textAlign: 'center', color: '#aaa', fontSize: 13 }}>
+                  <div style={{ padding: '48px 20px', textAlign: 'center', color: 'var(--fg-muted)', fontSize: 13 }}>
                     {wallets.length === 0 ? 'Add wallets to see received assets history.' : 'No ETH or stablecoin inbound transfers found since 2021.'}
                   </div>
                 ) : receivedAssetsData.list.map((tx) => {
@@ -4368,8 +4368,8 @@ export default function App() {
                     tx.amount * (prices['usd-coin']?.usd || 1)
                   );
                   return (
-                    <div key={tx.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', borderBottom: '1px solid #1e1e1e', transition: 'background .1s' }}
-                      onMouseOver={e => (e.currentTarget.style.background = '#111')}
+                    <div key={tx.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', borderBottom: '1px solid var(--border)', transition: 'background .1s' }}
+                      onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
                       onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
                         <div style={{ width: 32, height: 32, borderRadius: 8,
@@ -4378,7 +4378,7 @@ export default function App() {
                           <ArrowDownLeft size={15} style={{ color: tx.chain === 'pulsechain' ? '#f739ff' : isEth ? '#627EEA' : '#60a5fa' }} />
                         </div>
                         <div>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>
                             +{(isEth || isPls) ? tx.amount.toLocaleString(undefined, { maximumFractionDigits: 6 }) : tx.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })} {tx.asset}
                             <span style={{ fontSize: 13, marginLeft: 8, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
                               background: tx.chain === 'pulsechain' ? 'rgba(247,57,255,.1)' : tx.chain === 'ethereum' ? 'rgba(99,102,241,.12)' : 'rgba(0,82,255,.12)',
@@ -4386,16 +4386,16 @@ export default function App() {
                               {tx.chain === 'pulsechain' ? 'PLS' : tx.chain === 'ethereum' ? 'ETH' : 'BASE'}
                             </span>
                           </div>
-                          <div style={{ fontSize: 13, color: '#aaa', fontFamily: 'monospace', marginTop: 1 }}>
+                          <div style={{ fontSize: 13, color: 'var(--fg-muted)', fontFamily: 'monospace', marginTop: 1 }}>
                             {format(new Date(tx.timestamp), 'MMM d, yyyy')} · {tx.from.slice(0, 6)}…{tx.from.slice(-4)}
                           </div>
                         </div>
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 16 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>${displayUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>${displayUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
                         <a href={`${tx.chain === 'pulsechain' ? 'https://scan.pulsechain.com' : tx.chain === 'ethereum' ? 'https://etherscan.io' : 'https://basescan.org'}/tx/${tx.hash}`}
                           target="_blank" rel="noopener noreferrer"
-                          style={{ fontSize: 13, color: '#999', textDecoration: 'none', fontFamily: 'monospace' }}
+                          style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none', fontFamily: 'monospace' }}
                           onMouseOver={e => (e.currentTarget.style.color = '#627EEA')}
                           onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
                           {tx.hash.slice(0, 10)}…
@@ -4576,7 +4576,7 @@ export default function App() {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 12, color: '#aaa', fontWeight: 600, letterSpacing: '.5px', textTransform: 'uppercase', marginBottom: 2 }}>Net PLS</div>
+                    <div style={{ fontSize: 12, color: 'var(--fg-muted)', fontWeight: 600, letterSpacing: '.5px', textTransform: 'uppercase', marginBottom: 2 }}>Net PLS</div>
                     <div style={{ fontSize: 20, fontWeight: 800, color: plsSwapData.totalNet >= 0 ? '#00FF9F' : '#ef4444' }}>
                       {plsSwapData.totalNet >= 0 ? '+' : ''}{plsSwapData.totalNet.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS
                     </div>
@@ -4587,8 +4587,8 @@ export default function App() {
                     )}
                   </div>
                   <button onClick={() => toggleSection('pls-swaps')}
-                    style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
-                    onMouseOver={e => (e.currentTarget.style.color = '#fff')}
+                    style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s' }}
+                    onMouseOver={e => (e.currentTarget.style.color = 'var(--fg)')}
                     onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}
                     title={isCollapsed('pls-swaps') ? 'Expand' : 'Collapse'}>
                     {isCollapsed('pls-swaps') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
@@ -4597,14 +4597,14 @@ export default function App() {
               </div>
               {!isCollapsed('pls-swaps') && (
                 plsSwapData.rows.length === 0 ? (
-                  <div style={{ padding: '40px 20px', textAlign: 'center', color: '#aaa', fontSize: 13 }}>
+                  <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--fg-muted)', fontSize: 13 }}>
                     {wallets.length === 0 ? 'Add wallets to see PLS movement history.' : 'No PLS or WPLS transactions found.'}
                   </div>
                 ) : (
                   <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                       <thead>
-                        <tr style={{ borderBottom: '1px solid #242424' }}>
+                        <tr style={{ borderBottom: '1px solid var(--border)' }}>
                           {['Date', 'Activity', 'PLS Sent / Spent', 'PLS Received', 'Net PLS'].map((h, i) => (
                             <th key={i} style={{ padding: '10px 16px', fontSize: 12, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', textAlign: i === 0 || i === 1 ? 'left' : 'right', background: 'var(--bg-surface)', whiteSpace: 'nowrap' }}>{h}</th>
                           ))}
@@ -4613,29 +4613,29 @@ export default function App() {
                       <tbody>
                         {plsSwapData.rows.map(({ tx, plsSpent, plsReceived, netPls }) => (
                           <tr key={tx.id} style={{ borderBottom: '1px solid #1a1a1a', transition: 'background .1s' }}
-                            onMouseOver={e => (e.currentTarget.style.background = '#111')}
+                            onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
                             onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
-                            <td style={{ padding: '10px 16px', fontSize: 13, color: '#aaa', whiteSpace: 'nowrap' }}>
+                            <td style={{ padding: '10px 16px', fontSize: 13, color: 'var(--fg-muted)', whiteSpace: 'nowrap' }}>
                               {format(tx.timestamp, 'MMM d, yyyy')}
                             </td>
-                            <td style={{ padding: '10px 16px', fontSize: 13, color: '#fff', whiteSpace: 'nowrap' }}>
+                            <td style={{ padding: '10px 16px', fontSize: 13, color: 'var(--fg)', whiteSpace: 'nowrap' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                 {tx.type === 'swap' ? (
                                   <>
                                     <span style={{ fontSize: 11, padding: '1px 5px', borderRadius: 3, background: 'rgba(139,92,246,.1)', color: '#8b5cf6', fontWeight: 700 }}>SWAP</span>
-                                    <span style={{ color: '#aaa' }}>{tx.counterAsset}</span>
+                                    <span style={{ color: 'var(--fg-muted)' }}>{tx.counterAsset}</span>
                                     <ArrowRight size={12} style={{ color: 'var(--fg-subtle)' }} />
                                     <span>{tx.asset}</span>
                                   </>
                                 ) : tx.type === 'transfer_in' ? (
                                   <>
                                     <span style={{ fontSize: 11, padding: '1px 5px', borderRadius: 3, background: 'rgba(0,255,159,.1)', color: '#00FF9F', fontWeight: 700 }}>IN</span>
-                                    <span style={{ color: '#aaa' }}>from {tx.from.slice(0,6)}…{tx.from.slice(-4)}</span>
+                                    <span style={{ color: 'var(--fg-muted)' }}>from {tx.from.slice(0,6)}…{tx.from.slice(-4)}</span>
                                   </>
                                 ) : (
                                   <>
                                     <span style={{ fontSize: 11, padding: '1px 5px', borderRadius: 3, background: 'rgba(239,68,68,.1)', color: '#ef4444', fontWeight: 700 }}>OUT</span>
-                                    <span style={{ color: '#aaa' }}>to {tx.to.slice(0,6)}…{tx.to.slice(-4)}</span>
+                                    <span style={{ color: 'var(--fg-muted)' }}>to {tx.to.slice(0,6)}…{tx.to.slice(-4)}</span>
                                   </>
                                 )}
                                 <a href={`${tx.chain === 'pulsechain' ? 'https://scan.pulsechain.com' : tx.chain === 'ethereum' ? 'https://etherscan.io' : 'https://basescan.org'}/tx/${tx.hash}`}
@@ -4660,8 +4660,8 @@ export default function App() {
                         ))}
                       </tbody>
                       <tfoot>
-                        <tr style={{ borderTop: '2px solid #303030', background: '#111' }}>
-                          <td colSpan={2} style={{ padding: '11px 16px', fontSize: 13, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px' }}>Total</td>
+                        <tr style={{ borderTop: '2px solid #303030', background: 'var(--bg-elevated)' }}>
+                          <td colSpan={2} style={{ padding: '11px 16px', fontSize: 13, fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Total</td>
                           <td style={{ padding: '11px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#ef4444' }}>
                             -{plsSwapData.totalSpent.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS
                           </td>
@@ -4694,8 +4694,8 @@ export default function App() {
             {/* Page header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
               <div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 2 }}>PLS Movement &amp; P&amp;L Tracker</div>
-                <div style={{ fontSize: 13, color: '#aaa' }}>Track PLS flows and realized profits across all wallets</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)', marginBottom: 2 }}>PLS Movement &amp; P&amp;L Tracker</div>
+                <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Track PLS flows and realized profits across all wallets</div>
               </div>
             </div>
 
@@ -4708,9 +4708,9 @@ export default function App() {
                 { label: 'Net USD', val: `${plsSwapData.netUsd >= 0 ? '+' : ''}$${Math.abs(plsSwapData.netUsd).toLocaleString(undefined,{maximumFractionDigits:0})}`, sub: `@ $${(plsSwapData.plsPrice||0).toFixed(6)}/PLS`, color: plsSwapData.netUsd >= 0 ? '#00FF9F' : '#ef4444' },
               ].map(({ label, val, sub, color }) => (
                 <div key={label} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 18 }}>
-                  <div style={{ fontSize: 13, color: '#aaa', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>{label}</div>
+                  <div style={{ fontSize: 13, color: 'var(--fg-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>{label}</div>
                   <div style={{ fontSize: 18, fontWeight: 700, color, marginBottom: 2 }}>{val}</div>
-                  {sub && <div style={{ fontSize: 13, color: '#aaa' }}>{sub}</div>}
+                  {sub && <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>{sub}</div>}
                 </div>
               ))}
             </div>
@@ -4727,7 +4727,7 @@ export default function App() {
                 });
                 return (
                   <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 18px 10px' }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.6px' }}>Cumulative PLS Balance</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.6px' }}>Cumulative PLS Balance</div>
                     <ResponsiveContainer width="100%" height={220}>
                       <AreaChart data={chartPts}>
                         <defs>
@@ -4739,7 +4739,7 @@ export default function App() {
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                         <XAxis dataKey="day" tick={{ fill: '#7c8798', fontSize: 11 }} axisLine={{ stroke: '#222' }} tickLine={false} interval={Math.max(0, Math.floor(chartPts.length / 6) - 1)} />
                         <YAxis hide />
-                        <RechartsTooltip contentStyle={{ background: '#111', border: '1px solid #222', borderRadius: 8, fontSize: 13 }}
+                        <RechartsTooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13 }}
                           formatter={(v: any) => [Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' PLS', 'Balance']} />
                         <Area type="monotone" dataKey="pls" stroke="#f739ff" fillOpacity={1} fill="url(#plsGrad)" strokeWidth={2} dot={false} />
                       </AreaChart>
@@ -4753,7 +4753,7 @@ export default function App() {
                 const chartPts = histPts.map(p => ({ day: format(p.timestamp, 'MMM d'), pls: p.nativeValue || p.value / plsPrice }));
                 return (
                   <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 18px 10px' }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.6px' }}>Portfolio Value in PLS</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.6px' }}>Portfolio Value in PLS</div>
                     <ResponsiveContainer width="100%" height={220}>
                       <AreaChart data={chartPts}>
                         <defs>
@@ -4765,7 +4765,7 @@ export default function App() {
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                         <XAxis dataKey="day" tick={{ fill: '#7c8798', fontSize: 11 }} axisLine={{ stroke: '#222' }} tickLine={false} interval={Math.max(0, Math.floor(chartPts.length / 6) - 1)} />
                         <YAxis hide />
-                        <RechartsTooltip contentStyle={{ background: '#111', border: '1px solid #222', borderRadius: 8, fontSize: 13 }}
+                        <RechartsTooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13 }}
                           formatter={(v: any) => [Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' PLS', 'Value']} />
                         <Area type="monotone" dataKey="pls" stroke="#627EEA" fillOpacity={1} fill="url(#plsPortGrad)" strokeWidth={2} dot={false} />
                       </AreaChart>
@@ -4890,17 +4890,17 @@ export default function App() {
               const totalPnl = pnlRows.reduce((s: number, r: any) => s + r.realizedPnl, 0);
               const chainDot: Record<string, string> = { pulsechain: '#f739ff', ethereum: '#627EEA', base: '#0052FF' };
               return (
-                <div style={{ background: '#0d0d0d', borderRadius: 14, border: '1px solid #242424', overflow: 'hidden' }}>
+                <div style={{ background: 'var(--bg-surface)', borderRadius: 14, border: '1px solid var(--border)', overflow: 'hidden' }}>
                   <div style={{ height: 2, background: 'linear-gradient(90deg,#7c3aed,#ec4899)' }} />
                   <div style={{ padding: '14px 18px', borderBottom: isCollapsed('tracker-pnl') ? 'none' : '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>P&amp;L Tracker</span>
-                      <span style={{ fontSize: 13, color: '#aaa', background: '#1a1a1a', padding: '2px 8px', borderRadius: 4 }}>{swaps.length} swaps · approx.</span>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>P&amp;L Tracker</span>
+                      <span style={{ fontSize: 13, color: 'var(--fg-muted)', background: 'var(--border)', padding: '2px 8px', borderRadius: 4 }}>{swaps.length} swaps · approx.</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <span style={{ fontSize: 20, fontWeight: 800, color: totalPnl >= 0 ? '#00FF9F' : '#ef4444' }}>{totalPnl >= 0 ? '+' : ''}${Math.abs(totalPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                      <button onClick={() => toggleSection('tracker-pnl')} style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888' }}
-                        onMouseOver={e => (e.currentTarget.style.color = '#fff')} onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
+                      <button onClick={() => toggleSection('tracker-pnl')} style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)' }}
+                        onMouseOver={e => (e.currentTarget.style.color = 'var(--fg)')} onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
                         {isCollapsed('tracker-pnl') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
                       </button>
                     </div>
@@ -4917,17 +4917,17 @@ export default function App() {
                         </thead>
                         <tbody>
                           {pnlRows.map((r: any) => (
-                            <tr key={r.sym + r.chain} style={{ borderBottom: '1px solid #111' }}
-                              onMouseOver={e => (e.currentTarget.style.background = '#111')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
-                              <td style={{ padding: '10px 14px', whiteSpace: 'nowrap', fontSize: 13, fontWeight: 600, color: '#fff' }}>{r.sym}</td>
+                            <tr key={r.sym + r.chain} style={{ borderBottom: '1px solid var(--border)' }}
+                              onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
+                              <td style={{ padding: '10px 14px', whiteSpace: 'nowrap', fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{r.sym}</td>
                               <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                                   <div style={{ width: 6, height: 6, borderRadius: '50%', background: chainDot[r.chain] || '#555' }} />
-                                  <span style={{ fontSize: 12, color: '#888' }}>{r.chain}</span>
+                                  <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>{r.chain}</span>
                                 </div>
                               </td>
-                              <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#aaa' }}>{r.bought > 1e6 ? `${(r.bought/1e6).toFixed(2)}M` : r.bought.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                              <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#aaa' }}>{r.sold > 1e6 ? `${(r.sold/1e6).toFixed(2)}M` : r.sold.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                              <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: 'var(--fg-muted)' }}>{r.bought > 1e6 ? `${(r.bought/1e6).toFixed(2)}M` : r.bought.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                              <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: 'var(--fg-muted)' }}>{r.sold > 1e6 ? `${(r.sold/1e6).toFixed(2)}M` : r.sold.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
                               <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#00FF9F' }}>${r.proceedsUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
                               <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#ef4444' }}>${r.realizedCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
                               <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontSize: 13, color: r.realizedPnl >= 0 ? '#00FF9F' : '#ef4444' }}>
@@ -4937,8 +4937,8 @@ export default function App() {
                           ))}
                         </tbody>
                         <tfoot>
-                          <tr style={{ borderTop: '1px solid #252525' }}>
-                            <td colSpan={6} style={{ padding: '10px 14px', fontSize: 13, color: '#888', fontWeight: 600 }}>TOTAL REALIZED P&amp;L</td>
+                          <tr style={{ borderTop: '1px solid var(--border)' }}>
+                            <td colSpan={6} style={{ padding: '10px 14px', fontSize: 13, color: 'var(--fg-subtle)', fontWeight: 600 }}>TOTAL REALIZED P&amp;L</td>
                             <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 800, fontSize: 14, color: totalPnl >= 0 ? '#00FF9F' : '#ef4444' }}>
                               {totalPnl >= 0 ? '+' : ''}${Math.abs(totalPnl).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                             </td>
@@ -5050,7 +5050,7 @@ export default function App() {
                   style={{ padding: '6px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: '1px solid', transition: 'all .12s',
                     background: isAll ? '#fff' : 'transparent',
                     color: isAll ? '#000' : '#aaa',
-                    borderColor: isAll ? '#fff' : '#333', minHeight: 36 }}>
+                    borderColor: isAll ? 'var(--fg)' : 'var(--border)', minHeight: 36 }}>
                   All Wallets
                 </button>
                 {wallets.map(w => {
@@ -5060,7 +5060,7 @@ export default function App() {
                       style={{ padding: '6px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: '1px solid', transition: 'all .12s',
                         background: isActive ? '#fff' : 'transparent',
                         color: isActive ? '#000' : '#aaa',
-                        borderColor: isActive ? '#fff' : '#333', minHeight: 36 }}>
+                        borderColor: isActive ? 'var(--fg)' : 'var(--border)', minHeight: 36 }}>
                       {w.name}
                     </button>
                   );
@@ -5068,10 +5068,10 @@ export default function App() {
               </div>
 
               {/* Hero card */}
-              <div style={{ background: 'linear-gradient(135deg, #0a2a1a 0%, #061a10 100%)', borderRadius: 16, padding: '24px', border: '1px solid #1a3a2a' }}>
-                <div style={{ fontSize: 13, color: '#aaa', marginBottom: 8 }}>{isAll ? 'All Wallets' : selWallet?.name}</div>
-                {!isAll && <div style={{ fontSize: 13, color: '#888', fontFamily: 'monospace', marginBottom: 12 }}>{selWallet?.address}</div>}
-                <div style={{ fontSize: 36, fontWeight: 800, color: '#fff', marginBottom: 16 }}>
+              <div style={{ background: 'var(--bg-elevated)', borderRadius: 16, padding: '24px', border: '1px solid var(--accent-border)' }}>
+                <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 8 }}>{isAll ? 'All Wallets' : selWallet?.name}</div>
+                {!isAll && <div style={{ fontSize: 13, color: 'var(--fg-subtle)', fontFamily: 'monospace', marginBottom: 12 }}>{selWallet?.address}</div>}
+                <div style={{ fontSize: 36, fontWeight: 800, color: 'var(--fg)', marginBottom: 16 }}>
                   ${totalUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
@@ -5089,7 +5089,7 @@ export default function App() {
                       style={{ padding: '5px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: '1px solid', transition: 'all .12s',
                         background: walletChainFilter === c ? '#fff' : 'transparent',
                         color: walletChainFilter === c ? '#000' : '#aaa',
-                        borderColor: walletChainFilter === c ? '#fff' : '#333' }}>
+                        borderColor: walletChainFilter === c ? 'var(--fg)' : 'var(--border)' }}>
                       {c === 'all' ? 'All' : c === 'pulsechain' ? 'PulseChain' : c === 'ethereum' ? 'Ethereum' : 'Base'}
                     </button>
                   ))}
@@ -5100,11 +5100,11 @@ export default function App() {
               <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
                 <div style={{ padding: '14px 16px', borderBottom: isCollapsed('wallet-holdings') ? 'none' : '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                   <div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Token Positions</div>
-                    <div style={{ fontSize: 13, color: '#aaa', marginTop: 2 }}>{filteredViewAssets.length} tokens · ${walletUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)' }}>Token Positions</div>
+                    <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginTop: 2 }}>{filteredViewAssets.length} tokens · ${walletUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ display: 'flex', gap: 3, background: '#111', border: '1px solid #252525', borderRadius: 8, padding: 3 }}>
+                    <div style={{ display: 'flex', gap: 3, background: 'var(--bg-elevated)', border: '1px solid #252525', borderRadius: 8, padding: 3 }}>
                       {([['1h','1H'],['6h','6H'],['24h','24H'],['7d','7D']] as const).map(([p, label]) => (
                         <button key={p} onClick={() => setPriceChangePeriod(p)}
                           style={{ padding: '4px 10px', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all .12s', border: 'none',
@@ -5115,8 +5115,8 @@ export default function App() {
                       ))}
                     </div>
                     <button onClick={() => toggleSection('wallet-holdings')}
-                      style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
-                      onMouseOver={e => (e.currentTarget.style.color = '#fff')}
+                      style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s' }}
+                      onMouseOver={e => (e.currentTarget.style.color = 'var(--fg)')}
                       onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}
                       title={isCollapsed('wallet-holdings') ? 'Expand' : 'Collapse'}>
                       {isCollapsed('wallet-holdings') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
@@ -5127,7 +5127,7 @@ export default function App() {
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid #242424' }}>
+                      <tr style={{ borderBottom: '1px solid var(--border)' }}>
                         {[
                           { label: 'Token', field: null, align: 'left' },
                           { label: 'Price', field: null, align: 'right' },
@@ -5182,14 +5182,14 @@ export default function App() {
                           return (
                             <React.Fragment key={asset.id}>
                             <tr
-                              style={{ borderBottom: '1px solid #1e1e1e', transition: 'background .1s', cursor: 'pointer' }}
+                              style={{ borderBottom: '1px solid var(--border)', transition: 'background .1s', cursor: 'pointer' }}
                               onClick={() => setExpandedWalletAssetIds(prev => { const n = new Set(prev); n.has(asset.id) ? n.delete(asset.id) : n.add(asset.id); return n; })}
-                              onMouseOver={e => (e.currentTarget.style.background = '#111')}
+                              onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
                               onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                               <td style={{ padding: '11px 16px', whiteSpace: 'nowrap' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                  <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#282828', border: '1px solid #3a3a3a',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#fff', flexShrink: 0, overflow: 'hidden' }}>
+                                  <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: 'var(--fg)', flexShrink: 0, overflow: 'hidden' }}>
                                     {logo ? <img src={logo} alt={asset.symbol} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
                                         onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.removeAttribute('hidden'); }} /> : null}
                                     <span hidden={!!logo}>{asset.symbol[0]}</span>
@@ -5198,12 +5198,12 @@ export default function App() {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                                       {explUrl
                                         ? <a href={explUrl} target="_blank" rel="noopener noreferrer"
-                                            style={{ fontSize: 14, fontWeight: 600, color: '#fff', textDecoration: 'none' }}
+                                            style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)', textDecoration: 'none' }}
                                             onMouseOver={e => (e.currentTarget.style.color = '#00FF9F')}
-                                            onMouseOut={e => (e.currentTarget.style.color = '#fff')}>
+                                            onMouseOut={e => (e.currentTarget.style.color = 'var(--fg)')}>
                                             {asset.symbol}
                                           </a>
-                                        : <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{asset.symbol}</span>}
+                                        : <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>{asset.symbol}</span>}
                                       {asset.isBridged && <span style={{ fontSize: 13, background: 'rgba(99,102,241,0.15)', color: '#a5b4fc', padding: '1px 5px', borderRadius: 4, fontWeight: 600 }}>bridged</span>}
                                       {addr && addr !== 'native' && (
                                         <button onClick={() => navigator.clipboard.writeText(addr)}
@@ -5226,7 +5226,7 @@ export default function App() {
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 1 }}>
                                       <div style={{ width: 6, height: 6, borderRadius: '50%', background: CHAIN_COLORS[asset.chain] || '#555' }} />
-                                      <span style={{ fontSize: 13, color: '#aaa' }}>{asset.chain}</span>
+                                      <span style={{ fontSize: 13, color: 'var(--fg-muted)' }}>{asset.chain}</span>
                                     </div>
                                   </div>
                                 </div>
@@ -5239,19 +5239,19 @@ export default function App() {
                                 {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%
                               </td>
                               <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                                <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>
+                                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>
                                   {asset.balance.toLocaleString(undefined, { maximumFractionDigits: 4 })}
                                 </div>
-                                <div style={{ fontSize: 13, color: '#aaa' }}>{asset.symbol}</div>
+                                <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>{asset.symbol}</div>
                               </td>
                               <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                                <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>
+                                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>
                                   ${asset.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                 </div>
                               </td>
                               <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap', minWidth: 90 }}>
-                                <div style={{ fontSize: 13, color: '#999', marginBottom: 3 }}>{share.toFixed(1)}%</div>
-                                <div style={{ height: 2, background: '#1a1a1a', borderRadius: 1 }}>
+                                <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 3 }}>{share.toFixed(1)}%</div>
+                                <div style={{ height: 2, background: 'var(--border)', borderRadius: 1 }}>
                                   <div style={{ height: '100%', width: `${Math.min(share, 100)}%`, background: '#00FF9F', borderRadius: 1 }} />
                                 </div>
                               </td>
@@ -5267,7 +5267,7 @@ export default function App() {
                                     <Calculator size={13} />
                                   </button>
                                   <button onClick={e => { e.stopPropagation(); setHiddenTokens([...hiddenTokens, asset.id]); }}
-                                    style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
+                                    style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s' }}
                                     onMouseOver={e => (e.currentTarget.style.color = '#ef4444')}
                                     onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}
                                     title="Hide">
@@ -5287,14 +5287,14 @@ export default function App() {
                               const wEntryPls = manualEntries[asset.id];
                               const wPnlPls = wEntryPls ? wCurrentPlsValue - wEntryPls : null;
                               return (
-                                <tr style={{ borderBottom: '1px solid #1e1e1e', background: '#0a0a0a' }}>
+                                <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
                                   <td colSpan={7} style={{ padding: '0 16px 14px' }}>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 10, paddingTop: 12 }}>
                                       {/* Price card */}
-                                      <div style={{ background: '#111', borderRadius: 8, padding: '12px 14px' }}>
+                                      <div style={{ background: 'var(--bg-elevated)', borderRadius: 8, padding: '12px 14px' }}>
                                         <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Price</div>
-                                        <div style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}><PriceDisplay price={asset.price} /></div>
-                                        <div style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>
+                                        <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--fg)' }}><PriceDisplay price={asset.price} /></div>
+                                        <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 4 }}>
                                           {wPriceInPls > 0 ? `${wPriceInPls >= 1000 ? `${(wPriceInPls/1000).toFixed(2)}K` : wPriceInPls.toFixed(4)} PLS` : ''}
                                         </div>
                                         <div style={{ fontSize: 12, fontWeight: 700, color: pct >= 0 ? '#00FF9F' : '#ef4444', marginTop: 4 }}>
@@ -5302,29 +5302,29 @@ export default function App() {
                                         </div>
                                       </div>
                                       {/* Holdings card */}
-                                      <div style={{ background: '#111', borderRadius: 8, padding: '12px 14px' }}>
+                                      <div style={{ background: 'var(--bg-elevated)', borderRadius: 8, padding: '12px 14px' }}>
                                         <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Holdings</div>
-                                        <div style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>
+                                        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)' }}>
                                           {asset.balance >= 1e6 ? `${(asset.balance/1e6).toFixed(2)}M` : asset.balance >= 1e3 ? `${(asset.balance/1e3).toFixed(2)}K` : asset.balance.toLocaleString(undefined, { maximumFractionDigits: 4 })} {asset.symbol}
                                         </div>
-                                        <div style={{ fontSize: 13, color: '#aaa', marginTop: 4 }}>${asset.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+                                        <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginTop: 4 }}>${asset.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
                                         {wCurrentPlsValue > 0 && <div style={{ fontSize: 12, color: '#f739ff', marginTop: 2 }}>{wCurrentPlsValue >= 1e6 ? `${(wCurrentPlsValue/1e6).toFixed(2)}M` : wCurrentPlsValue >= 1e3 ? `${(wCurrentPlsValue/1e3).toFixed(2)}K` : wCurrentPlsValue.toFixed(0)} PLS</div>}
                                       </div>
                                       {/* P&L card */}
-                                      <div style={{ background: '#111', borderRadius: 8, padding: '12px 14px' }}>
+                                      <div style={{ background: 'var(--bg-elevated)', borderRadius: 8, padding: '12px 14px' }}>
                                         <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>P&amp;L (PLS basis)</div>
                                         {wEntryPls ? (
                                           <>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                              <span style={{ fontSize: 12, color: '#888' }}>Entry</span>
-                                              <span style={{ fontSize: 13, fontWeight: 600, color: '#aaa' }}>{wEntryPls.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</span>
+                                              <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Entry</span>
+                                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)' }}>{wEntryPls.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</span>
                                             </div>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                              <span style={{ fontSize: 12, color: '#888' }}>Now</span>
-                                              <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{wCurrentPlsValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</span>
+                                              <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Now</span>
+                                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{wCurrentPlsValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</span>
                                             </div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 4, borderTop: '1px solid #222', marginTop: 4 }}>
-                                              <span style={{ fontSize: 12, fontWeight: 700, color: '#888' }}>Net P&L</span>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 4, borderTop: '1px solid var(--border)', marginTop: 4 }}>
+                                              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg-subtle)' }}>Net P&L</span>
                                               <span style={{ fontSize: 14, fontWeight: 800, color: wPnlPls !== null && wPnlPls >= 0 ? '#00FF9F' : '#ef4444' }}>
                                                 {wPnlPls !== null ? `${wPnlPls >= 0 ? '+' : ''}${wPnlPls.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS` : '—'}
                                               </span>
@@ -5334,7 +5334,7 @@ export default function App() {
                                           <div>
                                             <div style={{ fontSize: 12, color: 'var(--fg-subtle)', marginBottom: 8 }}>Set entry to track P&L</div>
                                             <input type="number" placeholder="Entry PLS amount"
-                                              style={{ width: '100%', background: '#0d0d0d', border: '1px solid #333', borderRadius: 6, color: '#fff', fontSize: 12, padding: '5px 8px', outline: 'none' }}
+                                              style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--fg)', fontSize: 12, padding: '5px 8px', outline: 'none' }}
                                               onBlur={e => { const v = parseFloat(e.target.value); if (!isNaN(v) && v > 0) setManualEntries(prev => ({ ...prev, [asset.id]: v })); }} />
                                           </div>
                                         )}
@@ -5374,12 +5374,12 @@ export default function App() {
                                            <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
                                              <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 12px', fontSize: 12 }}>
                                                <span style={{ color: 'var(--fg-subtle)' }}>Bought </span>
-                                               <span style={{ color: '#fff', fontWeight: 700 }}>{totalBoughtAmt >= 1e6 ? `${(totalBoughtAmt/1e6).toFixed(2)}M` : totalBoughtAmt >= 1e3 ? `${(totalBoughtAmt/1e3).toFixed(2)}K` : totalBoughtAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })} {sym}</span>
+                                               <span style={{ color: 'var(--fg)', fontWeight: 700 }}>{totalBoughtAmt >= 1e6 ? `${(totalBoughtAmt/1e6).toFixed(2)}M` : totalBoughtAmt >= 1e3 ? `${(totalBoughtAmt/1e3).toFixed(2)}K` : totalBoughtAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })} {sym}</span>
                                                {totalCostUsd > 0 && <span style={{ color: 'var(--fg-subtle)', marginLeft: 4 }}>(${totalCostUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })})</span>}
                                              </div>
                                              <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 12px', fontSize: 12 }}>
                                                <span style={{ color: 'var(--fg-subtle)' }}>Sold </span>
-                                               <span style={{ color: '#fff', fontWeight: 700 }}>{totalSoldAmt >= 1e6 ? `${(totalSoldAmt/1e6).toFixed(2)}M` : totalSoldAmt >= 1e3 ? `${(totalSoldAmt/1e3).toFixed(2)}K` : totalSoldAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })} {sym}</span>
+                                               <span style={{ color: 'var(--fg)', fontWeight: 700 }}>{totalSoldAmt >= 1e6 ? `${(totalSoldAmt/1e6).toFixed(2)}M` : totalSoldAmt >= 1e3 ? `${(totalSoldAmt/1e3).toFixed(2)}K` : totalSoldAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })} {sym}</span>
                                                {totalProceedsUsd > 0 && <span style={{ color: 'var(--fg-subtle)', marginLeft: 4 }}>(${totalProceedsUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })})</span>}
                                              </div>
                                              {(totalCostUsd > 0 || totalProceedsUsd > 0) && (
@@ -5411,7 +5411,7 @@ export default function App() {
                                                          <span style={{ fontSize: 12, fontWeight: 700, color: typeColor, background: typeColor.startsWith('var') ? 'transparent' : `${typeColor}1a`, padding: '2px 7px', borderRadius: 4 }}>{typeLabel}</span>
                                                          {tx.type === 'swap' && tx.counterAsset && <span style={{ fontSize: 11, color: 'var(--fg-subtle)', marginLeft: 6 }}>← {tx.counterAsset}</span>}
                                                        </td>
-                                                       <td style={{ padding: '7px 10px', textAlign: 'right', fontSize: 12, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap' }}>
+                                                       <td style={{ padding: '7px 10px', textAlign: 'right', fontSize: 12, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap' }}>
                                                          {tx.amount >= 1e6 ? `${(tx.amount/1e6).toFixed(2)}M` : tx.amount >= 1e3 ? `${(tx.amount/1e3).toFixed(2)}K` : tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {sym}
                                                        </td>
                                                        <td style={{ padding: '7px 10px', textAlign: 'right', fontSize: 12, color: 'var(--fg-muted)', whiteSpace: 'nowrap' }}>
@@ -5449,9 +5449,9 @@ export default function App() {
                     </tbody>
                     {filteredViewAssets.length > 0 && (
                       <tfoot>
-                        <tr style={{ borderTop: '1px solid #252525' }}>
-                          <td colSpan={4} style={{ padding: '10px 16px', fontSize: 13, color: '#aaa', fontWeight: 600 }}>TOTAL LIQUID</td>
-                          <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#fff' }}>
+                        <tr style={{ borderTop: '1px solid var(--border)' }}>
+                          <td colSpan={4} style={{ padding: '10px 16px', fontSize: 13, color: 'var(--fg-muted)', fontWeight: 600 }}>TOTAL LIQUID</td>
+                          <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>
                             ${walletUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                           </td>
                           <td colSpan={2} />
@@ -5497,46 +5497,46 @@ export default function App() {
                         {logo2 ? <img src={logo2} alt={pnlAsset.symbol} style={{ width: 28, height: 28, borderRadius: '50%' }}
                             onError={e => { const el = e.target as HTMLImageElement; el.style.display='none'; const fb = document.createElement('div'); Object.assign(fb.style, { width: '28px', height: '28px', borderRadius: '50%', background: '#2a1a3a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '800', color: '#a78bfa' }); fb.textContent = pnlAsset.symbol[0]; el.parentNode?.insertBefore(fb, el.nextSibling); }} /> : <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#2a1a3a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#a78bfa' }}>{pnlAsset.symbol[0]}</div>}
                         <div>
-                          <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{assetName} Profit &amp; Loss</div>
-                          <div style={{ fontSize: 13, color: '#888', marginTop: 1 }}>{swapCount} swap{swapCount !== 1 ? 's' : ''} · approximate (current prices)</div>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)' }}>{assetName} Profit &amp; Loss</div>
+                          <div style={{ fontSize: 13, color: 'var(--fg-subtle)', marginTop: 1 }}>{swapCount} swap{swapCount !== 1 ? 's' : ''} · approximate (current prices)</div>
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <div style={{ fontSize: 20, fontWeight: 800, color: realizedPnl >= 0 ? '#00FF9F' : '#ef4444' }}>{realizedPnl >= 0 ? '+' : ''}${fmtDec(realizedPnl)}</div>
-                        <button onClick={() => setPnlAsset(null)} style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888' }} onMouseOver={e => (e.currentTarget.style.color = '#fff')} onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}><X size={16} /></button>
+                        <button onClick={() => setPnlAsset(null)} style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)' }} onMouseOver={e => (e.currentTarget.style.color = 'var(--fg)')} onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}><X size={16} /></button>
                       </div>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: '0 14px 14px' }}>
-                      <div style={{ background: '#111', borderRadius: 10, padding: '14px 16px' }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#888', letterSpacing: '.8px', marginBottom: 10 }}>REALIZED</div>
+                      <div style={{ background: 'var(--bg-elevated)', borderRadius: 10, padding: '14px 16px' }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-subtle)', letterSpacing: '.8px', marginBottom: 10 }}>REALIZED</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div><div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>Cost</div><div style={{ fontSize: 14, fontWeight: 700, color: '#ef4444' }}>${fmtDec(realizedCostUsd)}</div></div>
+                          <div><div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 2 }}>Cost</div><div style={{ fontSize: 14, fontWeight: 700, color: '#ef4444' }}>${fmtDec(realizedCostUsd)}</div></div>
                           <div style={{ color: 'var(--fg-subtle)', fontSize: 16, marginTop: 8 }}>→</div>
-                          <div><div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>Proceeds</div><div style={{ fontSize: 14, fontWeight: 700, color: '#00FF9F' }}>${fmtDec(proceedsUsd)}</div></div>
-                          <div style={{ marginLeft: 'auto', textAlign: 'right' }}><div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>P&amp;L</div><div style={{ fontSize: 14, fontWeight: 700, color: realizedPnl >= 0 ? '#00FF9F' : '#ef4444' }}>{realizedPnl >= 0 ? '+' : ''}${fmtDec(realizedPnl)}</div></div>
+                          <div><div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 2 }}>Proceeds</div><div style={{ fontSize: 14, fontWeight: 700, color: '#00FF9F' }}>${fmtDec(proceedsUsd)}</div></div>
+                          <div style={{ marginLeft: 'auto', textAlign: 'right' }}><div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 2 }}>P&amp;L</div><div style={{ fontSize: 14, fontWeight: 700, color: realizedPnl >= 0 ? '#00FF9F' : '#ef4444' }}>{realizedPnl >= 0 ? '+' : ''}${fmtDec(realizedPnl)}</div></div>
                         </div>
                         <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #242424', display: 'flex', gap: 16 }}>
-                          <div><div style={{ fontSize: 13, color: '#888' }}>Bought</div><div style={{ fontSize: 13, color: '#aaa', fontWeight: 600 }}>{fmtTok(totalBought)} {pnlAsset.symbol}</div></div>
-                          <div><div style={{ fontSize: 13, color: '#888' }}>Sold</div><div style={{ fontSize: 13, color: '#aaa', fontWeight: 600 }}>{fmtTok(totalSold)} {pnlAsset.symbol}</div></div>
+                          <div><div style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>Bought</div><div style={{ fontSize: 13, color: 'var(--fg-muted)', fontWeight: 600 }}>{fmtTok(totalBought)} {pnlAsset.symbol}</div></div>
+                          <div><div style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>Sold</div><div style={{ fontSize: 13, color: 'var(--fg-muted)', fontWeight: 600 }}>{fmtTok(totalSold)} {pnlAsset.symbol}</div></div>
                         </div>
                       </div>
-                      <div style={{ background: '#111', borderRadius: 10, padding: '14px 16px' }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#888', letterSpacing: '.8px', marginBottom: 10 }}>HOLDINGS</div>
+                      <div style={{ background: 'var(--bg-elevated)', borderRadius: 10, padding: '14px 16px' }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-subtle)', letterSpacing: '.8px', marginBottom: 10 }}>HOLDINGS</div>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <div><div style={{ fontSize: 13, color: '#888', marginBottom: 2 }}>Balance</div><div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{fmtTok(pnlAsset.balance)} {pnlAsset.symbol}</div></div>
-                          <div style={{ textAlign: 'right' }}><div style={{ fontSize: 13, color: '#888', marginBottom: 2 }}>Value</div><div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>${fmtDec(pnlAsset.value)}</div></div>
+                          <div><div style={{ fontSize: 13, color: 'var(--fg-subtle)', marginBottom: 2 }}>Balance</div><div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>{fmtTok(pnlAsset.balance)} {pnlAsset.symbol}</div></div>
+                          <div style={{ textAlign: 'right' }}><div style={{ fontSize: 13, color: 'var(--fg-subtle)', marginBottom: 2 }}>Value</div><div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>${fmtDec(pnlAsset.value)}</div></div>
                         </div>
                         {gasNative > 0 && (
                           <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #242424', display: 'flex', justifyContent: 'space-between' }}>
-                            <div style={{ fontSize: 13, color: '#888' }}>⛽ Gas</div>
-                            <div style={{ fontSize: 13, color: '#aaa', fontWeight: 600 }}>{fmtTok(gasNative)} {chainKey === 'ethereum' ? 'ETH' : 'PLS'} <span style={{ color: '#888' }}>(${fmtDec(gasUsd)})</span></div>
+                            <div style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>⛽ Gas</div>
+                            <div style={{ fontSize: 13, color: 'var(--fg-muted)', fontWeight: 600 }}>{fmtTok(gasNative)} {chainKey === 'ethereum' ? 'ETH' : 'PLS'} <span style={{ color: 'var(--fg-subtle)' }}>(${fmtDec(gasUsd)})</span></div>
                           </div>
                         )}
                       </div>
                     </div>
                     {allRows.length > 0 && (
-                      <div style={{ borderTop: '1px solid #1f1f1f' }}>
-                        <div style={{ padding: '8px 18px', fontSize: 13, fontWeight: 700, color: '#888', letterSpacing: '.8px' }}>SWAP HISTORY</div>
+                      <div style={{ borderTop: '1px solid var(--border)' }}>
+                        <div style={{ padding: '8px 18px', fontSize: 13, fontWeight: 700, color: 'var(--fg-subtle)', letterSpacing: '.8px' }}>SWAP HISTORY</div>
                         <div style={{ maxHeight: 280, overflowY: 'auto' }}>
                           {allRows.map(({ tx, side }, i) => {
                             const isBuy = side === 'buy';
@@ -5545,18 +5545,18 @@ export default function App() {
                             const otherSym = isBuy ? (tx.counterAsset || '?') : tx.asset;
                             const date = new Date(tx.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' });
                             return (
-                              <div key={tx.id + i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 18px', borderBottom: '1px solid #111', background: i % 2 === 0 ? 'transparent' : '#0a0a0a' }}
-                                onMouseOver={e => (e.currentTarget.style.background = '#131313')} onMouseOut={e => (e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : '#0a0a0a')}>
+                              <div key={tx.id + i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 18px', borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--bg-elevated)' }}
+                                onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')} onMouseOut={e => (e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'var(--bg-elevated)')}>
                                 <div style={{ width: 36, flexShrink: 0, textAlign: 'center', fontSize: 13, fontWeight: 800, letterSpacing: '.5px', padding: '3px 0', borderRadius: 5, background: isBuy ? 'rgba(0,255,159,0.12)' : 'rgba(239,68,68,0.12)', color: isBuy ? '#00FF9F' : '#ef4444' }}>{isBuy ? 'BUY' : 'SELL'}</div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                     {isBuy ? '+' : '-'}{fmtTok(tokenAmt)} {pnlAsset.symbol}
-                                    <span style={{ color: '#888', fontWeight: 400, marginLeft: 6 }}>{isBuy ? 'for' : 'sold for'} {fmtTok(otherAmt)} {otherSym}</span>
+                                    <span style={{ color: 'var(--fg-subtle)', fontWeight: 400, marginLeft: 6 }}>{isBuy ? 'for' : 'sold for'} {fmtTok(otherAmt)} {otherSym}</span>
                                   </div>
                                 </div>
                                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                  <div style={{ fontSize: 13, fontWeight: 600, color: '#aaa' }}>${fmtDec(tx.valueUsd ?? 0)}</div>
-                                  <div style={{ fontSize: 13, color: '#888' }}>{date}</div>
+                                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)' }}>${fmtDec(tx.valueUsd ?? 0)}</div>
+                                  <div style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>{date}</div>
                                 </div>
                                 {tx.hash && <a href={`${CHAINS[chainKey].explorer}/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--fg-subtle)', flexShrink: 0 }} onMouseOver={e => (e.currentTarget.style.color = '#a78bfa')} onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}><ExternalLink size={11} /></a>}
                               </div>
@@ -5565,7 +5565,7 @@ export default function App() {
                         </div>
                       </div>
                     )}
-                    {swapCount === 0 && <div style={{ padding: '24px', textAlign: 'center', color: '#888', fontSize: 13 }}>No swaps found for {pnlAsset.symbol} on {chainKey}</div>}
+                    {swapCount === 0 && <div style={{ padding: '24px', textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 13 }}>No swaps found for {pnlAsset.symbol} on {chainKey}</div>}
                   </div>
                 );
               })()}
@@ -5617,18 +5617,18 @@ export default function App() {
                 const chainDot: Record<string, string> = { pulsechain: '#f739ff', ethereum: '#627EEA', base: '#0052FF' };
 
                 return (
-                  <div style={{ background: '#0d0d0d', borderRadius: 14, border: '1px solid #242424', overflow: 'hidden' }}>
+                  <div style={{ background: 'var(--bg-surface)', borderRadius: 14, border: '1px solid var(--border)', overflow: 'hidden' }}>
                     <div style={{ height: 2, background: 'linear-gradient(90deg,#7c3aed,#ec4899)' }} />
                     <div style={{ padding: '14px 18px', borderBottom: isCollapsed('wallet-pnl') ? 'none' : '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>Trade P&amp;L</span>
-                        <span style={{ fontSize: 13, color: '#aaa', background: '#1a1a1a', padding: '2px 8px', borderRadius: 4 }}>{swaps.length} swaps · approx.</span>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>Trade P&amp;L</span>
+                        <span style={{ fontSize: 13, color: 'var(--fg-muted)', background: 'var(--border)', padding: '2px 8px', borderRadius: 4 }}>{swaps.length} swaps · approx.</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <span style={{ fontSize: 20, fontWeight: 800, color: totalPnl >= 0 ? '#00FF9F' : '#ef4444' }}>{totalPnl >= 0 ? '+' : ''}${Math.abs(totalPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                         <button onClick={() => toggleSection('wallet-pnl')}
-                          style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888' }}
-                          onMouseOver={e => (e.currentTarget.style.color = '#fff')} onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}
+                          style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)' }}
+                          onMouseOver={e => (e.currentTarget.style.color = 'var(--fg)')} onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}
                           title={isCollapsed('wallet-pnl') ? 'Expand' : 'Collapse'}>
                           {isCollapsed('wallet-pnl') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
                         </button>
@@ -5640,23 +5640,23 @@ export default function App() {
                           <thead>
                             <tr style={{ borderBottom: '1px solid #1f1f1f' }}>
                               {['Token', 'Swaps', 'Bought', 'Sold', 'Proceeds', 'Cost (est.)', 'Realized P&L'].map(h => (
-                                <th key={h} style={{ padding: '9px 14px', textAlign: h === 'Token' ? 'left' : 'right', fontSize: 13, color: '#888', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', whiteSpace: 'nowrap' }}>{h}</th>
+                                <th key={h} style={{ padding: '9px 14px', textAlign: h === 'Token' ? 'left' : 'right', fontSize: 13, color: 'var(--fg-subtle)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', whiteSpace: 'nowrap' }}>{h}</th>
                               ))}
                             </tr>
                           </thead>
                           <tbody>
                             {rows.map(r => (
-                              <tr key={r.sym + r.chain} style={{ borderBottom: '1px solid #111', transition: 'background .1s' }}
-                                onMouseOver={e => (e.currentTarget.style.background = '#111')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
+                              <tr key={r.sym + r.chain} style={{ borderBottom: '1px solid var(--border)', transition: 'background .1s' }}
+                                onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                                 <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: chainDot[r.chain] || '#555', flexShrink: 0 }} />
-                                    <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{r.sym}</span>
+                                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{r.sym}</span>
                                   </div>
                                 </td>
-                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#aaa' }}>{r.swapCount}</td>
-                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#aaa' }}>{r.bought > 1e6 ? `${(r.bought/1e6).toFixed(2)}M` : r.bought.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#aaa' }}>{r.sold > 1e6 ? `${(r.sold/1e6).toFixed(2)}M` : r.sold.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: 'var(--fg-muted)' }}>{r.swapCount}</td>
+                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: 'var(--fg-muted)' }}>{r.bought > 1e6 ? `${(r.bought/1e6).toFixed(2)}M` : r.bought.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: 'var(--fg-muted)' }}>{r.sold > 1e6 ? `${(r.sold/1e6).toFixed(2)}M` : r.sold.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
                                 <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#00FF9F' }}>${r.proceedsUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
                                 <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#ef4444' }}>${r.realizedCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
                                 <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontSize: 13, color: r.realizedPnl >= 0 ? '#00FF9F' : '#ef4444' }}>
@@ -5666,8 +5666,8 @@ export default function App() {
                             ))}
                           </tbody>
                           <tfoot>
-                            <tr style={{ borderTop: '1px solid #252525' }}>
-                              <td colSpan={6} style={{ padding: '10px 14px', fontSize: 13, color: '#888', fontWeight: 600 }}>TOTAL REALIZED P&amp;L</td>
+                            <tr style={{ borderTop: '1px solid var(--border)' }}>
+                              <td colSpan={6} style={{ padding: '10px 14px', fontSize: 13, color: 'var(--fg-subtle)', fontWeight: 600 }}>TOTAL REALIZED P&amp;L</td>
                               <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 800, fontSize: 14, color: totalPnl >= 0 ? '#00FF9F' : '#ef4444' }}>
                                 {totalPnl >= 0 ? '+' : ''}${Math.abs(totalPnl).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                               </td>
@@ -5709,13 +5709,13 @@ export default function App() {
                           { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Assets'], ...Array.from(new Set(baseTxs.map(tx => tx.asset))).sort().map(a => [a,a])] as [string,string][] },
                         ].map(({ value, onChange, options }, i) => (
                           <select key={i} value={value} onChange={e => onChange(e.target.value)}
-                            style={{ background: '#111', border: '1px solid #252525', borderRadius: 6, color: '#fff', fontSize: 13, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
+                            style={{ background: 'var(--bg-elevated)', border: '1px solid #252525', borderRadius: 6, color: 'var(--fg)', fontSize: 13, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
                             {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                           </select>
                         ))}
                         <button onClick={() => toggleSection('wallet-txs')}
-                          style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
-                          onMouseOver={e => (e.currentTarget.style.color = '#fff')} onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}
+                          style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s' }}
+                          onMouseOver={e => (e.currentTarget.style.color = 'var(--fg)')} onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}
                           title={isCollapsed('wallet-txs') ? 'Expand' : 'Collapse'}>
                           {isCollapsed('wallet-txs') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
                         </button>
@@ -5724,13 +5724,13 @@ export default function App() {
                     {!isCollapsed('wallet-txs') && (
                       <div style={{ maxHeight: 520, overflowY: 'auto' }} className="custom-scrollbar">
                         {filtered.length === 0 ? (
-                          <div style={{ padding: '40px 20px', textAlign: 'center', color: '#aaa', fontSize: 13 }}>No transactions match your filters.</div>
+                          <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--fg-muted)', fontSize: 13 }}>No transactions match your filters.</div>
                         ) : filtered.map((tx) => {
                           const isHidden = hiddenTxIds.includes(tx.id);
                           if (isHidden && !showHiddenTxs) return null;
                           return (
-                            <div key={tx.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', borderBottom: '1px solid #1e1e1e', transition: 'background .1s', opacity: isHidden ? 0.35 : 1 }}
-                              onMouseOver={e => (e.currentTarget.style.background = '#111')}
+                            <div key={tx.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', borderBottom: '1px solid var(--border)', transition: 'background .1s', opacity: isHidden ? 0.35 : 1 }}
+                              onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
                               onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                 <div style={{ width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -5745,14 +5745,14 @@ export default function App() {
                                       color: tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444' }}>
                                       {tx.type === 'transfer_in' ? 'Received' : tx.type === 'transfer_out' ? 'Sent' : 'Swap'}
                                     </span>
-                                    <span style={{ fontSize: 13, padding: '1px 6px', borderRadius: 3, fontWeight: 600, background: '#1a1a1a', color: '#aaa' }}>{tx.chain}</span>
-                                    <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>
+                                    <span style={{ fontSize: 13, padding: '1px 6px', borderRadius: 3, fontWeight: 600, background: 'var(--border)', color: 'var(--fg-muted)' }}>{tx.chain}</span>
+                                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>
                                       {tx.type === 'swap' && tx.counterAsset
                                         ? `${tx.counterAmount?.toLocaleString()} ${tx.counterAsset} → ${tx.amount.toLocaleString()} ${tx.asset}`
                                         : `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`}
                                     </span>
                                   </div>
-                                  <div style={{ fontSize: 13, color: '#aaa', fontFamily: 'monospace' }}>
+                                  <div style={{ fontSize: 13, color: 'var(--fg-muted)', fontFamily: 'monospace' }}>
                                     {tx.hash.slice(0, 6)}…{tx.hash.slice(-4)} · {format(tx.timestamp, 'MMM d, yyyy HH:mm')}
                                   </div>
                                 </div>
@@ -5762,7 +5762,7 @@ export default function App() {
                                   <div style={{ fontSize: 13, fontWeight: 600, color: tx.type === 'transfer_in' ? '#00FF9F' : '#fff' }}>
                                     {tx.type === 'transfer_in' ? '+' : '-'}{tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {tx.asset}
                                   </div>
-                                  {tx.valueUsd && <div style={{ fontSize: 13, color: '#aaa' }}>${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>}
+                                  {tx.valueUsd && <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>}
                                 </div>
                                 <a href={`${CHAINS[tx.chain].explorer}/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer"
                                   style={{ color: 'var(--fg-subtle)', padding: 4 }}
@@ -5998,19 +5998,19 @@ export default function App() {
                 <Settings size={18} style={{ color: '#00FF9F' }} />
                 <span style={{ fontSize: 16, fontWeight: 700 }}>API Keys</span>
               </div>
-              <p style={{ fontSize: 13, color: '#aaa', marginBottom: 14, lineHeight: 1.6 }}>
+              <p style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 14, lineHeight: 1.6 }}>
                 One key covers both Ethereum and Base.<br/>
                 Get yours free at <span style={{ color: '#627EEA' }}>etherscan.io/myapikey</span>
               </p>
               <input type="text" placeholder="Paste your Etherscan API key..."
                 value={apiKeyInput} onChange={e => setApiKeyInput(e.target.value)}
-                style={{ width: '100%', background: '#111', border: '1px solid #252525', borderRadius: 8,
-                  color: '#fff', fontSize: 13, padding: '10px 14px', outline: 'none',
+                style={{ width: '100%', background: 'var(--bg-elevated)', border: '1px solid #252525', borderRadius: 8,
+                  color: 'var(--fg)', fontSize: 13, padding: '10px 14px', outline: 'none',
                   fontFamily: 'monospace', boxSizing: 'border-box', marginBottom: 20 }} />
               <div style={{ display: 'flex', gap: 10 }}>
                 <button onClick={() => setIsApiKeyModalOpen(false)}
-                  style={{ flex: 1, padding: '10px 0', borderRadius: 10, background: '#1a1a1a',
-                    border: '1px solid #222', color: '#fff', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+                  style={{ flex: 1, padding: '10px 0', borderRadius: 10, background: 'var(--border)',
+                    border: '1px solid var(--border)', color: 'var(--fg)', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
                   Cancel
                 </button>
                 <button onClick={() => {

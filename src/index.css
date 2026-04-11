@@ -82,7 +82,7 @@
   --bg-header: rgba(244,244,248,0.94);
   --fg: #0a0a14;
   --fg-muted: #374151;         /* 11.2:1 on white ✅ */
-  --fg-subtle: #505a6b;        /* 6.8:1 on white ✅ (was #9ca3af = 2.5:1 ❌) */
+  --fg-subtle: #505a6b;        /* 6.8:1 on white ✅ */
   --border: rgba(0,0,0,0.10);
   --border-strong: rgba(0,0,0,0.20);
   /* Chain colors for light mode */
@@ -94,6 +94,159 @@
   --md-sys-color-surface-container-high: #eeeef6;
   --md-sys-color-on-surface: #0a0a14;
   --md-sys-color-outline: rgba(0,0,0,0.1);
+  /* Glass/card backgrounds for light mode */
+  --bg-glass: rgba(255,255,255,0.80);
+  /* Accent — darker green for readable contrast on white (4.5:1) */
+  --accent: #007a4d;
+  --accent-glow: rgba(0,122,77,0.15);
+  --accent-dim: rgba(0,122,77,0.08);
+  --accent-border: rgba(0,122,77,0.22);
+  /* Overlay for modals */
+  --overlay: rgba(0,0,0,0.45);
+}
+
+/* ── LIGHT MODE GLOBAL OVERRIDES ─────────────────────────────────────── */
+
+/* Sharp fonts on light backgrounds — antialiased makes text thin/blurry on white */
+[data-theme="light"] body {
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+  background: linear-gradient(135deg, #f0f0f5 0%, #e8e8f0 100%);
+}
+
+/* Remove backdrop-filter blur in light mode — it causes text/content to appear blurry */
+[data-theme="light"] .glass,
+[data-theme="light"] .glass-card,
+[data-theme="light"] .neon-card,
+[data-theme="light"] .asset-card,
+[data-theme="light"] .asset-card-premium,
+[data-theme="light"] .chart-tooltip,
+[data-theme="light"] .bottom-nav-blur {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Glass card solid background in light mode */
+[data-theme="light"] .glass-card {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.10);
+}
+
+/* Neon card in light mode */
+[data-theme="light"] .neon-card {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.10);
+}
+
+/* Premium asset cards in light mode */
+[data-theme="light"] .asset-card-premium {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.10);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+[data-theme="light"] .asset-card-premium:hover {
+  border-color: rgba(0,180,100,0.35);
+  box-shadow: 0 4px 20px rgba(0,180,100,0.12), 0 1px 4px rgba(0,0,0,0.08);
+}
+
+/* Asset card in light mode */
+[data-theme="light"] .asset-card {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.10);
+}
+[data-theme="light"] .asset-card:hover {
+  border-color: rgba(0,180,100,0.30);
+  box-shadow: 0 4px 16px rgba(0,180,100,0.10);
+}
+
+/* Chart tooltip in light mode */
+[data-theme="light"] .chart-tooltip {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.12);
+  color: #0a0a14;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+}
+
+/* Stat cards in light mode */
+[data-theme="light"] .stat-card {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.10);
+}
+[data-theme="light"] .stat-card:hover {
+  border-color: rgba(0,180,100,0.25);
+  box-shadow: 0 4px 16px rgba(0,180,100,0.08);
+}
+
+/* Remove neon glow filters from text in light mode — they blur text */
+[data-theme="light"] .value-hero {
+  filter: none;
+}
+[data-theme="light"] .glow-text-green {
+  text-shadow: none;
+}
+[data-theme="light"] .logo-wordmark {
+  filter: none;
+  background: linear-gradient(135deg, #007a4d 0%, #009960 50%, #007a4d 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Accent in light mode — darker green for readability on white */
+[data-theme="light"] .gradient-text-green {
+  background: linear-gradient(135deg, #007a4d 0%, #009960 50%, #007a4d 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Header blur in light mode — keep but reduce */
+[data-theme="light"] header.glass {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Live price row in light mode */
+[data-theme="light"] .live-price-row {
+  background: rgba(0,0,0,0.03);
+  border: 1px solid rgba(0,0,0,0.07);
+}
+[data-theme="light"] .live-price-row:hover {
+  background: rgba(0,0,0,0.06);
+  border-color: rgba(0,0,0,0.12);
+}
+
+/* Change badges in light mode — readable on white (#00FF9F is 1.5:1 on white) */
+[data-theme="light"] .change-badge-pos {
+  background: rgba(0,122,77,0.10);
+  color: #007a4d;
+  border-color: rgba(0,122,77,0.25);
+}
+[data-theme="light"] .change-badge-neg {
+  background: rgba(220,38,38,0.10);
+  color: #b91c1c;
+  border-color: rgba(220,38,38,0.25);
+}
+
+/* Neon card section header divider line in light mode */
+[data-theme="light"] .section-divider {
+  background: linear-gradient(90deg, #007a4d 0%, rgba(0,122,77,0.2) 60%, transparent 100%);
+}
+
+/* btn-primary keeps white text (it has a colored bg so it's always legible) */
+[data-theme="light"] .btn-primary {
+  color: #ffffff;
+}
+
+/* Sidebar/nav active tab color in light mode */
+[data-theme="light"] .tab-active {
+  color: var(--accent);
+}
+
+/* Recharts grid lines in light mode */
+[data-theme="light"] .recharts-cartesian-grid-horizontal line,
+[data-theme="light"] .recharts-cartesian-grid-vertical line {
+  stroke: rgba(0,0,0,0.07);
 }
 
 /* ── GLOBAL RESETS ───────────────────────────────────────────────────── */
