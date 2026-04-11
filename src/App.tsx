@@ -30,7 +30,9 @@ import {
   ChevronDown,
   ChevronUp,
   Sun,
-  Moon
+  Moon,
+  Pencil,
+  Check
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -303,6 +305,8 @@ export default function App() {
   const [newWalletAddress, setNewWalletAddress] = useState('');
   const [newWalletName, setNewWalletName] = useState('');
   const [isAddingWallet, setIsAddingWallet] = useState(false);
+  const [editingWalletAddress, setEditingWalletAddress] = useState<string | null>(null);
+  const [editWalletName, setEditWalletName] = useState('');
   const [isCustomCoinsModalOpen, setIsCustomCoinsModalOpen] = useState(false);
   const [customCoins, setCustomCoins] = useState<any[]>(() => {
     const saved = localStorage.getItem('custom_coins');
@@ -406,24 +410,24 @@ export default function App() {
     localStorage.setItem('pulseport_theme', theme);
   }, [theme]);
 
-  // Theme-aware color helpers
+  // Theme-aware color helpers — CSS variable-backed for automatic light/dark theming
   const t = useMemo(() => ({
-    surface: theme === 'dark' ? '#050505' : '#f5f5f5',
-    card: theme === 'dark' ? '#0d0d0d' : '#ffffff',
-    cardHigh: theme === 'dark' ? '#111111' : '#f0f0f0',
-    cardHighest: theme === 'dark' ? '#1a1a1a' : '#e8e8e8',
-    border: theme === 'dark' ? '#242424' : '#d0d0d0',
-    borderLight: theme === 'dark' ? '#1f1f1f' : '#e0e0e0',
-    text: theme === 'dark' ? '#ffffff' : '#1a1a1a',
-    textSecondary: theme === 'dark' ? '#aaaaaa' : '#555555',
-    textMuted: theme === 'dark' ? '#555555' : '#888888',
-    textTertiary: theme === 'dark' ? '#888888' : '#666666',
-    sidebar: theme === 'dark' ? '#080808' : '#fafafa',
-    header: theme === 'dark' ? '#000000' : '#ffffff',
-    hoverBg: theme === 'dark' ? '#111' : '#f5f5f5',
-    expandedBg: theme === 'dark' ? '#0a0a0a' : '#f8f8f8',
+    surface: 'var(--bg-void)',
+    card: 'var(--bg-surface)',
+    cardHigh: 'var(--bg-elevated)',
+    cardHighest: 'var(--bg-elevated)',
+    border: 'var(--border)',
+    borderLight: 'var(--border)',
+    text: 'var(--fg)',
+    textSecondary: 'var(--fg-subtle)',
+    textMuted: 'var(--fg-muted)',
+    textTertiary: 'var(--fg-muted)',
+    sidebar: 'var(--bg-sidebar)',
+    header: 'var(--bg-header)',
+    hoverBg: 'var(--bg-elevated)',
+    expandedBg: 'var(--bg-elevated)',
     green: '#00c076',
-    red: '#ef4444',
+    red: '#f43f5e',
     purple: '#8b5cf6',
     orange: '#f97316',
     blue: '#627EEA',
@@ -1722,6 +1726,13 @@ export default function App() {
     setWallets(wallets.filter(w => w.address !== address));
   };
 
+  const renameWallet = (address: string, name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setWallets(wallets.map(w => w.address === address ? { ...w, name: trimmed } : w));
+    setEditingWalletAddress(null);
+  };
+
   const scanForSpam = async () => {
     const baseAssets = wallets.length > 0 ? realAssets : [];
     const unpriced = baseAssets.filter(a => a.price === 0 && (a as any).address && (a as any).address !== 'native');
@@ -2306,17 +2317,27 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen font-sans flex" style={{ fontSize: 14, background: t.surface, color: t.text }}>
+    <div className="min-h-screen font-sans flex" style={{ fontSize: 14, background: 'var(--bg-void)', color: 'var(--fg)' }}>
       {/* ── SIDEBAR ── */}
-      <aside style={{ width: 220, minWidth: 220, background: t.sidebar, borderRight: `1px solid ${t.borderLight}` }}
+      <aside style={{
+          width: 220, minWidth: 220,
+          background: 'var(--bg-sidebar)',
+          borderRight: '1px solid var(--border)',
+        }}
         className="hidden md:flex flex-col sticky top-0 h-screen overflow-y-auto custom-scrollbar">
         {/* Logo */}
-        <div style={{ padding: '20px 18px 16px', borderBottom: `1px solid ${t.borderLight}` }} className="flex items-center gap-2.5">
-          <div style={{ width: 28, height: 28, background: '#00c076', borderRadius: 8, boxShadow: '0 0 0 1px rgba(0,192,118,.3), 0 0 12px rgba(0,192,118,.15)' }} className="flex items-center justify-center shrink-0">
-            <Activity size={16} className="text-black" />
+        <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--border)' }} className="flex items-center gap-2.5">
+          <div style={{
+            width: 30, height: 30,
+            background: 'var(--accent)',
+            borderRadius: 9,
+            boxShadow: '0 0 0 1px rgba(0,192,118,.35), 0 0 16px rgba(0,192,118,.2)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <Activity size={16} style={{ color: '#000' }} />
           </div>
-          <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.3px' }}>
-            PULSE<span style={{ color: '#aaa' }}>PORT</span>
+          <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.03em' }}>
+            <span style={{ color: 'var(--fg)' }}>PULSE</span><span style={{ color: 'var(--accent)' }}>PORT</span>
           </span>
         </div>
 
@@ -2335,13 +2356,15 @@ export default function App() {
               style={{
                 display: 'flex', alignItems: 'center', gap: 10,
                 padding: '9px 12px', borderRadius: 8,
-                background: activeTab === id ? t.cardHigh : 'transparent',
-                color: activeTab === id ? t.text : t.textMuted,
+                background: activeTab === id ? 'var(--accent-dim)' : 'transparent',
+                color: activeTab === id ? 'var(--accent)' : 'var(--fg-muted)',
                 fontWeight: activeTab === id ? 600 : 500,
                 fontSize: 13, border: 'none', cursor: 'pointer',
-                transition: 'all .12s', width: '100%', textAlign: 'left',
-                borderLeft: activeTab === id ? undefined : '2px solid transparent',
+                transition: 'all .15s', width: '100%', textAlign: 'left',
+                borderLeft: activeTab === id ? '2px solid var(--accent)' : '2px solid transparent',
               }}
+              onMouseOver={e => { if (activeTab !== id) { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLElement).style.color = 'var(--fg)'; } }}
+              onMouseOut={e => { if (activeTab !== id) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--fg-muted)'; } }}
             >
               <Icon size={16} />
               {label}
@@ -2349,64 +2372,85 @@ export default function App() {
           ))}
         </nav>
 
-        {/* Wallets */}
-        <div style={{ padding: '8px 8px 0', borderTop: `1px solid ${t.borderLight}`, marginTop: 'auto' }}>
+        {/* Wallets section */}
+        <div style={{ padding: '8px 8px 0', borderTop: '1px solid var(--border)', marginTop: 'auto' }}>
           <button
             onClick={() => setSidebarWalletsOpen(v => !v)}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               width: '100%', padding: '9px 12px', borderRadius: 8,
-              background: 'transparent', color: '#555',
-              fontSize: 13, border: 'none', cursor: 'pointer',
-              transition: 'all .12s',
+              background: 'transparent', color: 'var(--fg-muted)',
+              fontSize: 13, border: 'none', cursor: 'pointer', transition: 'all .15s',
             }}
-            onMouseOver={e => (e.currentTarget.style.color = '#aaa')}
-            onMouseOut={e => (e.currentTarget.style.color = '#555')}
+            onMouseOver={e => (e.currentTarget.style.color = 'var(--fg)')}
+            onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-muted)')}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <WalletIcon size={16} />
-              <span style={{ fontWeight: 600 }}>Wallets</span>
+              <span style={{ fontWeight: 600, fontSize: 13 }}>Wallets</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: '#00c076', background: 'rgba(0,192,118,.15)', padding: '1px 6px', borderRadius: 100, border: '1px solid rgba(0,192,118,.25)' }}>{wallets.length}</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', background: 'var(--accent-dim)', padding: '1px 7px', borderRadius: 100, border: '1px solid var(--accent-border)' }}>{wallets.length}</span>
               {sidebarWalletsOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
             </div>
           </button>
           {sidebarWalletsOpen && (
             <div style={{ paddingBottom: 8 }}>
-              <div className="space-y-1 overflow-y-auto custom-scrollbar" style={{ maxHeight: 180, padding: '2px 0' }}>
-                {wallets.map((w) => (
-                  <div key={w.address}
-                    onClick={() => { setSelectedWalletAddr(w.address.toLowerCase()); setActiveTab('wallets'); }}
-                    style={{ padding: '7px 10px', borderRadius: 8,
-                      background: selectedWalletAddr === w.address.toLowerCase() && activeTab === 'wallets' ? '#141414' : 'transparent',
-                      border: `1px solid ${selectedWalletAddr === w.address.toLowerCase() && activeTab === 'wallets' ? '#2a2a2a' : 'transparent'}`,
-                      cursor: 'pointer' }}
-                    className="group flex items-center justify-between">
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: '#ccc', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.name}</div>
-                      <code style={{ fontSize: 11, color: '#555' }}>{w.address.slice(0,6)}…{w.address.slice(-4)}</code>
+              <div className="overflow-y-auto custom-scrollbar" style={{ maxHeight: 180, padding: '2px 0', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {wallets.map((w, wIdx) => {
+                  const dotColors = ['#00c076','#f739ff','#627EEA','#f97316','#a855f7','#f59e0b'];
+                  const isActive = selectedWalletAddr === w.address.toLowerCase() && activeTab === 'wallets';
+                  return (
+                    <div key={w.address}
+                      onClick={() => { setSelectedWalletAddr(w.address.toLowerCase()); setActiveTab('wallets'); }}
+                      style={{
+                        padding: '7px 10px', borderRadius: 8,
+                        background: isActive ? 'var(--accent-dim)' : 'transparent',
+                        border: `1px solid ${isActive ? 'var(--accent-border)' : 'transparent'}`,
+                        cursor: 'pointer', transition: 'all .12s',
+                      }}
+                      className="group flex items-center justify-between"
+                      onMouseOver={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'; }}
+                      onMouseOut={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+                        <div style={{ width: 7, height: 7, borderRadius: '50%', background: dotColors[wIdx % dotColors.length], flexShrink: 0 }} />
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: isActive ? 'var(--accent)' : 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.name}</div>
+                          <code style={{ fontSize: 10, color: 'var(--fg-muted)' }}>{w.address.slice(0,6)}…{w.address.slice(-4)}</code>
+                        </div>
+                      </div>
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                        <button onClick={e => { e.stopPropagation(); setEditingWalletAddress(w.address); setEditWalletName(w.name); }}
+                          style={{ color: 'var(--fg-muted)', padding: 3, cursor: 'pointer', border: 'none', background: 'none', borderRadius: 4 }}
+                          onMouseOver={e => (e.currentTarget.style.color = 'var(--accent)')}
+                          onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-muted)')}>
+                          <Pencil size={10} />
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); removeWallet(w.address); }}
+                          style={{ color: 'var(--fg-muted)', padding: 3, cursor: 'pointer', border: 'none', background: 'none', borderRadius: 4 }}
+                          onMouseOver={e => (e.currentTarget.style.color = 'var(--negative)')}
+                          onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-muted)')}>
+                          <Trash2 size={10} />
+                        </button>
+                      </div>
                     </div>
-                    <button onClick={(e) => { e.stopPropagation(); removeWallet(w.address); }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      style={{ color: '#666', padding: 4, cursor: 'pointer', border: 'none', background: 'none', flexShrink: 0 }}>
-                      <Trash2 size={11} />
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
                 {wallets.length === 0 && (
-                  <div style={{ padding: '8px 10px', fontSize: 12, color: '#444', fontStyle: 'italic' }}>No wallets added yet</div>
+                  <div style={{ padding: '8px 10px', fontSize: 12, color: 'var(--fg-subtle)', fontStyle: 'italic' }}>No wallets added yet</div>
                 )}
               </div>
               <div style={{ padding: '4px 2px 8px' }}>
                 <button onClick={() => setIsAddingWallet(true)}
-                  title="Add Wallet"
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    background: 'rgba(0,192,118,.1)', color: '#00c076', fontWeight: 700, fontSize: 12,
-                    border: '1px solid rgba(0,192,118,.2)', borderRadius: 8, padding: '7px 0', cursor: 'pointer',
-                    transition: 'all .12s', width: '100%' }}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    background: 'var(--accent-dim)', color: 'var(--accent)', fontWeight: 700, fontSize: 12,
+                    border: '1px solid var(--accent-border)', borderRadius: 8, padding: '8px 0', cursor: 'pointer',
+                    transition: 'all .15s', width: '100%',
+                  }}
                   onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,192,118,.18)'; }}
-                  onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,192,118,.1)'; }}>
+                  onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent-dim)'; }}>
                   <Plus size={13} /> Add Wallet
                 </button>
               </div>
@@ -2417,22 +2461,33 @@ export default function App() {
 
       {/* ── MAIN ── */}
       <main className="flex-1 min-w-0 flex flex-col">
-        {/* Top Nav */}
-        <header style={{ height: 52, background: t.header, borderBottom: `1px solid ${t.borderLight}`, position: 'sticky', top: 0, zIndex: 50 }}
-          className="flex items-center justify-between px-5 gap-4 shrink-0">
+        {/* Top Nav / Header */}
+        <header
+          className="glass flex items-center justify-between gap-4 shrink-0"
+          style={{
+            height: 56, background: 'var(--bg-header)',
+            borderBottom: '1px solid var(--border)',
+            position: 'sticky', top: 0, zIndex: 50,
+            padding: '0 20px',
+          }}>
           {/* Mobile logo */}
           <div className="flex md:hidden items-center gap-2">
-            <div style={{ width: 24, height: 24, background: '#00c076', borderRadius: 6, boxShadow: '0 0 0 1px rgba(0,192,118,.3), 0 0 8px rgba(0,192,118,.15)' }} className="flex items-center justify-center">
-              <Activity size={14} className="text-black" />
+            <div style={{
+              width: 26, height: 26, background: 'var(--accent)', borderRadius: 7,
+              boxShadow: '0 0 12px rgba(0,192,118,.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Activity size={14} style={{ color: '#000' }} />
             </div>
-            <span style={{ fontWeight: 800, fontSize: 14 }}>PULSEPORT</span>
+            <span style={{ fontWeight: 800, fontSize: 14, letterSpacing: '-0.02em' }}>
+              PULSE<span style={{ color: 'var(--accent)' }}>PORT</span>
+            </span>
           </div>
 
-          {/* Live price ticker — desktop only, shown once prices load */}
+          {/* Price ticker — desktop only */}
           {Object.keys(prices).length > 0 && (
-            <div className="ticker-wrapper hidden sm:flex flex-1 mx-4" style={{ height: 52, alignItems: 'center' }}>
+            <div className="ticker-wrapper hidden sm:flex flex-1 mx-4" style={{ height: 56, alignItems: 'center' }}>
               <div className="ticker-track" style={{ gap: 32 }}>
-                {/* Duplicate the array so the CSS animation loops seamlessly */}
                 {[
                   { sym: 'PLS',  price: prices['pulsechain']?.usd || 0, change: prices['pulsechain']?.usd_24h_change },
                   { sym: 'PLSX', price: prices['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd || prices['pulsex']?.usd || 0, change: prices['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd_24h_change ?? prices['pulsex']?.usd_24h_change },
@@ -2440,12 +2495,12 @@ export default function App() {
                   { sym: 'INC',  price: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd || prices['incentive']?.usd || 0, change: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd_24h_change ?? prices['incentive']?.usd_24h_change },
                   { sym: 'eHEX', price: prices['hex']?.usd || 0, change: prices['hex']?.usd_24h_change },
                   { sym: 'ETH',  price: prices['ethereum']?.usd || 0, change: prices['ethereum']?.usd_24h_change },
-                ].flatMap(c => [c, { ...c }]).map((coin, i) => (  // duplicate for seamless CSS animation loop
+                ].flatMap(c => [c, { ...c }]).map((coin, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: t.textSecondary }}>{coin.sym}</span>
-                    <span style={{ fontSize: 12, fontFamily: 'monospace', color: t.text }}>{fmtPrice(coin.price)}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase' }}>{coin.sym}</span>
+                    <span className="tabular-nums" style={{ fontSize: 12, color: 'var(--fg)' }}>{fmtPrice(coin.price)}</span>
                     {coin.change != null && (
-                      <span style={{ fontSize: 11, fontWeight: 600, color: coin.change >= 0 ? '#00c076' : '#ef4444' }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: coin.change >= 0 ? 'var(--positive)' : 'var(--negative)' }}>
                         {coin.change >= 0 ? '▲' : '▼'}{Math.abs(coin.change).toFixed(1)}%
                       </span>
                     )}
@@ -2455,50 +2510,52 @@ export default function App() {
             </div>
           )}
 
-          {/* Tab strip */}
-          <div className="hidden md:flex items-center gap-0">
-            {(['overview', 'assets', 'stakes', 'history', 'tracker', 'wallets'] as const).map((tab) => (
-              <button key={tab} onClick={() => setActiveTab(tab)}
-                style={{
-                  padding: '0 16px', height: 52, fontSize: 13, fontWeight: activeTab === tab ? 600 : 500,
-                  color: activeTab === tab ? t.text : t.textMuted,
-                  background: 'none', borderBottom: activeTab === tab ? '2px solid #00c076' : '2px solid transparent',
-                  cursor: 'pointer', transition: 'all .12s', textTransform: 'capitalize',
-                }}>
-                {tab}
-              </button>
-            ))}
-          </div>
+          {/* Right controls */}
+          <div className="flex items-center gap-2 ml-auto">
+            {/* Live indicator */}
+            <div className="hidden sm:flex items-center gap-2">
+              <div className={`status-dot ${lastUpdated ? 'status-dot-live' : ''}`} />
+              {lastUpdated && (
+                <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                  {timeSinceLastUpdate}s ago
+                </span>
+              )}
+            </div>
 
-          <div className="flex items-center gap-3">
-            {lastUpdated && (
-              <span style={{ fontSize: 12, color: t.textMuted, display: 'flex', alignItems: 'center', gap: 5 }} className="hidden sm:inline-flex">
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00c076', display: 'inline-block', animation: 'pulse 2s infinite' }} />
-                {timeSinceLastUpdate}s ago
-              </span>
-            )}
+            {/* Theme toggle */}
             <button
               onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
               className="theme-toggle"
               title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+              {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
             </button>
+
+            {/* API Key */}
             <button onClick={() => { setApiKeyInput(etherscanApiKey); setBasescanApiKeyInput(basescanApiKey); setIsApiKeyModalOpen(true); }}
               title={etherscanApiKey ? 'API key set ✓' : 'Set Etherscan API key'}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px',
-                background: etherscanApiKey ? 'rgba(0,192,118,.08)' : t.cardHigh,
-                border: `1px solid ${etherscanApiKey ? 'rgba(0,192,118,.25)' : t.border}`,
-                borderRadius: 8, color: etherscanApiKey ? '#00c076' : t.textMuted,
-                fontSize: 13, fontWeight: 500, cursor: 'pointer', transition: 'all .12s' }}>
-              <Settings size={13} />
-              <span className="hidden sm:inline">{etherscanApiKey ? 'API Key ✓' : 'API Key'}</span>
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px',
+                background: etherscanApiKey ? 'var(--accent-dim)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${etherscanApiKey ? 'var(--accent-border)' : 'var(--border)'}`,
+                borderRadius: 8, color: etherscanApiKey ? 'var(--accent)' : 'var(--fg-muted)',
+                fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all .15s', minHeight: 36,
+              }}>
+              {etherscanApiKey ? <Check size={12} /> : <Settings size={12} />}
+              <span className="hidden sm:inline">{etherscanApiKey ? 'API ✓' : 'API Key'}</span>
             </button>
+
+            {/* Refresh */}
             <button onClick={fetchPortfolio}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px',
+                background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)',
+                borderRadius: 8, color: 'var(--fg)', fontSize: 12, fontWeight: 600,
+                cursor: 'pointer', transition: 'all .15s', minHeight: 36,
+              }}
               className={isLoading ? 'btn-loading' : ''}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px',
-                background: t.cardHigh, border: `1px solid ${t.border}`, borderRadius: 8,
-                color: t.text, fontSize: 13, fontWeight: 500, cursor: 'pointer', transition: 'all .12s' }}>
-              <RefreshCcw size={13} className={isLoading ? 'animate-spin' : ''} />
+              onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.08)'; }}
+              onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'; }}>
+              <RefreshCcw size={12} className={isLoading ? 'animate-spin' : ''} />
               <span className="hidden sm:inline">Refresh</span>
             </button>
           </div>
@@ -2564,9 +2621,9 @@ export default function App() {
                       <div className="hero-grid" style={{ position: 'relative' }}>
                         {/* Left: Portfolio Value + Stats */}
                         <div>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: t.textSecondary, textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 6 }}>Total Portfolio Value</div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 6 }}>Total Portfolio Value</div>
                           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap', marginBottom: 18 }}>
-                            <div className="value-hero" style={{ color: t.text }}>
+                            <div className="value-hero gradient-text-green">
                               ${summary.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingBottom: 6 }}>
@@ -4773,14 +4830,82 @@ export default function App() {
 
           return (
             <motion.div key="wallets" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
-              {/* Wallet selector tabs */}
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+
+              {/* ── Wallet Management Card ── */}
+              <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: wallets.length > 0 ? `1px solid ${t.borderLight}` : 'none' }}>
+                  <div>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: t.text }}>Connected Wallets</span>
+                    <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, color: '#00c076', background: 'rgba(0,192,118,.12)', padding: '1px 7px', borderRadius: 100, border: '1px solid rgba(0,192,118,.2)' }}>{wallets.length}</span>
+                  </div>
+                  <button
+                    onClick={() => setIsAddingWallet(true)}
+                    aria-label="Add wallet"
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', minHeight: 36,
+                      background: 'rgba(0,192,118,.1)', color: '#00c076', fontWeight: 700, fontSize: 12,
+                      border: '1px solid rgba(0,192,118,.2)', borderRadius: 8, cursor: 'pointer', transition: 'all .12s' }}
+                    onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,192,118,.18)'; }}
+                    onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,192,118,.1)'; }}>
+                    <Plus size={13} /> Add Wallet
+                  </button>
+                </div>
+                {wallets.length === 0 && (
+                  <div style={{ padding: '20px 16px', textAlign: 'center' }}>
+                    <div role="img" aria-label="Wallet icon" style={{ fontSize: 28, marginBottom: 8 }}>👛</div>
+                    <div style={{ fontSize: 13, color: t.textMuted }}>No wallets added yet.</div>
+                    <div style={{ fontSize: 12, color: t.textMuted, marginTop: 4 }}>Tap "Add Wallet" to get started.</div>
+                  </div>
+                )}
+                {wallets.map((w, idx) => (
+                  <div key={w.address}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px',
+                      borderBottom: idx < wallets.length - 1 ? `1px solid ${t.borderLight}` : 'none',
+                      background: selectedWalletAddr === w.address.toLowerCase() ? t.cardHigh : 'transparent',
+                      transition: 'background .12s' }}
+                  >
+                    <div onClick={() => setSelectedWalletAddr(w.address.toLowerCase())}
+                      style={{ flex: 1, cursor: 'pointer', minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: t.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.name}</div>
+                      <code style={{ fontSize: 11, color: t.textMuted }}>{w.address.slice(0, 6)}…{w.address.slice(-4)}</code>
+                    </div>
+                    <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
+                      <button
+                        onClick={() => { setEditingWalletAddress(w.address); setEditWalletName(w.name); }}
+                        title="Rename wallet"
+                        aria-label={`Rename ${w.name}`}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          minWidth: 36, minHeight: 36, padding: 6,
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          color: t.textMuted, borderRadius: 6, transition: 'color .12s' }}
+                        onMouseOver={e => (e.currentTarget.style.color = t.text)}
+                        onMouseOut={e => (e.currentTarget.style.color = t.textMuted)}>
+                        <Pencil size={13} />
+                      </button>
+                      <button
+                        onClick={() => removeWallet(w.address)}
+                        title="Remove wallet"
+                        aria-label={`Remove ${w.name}`}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          minWidth: 36, minHeight: 36, padding: 6,
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          color: t.textMuted, borderRadius: 6, transition: 'color .12s' }}
+                        onMouseOver={e => (e.currentTarget.style.color = '#ef4444')}
+                        onMouseOut={e => (e.currentTarget.style.color = t.textMuted)}>
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* ── View filter: wallet pills + chain filter ── */}
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                 <button
                   onClick={() => setSelectedWalletAddr('all')}
                   style={{ padding: '6px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: '1px solid', transition: 'all .12s',
                     background: isAll ? '#fff' : 'transparent',
                     color: isAll ? '#000' : '#aaa',
-                    borderColor: isAll ? '#fff' : '#333' }}>
+                    borderColor: isAll ? '#fff' : '#333', minHeight: 36 }}>
                   All Wallets
                 </button>
                 {wallets.map(w => {
@@ -4790,7 +4915,7 @@ export default function App() {
                       style={{ padding: '6px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: '1px solid', transition: 'all .12s',
                         background: isActive ? '#fff' : 'transparent',
                         color: isActive ? '#000' : '#aaa',
-                        borderColor: isActive ? '#fff' : '#333' }}>
+                        borderColor: isActive ? '#fff' : '#333', minHeight: 36 }}>
                       {w.name}
                     </button>
                   );
@@ -5434,7 +5559,10 @@ export default function App() {
 
       {/* ── MOBILE BOTTOM NAV ── */}
       <nav className="mobile-bottom-nav bottom-nav-blur md:hidden fixed bottom-0 left-0 right-0 z-50 flex"
-        style={{ background: theme === 'dark' ? 'rgba(8,8,8,0.92)' : 'rgba(255,255,255,0.92)', borderTop: `1px solid ${t.borderLight}` }}>
+        style={{
+          background: 'var(--bg-header)',
+          borderTop: '1px solid var(--border)',
+        }}>
         {([
           { id: 'overview', label: 'Overview', icon: LayoutDashboard },
           { id: 'assets',   label: 'Assets',   icon: WalletIcon },
@@ -5446,18 +5574,18 @@ export default function App() {
           <button key={id} onClick={() => setActiveTab(id)}
             className="flex-1 flex flex-col items-center justify-center"
             style={{
-              minHeight: 64,
+              minHeight: 56,
               padding: '6px 4px',
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: activeTab === id ? '#00c076' : t.textMuted,
-              transition: 'color .12s',
+              color: activeTab === id ? 'var(--accent)' : 'var(--fg-muted)',
+              transition: 'color .15s',
             }}>
             <div className={activeTab === id ? 'bottom-nav-dot' : ''}>
-              <Icon size={22} />
+              <Icon size={20} />
             </div>
-            <span style={{ fontSize: 10, fontWeight: activeTab === id ? 700 : 500, lineHeight: 1, marginTop: 2 }}>{label}</span>
+            <span style={{ fontSize: 10, fontWeight: activeTab === id ? 700 : 500, lineHeight: 1, marginTop: 3 }}>{label}</span>
           </button>
         ))}
       </nav>
@@ -5465,7 +5593,7 @@ export default function App() {
       {/* Add Wallet Modal */}
       <AnimatePresence>
         {isAddingWallet && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+          <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-6">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -5474,47 +5602,141 @@ export default function App() {
               className="absolute inset-0 bg-black/80 backdrop-blur-sm"
             />
             <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-md bg-[#121216] border border-white/10 rounded-[32px] p-8 shadow-2xl"
+              initial={{ opacity: 0, y: '100%' }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: '100%' }}
+              transition={{ type: 'spring', damping: 20, stiffness: 90 }}
+              style={{
+                position: 'relative', width: '100%', maxWidth: 480,
+                background: t.card, border: `1px solid ${t.border}`,
+                borderRadius: '20px 20px 0 0', padding: 28,
+              }}
+              className="sm:rounded-[20px]"
             >
-              <h2 className="text-2xl font-bold mb-6">Add New Wallet</h2>
+              {/* Drag handle (mobile) */}
+              <div className="sm:hidden" style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+                <div style={{ width: 36, height: 4, borderRadius: 2, background: t.border }} />
+              </div>
+              <h2 style={{ fontSize: 20, fontWeight: 800, color: t.text, marginBottom: 20 }}>Add New Wallet</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-white/40 uppercase mb-2 ml-1">Wallet Address</label>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 }}>
+                    Wallet Address
+                  </label>
                   <input 
                     type="text" 
                     placeholder="0x..."
+                    inputMode="text"
                     value={newWalletAddress}
                     onChange={(e) => setNewWalletAddress(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500/50 transition-all font-mono"
+                    style={{ width: '100%', background: t.cardHigh, border: `1px solid ${t.border}`,
+                      borderRadius: 10, color: t.text, fontSize: 14, padding: '11px 14px',
+                      outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace', transition: 'border-color .15s' }}
+                    onFocus={e => (e.currentTarget.style.borderColor = '#00c076')}
+                    onBlur={e => (e.currentTarget.style.borderColor = t.border)}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-white/40 uppercase mb-2 ml-1">Wallet Name (Optional)</label>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 }}>
+                    Wallet Name <span style={{ color: t.textMuted, fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
+                  </label>
                   <input 
                     type="text" 
                     placeholder="My Main Wallet"
                     value={newWalletName}
                     onChange={(e) => setNewWalletName(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500/50 transition-all"
+                    onKeyDown={e => { if (e.key === 'Enter') addWallet(); }}
+                    style={{ width: '100%', background: t.cardHigh, border: `1px solid ${t.border}`,
+                      borderRadius: 10, color: t.text, fontSize: 14, padding: '11px 14px',
+                      outline: 'none', boxSizing: 'border-box', transition: 'border-color .15s' }}
+                    onFocus={e => (e.currentTarget.style.borderColor = '#00c076')}
+                    onBlur={e => (e.currentTarget.style.borderColor = t.border)}
                   />
                 </div>
-                <div className="pt-4 flex gap-3">
+                <div style={{ paddingTop: 8, display: 'flex', gap: 10 }}>
                   <button 
                     onClick={() => setIsAddingWallet(false)}
-                    className="flex-1 py-3 rounded-2xl bg-white/5 hover:bg-white/10 font-bold text-sm transition-all"
+                    style={{ flex: 1, minHeight: 44, borderRadius: 10, background: t.cardHigh,
+                      border: `1px solid ${t.border}`, color: t.text, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
                   >
                     Cancel
                   </button>
                   <button 
                     onClick={addWallet}
-                    className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 font-bold text-sm hover:opacity-90 transition-all"
+                    style={{ flex: 1, minHeight: 44, borderRadius: 10, background: '#00c076',
+                      border: 'none', color: '#000', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
                   >
                     Add Wallet
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Wallet Modal */}
+      <AnimatePresence>
+        {editingWalletAddress && (
+          <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setEditingWalletAddress(null)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: '100%' }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: '100%' }}
+              transition={{ type: 'spring', damping: 20, stiffness: 90 }}
+              style={{
+                position: 'relative', width: '100%', maxWidth: 480,
+                background: t.card, border: `1px solid ${t.border}`,
+                borderRadius: '20px 20px 0 0', padding: 24,
+              }}
+              className="sm:rounded-[20px]"
+            >
+              {/* Drag handle (mobile) */}
+              <div className="sm:hidden" style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+                <div style={{ width: 36, height: 4, borderRadius: 2, background: t.border }} />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                <Pencil size={18} style={{ color: '#00c076' }} />
+                <span style={{ fontSize: 16, fontWeight: 700, color: t.text }}>Rename Wallet</span>
+              </div>
+              <div style={{ fontSize: 12, color: t.textMuted, fontFamily: 'monospace', marginBottom: 16, padding: '6px 10px', background: t.cardHigh, borderRadius: 6 }}>
+                {editingWalletAddress}
+              </div>
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 }}>
+                  Wallet Name
+                </label>
+                <input
+                  type="text"
+                  value={editWalletName}
+                  onChange={e => setEditWalletName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') renameWallet(editingWalletAddress, editWalletName); }}
+                  autoFocus
+                  style={{ width: '100%', background: t.cardHigh, border: `1px solid ${t.border}`,
+                    borderRadius: 10, color: t.text, fontSize: 14, padding: '11px 14px',
+                    outline: 'none', boxSizing: 'border-box', transition: 'border-color .15s' }}
+                  onFocus={e => (e.currentTarget.style.borderColor = '#00c076')}
+                  onBlur={e => (e.currentTarget.style.borderColor = t.border)}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={() => setEditingWalletAddress(null)}
+                  style={{ flex: 1, padding: '11px 0', borderRadius: 10, background: t.cardHigh,
+                    border: `1px solid ${t.border}`, color: t.text, fontWeight: 600, fontSize: 13, cursor: 'pointer', minHeight: 44 }}>
+                  Cancel
+                </button>
+                <button onClick={() => renameWallet(editingWalletAddress, editWalletName)}
+                  style={{ flex: 1, padding: '11px 0', borderRadius: 10, background: '#00c076',
+                    border: 'none', color: '#000', fontWeight: 700, fontSize: 13, cursor: 'pointer', minHeight: 44 }}>
+                  Save
+                </button>
               </div>
             </motion.div>
           </div>
