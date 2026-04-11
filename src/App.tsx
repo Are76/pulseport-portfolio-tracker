@@ -2440,7 +2440,7 @@ export default function App() {
                   { sym: 'INC',  price: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd || prices['incentive']?.usd || 0, change: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd_24h_change ?? prices['incentive']?.usd_24h_change },
                   { sym: 'eHEX', price: prices['hex']?.usd || 0, change: prices['hex']?.usd_24h_change },
                   { sym: 'ETH',  price: prices['ethereum']?.usd || 0, change: prices['ethereum']?.usd_24h_change },
-                ].flatMap(c => [c, { ...c }]).map((coin, i) => (
+                ].flatMap(c => [c, { ...c }]).map((coin, i) => (  // duplicate for seamless CSS animation loop
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
                     <span style={{ fontSize: 12, fontWeight: 700, color: t.textSecondary }}>{coin.sym}</span>
                     <span style={{ fontSize: 12, fontFamily: 'monospace', color: t.text }}>{fmtPrice(coin.price)}</span>
@@ -5446,8 +5446,8 @@ export default function App() {
           <button key={id} onClick={() => setActiveTab(id)}
             className="flex-1 flex flex-col items-center justify-center"
             style={{
-              minHeight: 60,
-              padding: '8px 4px',
+              minHeight: 64,
+              padding: '6px 4px',
               background: 'none',
               border: 'none',
               cursor: 'pointer',
