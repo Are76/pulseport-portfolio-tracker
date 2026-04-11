@@ -4165,16 +4165,16 @@ export default function App() {
             </div>
 
             {/* Recent Activity */}
-            <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 14, overflow: 'hidden' }}>
-              <div style={{ padding: '14px 18px', borderBottom: isCollapsed('history-txs') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+            <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, overflow: 'hidden' }} className="md-elevation-1">
+              <div style={{ padding: '14px 18px', borderBottom: isCollapsed('history-txs') ? 'none' : `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>Recent Activity</span>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: t.text }}>Recent Activity</span>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, background: 'rgba(0,192,118,.1)', color: '#00c076', border: '1px solid rgba(0,192,118,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
                     <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#00c076', display: 'inline-block', animation: 'pulse 2s infinite' }} />
                     Live
                   </span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   {!isCollapsed('history-txs') && (<>
                     {[
                       { value: txTypeFilter, onChange: setTxTypeFilter, options: [['all','All Types'],['transfer_in','Received'],['transfer_out','Sent'],['swap','Swaps']] as [string,string][] },
@@ -4184,15 +4184,15 @@ export default function App() {
                       { value: txCoinCategory, onChange: setTxCoinCategory, options: [['all','All Coins'],['stablecoins','Stablecoins'],['eth_weth','ETH/WETH'],['hex','HEX/eHEX'],['pls_wpls','PLS/WPLS'],['bridged','Bridged']] as [string,string][] },
                     ].map(({ value, onChange, options }, i) => (
                       <select key={i} value={value} onChange={e => onChange(e.target.value)}
-                        style={{ background: '#111', border: '1px solid #252525', borderRadius: 6, color: '#fff', fontSize: 13, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
+                        style={{ background: t.cardHigh, border: `1px solid ${t.border}`, borderRadius: 6, color: t.text, fontSize: 13, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
                         {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                       </select>
                     ))}
                   </>)}
                   <button onClick={() => toggleSection('history-txs')}
-                    style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
-                    onMouseOver={e => (e.currentTarget.style.color = '#fff')}
-                    onMouseOut={e => (e.currentTarget.style.color = '#555')}
+                    style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: t.textTertiary, transition: 'color .12s' }}
+                    onMouseOver={e => (e.currentTarget.style.color = t.text)}
+                    onMouseOut={e => (e.currentTarget.style.color = t.textMuted)}
                     title={isCollapsed('history-txs') ? 'Expand' : 'Collapse'}>
                     {isCollapsed('history-txs') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
                   </button>
@@ -4200,11 +4200,11 @@ export default function App() {
               </div>
               {!isCollapsed('history-txs') && (<>
               {hiddenTxIds.length > 0 && (
-                <div style={{ padding: '6px 18px', borderBottom: '1px solid #1e1e1e', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 13, color: '#999' }}>{hiddenTxIds.length} hidden transaction{hiddenTxIds.length > 1 ? 's' : ''}</span>
+                <div style={{ padding: '6px 18px', borderBottom: `1px solid ${t.borderLight}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 13, color: t.textTertiary }}>{hiddenTxIds.length} hidden transaction{hiddenTxIds.length > 1 ? 's' : ''}</span>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button onClick={() => setShowHiddenTxs(v => !v)}
-                      style={{ fontSize: 13, color: '#aaa', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+                      style={{ fontSize: 13, color: t.textSecondary, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
                       {showHiddenTxs ? 'Hide' : 'Show'}
                     </button>
                     <button onClick={() => setHiddenTxIds([])}
@@ -4214,54 +4214,105 @@ export default function App() {
                   </div>
                 </div>
               )}
-              <div style={{ maxHeight: 480, overflowY: 'auto' }} className="custom-scrollbar">
+              <div style={{ maxHeight: 600, overflowY: 'auto' }} className="custom-scrollbar">
                 {filteredTransactions.filter(tx => showHiddenTxs || !hiddenTxIds.includes(tx.id)).length === 0 ? (
-                  <div style={{ padding: '40px 20px', textAlign: 'center', color: '#aaa', fontSize: 13 }}>No transactions match your filters.</div>
+                  <div style={{ padding: '40px 20px', textAlign: 'center', color: t.textSecondary, fontSize: 13 }}>No transactions match your filters.</div>
                 ) : filteredTransactions.filter(tx => showHiddenTxs || !hiddenTxIds.includes(tx.id)).map((tx) => {
                   const isHidden = hiddenTxIds.includes(tx.id);
+                  const isTxExpanded = expandedTxIds.has(tx.id);
+                  // Find coin PNL data for expanded dropdown
+                  const coinAsset = currentAssets.find(a => a.symbol.toUpperCase() === tx.asset.toUpperCase() && a.chain === tx.chain);
+                  const coinLogo = coinAsset ? getTokenLogoUrl(coinAsset) : '';
                   return (
-                    <div key={tx.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', borderBottom: '1px solid #1e1e1e', transition: 'background .1s', opacity: isHidden ? 0.35 : 1 }}
-                      onMouseOver={e => (e.currentTarget.style.background = '#111')}
-                      onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          background: tx.type === 'transfer_in' ? 'rgba(0,192,118,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
-                          color: tx.type === 'transfer_in' ? '#00c076' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444', flexShrink: 0 }}>
-                          {tx.type === 'transfer_in' ? <ArrowDownLeft size={15} /> : tx.type === 'swap' ? <RefreshCcw size={15} /> : <ArrowUpRight size={15} />}
+                    <div key={tx.id} style={{ borderBottom: `1px solid ${t.borderLight}`, opacity: isHidden ? 0.35 : 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', transition: 'background .1s', cursor: 'pointer' }}
+                        onClick={() => setExpandedTxIds(prev => { const s = new Set(prev); s.has(tx.id) ? s.delete(tx.id) : s.add(tx.id); return s; })}
+                        onMouseOver={e => (e.currentTarget.style.background = t.hoverBg)}
+                        onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{ width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: tx.type === 'transfer_in' ? 'rgba(0,192,118,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
+                            color: tx.type === 'transfer_in' ? '#00c076' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444', flexShrink: 0 }}>
+                            {tx.type === 'transfer_in' ? <ArrowDownLeft size={15} /> : tx.type === 'swap' ? <RefreshCcw size={15} /> : <ArrowUpRight size={15} />}
+                          </div>
+                          {/* Coin icon for filter */}
+                          {coinLogo && (
+                            <button onClick={e => { e.stopPropagation(); setTxAssetFilter(tx.asset); }}
+                              title={`Filter by ${tx.asset}`}
+                              style={{ width: 24, height: 24, borderRadius: '50%', overflow: 'hidden', border: `1px solid ${t.border}`, background: t.cardHighest, flexShrink: 0, cursor: 'pointer', padding: 0 }}>
+                              <img src={coinLogo} alt={tx.asset} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                                onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                            </button>
+                          )}
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                              <span style={{ fontSize: 13, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
+                                background: tx.type === 'transfer_in' ? 'rgba(0,192,118,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
+                                color: tx.type === 'transfer_in' ? '#00c076' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444' }}>
+                                {tx.type === 'transfer_in' ? 'Received' : tx.type === 'transfer_out' ? 'Sent' : 'Swap'}
+                              </span>
+                              <span style={{ fontSize: 13, padding: '1px 6px', borderRadius: 3, fontWeight: 600, background: t.cardHighest, color: t.textSecondary }}>{tx.chain}</span>
+                              <span style={{ fontSize: 13, fontWeight: 600, color: t.text }}>
+                                {tx.type === 'swap' && tx.counterAsset ? `${tx.counterAmount?.toLocaleString()} ${tx.counterAsset} → ${tx.amount.toLocaleString()} ${tx.asset}` : `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: 13, color: t.textSecondary, fontFamily: 'monospace' }}>
+                              {tx.hash.slice(0, 6)}…{tx.hash.slice(-4)} · {format(tx.timestamp, 'MMM d, yyyy HH:mm')}
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                            <span style={{ fontSize: 13, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
-                              background: tx.type === 'transfer_in' ? 'rgba(0,192,118,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
-                              color: tx.type === 'transfer_in' ? '#00c076' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444' }}>
-                              {tx.type === 'transfer_in' ? 'Received' : tx.type === 'transfer_out' ? 'Sent' : 'Swap'}
-                            </span>
-                            <span style={{ fontSize: 13, padding: '1px 6px', borderRadius: 3, fontWeight: 600, background: '#1a1a1a', color: '#aaa' }}>{tx.chain}</span>
-                            <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>
-                              {tx.type === 'swap' && tx.counterAsset ? `${tx.counterAmount?.toLocaleString()} ${tx.counterAsset} → ${tx.amount.toLocaleString()} ${tx.asset}` : `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`}
-                            </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: tx.type === 'transfer_in' ? '#00c076' : t.text }}>
+                              {tx.type === 'transfer_in' ? '+' : '-'}{tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {tx.asset}
+                            </div>
+                            {tx.valueUsd && <div style={{ fontSize: 13, color: t.textSecondary }}>${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>}
                           </div>
-                          <div style={{ fontSize: 13, color: '#aaa', fontFamily: 'monospace' }}>
-                            {tx.hash.slice(0, 6)}…{tx.hash.slice(-4)} · {format(tx.timestamp, 'MMM d, yyyy HH:mm')}
-                          </div>
+                          <button
+                            title={isHidden ? 'Unhide' : 'Hide'}
+                            onClick={e => { e.stopPropagation(); setHiddenTxIds(prev => isHidden ? prev.filter(id => id !== tx.id) : [...prev, tx.id]); }}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: isHidden ? '#00c076' : t.textTertiary, padding: 4, flexShrink: 0 }}>
+                            {isHidden ? <Eye size={14} /> : <EyeOff size={14} />}
+                          </button>
+                          <span style={{ color: isTxExpanded ? '#00c076' : t.textMuted, transition: 'color .12s' }}>
+                            {isTxExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                          </span>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: tx.type === 'transfer_in' ? '#00c076' : '#fff' }}>
-                            {tx.type === 'transfer_in' ? '+' : '-'}{tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {tx.asset}
+                      {/* Expanded detail dropdown — matches HEX stake detail style */}
+                      {isTxExpanded && (
+                        <div style={{ padding: '0 18px 14px', background: t.expandedBg }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, paddingTop: 10, borderTop: `1px solid ${t.borderLight}` }}>
+                            {[
+                              { label: 'Amount', val: `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${tx.asset}`, sub: 'Token amount' },
+                              { label: 'Value USD', val: tx.valueUsd ? `$${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—', sub: 'At time of tx' },
+                              { label: 'Current Price', val: coinAsset?.price ? `$${coinAsset.price < 0.001 ? coinAsset.price.toFixed(8) : coinAsset.price.toLocaleString(undefined, { maximumFractionDigits: 4 })}` : '—', sub: coinAsset ? `${tx.asset} price now` : 'Unknown token' },
+                              { label: 'Current Value', val: coinAsset ? `$${(tx.amount * coinAsset.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—', sub: 'If held to now', color: coinAsset && tx.valueUsd ? ((tx.amount * coinAsset.price) >= tx.valueUsd ? '#00c076' : '#ef4444') : undefined },
+                              ...(tx.valueUsd && coinAsset ? [{
+                                label: 'PNL',
+                                val: `${(tx.amount * coinAsset.price - tx.valueUsd) >= 0 ? '+' : ''}$${Math.abs(tx.amount * coinAsset.price - tx.valueUsd).toLocaleString(undefined, { maximumFractionDigits: 2 })}`,
+                                sub: `${(((tx.amount * coinAsset.price) / tx.valueUsd - 1) * 100).toFixed(1)}% change`,
+                                color: (tx.amount * coinAsset.price - tx.valueUsd) >= 0 ? '#00c076' : '#ef4444'
+                              }] : []),
+                              { label: 'Chain', val: tx.chain === 'pulsechain' ? 'PulseChain' : tx.chain === 'ethereum' ? 'Ethereum' : 'Base', sub: tx.type === 'transfer_in' ? `From ${tx.from.slice(0,6)}…${tx.from.slice(-4)}` : tx.type === 'transfer_out' ? `To ${tx.to.slice(0,6)}…${tx.to.slice(-4)}` : 'Swap' },
+                              { label: 'Date', val: format(tx.timestamp, 'MMM d, yyyy'), sub: format(tx.timestamp, 'HH:mm:ss') },
+                            ].map(({ label, val, sub, color }) => (
+                              <div key={label} style={{ background: t.cardHigh, borderRadius: 8, padding: '10px 12px' }}>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>{label}</div>
+                                <div style={{ fontSize: 14, fontWeight: 700, color: color || t.text }}>{val}</div>
+                                <div style={{ fontSize: 12, color: t.textTertiary, marginTop: 1 }}>{sub}</div>
+                              </div>
+                            ))}
                           </div>
-                          {tx.valueUsd && <div style={{ fontSize: 13, color: '#aaa' }}>${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>}
+                          <div style={{ marginTop: 8 }}>
+                            <a href={`${tx.chain === 'pulsechain' ? 'https://scan.pulsechain.com' : tx.chain === 'ethereum' ? 'https://etherscan.io' : 'https://basescan.org'}/tx/${tx.hash}`}
+                              target="_blank" rel="noopener noreferrer"
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#00c076', textDecoration: 'none' }}>
+                              <ExternalLink size={11} /> View on Explorer
+                            </a>
+                          </div>
                         </div>
-                        <button
-                          title={isHidden ? 'Unhide' : 'Hide'}
-                          onClick={() => setHiddenTxIds(prev => isHidden ? prev.filter(id => id !== tx.id) : [...prev, tx.id])}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: isHidden ? '#00c076' : '#666', padding: 4, flexShrink: 0 }}
-                          onMouseOver={e => (e.currentTarget.style.color = isHidden ? '#00c076' : '#888')}
-                          onMouseOut={e => (e.currentTarget.style.color = isHidden ? '#00c076' : '#666')}>
-                          {isHidden ? <Eye size={14} /> : <EyeOff size={14} />}
-                        </button>
-                      </div>
+                      )}
                     </div>
                   );
                 })}
@@ -4480,57 +4531,84 @@ export default function App() {
               })()}
             </div>
 
-            {/* PLS Movement table */}
+            {/* PLS Movement table — expandable card rows like HEX stakes */}
             {plsSwapData.rows.length > 0 && (
-              <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, overflow: 'hidden' }}>
-                <div style={{ padding: '14px 18px', borderBottom: isCollapsed('tracker-pls') ? 'none' : '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>PLS Movement</div>
-                  <button onClick={() => toggleSection('tracker-pls')} style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888' }}
-                    onMouseOver={e => (e.currentTarget.style.color = '#fff')} onMouseOut={e => (e.currentTarget.style.color = '#555')}>
+              <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, overflow: 'hidden' }} className="md-elevation-1">
+                <div style={{ padding: '14px 18px', borderBottom: isCollapsed('tracker-pls') ? 'none' : `1px solid ${t.borderLight}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: t.text }}>PLS Movement</div>
+                  <button onClick={() => toggleSection('tracker-pls')} style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: t.textTertiary }}
+                    onMouseOver={e => (e.currentTarget.style.color = t.text)} onMouseOut={e => (e.currentTarget.style.color = t.textMuted)}>
                     {isCollapsed('tracker-pls') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
                   </button>
                 </div>
                 {!isCollapsed('tracker-pls') && (
-                  <div style={{ maxHeight: 420, overflowY: 'auto' }} className="custom-scrollbar">
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid #242424' }}>
-                          {['Date', 'Type', 'PLS Received', 'PLS Spent', 'Net', 'Net USD'].map((h, i) => (
-                            <th key={h} style={{ padding: '9px 14px', fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '.6px', textAlign: i === 0 ? 'left' : 'right', whiteSpace: 'nowrap', background: '#0d0d0d' }}>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {plsSwapData.rows.map(({ tx, plsReceived, plsSpent, netPls }, i) => {
-                          const netUsdRow = netPls * (plsSwapData.plsPrice || 0);
-                          return (
-                            <tr key={tx.id + i} style={{ borderBottom: '1px solid #111', transition: 'background .1s' }}
-                              onMouseOver={e => (e.currentTarget.style.background = '#111')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
-                              <td style={{ padding: '9px 14px', fontSize: 13, color: '#aaa' }}>{format(tx.timestamp, 'MMM d, yyyy')}</td>
-                              <td style={{ padding: '9px 14px', textAlign: 'right' }}>
-                                <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 4, fontWeight: 600,
-                                  background: tx.type === 'transfer_in' ? 'rgba(0,192,118,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
-                                  color: tx.type === 'transfer_in' ? '#00c076' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444' }}>
-                                  {tx.type === 'swap' ? 'Swap' : tx.type === 'transfer_in' ? 'In' : 'Out'}
-                                </span>
-                              </td>
-                              <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, color: '#00c076', fontWeight: 600 }}>
-                                {plsReceived > 0 ? `+${plsReceived >= 1e6 ? (plsReceived/1e6).toFixed(2)+'M' : plsReceived.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—'}
-                              </td>
-                              <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, color: '#ef4444', fontWeight: 600 }}>
-                                {plsSpent > 0 ? `-${plsSpent >= 1e6 ? (plsSpent/1e6).toFixed(2)+'M' : plsSpent.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—'}
-                              </td>
-                              <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: netPls >= 0 ? '#00c076' : '#ef4444' }}>
-                                {netPls >= 0 ? '+' : ''}{Math.abs(netPls) >= 1e6 ? (netPls/1e6).toFixed(2)+'M' : netPls.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                              </td>
-                              <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, color: '#aaa' }}>
-                                {netUsdRow !== 0 ? `${netUsdRow >= 0 ? '+' : ''}$${Math.abs(netUsdRow).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                  <div style={{ maxHeight: 500, overflowY: 'auto' }} className="custom-scrollbar">
+                    {plsSwapData.rows.map(({ tx, plsReceived, plsSpent, netPls }, i) => {
+                      const netUsdRow = netPls * (plsSwapData.plsPrice || 0);
+                      const isRowExpanded = trackerExpandedIds.has(tx.id + i);
+                      return (
+                        <div key={tx.id + i} style={{ borderBottom: `1px solid ${t.borderLight}` }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', cursor: 'pointer', transition: 'background .1s' }}
+                            onClick={() => setTrackerExpandedIds(prev => { const s = new Set(prev); s.has(tx.id + i) ? s.delete(tx.id + i) : s.add(tx.id + i); return s; })}
+                            onMouseOver={e => (e.currentTarget.style.background = t.hoverBg)}
+                            onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                              <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                background: tx.type === 'transfer_in' ? 'rgba(0,192,118,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
+                                color: tx.type === 'transfer_in' ? '#00c076' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444', flexShrink: 0 }}>
+                                {tx.type === 'transfer_in' ? <ArrowDownLeft size={13} /> : tx.type === 'swap' ? <RefreshCcw size={13} /> : <ArrowUpRight size={13} />}
+                              </div>
+                              <div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 1 }}>
+                                  <span style={{ fontSize: 12, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
+                                    background: tx.type === 'transfer_in' ? 'rgba(0,192,118,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
+                                    color: tx.type === 'transfer_in' ? '#00c076' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444' }}>
+                                    {tx.type === 'swap' ? 'Swap' : tx.type === 'transfer_in' ? 'In' : 'Out'}
+                                  </span>
+                                  <span style={{ fontSize: 13, color: t.textSecondary }}>{format(tx.timestamp, 'MMM d, yyyy')}</span>
+                                </div>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: netPls >= 0 ? '#00c076' : '#ef4444' }}>
+                                  {netPls >= 0 ? '+' : ''}{Math.abs(netPls) >= 1e6 ? (netPls/1e6).toFixed(2)+'M' : netPls.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS
+                                  <span style={{ fontSize: 12, color: t.textTertiary, fontWeight: 500, marginLeft: 6 }}>
+                                    {netUsdRow !== 0 ? `≈ ${netUsdRow >= 0 ? '+' : ''}$${Math.abs(netUsdRow).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ''}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <span style={{ color: isRowExpanded ? '#00c076' : t.textMuted, transition: 'color .12s' }}>
+                              {isRowExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                            </span>
+                          </div>
+                          {isRowExpanded && (
+                            <div style={{ padding: '0 18px 14px', background: t.expandedBg }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, paddingTop: 10, borderTop: `1px solid ${t.borderLight}` }}>
+                                {[
+                                  { label: 'PLS Received', val: plsReceived > 0 ? `+${plsReceived >= 1e6 ? (plsReceived/1e6).toFixed(2)+'M' : plsReceived.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—', sub: 'Inflow', color: '#00c076' },
+                                  { label: 'PLS Spent', val: plsSpent > 0 ? `-${plsSpent >= 1e6 ? (plsSpent/1e6).toFixed(2)+'M' : plsSpent.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—', sub: 'Outflow', color: '#ef4444' },
+                                  { label: 'Net PLS', val: `${netPls >= 0 ? '+' : ''}${Math.abs(netPls) >= 1e6 ? (netPls/1e6).toFixed(2)+'M' : netPls.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Balance change', color: netPls >= 0 ? '#00c076' : '#ef4444' },
+                                  { label: 'Net USD', val: netUsdRow !== 0 ? `${netUsdRow >= 0 ? '+' : ''}$${Math.abs(netUsdRow).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—', sub: `@ $${(plsSwapData.plsPrice || 0).toFixed(6)}/PLS`, color: t.textSecondary },
+                                  { label: 'Type', val: tx.type === 'swap' ? 'Swap' : tx.type === 'transfer_in' ? 'Transfer In' : 'Transfer Out', sub: tx.type === 'swap' ? `${tx.counterAsset || ''} ↔ ${tx.asset}` : tx.type === 'transfer_in' ? `From ${tx.from.slice(0,6)}…${tx.from.slice(-4)}` : `To ${tx.to.slice(0,6)}…${tx.to.slice(-4)}` },
+                                  { label: 'Date', val: format(tx.timestamp, 'MMM d, yyyy'), sub: format(tx.timestamp, 'HH:mm:ss') },
+                                ].map(({ label, val, sub, color }) => (
+                                  <div key={label} style={{ background: t.cardHigh, borderRadius: 8, padding: '10px 12px' }}>
+                                    <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>{label}</div>
+                                    <div style={{ fontSize: 14, fontWeight: 700, color: color || t.text }}>{val}</div>
+                                    <div style={{ fontSize: 12, color: t.textTertiary, marginTop: 1 }}>{sub}</div>
+                                  </div>
+                                ))}
+                              </div>
+                              <div style={{ marginTop: 8 }}>
+                                <a href={`${tx.chain === 'pulsechain' ? 'https://scan.pulsechain.com' : tx.chain === 'ethereum' ? 'https://etherscan.io' : 'https://basescan.org'}/tx/${tx.hash}`}
+                                  target="_blank" rel="noopener noreferrer"
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#00c076', textDecoration: 'none' }}>
+                                  <ExternalLink size={11} /> View on Explorer
+                                </a>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
