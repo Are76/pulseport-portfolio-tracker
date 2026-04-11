@@ -295,7 +295,7 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
 
 export default function App() {
   // ── Formatting helpers (defined once here, used throughout) ────────────────
-  const fmtBigNum = (n: number) => Math.round(n).toLocaleString('nb-NO', { maximumFractionDigits: 0 }).replace(/,/g, ' ');
+  const fmtBigNum = (n: number) => Math.round(n).toLocaleString('en-US').replace(/,/g, ' ');
   const fmtDec = (n: number, dp = 2) => n.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp });
   const fmtTok = (n: number) => n > 1e6 ? `${(n/1e6).toFixed(2)}M` : n > 1000 ? `${(n/1000).toFixed(2)}K` : n.toLocaleString(undefined, { maximumFractionDigits: 4 });
 
@@ -3329,7 +3329,7 @@ export default function App() {
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2 }}>
                                     <button
                                       onClick={e => { e.stopPropagation(); setPnlAsset(pnlAsset?.id === asset.id ? null : asset); }}
-                                      title="View profit & loss"
+                                      title="View P&L"
                                       style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', transition: 'color .12s',
                                         color: pnlAsset?.id === asset.id ? '#a78bfa' : '#555' }}
                                       onMouseOver={e => (e.currentTarget.style.color = '#a78bfa')}
@@ -3458,7 +3458,7 @@ export default function App() {
                                           </div>
                                         </div>
                                       </div>
-                                      {/* PLS-denominated PnL */}
+                                      {/* PLS-denominated P&L */}
                                       <div style={{ background: t.cardHigh, borderRadius: 8, padding: '12px 14px' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                                           <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.7px' }}>PLS P&L</div>
@@ -3483,7 +3483,7 @@ export default function App() {
                                               <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{currentPlsValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</span>
                                             </div>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 4, borderTop: '1px solid var(--border)', marginTop: 2 }}>
-                                              <span style={{ fontSize: 12, color: 'var(--fg-subtle)', fontWeight: 700 }}>Net PnL</span>
+                                              <span style={{ fontSize: 12, color: 'var(--fg-subtle)', fontWeight: 700 }}>Net P&L</span>
                                               <span style={{ fontSize: 14, fontWeight: 800, color: pnlPls >= 0 ? t.green : t.red }}>
                                                 {pnlPls >= 0 ? '+' : ''}{pnlPls.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS
                                               </span>
@@ -3634,8 +3634,8 @@ export default function App() {
                               : <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#2a1a3a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#a78bfa' }}>{pnlAsset.symbol[0]}</div>;
                           })()}
                           <div>
-                            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)' }}>{assetName} Profit &amp; Loss</div>
-                            <div style={{ fontSize: 13, color: 'var(--fg-subtle)', marginTop: 1 }}>{swapCount} swap{swapCount !== 1 ? 's' : ''} analysed · approximate (current prices)</div>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)' }}>{assetName} P&amp;L</div>
+                            <div style={{ fontSize: 13, color: 'var(--fg-subtle)', marginTop: 1 }}>{swapCount} swap{swapCount !== 1 ? 's' : ''} analyzed · approximate (current prices)</div>
                           </div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -4228,7 +4228,7 @@ export default function App() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }} className="max-sm:grid-cols-2">
               {[
                 { label: 'Total Invested', val: `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'All-time capital invested', color: 'var(--fg)' },
-                { label: 'Total P&L', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'All-time profit & loss', color: summary.unifiedPnl >= 0 ? t.green : t.red },
+                { label: 'Total P&L', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'All-time P&L', color: summary.unifiedPnl >= 0 ? t.green : t.red },
                 { label: 'Realized P&L', val: `${summary.realizedPnl >= 0 ? '+' : ''}$${Math.abs(summary.realizedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Closed trade profit', color: summary.realizedPnl >= 0 ? t.green : t.red },
                 { label: 'Unrealized P&L', val: `${summary.pnl24h >= 0 ? '+' : ''}$${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: "Today's portfolio change", color: summary.pnl24h >= 0 ? t.green : t.red },
               ].map(({ label, val, sub, color }) => (
@@ -4506,7 +4506,7 @@ export default function App() {
                               <span style={{ fontSize: 12, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
                                 background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
                                 color: tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444' }}>
-                                {tx.type === 'swap' ? 'Swap' : tx.type === 'transfer_in' ? 'In' : 'Out'}
+                                {tx.type === 'swap' ? 'Swap' : tx.type === 'transfer_in' ? 'Received' : 'Sent'}
                               </span>
                               <span style={{ width: 6, height: 6, borderRadius: '50%', background: chainDotColor[tx.chain] || t.textMuted, flexShrink: 0, display: 'inline-block' }} title={tx.chain} />
                               <span style={{ fontSize: 13, color: t.textSecondary }}>{format(tx.timestamp, 'MMM d, yyyy')}</span>
@@ -4708,7 +4708,7 @@ export default function App() {
                                   <span style={{ fontSize: 12, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
                                     background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
                                     color: tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444' }}>
-                                    {tx.type === 'swap' ? 'Swap' : tx.type === 'transfer_in' ? 'In' : 'Out'}
+                                    {tx.type === 'swap' ? 'Swap' : tx.type === 'transfer_in' ? 'Received' : 'Sent'}
                                   </span>
                                   <span style={{ fontSize: 13, color: t.textSecondary }}>{format(tx.timestamp, 'MMM d, yyyy')}</span>
                                 </div>
@@ -4999,7 +4999,7 @@ export default function App() {
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2 }}>
                                   <button
                                     onClick={e => { e.stopPropagation(); setPnlAsset(pnlAsset?.id === asset.id ? null : asset); }}
-                                    title="View profit & loss"
+                                    title="View P&L"
                                     style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', transition: 'color .12s',
                                       color: pnlAsset?.id === asset.id ? '#a78bfa' : '#555' }}
                                     onMouseOver={e => (e.currentTarget.style.color = '#a78bfa')}
@@ -5153,7 +5153,7 @@ export default function App() {
                                                  {showTxs.map((tx, ti) => {
                                                    const isBuyTx = tx.type === 'transfer_in' || (tx.type === 'swap' && tx.counterAsset !== asset.symbol);
                                                    const typeColor = tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'transfer_out' ? 'var(--fg-muted)' : isBuyTx ? '#00FF9F' : '#f43f5e';
-                                                   const typeLabel = tx.type === 'transfer_in' ? '↓ In' : tx.type === 'transfer_out' ? '↑ Out' : isBuyTx ? '↓ Buy' : '↑ Sell';
+                                                   const typeLabel = tx.type === 'transfer_in' ? '↓ Received' : tx.type === 'transfer_out' ? '↑ Sent' : isBuyTx ? '↓ Buy' : '↑ Sell';
                                                    return (
                                                      <tr key={ti} style={{ borderBottom: '1px solid var(--border)' }}
                                                        onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
@@ -5248,7 +5248,7 @@ export default function App() {
                         {logo2 ? <img src={logo2} alt={pnlAsset.symbol} style={{ width: 28, height: 28, borderRadius: '50%' }}
                             onError={e => { const el = e.target as HTMLImageElement; el.style.display='none'; const fb = document.createElement('div'); Object.assign(fb.style, { width: '28px', height: '28px', borderRadius: '50%', background: '#2a1a3a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '800', color: '#a78bfa' }); fb.textContent = pnlAsset.symbol[0]; el.parentNode?.insertBefore(fb, el.nextSibling); }} /> : <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#2a1a3a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#a78bfa' }}>{pnlAsset.symbol[0]}</div>}
                         <div>
-                          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)' }}>{assetName} Profit &amp; Loss</div>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)' }}>{assetName} P&amp;L</div>
                           <div style={{ fontSize: 13, color: 'var(--fg-subtle)', marginTop: 1 }}>{swapCount} swap{swapCount !== 1 ? 's' : ''} · approximate (current prices)</div>
                         </div>
                       </div>
