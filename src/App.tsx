@@ -188,7 +188,7 @@ function StakingLadder({ stakes }: { stakes: HexStake[] }) {
   };
 
   return (
-    <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, padding: '18px 18px 10px' }}>
+    <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 18px 10px' }}>
       <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.6px' }}>Staking Ladder</div>
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 24 }}>
@@ -256,7 +256,7 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
   };
 
   return (
-    <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, padding: '18px 18px 10px' }}>
+    <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 18px 10px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.6px' }}>Stake Distribution</div>
         <div style={{ fontSize: 13, color: '#888' }}>
@@ -2348,7 +2348,7 @@ export default function App() {
             { id: 'assets',   label: 'Assets',   icon: WalletIcon },
             { id: 'stakes',   label: 'Stakes',   icon: Layers },
             { id: 'history',  label: 'History',  icon: History },
-            { id: 'tracker',  label: 'Tracker',  icon: TrendingUp },
+            { id: 'tracker',  label: 'PLS Flow', icon: TrendingUp },
             { id: 'wallets',  label: 'Wallets',  icon: User },
           ] as const).map(({ id, label, icon: Icon }) => (
             <button key={id} onClick={() => setActiveTab(id)}
@@ -2580,7 +2580,7 @@ export default function App() {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, marginBottom: 36, flexWrap: 'wrap' }}>
                       {[
                         { step: '1', label: 'Add wallet address', icon: '🔑' },
-                        { step: '2', label: 'Fetch portfolio data', icon: '⚡' },
+                        { step: '2', label: 'Sync your balances', icon: '⚡' },
                         { step: '3', label: 'View your portfolio', icon: '📊' },
                       ].map(({ step, label, icon }) => (
                         <div key={step} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
@@ -2646,9 +2646,9 @@ export default function App() {
                           <div style={{ height: 1, background: theme === 'dark' ? 'var(--border)' : 'rgba(0,0,0,.08)', margin: '16px 0 14px' }} />
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }} className="max-sm:grid-cols-1">
                             {[
-                              { label: 'Net Investment', val: `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Capital deployed', color: t.text,
+                              { label: 'Total Invested', val: `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Amount put into portfolio', color: t.text,
                                 icon: <TrendingUp size={13} color={t.textMuted} /> },
-                              { label: 'Unified PNL', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${summary.unifiedPnl >= 0 ? '+' : ''}${summary.totalValue > 0 ? ((summary.unifiedPnl / Math.max(summary.netInvestment, 1)) * 100).toFixed(1) : '0.0'}% vs invested`, color: summary.unifiedPnl >= 0 ? '#00c076' : '#ef4444',
+                              { label: 'Total P&L', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${summary.unifiedPnl >= 0 ? '+' : ''}${summary.totalValue > 0 ? ((summary.unifiedPnl / Math.max(summary.netInvestment, 1)) * 100).toFixed(1) : '0.0'}% vs invested`, color: summary.unifiedPnl >= 0 ? '#00c076' : '#ef4444',
                                 icon: <ArrowUpRight size={13} color={summary.unifiedPnl >= 0 ? '#00c076' : '#ef4444'} /> },
                               { label: 'Stakes at Maturity', val: `$${valueAtMaturity.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${fmtBigNum(totalHexAtMaturity)} HEX`, color: '#8b5cf6',
                                 icon: <Layers size={13} color="#8b5cf6" /> },
@@ -2795,8 +2795,8 @@ export default function App() {
                   // Space-separated thousands: 148 000 000
                   const fmtHex = (n: number) => Math.round(n).toLocaleString('nb-NO', { maximumFractionDigits: 0 }).replace(/,/g, ' ');
                   const boxes = [
-                    { label: 'Total pHEX', sub: `${fmtHex(pHexLiquid)} liquid · ${fmtHex(pHexStaked)} staked+yield`, val: fmtHex(pHexTotal), usd: pHexTotal * pHexPrice, color: '#fb923c', dot: '#fb923c' },
-                    { label: 'Total eHEX', sub: `${fmtHex(eHexLiquid)} liquid · ${fmtHex(eHexStaked)} staked+yield`, val: fmtHex(eHexTotal), usd: eHexTotal * eHexPrice, color: '#627EEA', dot: '#627EEA' },
+                    { label: 'Total pHEX', sub: `${fmtHex(pHexLiquid)} liquid · ${fmtHex(pHexStaked)} staked + yield`, val: fmtHex(pHexTotal), usd: pHexTotal * pHexPrice, color: '#fb923c', dot: '#fb923c' },
+                    { label: 'Total eHEX', sub: `${fmtHex(eHexLiquid)} liquid · ${fmtHex(eHexStaked)} staked + yield`, val: fmtHex(eHexTotal), usd: eHexTotal * eHexPrice, color: '#627EEA', dot: '#627EEA' },
                   ];
                   return (
                     <div style={{ background: theme === 'dark' ? 'radial-gradient(ellipse at top left, #111118 0%, #0d0d0d 100%)' : t.card, border: `1px solid ${t.border}`, borderRadius: 12, overflow: 'hidden' }}>
@@ -3121,7 +3121,7 @@ export default function App() {
                                         {/* Copy CA */}
                                         {addr && addr !== 'native' && (
                                           <button onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(addr); }}
-                                            title={`Copy CA: ${addr}`}
+                                            title={`Copy contract address: ${addr}`}
                                             style={{ padding: '1px 3px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s', lineHeight: 1 }}
                                             onMouseOver={e => (e.currentTarget.style.color = '#aaa')}
                                             onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
@@ -3175,7 +3175,7 @@ export default function App() {
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2 }}>
                                     <button
                                       onClick={e => { e.stopPropagation(); setPnlAsset(pnlAsset?.id === asset.id ? null : asset); }}
-                                      title="Analyse P&L"
+                                      title="View profit & loss"
                                       style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', transition: 'color .12s',
                                         color: pnlAsset?.id === asset.id ? '#a78bfa' : '#555' }}
                                       onMouseOver={e => (e.currentTarget.style.color = '#a78bfa')}
@@ -3450,7 +3450,7 @@ export default function App() {
                   ].sort((a, b) => b.tx.timestamp - a.tx.timestamp);
 
                   return (
-                    <div style={{ background: '#0d0d0d', border: '1px solid #2a1a3a', borderRadius: 14, overflow: 'hidden', position: 'relative' }}>
+                    <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', position: 'relative' }}>
                       {/* Gradient top accent */}
                       <div style={{ height: 2, background: 'linear-gradient(90deg, #7c3aed, #ec4899)' }} />
 
@@ -3678,7 +3678,7 @@ export default function App() {
                               </div>
                               <div style={{ fontSize: 22, fontWeight: 700, color: b.color, letterSpacing: '-0.5px' }}>{fmt(b.total)}</div>
                               <div style={{ fontSize: 13, color: t.textSecondary, marginTop: 2 }}>${b.usd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                              <div style={{ fontSize: 13, color: t.textMuted, marginTop: 6 }}>{fmt(b.liquid)} liquid · {fmt(b.staked)} staked+yield</div>
+                              <div style={{ fontSize: 13, color: t.textMuted, marginTop: 6 }}>{fmt(b.liquid)} liquid · {fmt(b.staked)} staked + yield</div>
                             </div>
                           ))}
                         </div>
@@ -3760,7 +3760,7 @@ export default function App() {
 
                 {/* LP Positions */}
                 {lpPositions.length > 0 && (
-                  <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, overflow: 'hidden' }}>
+                  <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
                     <div style={{ padding: '14px 18px', borderBottom: isCollapsed('lp-positions') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>LP Positions</span>
@@ -3781,7 +3781,7 @@ export default function App() {
                         <thead>
                           <tr style={{ borderBottom: '1px solid #242424' }}>
                             {['Pair', 'Token 0', 'Token 1', 'Total USD'].map((h, i) => (
-                              <th key={i} style={{ padding: '9px 14px', fontSize: 13, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px', textAlign: i === 0 ? 'left' : 'right', background: '#0d0d0d', whiteSpace: 'nowrap' }}>{h}</th>
+                              <th key={i} style={{ padding: '9px 14px', fontSize: 13, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px', textAlign: i === 0 ? 'left' : 'right', background: 'var(--bg-surface)', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
@@ -3812,7 +3812,7 @@ export default function App() {
 
                 {/* Farm Positions */}
                 {farmPositions.length > 0 && (
-                  <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, overflow: 'hidden' }}>
+                  <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
                     <div style={{ padding: '14px 18px', borderBottom: isCollapsed('farm-positions') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>Farm Positions (INC Rewards)</span>
@@ -3833,7 +3833,7 @@ export default function App() {
                         <thead>
                           <tr style={{ borderBottom: '1px solid #242424' }}>
                             {['Pair', 'Staked LP', 'Pending INC', 'INC Value'].map((h, i) => (
-                              <th key={i} style={{ padding: '9px 14px', fontSize: 13, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px', textAlign: i === 0 ? 'left' : 'right', background: '#0d0d0d', whiteSpace: 'nowrap' }}>{h}</th>
+                              <th key={i} style={{ padding: '9px 14px', fontSize: 13, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px', textAlign: i === 0 ? 'left' : 'right', background: 'var(--bg-surface)', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
@@ -3884,7 +3884,7 @@ export default function App() {
                     return sum + hexMat * hp;
                   }, 0);
                   return (
-                    <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, overflow: 'hidden' }}>
+                    <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
                       <div style={{ padding: '14px 18px', borderBottom: isCollapsed('stakes-table') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{chainLabel} Stakes</span>
@@ -3912,7 +3912,7 @@ export default function App() {
                                 {['', 'Stake ID', 'Chain', 'HEX Now', 'USD Now', 'HEX @ Maturity', 'USD @ Maturity', 'Progress', 'Days Left'].map((h, i) => (
                                   <th key={i} style={{ padding: '9px 14px', fontSize: 13, fontWeight: 600, color: '#aaa',
                                     textTransform: 'uppercase', letterSpacing: '.5px', textAlign: i <= 2 ? 'left' : 'right',
-                                    whiteSpace: 'nowrap', background: '#0d0d0d' }}>
+                                    whiteSpace: 'nowrap', background: 'var(--bg-surface)' }}>
                                     {h}
                                   </th>
                                 ))}
@@ -4000,7 +4000,7 @@ export default function App() {
                                               { label: 'Locked Day', val: stake.lockedDay.toString(), sub: `End Day ${endDay}` },
                                               { label: 'Duration', val: `${stake.stakedDays}d`, sub: `${(stake.stakedDays / 365.25).toFixed(1)} years` },
                                               { label: 'Wallet', val: walletShort || stake.walletLabel || '—', sub: stake.chain === 'pulsechain' ? 'PulseChain' : 'Ethereum' },
-                                              { label: 'Gain vs Principal', val: `${hexAtMaturity > 0 ? ((hexAtMaturity / stakedHex - 1) * 100).toFixed(1) : '0.0'}%`, sub: 'Full yield / staked', color: '#00c076' },
+                                              { label: 'Total ROI', val: `${hexAtMaturity > 0 ? ((hexAtMaturity / stakedHex - 1) * 100).toFixed(1) : '0.0'}%`, sub: 'Full return on maturity', color: '#00c076' },
                                             ].map(({ label, val, sub, color }) => (
                                               <div key={label}>
                                                 <div style={{ fontSize: 13, color: '#888', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>{label}</div>
@@ -4059,12 +4059,12 @@ export default function App() {
             {/* Stats grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }} className="max-sm:grid-cols-2">
               {[
-                { label: 'Net Investment', val: `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Total Capital Inflow', color: '#fff' },
-                { label: 'Unified PNL', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Portfolio P&L', color: summary.unifiedPnl >= 0 ? '#00c076' : '#ef4444' },
-                { label: 'Realized PNL', val: `${summary.realizedPnl >= 0 ? '+' : ''}$${Math.abs(summary.realizedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'From Trades', color: summary.realizedPnl >= 0 ? '#00c076' : '#ef4444' },
-                { label: 'Unrealized PNL', val: `${summary.pnl24h >= 0 ? '+' : ''}$${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: '24h Change', color: summary.pnl24h >= 0 ? '#00c076' : '#ef4444' },
+                { label: 'Total Invested', val: `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'All-time capital invested', color: '#fff' },
+                { label: 'Total P&L', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'All-time profit & loss', color: summary.unifiedPnl >= 0 ? '#00c076' : '#ef4444' },
+                { label: 'Realized P&L', val: `${summary.realizedPnl >= 0 ? '+' : ''}$${Math.abs(summary.realizedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Closed trade profit', color: summary.realizedPnl >= 0 ? '#00c076' : '#ef4444' },
+                { label: 'Unrealized P&L', val: `${summary.pnl24h >= 0 ? '+' : ''}$${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: "Today's portfolio change", color: summary.pnl24h >= 0 ? '#00c076' : '#ef4444' },
               ].map(({ label, val, sub, color }) => (
-                <div key={label} style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, padding: 18 }}>
+                <div key={label} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 18 }}>
                   <div style={{ fontSize: 13, color: '#aaa', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>{label}</div>
                   <div style={{ fontSize: 20, fontWeight: 700, color, marginBottom: 2 }}>{val}</div>
                   <div style={{ fontSize: 13, color: '#aaa' }}>{sub}</div>
@@ -4103,7 +4103,7 @@ export default function App() {
                   if (histChartPoints.length > 0) histChartPoints[histChartPoints.length - 1].value = currentVal;
                 }
                 return (
-                  <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, padding: '18px 18px 10px' }}>
+                  <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 18px 10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.6px' }}>Portfolio Performance</div>
                       <div style={{ display: 'flex', gap: 2, background: '#111', border: '1px solid #252525', borderRadius: 8, padding: 3 }}>
@@ -4137,7 +4137,7 @@ export default function App() {
                 );
               })()}
               {/* Right: Monthly P&L bar chart */}
-              <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, padding: '18px 18px 10px' }}>
+              <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 18px 10px' }}>
                 <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.6px' }}>Monthly P&amp;L</div>
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={monthlyPnlData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
@@ -4145,7 +4145,7 @@ export default function App() {
                     <XAxis dataKey="month" tick={{ fill: '#7c8798', fontSize: 11 }} axisLine={{ stroke: '#222' }} tickLine={false} />
                     <YAxis tick={{ fill: '#7c8798', fontSize: 11 }} axisLine={false} tickLine={false} />
                     <RechartsTooltip contentStyle={{ background: '#111', border: '1px solid #222', borderRadius: 8, fontSize: 13 }}
-                      formatter={(v: any) => [`${Number(v) >= 0 ? '+' : ''}$${Math.abs(Number(v)).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'PNL']} />
+                      formatter={(v: any) => [`${Number(v) >= 0 ? '+' : ''}$${Math.abs(Number(v)).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Profit / Loss']} />
                     <Bar dataKey="pnl" radius={[3, 3, 0, 0]}>
                       {monthlyPnlData.map((_entry: any, index: number) => (
                         <Cell key={index} fill={monthlyPnlData[index].pnl >= 0 ? '#00c076' : '#ef4444'} />
@@ -4157,7 +4157,7 @@ export default function App() {
             </div>
 
             {/* Received Assets History */}
-            <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 14, overflow: 'hidden' }}>
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
               <div style={{ padding: '14px 18px', borderBottom: isCollapsed('received-assets') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <ArrowDownLeft size={16} style={{ color: '#627EEA' }} />
@@ -4386,11 +4386,11 @@ export default function App() {
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, paddingTop: 10, borderTop: `1px solid ${t.borderLight}` }}>
                             {[
                               { label: 'Amount', val: `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${tx.asset}`, sub: 'Token amount' },
-                              { label: 'Value USD', val: tx.valueUsd ? `$${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—', sub: 'At time of tx' },
+                              { label: 'USD Value', val: tx.valueUsd ? `$${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—', sub: 'At time of transaction' },
                               { label: 'Current Price', val: coinAsset?.price ? `$${coinAsset.price < 0.001 ? coinAsset.price.toFixed(8) : coinAsset.price.toLocaleString(undefined, { maximumFractionDigits: 4 })}` : '—', sub: coinAsset ? `${tx.asset} price now` : 'Unknown token' },
                               { label: 'Current Value', val: coinAsset ? `$${(tx.amount * coinAsset.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—', sub: 'If held to now', color: coinAsset && tx.valueUsd ? ((tx.amount * coinAsset.price) >= tx.valueUsd ? '#00c076' : '#ef4444') : undefined },
                               ...(tx.valueUsd && coinAsset ? [{
-                                label: 'PNL',
+                                label: 'Profit / Loss',
                                 val: `${(tx.amount * coinAsset.price - tx.valueUsd) >= 0 ? '+' : ''}$${Math.abs(tx.amount * coinAsset.price - tx.valueUsd).toLocaleString(undefined, { maximumFractionDigits: 2 })}`,
                                 sub: `${(((tx.amount * coinAsset.price) / tx.valueUsd - 1) * 100).toFixed(1)}% change`,
                                 color: (tx.amount * coinAsset.price - tx.valueUsd) >= 0 ? '#00c076' : '#ef4444'
@@ -4422,7 +4422,7 @@ export default function App() {
             </div>
 
             {/* PLS / WPLS Movement Tracker */}
-            <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 14, overflow: 'hidden' }}>
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
               <div style={{ padding: '14px 18px', borderBottom: isCollapsed('pls-swaps') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <RefreshCcw size={16} style={{ color: '#f739ff' }} />
@@ -4463,7 +4463,7 @@ export default function App() {
                       <thead>
                         <tr style={{ borderBottom: '1px solid #242424' }}>
                           {['Date', 'Activity', 'PLS Sent / Spent', 'PLS Received', 'Net PLS'].map((h, i) => (
-                            <th key={i} style={{ padding: '10px 16px', fontSize: 12, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', textAlign: i === 0 || i === 1 ? 'left' : 'right', background: '#0d0d0d', whiteSpace: 'nowrap' }}>{h}</th>
+                            <th key={i} style={{ padding: '10px 16px', fontSize: 12, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', textAlign: i === 0 || i === 1 ? 'left' : 'right', background: 'var(--bg-surface)', whiteSpace: 'nowrap' }}>{h}</th>
                           ))}
                         </tr>
                       </thead>
@@ -4564,7 +4564,7 @@ export default function App() {
                 { label: 'Net PLS', val: `${plsSwapData.totalNet >= 0 ? '+' : ''}${plsSwapData.totalNet >= 1e9 ? (plsSwapData.totalNet/1e9).toFixed(2)+'B' : plsSwapData.totalNet >= 1e6 ? (plsSwapData.totalNet/1e6).toFixed(2)+'M' : plsSwapData.totalNet.toLocaleString(undefined,{maximumFractionDigits:0})}`, sub: 'Net balance', color: plsSwapData.totalNet >= 0 ? '#00c076' : '#ef4444' },
                 { label: 'Net USD', val: `${plsSwapData.netUsd >= 0 ? '+' : ''}$${Math.abs(plsSwapData.netUsd).toLocaleString(undefined,{maximumFractionDigits:0})}`, sub: `@ $${(plsSwapData.plsPrice||0).toFixed(6)}/PLS`, color: plsSwapData.netUsd >= 0 ? '#00c076' : '#ef4444' },
               ].map(({ label, val, sub, color }) => (
-                <div key={label} style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, padding: 18 }}>
+                <div key={label} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 18 }}>
                   <div style={{ fontSize: 13, color: '#aaa', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>{label}</div>
                   <div style={{ fontSize: 18, fontWeight: 700, color, marginBottom: 2 }}>{val}</div>
                   {sub && <div style={{ fontSize: 13, color: '#aaa' }}>{sub}</div>}
@@ -4583,7 +4583,7 @@ export default function App() {
                   return { day: format(r.tx.timestamp, 'MMM d'), pls: cumulative };
                 });
                 return (
-                  <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, padding: '18px 18px 10px' }}>
+                  <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 18px 10px' }}>
                     <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.6px' }}>Cumulative PLS Balance</div>
                     <ResponsiveContainer width="100%" height={220}>
                       <AreaChart data={chartPts}>
@@ -4609,7 +4609,7 @@ export default function App() {
                 const histPts = wallets.length > 0 ? history : MOCK_HISTORY;
                 const chartPts = histPts.map(p => ({ day: format(p.timestamp, 'MMM d'), pls: p.nativeValue || p.value / plsPrice }));
                 return (
-                  <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, padding: '18px 18px 10px' }}>
+                  <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 18px 10px' }}>
                     <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.6px' }}>Portfolio Value in PLS</div>
                     <ResponsiveContainer width="100%" height={220}>
                       <AreaChart data={chartPts}>
@@ -4768,7 +4768,7 @@ export default function App() {
                         <thead>
                           <tr style={{ borderBottom: '1px solid #1f1f1f' }}>
                             {['Token', 'Chain', 'Bought', 'Sold', 'Proceeds', 'Cost (est.)', 'Realized P&L'].map(h => (
-                              <th key={h} style={{ padding: '9px 14px', textAlign: h === 'Token' || h === 'Chain' ? 'left' : 'right', fontSize: 11, color: 'var(--fg-subtle)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', whiteSpace: 'nowrap', background: '#0d0d0d' }}>{h}</th>
+                              <th key={h} style={{ padding: '9px 14px', textAlign: h === 'Token' || h === 'Chain' ? 'left' : 'right', fontSize: 11, color: 'var(--fg-subtle)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', whiteSpace: 'nowrap', background: 'var(--bg-surface)' }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
@@ -4952,7 +4952,7 @@ export default function App() {
               </div>
 
               {/* Asset list — full Token Positions module */}
-              <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, overflow: 'hidden' }}>
+              <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
                 <div style={{ padding: '14px 16px', borderBottom: isCollapsed('wallet-holdings') ? 'none' : '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                   <div>
                     <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Token Positions</div>
@@ -4999,7 +4999,7 @@ export default function App() {
                             style={{ padding: '11px 16px', fontSize: 13, fontWeight: 600,
                               color: assetSortField === field ? '#00c076' : '#aaa',
                               textTransform: 'uppercase', letterSpacing: '.5px',
-                              textAlign: align as any, whiteSpace: 'nowrap', background: '#0d0d0d',
+                              textAlign: align as any, whiteSpace: 'nowrap', background: 'var(--bg-surface)',
                               cursor: field ? 'pointer' : 'default', userSelect: 'none' }}>
                             {label}{field && assetSortField === field ? (assetSortDir === 'desc' ? ' ↓' : ' ↑') : ''}
                           </th>
@@ -5062,7 +5062,7 @@ export default function App() {
                                       {asset.isBridged && <span style={{ fontSize: 13, background: 'rgba(99,102,241,0.15)', color: '#a5b4fc', padding: '1px 5px', borderRadius: 4, fontWeight: 600 }}>bridged</span>}
                                       {addr && addr !== 'native' && (
                                         <button onClick={() => navigator.clipboard.writeText(addr)}
-                                          title={`Copy CA: ${addr}`}
+                                          title={`Copy contract address: ${addr}`}
                                           style={{ padding: '1px 3px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s', lineHeight: 1 }}
                                           onMouseOver={e => (e.currentTarget.style.color = '#aaa')}
                                           onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
@@ -5114,7 +5114,7 @@ export default function App() {
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2 }}>
                                   <button
                                     onClick={e => { e.stopPropagation(); setPnlAsset(pnlAsset?.id === asset.id ? null : asset); }}
-                                    title="Analyse P&L"
+                                    title="View profit & loss"
                                     style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', transition: 'color .12s',
                                       color: pnlAsset?.id === asset.id ? '#a78bfa' : '#555' }}
                                     onMouseOver={e => (e.currentTarget.style.color = '#a78bfa')}
@@ -5249,7 +5249,7 @@ export default function App() {
                 const allRows = [...buys.map(tx => ({ tx, side: 'buy' as const })), ...sells.map(tx => ({ tx, side: 'sell' as const }))].sort((a, b) => b.tx.timestamp - a.tx.timestamp);
                 const logo2 = (pnlAsset as any).logoUrl || tokenLogos[(pnlAsset as any).address?.toLowerCase?.()] || getTokenLogoUrl(pnlAsset);
                 return (
-                  <div style={{ background: '#0d0d0d', border: '1px solid #2a1a3a', borderRadius: 14, overflow: 'hidden' }}>
+                  <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
                     <div style={{ height: 2, background: 'linear-gradient(90deg,#7c3aed,#ec4899)' }} />
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 10px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -5453,7 +5453,7 @@ export default function App() {
                 });
                 if (baseTxs.length === 0) return null;
                 return (
-                  <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 14, overflow: 'hidden' }}>
+                  <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
                     <div style={{ padding: '14px 18px', borderBottom: isCollapsed('wallet-txs') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: 14, fontWeight: 600 }}>Recent Activity</span>
@@ -5568,7 +5568,7 @@ export default function App() {
           { id: 'assets',   label: 'Assets',   icon: WalletIcon },
           { id: 'stakes',   label: 'Stakes',   icon: Layers },
           { id: 'history',  label: 'History',  icon: History },
-          { id: 'tracker',  label: 'Tracker',  icon: TrendingUp },
+          { id: 'tracker',  label: 'PLS Flow', icon: TrendingUp },
           { id: 'wallets',  label: 'Wallets',  icon: User },
         ] as const).map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setActiveTab(id)}
@@ -5752,7 +5752,7 @@ export default function App() {
               className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
             <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              style={{ position: 'relative', width: '100%', maxWidth: 480, background: '#0d0d0d', border: '1px solid #242424', borderRadius: 20, padding: 28 }}>
+              style={{ position: 'relative', width: '100%', maxWidth: 480, background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 20, padding: 28 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
                 <Settings size={18} style={{ color: '#00c076' }} />
                 <span style={{ fontSize: 16, fontWeight: 700 }}>API Keys</span>
