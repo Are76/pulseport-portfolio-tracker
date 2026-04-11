@@ -289,6 +289,11 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
 }
 
 export default function App() {
+  // ── Formatting helpers (defined once here, used throughout) ────────────────
+  const fmtBigNum = (n: number) => Math.round(n).toLocaleString('nb-NO', { maximumFractionDigits: 0 }).replace(/,/g, ' ');
+  const fmtDec = (n: number, dp = 2) => n.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp });
+  const fmtTok = (n: number) => n > 1e6 ? `${(n/1e6).toFixed(2)}M` : n > 1000 ? `${(n/1000).toFixed(2)}K` : n.toLocaleString(undefined, { maximumFractionDigits: 4 });
+
   const [wallets, setWallets] = useState<Wallet[]>(() => {
     const saved = localStorage.getItem('pulseport_wallets');
     return saved ? JSON.parse(saved) : [];
@@ -374,6 +379,11 @@ export default function App() {
   const [priceDisplayCurrency, setPriceDisplayCurrency] = useState<'usd' | 'pls'>('usd');
   const [pnlAsset, setPnlAsset] = useState<Asset | null>(null);
   const [perfPeriod, setPerfPeriod] = useState<'1d' | '1w' | '1y' | 'all'>('all');
+  const fmtLabel = (ts: number) => {
+    if (perfPeriod === '1d') return format(ts, 'HH:mm');
+    if (perfPeriod === '1w') return format(ts, 'EEE d');
+    return format(ts, 'MMM d');
+  };
   const [hiddenTxIds, setHiddenTxIds] = useState<string[]>(() => {
     const saved = localStorage.getItem('pulseport_hidden_txs');
     return saved ? JSON.parse(saved) : [];
@@ -2610,7 +2620,6 @@ export default function App() {
                       || (stake.chain === 'pulsechain' ? prices['pulsechain:hex']?.usd : prices['hex']?.usd) || 0;
                     return sum + ((stake.stakedHex ?? 0) + (stake.stakeHexYield ?? 0)) * hp;
                   }, 0);
-                  const fmtBigNum = (n: number) => Math.round(n).toLocaleString('nb-NO', { maximumFractionDigits: 0 }).replace(/,/g, ' ');
                   return (
                     <>
                     <div className={`md-elevation-1 ${theme === 'dark' ? 'hero-bg-dark' : 'hero-bg-light'}`} style={{
@@ -2793,10 +2802,9 @@ export default function App() {
                   const pHexTotal = pHexLiquid + pHexStaked;
                   const eHexTotal = eHexLiquid + eHexStaked;
                   // Space-separated thousands: 148 000 000
-                  const fmtHex = (n: number) => Math.round(n).toLocaleString('nb-NO', { maximumFractionDigits: 0 }).replace(/,/g, ' ');
                   const boxes = [
-                    { label: 'Total pHEX', sub: `${fmtHex(pHexLiquid)} liquid · ${fmtHex(pHexStaked)} staked + yield`, val: fmtHex(pHexTotal), usd: pHexTotal * pHexPrice, color: '#fb923c', dot: '#fb923c' },
-                    { label: 'Total eHEX', sub: `${fmtHex(eHexLiquid)} liquid · ${fmtHex(eHexStaked)} staked + yield`, val: fmtHex(eHexTotal), usd: eHexTotal * eHexPrice, color: '#627EEA', dot: '#627EEA' },
+                    { label: 'Total pHEX', sub: `${fmtBigNum(pHexLiquid)} liquid · ${fmtBigNum(pHexStaked)} staked + yield`, val: fmtBigNum(pHexTotal), usd: pHexTotal * pHexPrice, color: '#fb923c', dot: '#fb923c' },
+                    { label: 'Total eHEX', sub: `${fmtBigNum(eHexLiquid)} liquid · ${fmtBigNum(eHexStaked)} staked + yield`, val: fmtBigNum(eHexTotal), usd: eHexTotal * eHexPrice, color: '#627EEA', dot: '#627EEA' },
                   ];
                   return (
                     <div style={{ background: theme === 'dark' ? 'radial-gradient(ellipse at top left, #111118 0%, #0d0d0d 100%)' : t.card, border: `1px solid ${t.border}`, borderRadius: 12, overflow: 'hidden' }}>
@@ -2845,11 +2853,6 @@ export default function App() {
                   const scale = currentVal / mockLast;
 
                   // Format label based on period
-                  const fmtLabel = (ts: number) => {
-                    if (perfPeriod === '1d') return format(ts, 'HH:mm');
-                    if (perfPeriod === '1w') return format(ts, 'EEE d');
-                    return format(ts, 'MMM d');
-                  };
 
                   // Deduplicate by period-appropriate bucket, keeping latest value + timestamp per bucket
                   const byBucket = new Map<string, { value: number; ts: number }>();
@@ -3438,10 +3441,6 @@ export default function App() {
                   const holdingsBal = pnlAsset.balance;
                   const holdingsUsd = pnlAsset.value;
 
-                  const fmt = (n: number, dp = 2) => n.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp });
-                  const fmtTok = (n: number) => n > 1e6 ? `${(n/1e6).toFixed(2)}M`
-                    : n > 1000 ? `${(n/1000).toFixed(2)}K`
-                    : n.toLocaleString(undefined, { maximumFractionDigits: 4 });
 
                   // All swap rows for the transaction list (buys + sells merged, sorted by time)
                   const allRows = [
@@ -3471,7 +3470,7 @@ export default function App() {
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           <div style={{ fontSize: 20, fontWeight: 800, color: realizedPnl >= 0 ? '#00c076' : '#ef4444' }}>
-                            {realizedPnl >= 0 ? '+' : ''}${fmt(realizedPnl)}
+                            {realizedPnl >= 0 ? '+' : ''}${fmtDec(realizedPnl)}
                           </div>
                           <button onClick={() => setPnlAsset(null)}
                             style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888' }}
@@ -3490,17 +3489,17 @@ export default function App() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <div>
                               <div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>Cost</div>
-                              <div style={{ fontSize: 14, fontWeight: 700, color: '#ef4444' }}>${fmt(realizedCostUsd)}</div>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: '#ef4444' }}>${fmtDec(realizedCostUsd)}</div>
                             </div>
                             <div style={{ color: 'var(--fg-subtle)', fontSize: 16, marginTop: 8 }}>→</div>
                             <div>
                               <div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>Proceeds</div>
-                              <div style={{ fontSize: 14, fontWeight: 700, color: '#00c076' }}>${fmt(proceedsUsd)}</div>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: '#00c076' }}>${fmtDec(proceedsUsd)}</div>
                             </div>
                             <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
                               <div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>P&amp;L</div>
                               <div style={{ fontSize: 14, fontWeight: 700, color: realizedPnl >= 0 ? '#00c076' : '#ef4444' }}>
-                                {realizedPnl >= 0 ? '+' : ''}${fmt(realizedPnl)}
+                                {realizedPnl >= 0 ? '+' : ''}${fmtDec(realizedPnl)}
                               </div>
                             </div>
                           </div>
@@ -3526,7 +3525,7 @@ export default function App() {
                             </div>
                             <div style={{ textAlign: 'right' }}>
                               <div style={{ fontSize: 13, color: '#888', marginBottom: 2 }}>Value</div>
-                              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>${fmt(holdingsUsd)}</div>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>${fmtDec(holdingsUsd)}</div>
                             </div>
                           </div>
                           {gasNative > 0 && (
@@ -3535,7 +3534,7 @@ export default function App() {
                                 ⛽ Gas paid
                               </div>
                               <div style={{ fontSize: 13, color: '#aaa', fontWeight: 600 }}>
-                                {fmtTok(gasNative)} {chainKey === 'ethereum' ? 'ETH' : 'PLS'} <span style={{ color: '#888' }}>(${fmt(gasUsd)})</span>
+                                {fmtTok(gasNative)} {chainKey === 'ethereum' ? 'ETH' : 'PLS'} <span style={{ color: '#888' }}>(${fmtDec(gasUsd)})</span>
                               </div>
                             </div>
                           )}
@@ -3577,7 +3576,7 @@ export default function App() {
                                   </div>
                                   {/* Value + date */}
                                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                    <div style={{ fontSize: 13, fontWeight: 600, color: '#aaa' }}>${fmt(valUsd)}</div>
+                                    <div style={{ fontSize: 13, fontWeight: 600, color: '#aaa' }}>${fmtDec(valUsd)}</div>
                                     <div style={{ fontSize: 13, color: '#888' }}>{date}</div>
                                   </div>
                                   {/* Tx link */}
@@ -3652,7 +3651,6 @@ export default function App() {
                   const eHexStaked = currentStakes.filter(s => s.chain === 'ethereum').reduce((s, st) => s + (st.stakedHex ?? 0) + Number(st.interestHearts || 0n) / 1e8, 0);
                   const pHexTotal = pHexLiquid + pHexStaked;
                   const eHexTotal = eHexLiquid + eHexStaked;
-                  const fmt = (n: number) => Math.round(n).toLocaleString('nb-NO', { maximumFractionDigits: 0 }).replace(/,/g, ' ');
                   return (
                     <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, overflow: 'hidden' }}>
                       <div style={{ padding: '12px 16px', borderBottom: isCollapsed('stakes-hex-boxes') ? 'none' : `1px solid ${t.borderLight}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -3676,9 +3674,9 @@ export default function App() {
                                 <div style={{ width: 7, height: 7, borderRadius: '50%', background: b.dot }} />
                                 <span style={{ fontSize: 13, fontWeight: 600, color: t.textSecondary, textTransform: 'uppercase', letterSpacing: '.5px' }}>{b.label}</span>
                               </div>
-                              <div style={{ fontSize: 22, fontWeight: 700, color: b.color, letterSpacing: '-0.5px' }}>{fmt(b.total)}</div>
+                              <div style={{ fontSize: 22, fontWeight: 700, color: b.color, letterSpacing: '-0.5px' }}>{fmtBigNum(b.total)}</div>
                               <div style={{ fontSize: 13, color: t.textSecondary, marginTop: 2 }}>${b.usd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                              <div style={{ fontSize: 13, color: t.textMuted, marginTop: 6 }}>{fmt(b.liquid)} liquid · {fmt(b.staked)} staked + yield</div>
+                              <div style={{ fontSize: 13, color: t.textMuted, marginTop: 6 }}>{fmtBigNum(b.liquid)} liquid · {fmtBigNum(b.staked)} staked + yield</div>
                             </div>
                           ))}
                         </div>
@@ -4083,11 +4081,6 @@ export default function App() {
                 const currentVal = summary.totalValue || 1;
                 const mockLast = MOCK_HISTORY[MOCK_HISTORY.length - 1]?.value || 1;
                 const scale = currentVal / mockLast;
-                const fmtLabel = (ts: number) => {
-                  if (perfPeriod === '1d') return format(ts, 'HH:mm');
-                  if (perfPeriod === '1w') return format(ts, 'EEE d');
-                  return format(ts, 'MMM d');
-                };
                 const byBucket = new Map<string, { value: number; ts: number }>();
                 realHistory.forEach(p => {
                   const key = perfPeriod === '1d' ? format(p.timestamp, 'yyyy-MM-dd HH') : format(p.timestamp, 'yyyy-MM-dd');
@@ -5195,6 +5188,104 @@ export default function App() {
                                         )}
                                       </div>
                                     </div>
+
+                                     {/* ── Transactions & Realized P&L for this token ── */}
+                                     {(() => {
+                                       const sym = asset.symbol.toUpperCase();
+                                       const tokenTxs = currentTransactions.filter(tx =>
+                                         tx.asset.toUpperCase() === sym && tx.chain === asset.chain
+                                       );
+                                       if (tokenTxs.length === 0) return null;
+                                       let totalBoughtAmt = 0, totalSoldAmt = 0, totalCostUsd = 0, totalProceedsUsd = 0;
+                                       tokenTxs.forEach(tx => {
+                                         const isBuyTx = tx.type === 'transfer_in' || (tx.type === 'swap' && tx.counterAsset !== asset.symbol);
+                                         if (isBuyTx) { totalBoughtAmt += tx.amount; totalCostUsd += tx.valueUsd || 0; }
+                                         else { totalSoldAmt += tx.amount; totalProceedsUsd += tx.valueUsd || 0; }
+                                       });
+                                       const realizedPnlTok = totalProceedsUsd - totalCostUsd;
+                                       const showTxs = tokenTxs.slice(0, 8);
+                                       return (
+                                         <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+                                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+                                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                               <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.7px' }}>Transactions &amp; P&amp;L</span>
+                                               <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', background: 'var(--bg-elevated)', padding: '1px 6px', borderRadius: 20, border: '1px solid var(--border)' }}>{tokenTxs.length}</span>
+                                             </div>
+                                             <button
+                                               onClick={e => { e.stopPropagation(); setTxAssetFilter(asset.symbol); setActiveTab('history'); }}
+                                               style={{ fontSize: 11, fontWeight: 700, color: '#00c076', background: 'rgba(0,192,118,.1)', border: '1px solid rgba(0,192,118,.2)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', transition: 'all .12s' }}
+                                               onMouseOver={e => (e.currentTarget.style.background = 'rgba(0,192,118,.2)')}
+                                               onMouseOut={e => (e.currentTarget.style.background = 'rgba(0,192,118,.1)')}>
+                                               View all in History →
+                                             </button>
+                                           </div>
+                                           <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+                                             <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 12px', fontSize: 12 }}>
+                                               <span style={{ color: 'var(--fg-subtle)' }}>Bought </span>
+                                               <span style={{ color: '#fff', fontWeight: 700 }}>{totalBoughtAmt >= 1e6 ? `${(totalBoughtAmt/1e6).toFixed(2)}M` : totalBoughtAmt >= 1e3 ? `${(totalBoughtAmt/1e3).toFixed(2)}K` : totalBoughtAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })} {sym}</span>
+                                               {totalCostUsd > 0 && <span style={{ color: 'var(--fg-subtle)', marginLeft: 4 }}>(${totalCostUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })})</span>}
+                                             </div>
+                                             <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 12px', fontSize: 12 }}>
+                                               <span style={{ color: 'var(--fg-subtle)' }}>Sold </span>
+                                               <span style={{ color: '#fff', fontWeight: 700 }}>{totalSoldAmt >= 1e6 ? `${(totalSoldAmt/1e6).toFixed(2)}M` : totalSoldAmt >= 1e3 ? `${(totalSoldAmt/1e3).toFixed(2)}K` : totalSoldAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })} {sym}</span>
+                                               {totalProceedsUsd > 0 && <span style={{ color: 'var(--fg-subtle)', marginLeft: 4 }}>(${totalProceedsUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })})</span>}
+                                             </div>
+                                             {(totalCostUsd > 0 || totalProceedsUsd > 0) && (
+                                               <div style={{ background: realizedPnlTok >= 0 ? 'rgba(0,192,118,.1)' : 'rgba(244,63,94,.1)', border: `1px solid ${realizedPnlTok >= 0 ? 'rgba(0,192,118,.25)' : 'rgba(244,63,94,.25)'}`, borderRadius: 8, padding: '6px 12px', fontSize: 12 }}>
+                                                 <span style={{ color: 'var(--fg-subtle)' }}>Realized P&amp;L </span>
+                                                 <span style={{ fontWeight: 800, color: realizedPnlTok >= 0 ? '#00c076' : '#f43f5e' }}>{realizedPnlTok >= 0 ? '+' : ''}${realizedPnlTok.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                                               </div>
+                                             )}
+                                           </div>
+                                           <div style={{ overflowX: 'auto' }}>
+                                             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 340 }}>
+                                               <thead>
+                                                 <tr style={{ background: 'var(--bg-elevated)' }}>
+                                                   {['Type', 'Amount', 'Value', 'Date'].map(h => (
+                                                     <th key={h} style={{ padding: '5px 10px', fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.6px', textAlign: h === 'Type' ? 'left' : 'right', whiteSpace: 'nowrap', borderBottom: '1px solid var(--border)' }}>{h}</th>
+                                                   ))}
+                                                 </tr>
+                                               </thead>
+                                               <tbody>
+                                                 {showTxs.map((tx, ti) => {
+                                                   const isBuyTx = tx.type === 'transfer_in' || (tx.type === 'swap' && tx.counterAsset !== asset.symbol);
+                                                   const typeColor = tx.type === 'transfer_in' ? '#00c076' : tx.type === 'transfer_out' ? 'var(--fg-muted)' : isBuyTx ? '#00c076' : '#f43f5e';
+                                                   const typeLabel = tx.type === 'transfer_in' ? '↓ In' : tx.type === 'transfer_out' ? '↑ Out' : isBuyTx ? '↓ Buy' : '↑ Sell';
+                                                   return (
+                                                     <tr key={ti} style={{ borderBottom: '1px solid var(--border)' }}
+                                                       onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
+                                                       onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
+                                                       <td style={{ padding: '7px 10px', whiteSpace: 'nowrap' }}>
+                                                         <span style={{ fontSize: 12, fontWeight: 700, color: typeColor, background: typeColor.startsWith('var') ? 'transparent' : `${typeColor}1a`, padding: '2px 7px', borderRadius: 4 }}>{typeLabel}</span>
+                                                         {tx.type === 'swap' && tx.counterAsset && <span style={{ fontSize: 11, color: 'var(--fg-subtle)', marginLeft: 6 }}>← {tx.counterAsset}</span>}
+                                                       </td>
+                                                       <td style={{ padding: '7px 10px', textAlign: 'right', fontSize: 12, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap' }}>
+                                                         {tx.amount >= 1e6 ? `${(tx.amount/1e6).toFixed(2)}M` : tx.amount >= 1e3 ? `${(tx.amount/1e3).toFixed(2)}K` : tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {sym}
+                                                       </td>
+                                                       <td style={{ padding: '7px 10px', textAlign: 'right', fontSize: 12, color: 'var(--fg-muted)', whiteSpace: 'nowrap' }}>
+                                                         {tx.valueUsd ? `$${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}
+                                                       </td>
+                                                       <td style={{ padding: '7px 10px', textAlign: 'right', fontSize: 11, color: 'var(--fg-subtle)', whiteSpace: 'nowrap' }}>
+                                                         {format(tx.timestamp, 'MMM d, yyyy')}
+                                                       </td>
+                                                     </tr>
+                                                   );
+                                                 })}
+                                               </tbody>
+                                             </table>
+                                             {tokenTxs.length > 8 && (
+                                               <div style={{ textAlign: 'center', padding: '8px', fontSize: 12, color: 'var(--fg-subtle)' }}>
+                                                 +{tokenTxs.length - 8} more —{' '}
+                                                 <button onClick={e => { e.stopPropagation(); setTxAssetFilter(asset.symbol); setActiveTab('history'); }}
+                                                   style={{ fontSize: 12, color: '#00c076', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
+                                                   view all in History
+                                                 </button>
+                                               </div>
+                                             )}
+                                           </div>
+                                         </div>
+                                       );
+                                     })()}
                                   </td>
                                 </tr>
                               );
@@ -5244,8 +5335,6 @@ export default function App() {
                 const realizedPnl = proceedsUsd - realizedCostUsd;
                 const gasNative = [...buys, ...sells].reduce((s, tx) => s + (tx.fee ?? 0), 0);
                 const gasUsd = gasNative * nativePriceUsd;
-                const fmt = (n: number, dp = 2) => n.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp });
-                const fmtTok = (n: number) => n > 1e6 ? `${(n/1e6).toFixed(2)}M` : n > 1000 ? `${(n/1000).toFixed(2)}K` : n.toLocaleString(undefined, { maximumFractionDigits: 4 });
                 const allRows = [...buys.map(tx => ({ tx, side: 'buy' as const })), ...sells.map(tx => ({ tx, side: 'sell' as const }))].sort((a, b) => b.tx.timestamp - a.tx.timestamp);
                 const logo2 = (pnlAsset as any).logoUrl || tokenLogos[(pnlAsset as any).address?.toLowerCase?.()] || getTokenLogoUrl(pnlAsset);
                 return (
@@ -5261,7 +5350,7 @@ export default function App() {
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ fontSize: 20, fontWeight: 800, color: realizedPnl >= 0 ? '#00c076' : '#ef4444' }}>{realizedPnl >= 0 ? '+' : ''}${fmt(realizedPnl)}</div>
+                        <div style={{ fontSize: 20, fontWeight: 800, color: realizedPnl >= 0 ? '#00c076' : '#ef4444' }}>{realizedPnl >= 0 ? '+' : ''}${fmtDec(realizedPnl)}</div>
                         <button onClick={() => setPnlAsset(null)} style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888' }} onMouseOver={e => (e.currentTarget.style.color = '#fff')} onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}><X size={16} /></button>
                       </div>
                     </div>
@@ -5269,10 +5358,10 @@ export default function App() {
                       <div style={{ background: '#111', borderRadius: 10, padding: '14px 16px' }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: '#888', letterSpacing: '.8px', marginBottom: 10 }}>REALIZED</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div><div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>Cost</div><div style={{ fontSize: 14, fontWeight: 700, color: '#ef4444' }}>${fmt(realizedCostUsd)}</div></div>
+                          <div><div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>Cost</div><div style={{ fontSize: 14, fontWeight: 700, color: '#ef4444' }}>${fmtDec(realizedCostUsd)}</div></div>
                           <div style={{ color: 'var(--fg-subtle)', fontSize: 16, marginTop: 8 }}>→</div>
-                          <div><div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>Proceeds</div><div style={{ fontSize: 14, fontWeight: 700, color: '#00c076' }}>${fmt(proceedsUsd)}</div></div>
-                          <div style={{ marginLeft: 'auto', textAlign: 'right' }}><div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>P&amp;L</div><div style={{ fontSize: 14, fontWeight: 700, color: realizedPnl >= 0 ? '#00c076' : '#ef4444' }}>{realizedPnl >= 0 ? '+' : ''}${fmt(realizedPnl)}</div></div>
+                          <div><div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>Proceeds</div><div style={{ fontSize: 14, fontWeight: 700, color: '#00c076' }}>${fmtDec(proceedsUsd)}</div></div>
+                          <div style={{ marginLeft: 'auto', textAlign: 'right' }}><div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>P&amp;L</div><div style={{ fontSize: 14, fontWeight: 700, color: realizedPnl >= 0 ? '#00c076' : '#ef4444' }}>{realizedPnl >= 0 ? '+' : ''}${fmtDec(realizedPnl)}</div></div>
                         </div>
                         <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #242424', display: 'flex', gap: 16 }}>
                           <div><div style={{ fontSize: 13, color: '#888' }}>Bought</div><div style={{ fontSize: 13, color: '#aaa', fontWeight: 600 }}>{fmtTok(totalBought)} {pnlAsset.symbol}</div></div>
@@ -5283,12 +5372,12 @@ export default function App() {
                         <div style={{ fontSize: 13, fontWeight: 700, color: '#888', letterSpacing: '.8px', marginBottom: 10 }}>HOLDINGS</div>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                           <div><div style={{ fontSize: 13, color: '#888', marginBottom: 2 }}>Balance</div><div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{fmtTok(pnlAsset.balance)} {pnlAsset.symbol}</div></div>
-                          <div style={{ textAlign: 'right' }}><div style={{ fontSize: 13, color: '#888', marginBottom: 2 }}>Value</div><div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>${fmt(pnlAsset.value)}</div></div>
+                          <div style={{ textAlign: 'right' }}><div style={{ fontSize: 13, color: '#888', marginBottom: 2 }}>Value</div><div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>${fmtDec(pnlAsset.value)}</div></div>
                         </div>
                         {gasNative > 0 && (
                           <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #242424', display: 'flex', justifyContent: 'space-between' }}>
                             <div style={{ fontSize: 13, color: '#888' }}>⛽ Gas</div>
-                            <div style={{ fontSize: 13, color: '#aaa', fontWeight: 600 }}>{fmtTok(gasNative)} {chainKey === 'ethereum' ? 'ETH' : 'PLS'} <span style={{ color: '#888' }}>(${fmt(gasUsd)})</span></div>
+                            <div style={{ fontSize: 13, color: '#aaa', fontWeight: 600 }}>{fmtTok(gasNative)} {chainKey === 'ethereum' ? 'ETH' : 'PLS'} <span style={{ color: '#888' }}>(${fmtDec(gasUsd)})</span></div>
                           </div>
                         )}
                       </div>
@@ -5314,7 +5403,7 @@ export default function App() {
                                   </div>
                                 </div>
                                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                  <div style={{ fontSize: 13, fontWeight: 600, color: '#aaa' }}>${fmt(tx.valueUsd ?? 0)}</div>
+                                  <div style={{ fontSize: 13, fontWeight: 600, color: '#aaa' }}>${fmtDec(tx.valueUsd ?? 0)}</div>
                                   <div style={{ fontSize: 13, color: '#888' }}>{date}</div>
                                 </div>
                                 {tx.hash && <a href={`${CHAINS[chainKey].explorer}/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--fg-subtle)', flexShrink: 0 }} onMouseOver={e => (e.currentTarget.style.color = '#a78bfa')} onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}><ExternalLink size={11} /></a>}
