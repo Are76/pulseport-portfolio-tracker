@@ -4608,8 +4608,8 @@ export default function App() {
             {/* Page header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
               <div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)', marginBottom: 2 }}>PLS Movement &amp; P&amp;L Tracker</div>
-                <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Track PLS flows and realized profits across all wallets</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)', marginBottom: 2 }}>PLS Movement</div>
+                <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Track PLS flows across all wallets</div>
               </div>
             </div>
 
@@ -4772,98 +4772,6 @@ export default function App() {
               </div>
             )}
 
-            {/* P&L Tracker */}
-            {(() => {
-              const swaps = currentTransactions.filter(tx => tx.type === 'swap');
-              if (swaps.length === 0) return null;
-              const tokenMap: Record<string, any> = {};
-              swaps.forEach(tx => {
-                const buyKey = `${tx.chain}:${tx.asset}`;
-                if (!tokenMap[buyKey]) {
-                  const foundAsset = currentAssets.find(a => a.chain === tx.chain && a.symbol.toUpperCase() === tx.asset.toUpperCase());
-                  tokenMap[buyKey] = { sym: tx.asset, chain: tx.chain, bought: 0, sold: 0, proceedsUsd: 0, currentPrice: foundAsset?.price ?? 0 };
-                }
-                tokenMap[buyKey].bought += tx.amount;
-                if (tx.counterAsset && tx.counterAmount) {
-                  const sellKey = `${tx.chain}:${tx.counterAsset}`;
-                  if (!tokenMap[sellKey]) {
-                    const foundAsset2 = currentAssets.find(a => a.chain === tx.chain && a.symbol.toUpperCase() === tx.counterAsset!.toUpperCase());
-                    tokenMap[sellKey] = { sym: tx.counterAsset, chain: tx.chain, bought: 0, sold: 0, proceedsUsd: 0, currentPrice: foundAsset2?.price ?? 0 };
-                  }
-                  tokenMap[sellKey].sold += tx.counterAmount;
-                  tokenMap[sellKey].proceedsUsd += tx.valueUsd ?? 0;
-                }
-              });
-              const pnlRows = Object.values(tokenMap).filter((r: any) => r.sold > 0 || r.bought > 0).map((r: any) => {
-                const costUsd = r.bought * r.currentPrice;
-                const soldFraction = r.bought > 0 ? Math.min(r.sold / r.bought, 1) : 0;
-                const realizedCost = costUsd * soldFraction;
-                const realizedPnl = r.proceedsUsd - realizedCost;
-                return { ...r, costUsd, realizedCost, realizedPnl };
-              }).filter((r: any) => Math.abs(r.realizedPnl) > 0.01 || r.sold > 0).sort((a: any, b: any) => Math.abs(b.realizedPnl) - Math.abs(a.realizedPnl));
-              const totalPnl = pnlRows.reduce((s: number, r: any) => s + r.realizedPnl, 0);
-              const chainDot: Record<string, string> = { pulsechain: '#f739ff', ethereum: '#627EEA', base: '#0052FF' };
-              return (
-                <div style={{ background: 'var(--bg-surface)', borderRadius: 14, border: '1px solid var(--border)', overflow: 'hidden' }}>
-                  <div style={{ height: 2, background: 'linear-gradient(90deg,#7c3aed,#ec4899)' }} />
-                  <div style={{ padding: '14px 18px', borderBottom: isCollapsed('tracker-pnl') ? 'none' : '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>P&amp;L Tracker</span>
-                      <span style={{ fontSize: 13, color: 'var(--fg-muted)', background: 'var(--border)', padding: '2px 8px', borderRadius: 4 }}>{swaps.length} swaps · approx.</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <span style={{ fontSize: 20, fontWeight: 800, color: totalPnl >= 0 ? t.green : t.red }}>{totalPnl >= 0 ? '+' : ''}${Math.abs(totalPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                      <button onClick={() => toggleSection('tracker-pnl')} style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)' }}
-                        onMouseOver={e => (e.currentTarget.style.color = 'var(--fg)')} onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
-                        {isCollapsed('tracker-pnl') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-                      </button>
-                    </div>
-                  </div>
-                  {!isCollapsed('tracker-pnl') && (
-                    <div style={{ overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 540 }}>
-                        <thead>
-                          <tr style={{ borderBottom: '1px solid #1f1f1f' }}>
-                            {['Token', 'Chain', 'Bought', 'Sold', 'Proceeds', 'Cost (est.)', 'Realized P&L'].map(h => (
-                              <th key={h} style={{ padding: '9px 14px', textAlign: h === 'Token' || h === 'Chain' ? 'left' : 'right', fontSize: 11, color: 'var(--fg-subtle)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', whiteSpace: 'nowrap', background: 'var(--bg-surface)' }}>{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {pnlRows.map((r: any) => (
-                            <tr key={r.sym + r.chain} style={{ borderBottom: '1px solid var(--border)' }}
-                              onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
-                              <td style={{ padding: '10px 14px', whiteSpace: 'nowrap', fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{r.sym}</td>
-                              <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: chainDot[r.chain] || '#555' }} />
-                                  <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>{r.chain}</span>
-                                </div>
-                              </td>
-                              <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: 'var(--fg-muted)' }}>{r.bought > 1e6 ? `${(r.bought/1e6).toFixed(2)}M` : r.bought.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                              <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: 'var(--fg-muted)' }}>{r.sold > 1e6 ? `${(r.sold/1e6).toFixed(2)}M` : r.sold.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                              <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: t.green }}>${r.proceedsUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                              <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: t.red }}>${r.realizedCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                              <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontSize: 13, color: r.realizedPnl >= 0 ? t.green : t.red }}>
-                                {r.realizedPnl >= 0 ? '+' : ''}${r.realizedPnl.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                        <tfoot>
-                          <tr style={{ borderTop: '1px solid var(--border)' }}>
-                            <td colSpan={6} style={{ padding: '10px 14px', fontSize: 13, color: 'var(--fg-subtle)', fontWeight: 600 }}>TOTAL REALIZED P&amp;L</td>
-                            <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 800, fontSize: 14, color: totalPnl >= 0 ? t.green : t.red }}>
-                              {totalPnl >= 0 ? '+' : ''}${Math.abs(totalPnl).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                            </td>
-                          </tr>
-                        </tfoot>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
           </motion.div>
         )}
 
