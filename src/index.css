@@ -1,8 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Exo+2:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-sans: 'Exo 2', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
 }
 
@@ -104,7 +104,7 @@ body {
   background-attachment: fixed;
   min-height: 100vh;
   color: var(--fg);
-  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-family: 'Exo 2', ui-sans-serif, system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -145,9 +145,9 @@ button, a {
   font-weight: 700;
   color: var(--fg-subtle);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
 }
-.type-body { font-size: 13px; color: var(--fg-muted); line-height: 1.5; }
+.type-body { font-size: 13px; color: var(--fg-muted); line-height: 1.5; font-family: 'Exo 2', sans-serif; }
 .type-subheading { font-size: 15px; font-weight: 600; color: var(--fg); }
 .type-heading { font-size: 18px; font-weight: 700; color: var(--fg); letter-spacing: -0.02em; }
 
