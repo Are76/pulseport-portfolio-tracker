@@ -2341,7 +2341,7 @@ export default function App() {
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingBottom: 6 }}>
                               <div style={{ fontSize: 13, color: summary.pnl24h >= 0 ? '#00c076' : '#ef4444', fontWeight: 700 }}>
-                                {summary.pnl24h >= 0 ? '+' : '-'}${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })} / {summary.pnl24h >= 0 ? '+' : ''}{summary.pnl24hPercent.toFixed(2)}%
+                                {summary.pnl24h >= 0 ? '+' : '-'}${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })} / {summary.pnl24h >= 0 ? '+' : '-'}{summary.pnl24hPercent.toFixed(2)}%
                               </div>
                               <div style={{ fontSize: 13, color: '#aaa' }}>{summary.nativeValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</div>
                             </div>
@@ -2822,7 +2822,7 @@ export default function App() {
                               <motion.tr key={asset.id}
                                 initial={{ opacity: 0, y: 8 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: idx * 0.03, duration: 0.2 }}
+                                transition={{ delay: Math.min(idx * 0.03, 0.5), duration: 0.2 }}
                                 style={{ borderBottom: '1px solid #1e1e1e', transition: 'background .1s', borderLeft: `3px solid ${CHAIN_COLORS[asset.chain] || '#333'}` }}
                                 onMouseOver={e => (e.currentTarget.style.background = '#111')}
                                 onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
