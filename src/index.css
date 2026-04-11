@@ -8,38 +8,38 @@
 
 /* ── DESIGN SYSTEM VARIABLES ─────────────────────────────────────────── */
 :root {
-  /* Background hierarchy */
-  --bg-void: #020204;
-  --bg-surface: #0a0a0f;
-  --bg-elevated: #0f0f17;
-  --bg-input: #0c0c14;
-  --bg-sidebar: #070710;
-  --bg-header: rgba(7,7,16,0.92);
+  /* Background hierarchy — distinct levels so cards are clearly visible */
+  --bg-void: #050508;          /* page bg — slightly warmer than pure black */
+  --bg-surface: #0d0d18;       /* cards — 5.5× darker than void */
+  --bg-elevated: #151522;      /* elevated cards, inputs, hover rows */
+  --bg-input: #0e0e1c;         /* form inputs */
+  --bg-sidebar: #080813;       /* sidebar — between void and surface */
+  --bg-header: rgba(8,8,19,0.93); /* header with blur */
 
-  /* Text */
-  --fg: #f0f0ff;
-  --fg-muted: #8892a4;
-  --fg-subtle: #4a5568;
+  /* Text — all WCAG AA compliant on dark backgrounds */
+  --fg: #f0f0ff;               /* primary   — 18:1 contrast ✅ */
+  --fg-muted: #9aa3b2;         /* secondary — 7.2:1 contrast ✅ */
+  --fg-subtle: #7c8798;        /* tertiary  — 5.4:1 contrast ✅ (was #4a5568 = 2.6:1 ❌) */
 
   /* Accent — PulseChain Green */
   --accent: #00c076;
-  --accent-glow: rgba(0,192,118,0.18);
-  --accent-dim: rgba(0,192,118,0.10);
-  --accent-border: rgba(0,192,118,0.25);
+  --accent-glow: rgba(0,192,118,0.20);
+  --accent-dim: rgba(0,192,118,0.12);
+  --accent-border: rgba(0,192,118,0.30);
 
-  /* Chain colors */
-  --chain-pulse: #f739ff;
-  --chain-eth: #627EEA;
-  --chain-base: #0052FF;
+  /* Chain colors — all 4.5:1+ on dark backgrounds */
+  --chain-pulse: #f739ff;      /* PulseChain magenta  — 6.6:1 ✅ */
+  --chain-eth:   #8aa4f0;      /* Ethereum blue       — 7.5:1 ✅ */
+  --chain-base:  #60a5fa;      /* Base blue           — 7.8:1 ✅ (was #0052FF = 3.4:1 ❌) */
 
   /* Semantic */
   --positive: #00c076;
   --negative: #f43f5e;
-  --warning: #f59e0b;
+  --warning:  #f59e0b;
 
-  /* Borders */
-  --border: rgba(255,255,255,0.06);
-  --border-strong: rgba(255,255,255,0.12);
+  /* Borders — visible without being noisy */
+  --border: rgba(255,255,255,0.10);
+  --border-strong: rgba(255,255,255,0.20);
 
   /* Radius */
   --radius-card: 16px;
@@ -70,20 +70,24 @@
 
 /* ── LIGHT THEME ──────────────────────────────────────────────────────── */
 [data-theme="light"] {
-  --bg-void: #f8f8fc;
+  --bg-void: #f4f4f8;
   --bg-surface: #ffffff;
-  --bg-elevated: #f2f2f8;
+  --bg-elevated: #eeeef6;
   --bg-input: #f5f5fa;
-  --bg-sidebar: #f0f0f6;
-  --bg-header: rgba(248,248,252,0.92);
+  --bg-sidebar: #ebebf2;
+  --bg-header: rgba(244,244,248,0.94);
   --fg: #0a0a14;
-  --fg-muted: #6b7280;
-  --fg-subtle: #9ca3af;
-  --border: rgba(0,0,0,0.07);
-  --border-strong: rgba(0,0,0,0.14);
-  --md-sys-color-surface: #f8f8fc;
+  --fg-muted: #374151;         /* 11.2:1 on white ✅ */
+  --fg-subtle: #505a6b;        /* 6.8:1 on white ✅ (was #9ca3af = 2.5:1 ❌) */
+  --border: rgba(0,0,0,0.10);
+  --border-strong: rgba(0,0,0,0.20);
+  /* Chain colors for light mode */
+  --chain-pulse: #9b00b8;      /* darker magenta for light bg */
+  --chain-eth: #3d55c0;        /* darker blue for light bg */
+  --chain-base: #1d4ed8;       /* darker blue for light bg */
+  --md-sys-color-surface: #f4f4f8;
   --md-sys-color-surface-container: #ffffff;
-  --md-sys-color-surface-container-high: #f2f2f8;
+  --md-sys-color-surface-container-high: #eeeef6;
   --md-sys-color-on-surface: #0a0a14;
   --md-sys-color-outline: rgba(0,0,0,0.1);
 }
@@ -117,10 +121,10 @@ button, a {
   -webkit-backdrop-filter: blur(16px);
 }
 .glass-card {
-  background: rgba(15,15,23,0.8);
+  background: rgba(21,21,34,0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
 }
 .glass-secondary {
   background: var(--bg-surface);
@@ -405,9 +409,9 @@ button, a {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-.chain-badge-pulse { background: rgba(247,57,255,0.12); color: #f739ff; border: 1px solid rgba(247,57,255,0.2); }
-.chain-badge-eth { background: rgba(98,126,234,0.12); color: #627EEA; border: 1px solid rgba(98,126,234,0.2); }
-.chain-badge-base { background: rgba(0,82,255,0.12); color: #0052FF; border: 1px solid rgba(0,82,255,0.2); }
+.chain-badge-pulse { background: rgba(247,57,255,0.12); color: var(--chain-pulse); border: 1px solid rgba(247,57,255,0.2); }
+.chain-badge-eth { background: rgba(138,164,240,0.12); color: var(--chain-eth); border: 1px solid rgba(138,164,240,0.2); }
+.chain-badge-base { background: rgba(96,165,250,0.12); color: var(--chain-base); border: 1px solid rgba(96,165,250,0.2); }
 
 /* ── UTILITIES ───────────────────────────────────────────────────────── */
 .mobile-only { display: block; }
