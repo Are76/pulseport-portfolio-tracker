@@ -2201,7 +2201,7 @@ export default function App() {
       }
     };
     fetchMarketData();
-  }, [expandedAssetIds]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [expandedAssetIds]); // intentionally omits tokenMarketData (cache check) and currentAssets (stable ref) to avoid re-fetching on unrelated renders
 
   const CHAIN_COLORS: Record<string, string> = {
     pulsechain: '#f739ff',
@@ -3114,7 +3114,7 @@ export default function App() {
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                                   <span style={{ fontSize: 12, color: '#888' }}>24H Txns</span>
-                                                  <span style={{ fontSize: 13, fontWeight: 700, color: '#aaa' }}>{md ? md.txns24h.toLocaleString() : <span style={{ color: '#555' }}>—</span>}</span>
+                                                  <span style={{ fontSize: 13, fontWeight: 700, color: '#aaa' }}>{md?.txns24h != null ? md.txns24h.toLocaleString() : <span style={{ color: '#555' }}>—</span>}</span>
                                                 </div>
                                               </>
                                             );
