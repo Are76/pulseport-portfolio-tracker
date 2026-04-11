@@ -2649,192 +2649,178 @@ export default function App() {
 
                 {/* ── HERO CARD (full width) with Allocation inside + STAT ROW ── */}
                 {(() => {
-                  const ALLOC_COLORS = ['#00FF9F','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
-                  // HEX Holdings — combined pHEX + eHEX (liquid + staked)
-                  const HEX_ADDR_LC = '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39';
-                  const pHexPrice = prices[`pulsechain:${HEX_ADDR_LC}`]?.usd || prices['pulsechain:hex']?.usd || 0;
-                  const eHexPrice = prices[`ethereum:${HEX_ADDR_LC}`]?.usd || prices['hex']?.usd || 0;
-                  const pHexLiquid = currentAssets.filter(a => a.chain === 'pulsechain' && (a as any).address?.toLowerCase() === HEX_ADDR_LC).reduce((s, a) => s + a.balance, 0);
-                  const pHexStaked = currentStakes.filter(s => s.chain === 'pulsechain').reduce((s, st) => s + (st.stakedHex ?? 0) + (Number(st.interestHearts || 0n) / 1e8), 0);
-                  const eHexLiquid = currentAssets.filter(a => (a.chain === 'ethereum' && (a as any).address?.toLowerCase() === HEX_ADDR_LC) || (a.chain === 'pulsechain' && a.symbol === 'eHEX')).reduce((s, a) => s + a.balance, 0);
-                  const eHexStaked = currentStakes.filter(s => s.chain === 'ethereum').reduce((s, st) => s + (st.stakedHex ?? 0) + (Number(st.interestHearts || 0n) / 1e8), 0);
-                  const totalHexAmount = pHexLiquid + pHexStaked + eHexLiquid + eHexStaked;
-                  const totalHexUsd = (pHexLiquid + pHexStaked) * pHexPrice + (eHexLiquid + eHexStaked) * eHexPrice;
-                  return (
-                    <>
-                    <div className={theme === 'dark' ? 'hero-bg-dark' : 'hero-bg-light'} style={{
-                      border: `1px solid rgba(0,255,159,0.12)`, borderRadius: 20, padding: '28px 28px', position: 'relative', overflow: 'hidden',
-                      boxShadow: '0 0 0 1px rgba(0,255,159,0.04), 0 8px 40px rgba(0,0,0,0.5)'
-                    }}>
-                      {/* Top edge glow */}
-                      <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: '1px', background: 'linear-gradient(90deg, transparent, rgba(0,255,159,0.4), transparent)', pointerEvents: 'none' }} />
-                      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none',
-                        background: 'radial-gradient(ellipse at 5% 60%, rgba(0,255,159,.07) 0%, transparent 45%), radial-gradient(ellipse at 92% 50%, rgba(99,102,241,.05) 0%, transparent 45%)' }} />
-                      <div className="hero-grid" style={{ position: 'relative' }}>
-                        {/* Left: Portfolio Value + Stats */}
-                        <div>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 6 }}>Total Portfolio Value</div>
-                          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap', marginBottom: 18 }}>
-                            <div className="value-hero gradient-text-green">
-                              ${summary.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingBottom: 6 }}>
-                              <div style={{ fontSize: 13, color: summary.pnl24h >= 0 ? t.green : t.red, fontWeight: 700 }}>
-                                {summary.pnl24h >= 0 ? '+' : '-'}${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })} / {summary.pnl24h >= 0 ? '+' : '-'}{summary.pnl24hPercent.toFixed(2)}%
-                              </div>
-                              <div style={{ fontSize: 13, color: t.textSecondary }}>{summary.nativeValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</div>
-                            </div>
-                          </div>
-                          {/* Compact stats */}
-                          <div style={{ height: 1, background: theme === 'dark' ? 'var(--border)' : 'rgba(0,0,0,.08)', margin: '18px 0 14px' }} />
-                          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-                            <span style={{ fontSize: 12, color: t.textTertiary }}>Liquid: <span style={{ color: t.textSecondary, fontWeight: 600 }}>${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></span>
-                            <span style={{ fontSize: 12, color: t.textMuted }}>·</span>
-                            <span style={{ fontSize: 12, color: t.textTertiary }}>Staked: <span style={{ color: t.textSecondary, fontWeight: 600 }}>${summary.stakingValueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></span>
-                            <span style={{ fontSize: 12, color: t.textMuted }}>·</span>
-                            {wallets.length > 0 ? (
-                              <span style={{ fontSize: 12, color: t.textTertiary }}>Wallets: <span style={{ color: t.textSecondary, fontWeight: 600 }}>{wallets.length}</span></span>
-                            ) : (
-                              <button onClick={() => setIsAddingWallet(true)} style={{ fontSize: 12, color: 'var(--accent)', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 6, padding: '2px 10px', cursor: 'pointer', fontWeight: 600, transition: 'all .15s' }}>
-                                + Add Wallet
-                              </button>
-                            )}
-                          </div>
-                          {/* Net Investment / PNL / Stakes at Maturity — inside hero under price */}
-                          <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '16px 0 14px' }} />
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }} className="max-sm:grid-cols-1">
-                            {[
-                              { label: 'Total Invested', val: `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Amount put into portfolio', color: t.text,
-                                icon: <TrendingUp size={14} color={t.textMuted} />, iconBg: 'rgba(255,255,255,0.07)' },
-                              { label: 'Total P&L', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${summary.unifiedPnl >= 0 ? '+' : ''}${summary.totalValue > 0 ? ((summary.unifiedPnl / Math.max(summary.netInvestment, 1)) * 100).toFixed(1) : '0.0'}% vs invested`, color: summary.unifiedPnl >= 0 ? t.green : t.red,
-                                icon: <ArrowUpRight size={14} color={summary.unifiedPnl >= 0 ? t.green : t.red} />, iconBg: summary.unifiedPnl >= 0 ? 'rgba(0,255,159,0.1)' : 'rgba(244,63,94,0.1)' },
-                              { label: 'Hex Holdings', val: `$${totalHexUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${fmtBigNum(totalHexAmount)} HEX total`, color: '#fb923c',
-                                icon: <Coins size={14} color="#fb923c" />, iconBg: 'rgba(251,146,60,0.1)' },
-                            ].map(({ label, val, sub, color, icon, iconBg }) => (
-                              <div key={label} className="stat-card">
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
-                                  <div style={{ width: 26, height: 26, borderRadius: 8, background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                    {icon}
-                                  </div>
-                                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.8px' }}>{label}</div>
-                                </div>
-                                <div style={{ fontSize: 20, fontWeight: 800, color, fontVariantNumeric: 'tabular-nums', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.02em' }}>{val}</div>
-                                <div style={{ fontSize: 12, color: 'var(--fg-subtle)', marginTop: 3 }}>{sub}</div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        {/* Right: Core Coin Icons + Portfolio Allocation */}
-                        <div style={{ minWidth: 230 }} className="max-sm:w-full">
-                          {/* Core coin icons */}
-                          {(() => {
-                            const corePriceCoins: { symbol: string; price: number; change24h: number | null; logo: string; fallbackLogo?: string; dexUrl: string }[] = [
-                              { symbol: 'PLS',  price: prices['pulsechain']?.usd || 0, change24h: prices['pulsechain']?.usd_24h_change ?? prices['pulsechain:native']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png', dexUrl: 'https://dexscreener.com/pulsechain/' },
-                              { symbol: 'PLSX', price: prices['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd || prices['pulsex']?.usd || 0, change24h: prices['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd_24h_change ?? prices['pulsex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x95B303987A60C71504D99Aa1b13B4DA07b0790ab.png', dexUrl: 'https://dexscreener.com/pulsechain/0x1b45b9148791d3a104184cd5dfe5ce57193a3ee9' },
-                              { symbol: 'INC',  price: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd || prices['incentive']?.usd || 0, change24h: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd_24h_change ?? prices['incentive']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png', dexUrl: 'https://dexscreener.com/pulsechain/0xf808bb6265e9ca27002c0a04562bf50d4fe37eaa' },
-                              { symbol: 'HEX',  price: prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0, change24h: prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd_24h_change ?? prices['hex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39.png', dexUrl: 'https://dexscreener.com/pulsechain/0xf1f4ee610b2babb05c635f726ef8b0c568c8dc65' },
-                              { symbol: 'PRVX', price: prices['pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11']?.usd || 0, change24h: prices['pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0xf6f8dB0ABA00007681F8FAF16a0fdA1C9B030b11.png', fallbackLogo: 'https://raw.githubusercontent.com/nicemans1/pulsechain-assets/main/tokens/0xf6f8dB0ABA00007681F8FAF16a0fdA1C9B030b11/logo.png', dexUrl: 'https://dexscreener.com/pulsechain/0x7f681a5ad615238357ba148c281e2eaefd2de55a' },
-                              { symbol: 'eHEX', price: prices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['hex']?.usd || 0, change24h: prices['hex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x57fde0a71132198bbec939b98976993d8d89d225.png', fallbackLogo: 'https://assets.coingecko.com/coins/images/4086/small/HEX-logo.png', dexUrl: 'https://dexscreener.com/pulsechain/0xf0ea3efe42c11c8819948ec2d3179f4084863d3f' },
-                            ];
-                            // Delegate to shared fmtPrice helper defined at render scope
-                            const fmtCoinPrice = fmtPrice;
-                            return (
-                                  <div style={{ marginBottom: 16 }}>
-                                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 10 }}>Live Prices</div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                                  {corePriceCoins.map(coin => (
-                                    <a key={coin.symbol} href={coin.dexUrl} target="_blank" rel="noopener noreferrer" className="live-price-row" style={{ textDecoration: 'none', color: 'inherit' }}>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        <div style={{ width: 22, height: 22, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                          <img src={coin.logo} alt={coin.symbol} style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }}
-                                            onError={e => {
-                                              const img = e.target as HTMLImageElement;
-                                              if (coin.fallbackLogo && img.src !== coin.fallbackLogo) {
-                                                img.src = coin.fallbackLogo;
-                                              } else {
-                                                img.style.display = 'none';
-                                                const parent = img.parentElement;
-                                                if (parent) {
-                                                  parent.style.fontSize = '10px';
-                                                  parent.style.fontWeight = '800';
-                                                  parent.style.color = 'var(--fg-muted)';
-                                                  parent.textContent = coin.symbol[0];
-                                                }
-                                              }
-                                            }} />
-                                        </div>
-                                        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>{coin.symbol}</span>
-                                      </div>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        <span style={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: 'var(--fg-muted)' }}>{fmtCoinPrice(coin.price)}</span>
-                                        {coin.change24h !== null && (
-                                          <span style={{ fontSize: 11, fontWeight: 700, color: coin.change24h >= 0 ? t.green : t.red, minWidth: 40, textAlign: 'right', fontFamily: 'JetBrains Mono, monospace' }}>
-                                            {coin.change24h >= 0 ? '+' : ''}{coin.change24h.toFixed(1)}%
-                                          </span>
-                                        )}
-                                      </div>
-                                    </a>
-                                  ))}
-                                </div>
-                              </div>
-                            );
-                          })()}
-                          {/* Portfolio Allocation */}
-                          {(() => {
-                            const ALLOC_COLORS2 = ['#00FF9F','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
-                            const alloc = assetAllocation.length > 0 ? assetAllocation : [];
-                            return (
-                              <div>
-                                <div style={{ fontSize: 11, fontWeight: 700, color: t.textSecondary, textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                  <span>Portfolio Allocation</span>
-                                  <div style={{ display: 'flex', gap: 4 }}>
-                                    {(['1h','24h','7d'] as const).map(id => (
-                                      <button key={id} onClick={() => setPriceChangePeriod(id)}
-                                        style={{ padding: '2px 8px', borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
-                                          background: priceChangePeriod === id ? '#00FF9F' : t.cardHigh,
-                                          color: priceChangePeriod === id ? '#000' : t.textMuted }}>
-                                        {id.toUpperCase()}
-                                      </button>
-                                    ))}
-                                  </div>
-                                </div>
-                                {alloc.length > 0 ? (
-                                  <>
-                                    <div style={{ width: 160, height: 160, margin: '0 auto' }}>
-                                      <ResponsiveContainer width="100%" height="100%" debounce={50}>
-                                        <PieChart>
-                                          <Pie data={alloc} cx="50%" cy="50%" innerRadius={48} outerRadius={70} paddingAngle={3} dataKey="value" strokeWidth={0}>
-                                            {alloc.map((_, i) => <Cell key={i} fill={ALLOC_COLORS2[i % ALLOC_COLORS2.length]} />)}
-                                          </Pie>
-                                          <RechartsTooltip contentStyle={{ background: 'var(--bg-surface)', border: '1px solid rgba(0,255,159,0.15)', borderRadius: 10, fontSize: 12, color: 'var(--fg)', boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }} />
-                                        </PieChart>
-                                      </ResponsiveContainer>
-                                    </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10 }}>
-                                      {alloc.map((a, i) => {
-                                        const pct = (a.value / (summary.totalValue || 1)) * 100;
-                                        return (
-                                          <div key={a.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                            <div style={{ width: 8, height: 8, borderRadius: 2, background: ALLOC_COLORS2[i % ALLOC_COLORS2.length], flexShrink: 0, boxShadow: `0 0 6px ${ALLOC_COLORS2[i % ALLOC_COLORS2.length]}66` }} />
-                                            <span style={{ fontSize: 12, color: 'var(--fg-muted)', flex: 1 }}>{a.name}</span>
-                                            <span style={{ fontSize: 12, color: 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace', fontVariantNumeric: 'tabular-nums' }}>{pct.toFixed(1)}%</span>
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                  </>
-                                ) : (
-                                  <div style={{ fontSize: 12, color: 'var(--fg-subtle)', textAlign: 'center', padding: '24px 0' }}>Add wallets to see allocation</div>
-                                )}
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      </div>
-                    </div>
-                    </>
-                  );
-                })()}
+                   return (
+                     <>
+                     <div className={theme === 'dark' ? 'hero-bg-dark' : 'hero-bg-light'} style={{
+                       border: `1px solid rgba(0,255,159,0.12)`, borderRadius: 20, padding: '28px 28px', position: 'relative', overflow: 'hidden',
+                       boxShadow: '0 0 0 1px rgba(0,255,159,0.04), 0 8px 40px rgba(0,0,0,0.5)'
+                     }}>
+                       {/* Top edge glow */}
+                       <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: '1px', background: 'linear-gradient(90deg, transparent, rgba(0,255,159,0.4), transparent)', pointerEvents: 'none' }} />
+                       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none',
+                         background: 'radial-gradient(ellipse at 5% 60%, rgba(0,255,159,.07) 0%, transparent 45%), radial-gradient(ellipse at 92% 50%, rgba(99,102,241,.05) 0%, transparent 45%)' }} />
+                       <div className="hero-grid" style={{ position: 'relative' }}>
+                         {/* Left: Portfolio Value + Stats */}
+                         <div>
+                           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 6 }}>Total Portfolio Value</div>
+                           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap', marginBottom: 18 }}>
+                             <div className="value-hero gradient-text-green">
+                               ${summary.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                             </div>
+                             <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingBottom: 6 }}>
+                               <div style={{ fontSize: 13, color: summary.pnl24h >= 0 ? t.green : t.red, fontWeight: 700 }}>
+                                 {summary.pnl24h >= 0 ? '+' : '-'}${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })} / {summary.pnl24h >= 0 ? '+' : '-'}{summary.pnl24hPercent.toFixed(2)}%
+                               </div>
+                               <div style={{ fontSize: 13, color: t.textSecondary }}>{summary.nativeValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</div>
+                             </div>
+                           </div>
+                           {/* Compact stats */}
+                           <div style={{ height: 1, background: theme === 'dark' ? 'var(--border)' : 'rgba(0,0,0,.08)', margin: '18px 0 14px' }} />
+                           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+                             <span style={{ fontSize: 12, color: t.textTertiary }}>Liquid: <span style={{ color: t.textSecondary, fontWeight: 600 }}>${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></span>
+                             <span style={{ fontSize: 12, color: t.textMuted }}>·</span>
+                             <span style={{ fontSize: 12, color: t.textTertiary }}>Staked: <span style={{ color: t.textSecondary, fontWeight: 600 }}>${summary.stakingValueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></span>
+                             <span style={{ fontSize: 12, color: t.textMuted }}>·</span>
+                             {wallets.length > 0 ? (
+                               <span style={{ fontSize: 12, color: t.textTertiary }}>Wallets: <span style={{ color: t.textSecondary, fontWeight: 600 }}>{wallets.length}</span></span>
+                             ) : (
+                               <button onClick={() => setIsAddingWallet(true)} style={{ fontSize: 12, color: 'var(--accent)', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 6, padding: '2px 10px', cursor: 'pointer', fontWeight: 600, transition: 'all .15s' }}>
+                                 + Add Wallet
+                               </button>
+                             )}
+                           </div>
+                           {/* Net Investment / Total P&L — 2-card row */}
+                           <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '16px 0 14px' }} />
+                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }} className="max-sm:grid-cols-1">
+                             {[
+                               { label: 'Total Invested', val: `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Amount put into portfolio', color: t.text,
+                                 icon: <TrendingUp size={14} color={t.textMuted} />, iconBg: 'rgba(255,255,255,0.07)' },
+                               { label: 'Total P&L', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${summary.unifiedPnl >= 0 ? '+' : ''}${summary.totalValue > 0 ? ((summary.unifiedPnl / Math.max(summary.netInvestment, 1)) * 100).toFixed(1) : '0.0'}% vs invested`, color: summary.unifiedPnl >= 0 ? t.green : t.red,
+                                 icon: <ArrowUpRight size={14} color={summary.unifiedPnl >= 0 ? t.green : t.red} />, iconBg: summary.unifiedPnl >= 0 ? 'rgba(0,255,159,0.1)' : 'rgba(244,63,94,0.1)' },
+                             ].map(({ label, val, sub, color, icon, iconBg }) => (
+                               <div key={label} className="stat-card">
+                                 <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
+                                   <div style={{ width: 26, height: 26, borderRadius: 8, background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                     {icon}
+                                   </div>
+                                   <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.8px' }}>{label}</div>
+                                 </div>
+                                 <div style={{ fontSize: 20, fontWeight: 800, color, fontVariantNumeric: 'tabular-nums', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.02em' }}>{val}</div>
+                                 <div style={{ fontSize: 12, color: 'var(--fg-subtle)', marginTop: 3 }}>{sub}</div>
+                               </div>
+                             ))}
+                           </div>
+                         </div>
+                         {/* Right: Live Prices | Portfolio Allocation — side by side */}
+                         <div className="hero-right-cols">
+                           {/* Live Prices */}
+                           {(() => {
+                             const corePriceCoins: { symbol: string; price: number; change24h: number | null; logo: string; fallbackLogo?: string; dexUrl: string }[] = [
+                               { symbol: 'PLS',  price: prices['pulsechain']?.usd || 0, change24h: prices['pulsechain']?.usd_24h_change ?? prices['pulsechain:native']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png', dexUrl: 'https://dexscreener.com/pulsechain/' },
+                               { symbol: 'PLSX', price: prices['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd || prices['pulsex']?.usd || 0, change24h: prices['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd_24h_change ?? prices['pulsex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x95B303987A60C71504D99Aa1b13B4DA07b0790ab.png', dexUrl: 'https://dexscreener.com/pulsechain/0x1b45b9148791d3a104184cd5dfe5ce57193a3ee9' },
+                               { symbol: 'INC',  price: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd || prices['incentive']?.usd || 0, change24h: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd_24h_change ?? prices['incentive']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png', dexUrl: 'https://dexscreener.com/pulsechain/0xf808bb6265e9ca27002c0a04562bf50d4fe37eaa' },
+                               { symbol: 'HEX',  price: prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0, change24h: prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd_24h_change ?? prices['hex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39.png', dexUrl: 'https://dexscreener.com/pulsechain/0xf1f4ee610b2babb05c635f726ef8b0c568c8dc65' },
+                               { symbol: 'PRVX', price: prices['pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11']?.usd || 0, change24h: prices['pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0xf6f8dB0ABA00007681F8FAF16a0fdA1C9B030b11.png', fallbackLogo: 'https://raw.githubusercontent.com/nicemans1/pulsechain-assets/main/tokens/0xf6f8dB0ABA00007681F8FAF16a0fdA1C9B030b11/logo.png', dexUrl: 'https://dexscreener.com/pulsechain/0x7f681a5ad615238357ba148c281e2eaefd2de55a' },
+                               { symbol: 'eHEX', price: prices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['hex']?.usd || 0, change24h: prices['hex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x57fde0a71132198bbec939b98976993d8d89d225.png', fallbackLogo: 'https://assets.coingecko.com/coins/images/4086/small/HEX-logo.png', dexUrl: 'https://dexscreener.com/pulsechain/0xf0ea3efe42c11c8819948ec2d3179f4084863d3f' },
+                             ];
+                             const fmtCoinPrice = fmtPrice;
+                             return (
+                               <div>
+                                 <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 10 }}>Live Prices</div>
+                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                                   {corePriceCoins.map(coin => (
+                                     <a key={coin.symbol} href={coin.dexUrl} target="_blank" rel="noopener noreferrer" className="live-price-row" style={{ textDecoration: 'none', color: 'inherit' }}>
+                                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                         <div style={{ width: 22, height: 22, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                           <img src={coin.logo} alt={coin.symbol} style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }}
+                                             onError={e => {
+                                               const img = e.target as HTMLImageElement;
+                                               if (coin.fallbackLogo && img.src !== coin.fallbackLogo) {
+                                                 img.src = coin.fallbackLogo;
+                                               } else {
+                                                 img.style.display = 'none';
+                                                 const parent = img.parentElement;
+                                                 if (parent) {
+                                                   parent.style.fontSize = '10px';
+                                                   parent.style.fontWeight = '800';
+                                                   parent.style.color = 'var(--fg-muted)';
+                                                   parent.textContent = coin.symbol[0];
+                                                 }
+                                               }
+                                             }} />
+                                         </div>
+                                         <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>{coin.symbol}</span>
+                                       </div>
+                                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                         <span style={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: 'var(--fg-muted)' }}>{fmtCoinPrice(coin.price)}</span>
+                                         {coin.change24h !== null && (
+                                           <span style={{ fontSize: 11, fontWeight: 700, color: coin.change24h >= 0 ? t.green : t.red, minWidth: 40, textAlign: 'right', fontFamily: 'JetBrains Mono, monospace' }}>
+                                             {coin.change24h >= 0 ? '+' : ''}{coin.change24h.toFixed(1)}%
+                                           </span>
+                                         )}
+                                       </div>
+                                     </a>
+                                   ))}
+                                 </div>
+                               </div>
+                             );
+                           })()}
+                           {/* Portfolio Allocation */}
+                           {(() => {
+                             const ALLOC_COLORS2 = ['#00FF9F','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
+                             const alloc = assetAllocation.length > 0 ? assetAllocation : [];
+                             return (
+                               <div>
+                                 <div style={{ fontSize: 11, fontWeight: 700, color: t.textSecondary, textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                   <span>Allocation</span>
+                                   <div style={{ display: 'flex', gap: 4 }}>
+                                     {(['1h','24h','7d'] as const).map(id => (
+                                       <button key={id} onClick={() => setPriceChangePeriod(id)}
+                                         style={{ padding: '2px 8px', borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
+                                           background: priceChangePeriod === id ? '#00FF9F' : t.cardHigh,
+                                           color: priceChangePeriod === id ? '#000' : t.textMuted }}>
+                                         {id.toUpperCase()}
+                                       </button>
+                                     ))}
+                                   </div>
+                                 </div>
+                                 {alloc.length > 0 ? (
+                                   <>
+                                     <div style={{ width: '100%', height: 120 }}>
+                                       <ResponsiveContainer width="100%" height="100%" debounce={50}>
+                                         <PieChart>
+                                           <Pie data={alloc} cx="50%" cy="50%" innerRadius={35} outerRadius={52} paddingAngle={3} dataKey="value" strokeWidth={0}>
+                                             {alloc.map((_, i) => <Cell key={i} fill={ALLOC_COLORS2[i % ALLOC_COLORS2.length]} />)}
+                                           </Pie>
+                                           <RechartsTooltip contentStyle={{ background: 'var(--bg-surface)', border: '1px solid rgba(0,255,159,0.15)', borderRadius: 10, fontSize: 12, color: 'var(--fg)', boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }} />
+                                         </PieChart>
+                                       </ResponsiveContainer>
+                                     </div>
+                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 8 }}>
+                                       {alloc.map((a, i) => {
+                                         const pct = (a.value / (summary.totalValue || 1)) * 100;
+                                         return (
+                                           <div key={a.name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                             <div style={{ width: 7, height: 7, borderRadius: 2, background: ALLOC_COLORS2[i % ALLOC_COLORS2.length], flexShrink: 0, boxShadow: `0 0 6px ${ALLOC_COLORS2[i % ALLOC_COLORS2.length]}66` }} />
+                                             <span style={{ fontSize: 11, color: 'var(--fg-muted)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</span>
+                                             <span style={{ fontSize: 11, color: 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace', fontVariantNumeric: 'tabular-nums' }}>{pct.toFixed(1)}%</span>
+                                           </div>
+                                         );
+                                       })}
+                                     </div>
+                                   </>
+                                 ) : (
+                                   <div style={{ fontSize: 12, color: 'var(--fg-subtle)', textAlign: 'center', padding: '24px 0' }}>Add wallets to see allocation</div>
+                                 )}
+                               </div>
+                             );
+                           })()}
+                         </div>
+                       </div>
+                     </div>
+                     </>
+                   );
+                 })()}
 
                 {/* ── ASSET POSITIONS GRID (3×3) — standalone section below hero ── */}
                 {(() => {
@@ -3054,7 +3040,7 @@ export default function App() {
                           <div style={{ fontSize: 13, fontWeight: 700, color: periodChange >= 0 ? t.green : t.red }}>
                             {periodChange >= 0 ? '+' : ''}{periodChange.toFixed(2)}%
                           </div>
-                          {isSimulated && <span style={{ fontSize: 13, color: t.textSecondary, background: t.cardHigh, padding: '2px 8px', borderRadius: 4 }}>Simulated</span>}
+
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           {/* Period tabs */}

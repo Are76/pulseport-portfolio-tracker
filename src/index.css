@@ -520,6 +520,18 @@ button, a {
   .hero-grid { grid-template-columns: 1fr; }
 }
 
+/* Right panel: Live Prices + Portfolio Allocation side by side */
+.hero-right-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+  min-width: 380px;
+}
+@media (max-width: 640px) {
+  .hero-right-cols { min-width: 0; grid-template-columns: 1fr; }
+}
+
 /* ── VALUE HERO ──────────────────────────────────────────────────────── */
 /* Single canonical class — use with .gradient-text-green for neon color */
 .value-hero {
