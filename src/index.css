@@ -54,6 +54,9 @@
   --md-sys-shape-corner-m: 12px;
   --md-sys-shape-corner-l: 16px;
   --md-sys-shape-corner-xl: 20px;
+  --color-glow: rgba(0,192,118,0.12);
+  --color-glow-strong: rgba(0,192,118,0.25);
+  --bg-glass: rgba(255,255,255,0.02);
 }
 
 [data-theme="light"] {
@@ -158,6 +161,11 @@
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
   border-radius: 4px;
+}
+[data-theme="light"] .skeleton {
+  background: linear-gradient(90deg, #e8e8e8 25%, #f0f0f0 50%, #e8e8e8 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
 }
 
 /* ── REFRESH GLOW ───────────────────────────────────────────────────────── */
@@ -367,4 +375,81 @@ a {
 }
 [data-theme="light"] body {
   color: #1a1a1a;
+}
+
+/* ── STAT CARD ─────────────────────────────────────────────────────────── */
+.stat-card {
+  background: var(--md-sys-color-surface-container);
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--md-sys-shape-corner-m);
+  padding: 14px 16px;
+  transition: border-color 0.15s ease;
+}
+.stat-card:hover {
+  border-color: var(--md-sys-color-primary);
+}
+
+/* ── NAV ITEM ACTIVE ────────────────────────────────────────────────────── */
+.nav-item-active {
+  background: var(--md-sys-color-surface-container-high) !important;
+  border-left: 2px solid var(--md-sys-color-primary) !important;
+  box-shadow: inset 3px 0 12px var(--color-glow, rgba(0,192,118,0.12));
+}
+
+/* ── PRICE TICKER ──────────────────────────────────────────────────────── */
+.ticker-wrapper {
+  overflow: hidden;
+  flex: 1;
+  mask-image: linear-gradient(90deg, transparent 0%, black 5%, black 95%, transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 5%, black 95%, transparent 100%);
+}
+
+/* ── CHAIN BADGE ───────────────────────────────────────────────────────── */
+.chain-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+/* ── BOTTOM NAV ACTIVE DOT ─────────────────────────────────────────────── */
+.bottom-nav-dot::before {
+  content: '';
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: var(--md-sys-color-primary);
+  border-radius: 2px;
+  margin: 0 auto 4px;
+}
+
+/* ── HERO GRADIENT BACKGROUNDS ─────────────────────────────────────────── */
+.hero-bg-dark {
+  background: radial-gradient(ellipse at 20% 50%, rgba(0,192,118,0.06) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 50%, rgba(99,126,234,0.04) 0%, transparent 50%),
+              #080f0b;
+}
+.hero-bg-light {
+  background: radial-gradient(ellipse at 20% 50%, rgba(0,160,102,0.06) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 50%, rgba(74,102,200,0.04) 0%, transparent 50%),
+              #f0faf5;
+}
+
+/* ── VALUE HERO DISPLAY ────────────────────────────────────────────────── */
+.value-hero {
+  font-size: clamp(36px, 5vw, 56px);
+  font-weight: 800;
+  letter-spacing: -2px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── MOBILE BOTTOM NAV BLUR ────────────────────────────────────────────── */
+.bottom-nav-blur {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
