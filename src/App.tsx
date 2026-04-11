@@ -2892,11 +2892,11 @@ export default function App() {
                 </div>
 
                 {/* Token Table */}
-                <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, overflow: 'hidden' }}>
-                  <div style={{ padding: '14px 16px', borderBottom: isCollapsed('assets-table') ? 'none' : '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, overflow: 'hidden' }} className="md-elevation-1">
+                  <div style={{ padding: '14px 16px', borderBottom: isCollapsed('assets-table') ? 'none' : `1px solid ${t.borderLight}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Assets</div>
-                      <div style={{ fontSize: 13, color: '#aaa', marginTop: 2 }}>{currentAssets.length} tokens · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: t.text }}>Assets</div>
+                      <div style={{ fontSize: 13, color: t.textSecondary, marginTop: 2 }}>{currentAssets.length} tokens · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                     </div>
                     <button onClick={() => toggleSection('assets-table')}
                       style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
@@ -3096,12 +3096,12 @@ export default function App() {
                               </motion.tr>
                               {/* ── Expanded details row ── */}
                               {isExpanded && (
-                                <tr style={{ borderBottom: '1px solid #1e1e1e', borderLeft: `3px solid ${CHAIN_COLORS[asset.chain] || '#333'}`, background: '#0a0a0a' }}>
+                                <tr style={{ borderBottom: `1px solid ${t.borderLight}`, borderLeft: `3px solid ${CHAIN_COLORS[asset.chain] || '#333'}`, background: t.expandedBg }}>
                                   <td colSpan={7} style={{ padding: '0 16px 14px 16px' }}>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10, paddingTop: 12 }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, paddingTop: 12 }}>
                                       {/* Price details */}
-                                      <div style={{ background: '#111', borderRadius: 8, padding: '12px 14px' }}>
-                                        <div style={{ fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Price Details</div>
+                                      <div style={{ background: t.cardHigh, borderRadius: 8, padding: '12px 14px' }}>
+                                        <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Price Details</div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <span style={{ fontSize: 12, color: '#888' }}>USD</span>
@@ -3140,8 +3140,8 @@ export default function App() {
                                         </div>
                                       </div>
                                       {/* Market Data */}
-                                      <div style={{ background: '#111', borderRadius: 8, padding: '12px 14px' }}>
-                                        <div style={{ fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Market Data</div>
+                                      <div style={{ background: t.cardHigh, borderRadius: 8, padding: '12px 14px' }}>
+                                        <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Market Data</div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                                           {(() => {
                                             const md = tokenMarketData[asset.id];
@@ -3176,8 +3176,8 @@ export default function App() {
                                         </div>
                                       </div>
                                       {/* Holdings breakdown */}
-                                      <div style={{ background: '#111', borderRadius: 8, padding: '12px 14px' }}>
-                                        <div style={{ fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Holdings</div>
+                                      <div style={{ background: t.cardHigh, borderRadius: 8, padding: '12px 14px' }}>
+                                        <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Holdings</div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                             <span style={{ fontSize: 12, color: '#888' }}>Balance</span>
@@ -3205,8 +3205,8 @@ export default function App() {
                                       </div>
                                       {/* PLS-denominated PnL (if entry set) */}
                                       {pnlPls !== null && (
-                                        <div style={{ background: '#111', borderRadius: 8, padding: '12px 14px' }}>
-                                          <div style={{ fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>PLS P&L</div>
+                                        <div style={{ background: t.cardHigh, borderRadius: 8, padding: '12px 14px' }}>
+                                          <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>PLS P&L</div>
                                           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                               <span style={{ fontSize: 12, color: '#888' }}>Entry</span>
@@ -3226,8 +3226,8 @@ export default function App() {
                                         </div>
                                       )}
                                       {/* Links */}
-                                      <div style={{ background: '#111', borderRadius: 8, padding: '12px 14px' }}>
-                                        <div style={{ fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Links & Info</div>
+                                      <div style={{ background: t.cardHigh, borderRadius: 8, padding: '12px 14px' }}>
+                                        <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Links & Info</div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
                                           {addr && addr !== 'native' && (
                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
