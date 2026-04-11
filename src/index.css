@@ -34,7 +34,9 @@
 
   /* Semantic */
   --positive: #00FF9F;
+  --positive-text: #00FF9F;
   --negative: #f43f5e;
+  --negative-text: #f43f5e;
   --warning:  #f59e0b;
 
   /* Borders — visible without being noisy */
@@ -103,6 +105,11 @@
   --accent-border: rgba(0,122,77,0.22);
   /* Overlay for modals */
   --overlay: rgba(0,0,0,0.45);
+  /* Semantic colors — softer green for readable positive text on light bg */
+  --positive: #059669;
+  --positive-text: #059669;       /* emerald-600 — 4.5:1 on white ✅ */
+  --negative: #dc2626;
+  --negative-text: #dc2626;       /* red-600 — 4.8:1 on white ✅ */
 }
 
 /* ── LIGHT MODE GLOBAL OVERRIDES ─────────────────────────────────────── */
