@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Wallet as WalletIcon, 
+  Coins,
+  Lock,
   TrendingUp, 
   TrendingDown, 
   Plus, 
@@ -32,7 +34,10 @@ import {
   Sun,
   Moon,
   Pencil,
-  Check
+  Check,
+  KeyRound,
+  Zap,
+  BarChart2
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -180,7 +185,7 @@ function StakingLadder({ stakes }: { stakes: HexStake[] }) {
     const d = payload[0].payload;
     return (
       <div style={{ background: 'rgba(0,0,0,.9)', border: '1px solid rgba(255,255,255,.2)', borderRadius: 8, padding: 12, color: '#fff', fontSize: 13 }}>
-        <div style={{ fontWeight: 700, color: '#00c076', marginBottom: 6 }}>Days: {d.bucketRange}</div>
+        <div style={{ fontWeight: 700, color: '#00FF9F', marginBottom: 6 }}>Days: {d.bucketRange}</div>
         <div>T-Shares: {d.totalShares.toFixed(2)}</div>
         <div>Stakes: {d.stakeCount}</div>
       </div>
@@ -197,7 +202,7 @@ function StakingLadder({ stakes }: { stakes: HexStake[] }) {
             label={{ value: 'Days Remaining', position: 'insideBottom', offset: -10, fill: '#7c8798', fontSize: 13 }} />
           <YAxis tick={{ fill: '#7c8798', fontSize: 13 }} axisLine={false} tickLine={false} scale="log" domain={['auto', 'auto']} allowDataOverflow={false} />
           <RechartsTooltip content={<CustomTip />} />
-          <Bar dataKey="totalShares" fill="#00c076" radius={[3, 3, 0, 0]} />
+          <Bar dataKey="totalShares" fill="#00FF9F" radius={[3, 3, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -238,7 +243,7 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
     ? [...large, { label: 'Others', tShares: small.reduce((a, b) => a + b.tShares, 0), totalUsd: small.reduce((a, b) => a + b.totalUsd, 0), count: small.reduce((a, b) => a + b.count, 0) }]
     : large;
 
-  const GRADIENT = ['#00c076', '#627EEA', '#f739ff', '#fb923c', '#3b82f6', '#a855f7'];
+  const GRADIENT = ['#00FF9F', '#627EEA', '#f739ff', '#fb923c', '#3b82f6', '#a855f7'];
   const getColor = (i: number) => GRADIENT[i % GRADIENT.length];
 
   const fmtK = (n: number) => n >= 1e9 ? (n / 1e9).toFixed(1) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : n.toFixed(0);
@@ -262,7 +267,7 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
         <div style={{ fontSize: 13, color: '#888' }}>
           <span style={{ color: '#fff', fontWeight: 700 }}>${fmtK(totalUsd)}</span>
           {' · '}<span style={{ color: '#fb923c' }}>{fmtK(totalHex)} HEX</span>
-          {' · '}<span style={{ color: '#00c076' }}>{fmtK(totalTShares)} T-Shares</span>
+          {' · '}<span style={{ color: '#00FF9F' }}>{fmtK(totalTShares)} T-Shares</span>
         </div>
       </div>
       <ResponsiveContainer width="100%" height={240}>
@@ -436,7 +441,7 @@ export default function App() {
     header: 'var(--bg-header)',
     hoverBg: 'var(--bg-elevated)',
     expandedBg: 'var(--bg-elevated)',
-    green: '#00c076',
+    green: '#00FF9F',
     red: '#f43f5e',
     purple: '#8b5cf6',
     orange: '#f97316',
@@ -2341,25 +2346,23 @@ export default function App() {
             width: 30, height: 30,
             background: 'var(--accent)',
             borderRadius: 9,
-            boxShadow: '0 0 0 1px rgba(0,192,118,.35), 0 0 16px rgba(0,192,118,.2)',
+            boxShadow: '0 0 0 1px rgba(0,255,159,.35), 0 0 16px rgba(0,255,159,.2)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}>
             <Activity size={16} style={{ color: '#000' }} />
           </div>
-          <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.03em' }}>
-            <span style={{ color: 'var(--fg)' }}>PULSE</span><span style={{ color: 'var(--accent)' }}>PORT</span>
-          </span>
+          <span className="logo-wordmark">PULSEPORT</span>
         </div>
 
         {/* Nav */}
         <nav style={{ padding: '10px 8px' }} className="flex flex-col gap-0.5">
           {([
             { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-            { id: 'assets',   label: 'Assets',   icon: WalletIcon },
-            { id: 'stakes',   label: 'Stakes',   icon: Layers },
+            { id: 'assets',   label: 'Assets',   icon: Coins },
+            { id: 'stakes',   label: 'Stakes',   icon: Lock },
             { id: 'history',  label: 'History',  icon: History },
-            { id: 'tracker',  label: 'PLS Flow', icon: TrendingUp },
-            { id: 'wallets',  label: 'Wallets',  icon: User },
+            { id: 'tracker',  label: 'PLS Flow', icon: ArrowLeftRight },
+            { id: 'wallets',  label: 'Wallets',  icon: WalletIcon },
           ] as const).map(({ id, label, icon: Icon }) => (
             <button key={id} onClick={() => setActiveTab(id)}
               className={activeTab === id ? 'nav-item-active' : ''}
@@ -2408,7 +2411,7 @@ export default function App() {
             <div style={{ paddingBottom: 8 }}>
               <div className="overflow-y-auto custom-scrollbar" style={{ maxHeight: 180, padding: '2px 0', display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {wallets.map((w, wIdx) => {
-                  const dotColors = ['#00c076','#f739ff','#627EEA','#f97316','#a855f7','#f59e0b'];
+                  const dotColors = ['#00FF9F','#f739ff','#627EEA','#f97316','#a855f7','#f59e0b'];
                   const isActive = selectedWalletAddr === w.address.toLowerCase() && activeTab === 'wallets';
                   return (
                     <div key={w.address}
@@ -2459,7 +2462,7 @@ export default function App() {
                     border: '1px solid var(--accent-border)', borderRadius: 8, padding: '8px 0', cursor: 'pointer',
                     transition: 'all .15s', width: '100%',
                   }}
-                  onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,192,118,.18)'; }}
+                  onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,255,159,.18)'; }}
                   onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent-dim)'; }}>
                   <Plus size={13} /> Add Wallet
                 </button>
@@ -2484,14 +2487,12 @@ export default function App() {
           <div className="flex md:hidden items-center gap-2">
             <div style={{
               width: 26, height: 26, background: 'var(--accent)', borderRadius: 7,
-              boxShadow: '0 0 12px rgba(0,192,118,.3)',
+              boxShadow: '0 0 12px rgba(0,255,159,.3)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               <Activity size={14} style={{ color: '#000' }} />
             </div>
-            <span style={{ fontWeight: 800, fontSize: 14, letterSpacing: '-0.02em' }}>
-              PULSE<span style={{ color: 'var(--accent)' }}>PORT</span>
-            </span>
+            <span className="logo-wordmark" style={{ fontSize: 14 }}>PULSEPORT</span>
           </div>
 
           {/* Price ticker — desktop only */}
@@ -2580,30 +2581,31 @@ export default function App() {
 
                 {/* ── ONBOARDING ── */}
                 {wallets.length === 0 && (
-                  <div style={{ background: 'linear-gradient(135deg, #0a1a2a 0%, #050f09 100%)', border: '1px solid #1a3a2a', borderRadius: 20, padding: '40px 32px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 0%, rgba(0,192,118,.08) 0%, transparent 60%)', pointerEvents: 'none' }} />
-                    <div style={{ fontSize: 32, marginBottom: 12 }}>👛</div>
-                    <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 8 }}>Welcome to PulsePort</div>
+                  <div style={{ background: 'linear-gradient(135deg, #0a1a2a 0%, #050f09 100%)', border: '1px solid rgba(0,255,159,0.12)', borderRadius: 20, padding: '40px 32px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 0%, rgba(0,255,159,.10) 0%, transparent 55%), radial-gradient(ellipse at 80% 80%, rgba(99,70,255,.06) 0%, transparent 50%)', pointerEvents: 'none' }} />
+                    <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(0,255,159,0.1)', border: '1px solid rgba(0,255,159,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 0 24px rgba(0,255,159,0.12)' }}>
+                      <WalletIcon size={24} color="#00FF9F" />
+                    </div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 8, letterSpacing: '-0.02em' }}>Welcome to PulsePort</div>
                     <div style={{ fontSize: 14, color: '#888', marginBottom: 32, maxWidth: 400, margin: '0 auto 32px' }}>
                       Track your PulseChain, Ethereum, and Base portfolios in real time. Add your first wallet to get started.
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, marginBottom: 36, flexWrap: 'wrap' }}>
                       {[
-                        { step: '1', label: 'Add wallet address', icon: '🔑' },
-                        { step: '2', label: 'Sync your balances', icon: '⚡' },
-                        { step: '3', label: 'View your portfolio', icon: '📊' },
-                      ].map(({ step, label, icon }) => (
+                        { step: '1', label: 'Add wallet address', Icon: KeyRound },
+                        { step: '2', label: 'Sync your balances', Icon: Zap },
+                        { step: '3', label: 'View your portfolio', Icon: BarChart2 },
+                      ].map(({ step, label, Icon }) => (
                         <div key={step} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                          <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(0,192,118,.1)', border: '1px solid rgba(0,192,118,.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>{icon}</div>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: '#00c076', textTransform: 'uppercase', letterSpacing: '.5px' }}>Step {step}</div>
+                          <div className="onboarding-step-icon"><Icon size={20} /></div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: '#00FF9F', textTransform: 'uppercase', letterSpacing: '.5px' }}>Step {step}</div>
                           <div style={{ fontSize: 13, color: '#aaa' }}>{label}</div>
                         </div>
                       ))}
                     </div>
                     <button onClick={() => setIsAddingWallet(true)}
-                      style={{ padding: '14px 36px', borderRadius: 12, background: '#00c076', color: '#000', fontWeight: 800, fontSize: 15, border: 'none', cursor: 'pointer', transition: 'opacity .12s' }}
-                      onMouseOver={e => (e.currentTarget.style.opacity = '0.88')}
-                      onMouseOut={e => (e.currentTarget.style.opacity = '1')}>
+                      className="btn-primary"
+                      style={{ padding: '14px 36px', fontSize: 15 }}>
                       Add Your First Wallet →
                     </button>
                   </div>
@@ -2611,7 +2613,7 @@ export default function App() {
 
                 {/* ── HERO CARD (full width) with Allocation inside + STAT ROW ── */}
                 {(() => {
-                  const ALLOC_COLORS = ['#00c076','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
+                  const ALLOC_COLORS = ['#00FF9F','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
                   // Value at Maturity from stakes
                   const totalHexAtMaturity = currentStakes.reduce((sum, stake) =>
                     sum + (stake.stakedHex ?? 0) + (stake.stakeHexYield ?? 0), 0);
@@ -2622,11 +2624,14 @@ export default function App() {
                   }, 0);
                   return (
                     <>
-                    <div className={`md-elevation-1 ${theme === 'dark' ? 'hero-bg-dark' : 'hero-bg-light'}`} style={{
-                      border: `1px solid ${t.border}`, borderRadius: 16, padding: '24px 28px', position: 'relative', overflow: 'hidden'
+                    <div className={theme === 'dark' ? 'hero-bg-dark' : 'hero-bg-light'} style={{
+                      border: `1px solid rgba(0,255,159,0.12)`, borderRadius: 20, padding: '28px 28px', position: 'relative', overflow: 'hidden',
+                      boxShadow: '0 0 0 1px rgba(0,255,159,0.04), 0 8px 40px rgba(0,0,0,0.5)'
                     }}>
+                      {/* Top edge glow */}
+                      <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: '1px', background: 'linear-gradient(90deg, transparent, rgba(0,255,159,0.4), transparent)', pointerEvents: 'none' }} />
                       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none',
-                        background: 'radial-gradient(ellipse at 15% 50%, rgba(0,192,118,.08) 0%, transparent 60%), radial-gradient(ellipse at 85% 50%, rgba(99,102,241,.05) 0%, transparent 60%)' }} />
+                        background: 'radial-gradient(ellipse at 5% 60%, rgba(0,255,159,.07) 0%, transparent 45%), radial-gradient(ellipse at 92% 50%, rgba(99,102,241,.05) 0%, transparent 45%)' }} />
                       <div className="hero-grid" style={{ position: 'relative' }}>
                         {/* Left: Portfolio Value + Stats */}
                         <div>
@@ -2636,7 +2641,7 @@ export default function App() {
                               ${summary.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingBottom: 6 }}>
-                              <div style={{ fontSize: 13, color: summary.pnl24h >= 0 ? '#00c076' : '#ef4444', fontWeight: 700 }}>
+                              <div style={{ fontSize: 13, color: summary.pnl24h >= 0 ? '#00FF9F' : '#ef4444', fontWeight: 700 }}>
                                 {summary.pnl24h >= 0 ? '+' : '-'}${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })} / {summary.pnl24h >= 0 ? '+' : '-'}{summary.pnl24hPercent.toFixed(2)}%
                               </div>
                               <div style={{ fontSize: 13, color: t.textSecondary }}>{summary.nativeValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</div>
@@ -2652,23 +2657,25 @@ export default function App() {
                             <span style={{ fontSize: 12, color: t.textTertiary }}>Wallets: <span style={{ color: t.textSecondary, fontWeight: 600 }}>{wallets.length}</span></span>
                           </div>
                           {/* Net Investment / PNL / Stakes at Maturity — inside hero under price */}
-                          <div style={{ height: 1, background: theme === 'dark' ? 'var(--border)' : 'rgba(0,0,0,.08)', margin: '16px 0 14px' }} />
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }} className="max-sm:grid-cols-1">
+                          <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '16px 0 14px' }} />
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }} className="max-sm:grid-cols-1">
                             {[
                               { label: 'Total Invested', val: `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Amount put into portfolio', color: t.text,
-                                icon: <TrendingUp size={13} color={t.textMuted} /> },
-                              { label: 'Total P&L', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${summary.unifiedPnl >= 0 ? '+' : ''}${summary.totalValue > 0 ? ((summary.unifiedPnl / Math.max(summary.netInvestment, 1)) * 100).toFixed(1) : '0.0'}% vs invested`, color: summary.unifiedPnl >= 0 ? '#00c076' : '#ef4444',
-                                icon: <ArrowUpRight size={13} color={summary.unifiedPnl >= 0 ? '#00c076' : '#ef4444'} /> },
-                              { label: 'Stakes at Maturity', val: `$${valueAtMaturity.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${fmtBigNum(totalHexAtMaturity)} HEX`, color: '#8b5cf6',
-                                icon: <Layers size={13} color="#8b5cf6" /> },
-                            ].map(({ label, val, sub, color, icon }) => (
+                                icon: <TrendingUp size={14} color={t.textMuted} />, iconBg: 'rgba(255,255,255,0.07)' },
+                              { label: 'Total P&L', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${summary.unifiedPnl >= 0 ? '+' : ''}${summary.totalValue > 0 ? ((summary.unifiedPnl / Math.max(summary.netInvestment, 1)) * 100).toFixed(1) : '0.0'}% vs invested`, color: summary.unifiedPnl >= 0 ? '#00FF9F' : '#f43f5e',
+                                icon: <ArrowUpRight size={14} color={summary.unifiedPnl >= 0 ? '#00FF9F' : '#f43f5e'} />, iconBg: summary.unifiedPnl >= 0 ? 'rgba(0,255,159,0.1)' : 'rgba(244,63,94,0.1)' },
+                              { label: 'Stakes at Maturity', val: `$${valueAtMaturity.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${fmtBigNum(totalHexAtMaturity)} HEX`, color: '#a78bfa',
+                                icon: <Lock size={14} color="#a78bfa" />, iconBg: 'rgba(139,92,246,0.1)' },
+                            ].map(({ label, val, sub, color, icon, iconBg }) => (
                               <div key={label} className="stat-card">
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
-                                  {icon}
-                                  <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.8px' }}>{label}</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
+                                  <div style={{ width: 26, height: 26, borderRadius: 8, background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    {icon}
+                                  </div>
+                                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.8px' }}>{label}</div>
                                 </div>
-                                <div style={{ fontSize: 18, fontWeight: 700, color, fontVariantNumeric: 'tabular-nums' }}>{val}</div>
-                                <div style={{ fontSize: 12, color: t.textTertiary, marginTop: 2 }}>{sub}</div>
+                                <div style={{ fontSize: 20, fontWeight: 800, color, fontVariantNumeric: 'tabular-nums', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.02em' }}>{val}</div>
+                                <div style={{ fontSize: 12, color: 'var(--fg-subtle)', marginTop: 3 }}>{sub}</div>
                               </div>
                             ))}
                           </div>
@@ -2688,13 +2695,13 @@ export default function App() {
                             // Delegate to shared fmtPrice helper defined at render scope
                             const fmtCoinPrice = fmtPrice;
                             return (
-                              <div style={{ marginBottom: 16 }}>
-                                <div style={{ fontSize: 11, fontWeight: 700, color: t.textSecondary, textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 8 }}>Live Prices</div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                  <div style={{ marginBottom: 16 }}>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 10 }}>Live Prices</div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                                   {corePriceCoins.map(coin => (
-                                    <div key={coin.symbol} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 8px', borderRadius: 6, background: t.cardHigh }}>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                                        <img src={coin.logo} alt={coin.symbol} style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }}
+                                    <div key={coin.symbol} className="live-price-row">
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <img src={coin.logo} alt={coin.symbol} style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
                                           onError={e => {
                                             const img = e.target as HTMLImageElement;
                                             if (coin.fallbackLogo && img.src !== coin.fallbackLogo) {
@@ -2703,12 +2710,12 @@ export default function App() {
                                               img.style.display = 'none';
                                             }
                                           }} />
-                                        <span style={{ fontSize: 12, fontWeight: 700, color: t.text }}>{coin.symbol}</span>
+                                        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>{coin.symbol}</span>
                                       </div>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                        <span style={{ fontSize: 11, fontFamily: 'monospace', color: t.textSecondary }}>{fmtCoinPrice(coin.price)}</span>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span style={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: 'var(--fg-muted)' }}>{fmtCoinPrice(coin.price)}</span>
                                         {coin.change24h !== null && (
-                                          <span style={{ fontSize: 10, fontWeight: 700, color: coin.change24h >= 0 ? '#00c076' : '#ef4444', minWidth: 36, textAlign: 'right' }}>
+                                          <span style={{ fontSize: 11, fontWeight: 700, color: coin.change24h >= 0 ? '#00FF9F' : '#f43f5e', minWidth: 40, textAlign: 'right', fontFamily: 'JetBrains Mono, monospace' }}>
                                             {coin.change24h >= 0 ? '+' : ''}{coin.change24h.toFixed(1)}%
                                           </span>
                                         )}
@@ -2721,7 +2728,7 @@ export default function App() {
                           })()}
                           {/* Portfolio Allocation */}
                           {(() => {
-                            const ALLOC_COLORS2 = ['#00c076','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
+                            const ALLOC_COLORS2 = ['#00FF9F','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
                             const alloc = assetAllocation.length > 0 ? assetAllocation : [];
                             return (
                               <div>
@@ -2731,7 +2738,7 @@ export default function App() {
                                     {(['1h','24h','7d'] as const).map(id => (
                                       <button key={id} onClick={() => setPriceChangePeriod(id)}
                                         style={{ padding: '2px 8px', borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
-                                          background: priceChangePeriod === id ? '#00c076' : t.cardHigh,
+                                          background: priceChangePeriod === id ? '#00FF9F' : t.cardHigh,
                                           color: priceChangePeriod === id ? '#000' : t.textMuted }}>
                                         {id.toUpperCase()}
                                       </button>
@@ -2740,31 +2747,31 @@ export default function App() {
                                 </div>
                                 {alloc.length > 0 ? (
                                   <>
-                                    <div style={{ width: 130, height: 130, margin: '0 auto' }}>
+                                    <div style={{ width: 160, height: 160, margin: '0 auto' }}>
                                       <ResponsiveContainer width="100%" height="100%" debounce={50}>
                                         <PieChart>
-                                          <Pie data={alloc} cx="50%" cy="50%" innerRadius={38} outerRadius={58} paddingAngle={3} dataKey="value">
+                                          <Pie data={alloc} cx="50%" cy="50%" innerRadius={48} outerRadius={70} paddingAngle={3} dataKey="value" strokeWidth={0}>
                                             {alloc.map((_, i) => <Cell key={i} fill={ALLOC_COLORS2[i % ALLOC_COLORS2.length]} />)}
                                           </Pie>
-                                          <RechartsTooltip contentStyle={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 13, color: t.text }} />
+                                          <RechartsTooltip contentStyle={{ background: 'rgba(10,10,22,0.96)', border: '1px solid rgba(0,255,159,0.15)', borderRadius: 10, fontSize: 12, color: 'var(--fg)', boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }} />
                                         </PieChart>
                                       </ResponsiveContainer>
                                     </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 8 }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10 }}>
                                       {alloc.map((a, i) => {
                                         const pct = (a.value / (summary.totalValue || 1)) * 100;
                                         return (
                                           <div key={a.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                            <div style={{ width: 7, height: 7, borderRadius: 2, background: ALLOC_COLORS2[i % ALLOC_COLORS2.length], flexShrink: 0 }} />
-                                            <span style={{ fontSize: 12, color: t.textSecondary, minWidth: 48 }}>{a.name}</span>
-                                            <span style={{ fontSize: 12, color: t.textSecondary, fontVariantNumeric: 'tabular-nums', minWidth: 36 }}>{pct.toFixed(1)}%</span>
+                                            <div style={{ width: 8, height: 8, borderRadius: 2, background: ALLOC_COLORS2[i % ALLOC_COLORS2.length], flexShrink: 0, boxShadow: `0 0 6px ${ALLOC_COLORS2[i % ALLOC_COLORS2.length]}66` }} />
+                                            <span style={{ fontSize: 12, color: 'var(--fg-muted)', flex: 1 }}>{a.name}</span>
+                                            <span style={{ fontSize: 12, color: 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace', fontVariantNumeric: 'tabular-nums' }}>{pct.toFixed(1)}%</span>
                                           </div>
                                         );
                                       })}
                                     </div>
                                   </>
                                 ) : (
-                                  <div style={{ fontSize: 12, color: t.textMuted, textAlign: 'center', padding: '20px 0' }}>Add wallets to see allocation</div>
+                                  <div style={{ fontSize: 12, color: 'var(--fg-subtle)', textAlign: 'center', padding: '24px 0' }}>Add wallets to see allocation</div>
                                 )}
                               </div>
                             );
@@ -2773,6 +2780,118 @@ export default function App() {
                       </div>
                     </div>
                     </>
+                  );
+                })()}
+
+                {/* ── ASSET GRID (3×3) ── */}
+                {/* TODO: Replace SPARKLINE_BASE_VARIANCE mock data with live 7-day OHLCV data
+                    from on-chain LP reserves (PulseX getReserves, snapshots per day).
+                    Track in: https://github.com/Are76/pulseport-portfolio-tracker/issues */}
+                {(() => {
+                  // Named constants for mock sparkline generation (replaces with live data TODO above)
+                  const SPARKLINE_VARIANCE_SCALE = 0.9;   // base multiplier (90% of value)
+                  const SPARKLINE_SIN_AMPLITUDE = 0.10;   // ±10% sine wave oscillation
+                  const SPARKLINE_TREND_STEP = 0.01;      // 1% per point upward trend
+                  const ASSET_COLORS: Record<string, string> = {
+                    PLS: '#00FF9F', PLSX: '#f739ff', HEX: '#fb923c',
+                    INC: '#22d3ee', eHEX: '#627EEA', PRVX: '#a855f7',
+                    ETH: '#627EEA', WBTC: '#f7931a', USDC: '#2775ca',
+                  };
+                  const displayAssets = currentAssets.length > 0
+                    ? [...currentAssets].sort((a, b) => b.value - a.value).slice(0, 9)
+                    : MOCK_ASSETS.slice(0, 9);
+
+                  if (displayAssets.length === 0) return null;
+
+                  return (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                        <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--fg)', letterSpacing: '-0.02em' }}>Asset Positions</div>
+                        <button onClick={() => setActiveTab('assets')}
+                          style={{ fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                          View all <ChevronRight size={13} />
+                        </button>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }} className="max-sm:grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+                        {displayAssets.map((asset) => {
+                          const pct = asset.priceChange24h ?? asset.pnl24h ?? 0;
+                          const share = ((asset.value / (summary.totalValue || 1)) * 100);
+                          const accentColor = ASSET_COLORS[asset.symbol] || '#8b5cf6';
+                          const logo = (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()];
+                          const sparkData = Array.from({ length: 7 }, (_, i) => ({
+                            v: asset.value * (SPARKLINE_VARIANCE_SCALE + Math.sin(i * 0.8 + asset.value % 3) * SPARKLINE_SIN_AMPLITUDE + i * SPARKLINE_TREND_STEP),
+                          }));
+                          const chainLabel = asset.chain === 'pulsechain' ? 'PLS' : asset.chain === 'ethereum' ? 'ETH' : 'BASE';
+                          const chainColor = asset.chain === 'pulsechain' ? 'var(--chain-pulse)' : asset.chain === 'ethereum' ? 'var(--chain-eth)' : 'var(--chain-base)';
+                          const chainBg = asset.chain === 'pulsechain' ? 'rgba(247,57,255,0.1)' : asset.chain === 'ethereum' ? 'rgba(138,164,240,0.1)' : 'rgba(96,165,250,0.1)';
+                          return (
+                            <div key={asset.id} className="asset-card" onClick={() => setActiveTab('assets')}>
+                              {/* Top row: logo + symbol + chain badge */}
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                                  <div style={{
+                                    width: 36, height: 36, borderRadius: '50%',
+                                    background: `${accentColor}18`, border: `1.5px solid ${accentColor}33`,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: 13, fontWeight: 800, color: accentColor,
+                                    overflow: 'hidden', flexShrink: 0,
+                                    boxShadow: `0 0 12px ${accentColor}22`,
+                                  }}>
+                                    {logo ? <img src={logo} alt={asset.symbol} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                                      onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /> : asset.symbol[0]}
+                                  </div>
+                                  <div>
+                                    <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--fg)', letterSpacing: '-0.01em' }}>{asset.symbol}</div>
+                                    <div style={{ fontSize: 11, color: 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace' }}>
+                                      {(asset as any).price ? `$${(asset as any).price < 0.001 ? (asset as any).price.toFixed(6) : (asset as any).price < 1 ? (asset as any).price.toFixed(4) : (asset as any).price.toFixed(2)}` : '—'}
+                                    </div>
+                                  </div>
+                                </div>
+                                <span style={{
+                                  fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
+                                  padding: '3px 7px', borderRadius: 999,
+                                  background: chainBg, color: chainColor, border: `1px solid ${chainColor}33`,
+                                }}>
+                                  {chainLabel}
+                                </span>
+                              </div>
+                              {/* Balance + USD Value */}
+                              <div style={{ marginBottom: 10 }}>
+                                <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+                                  {asset.balance >= 1e9 ? `${(asset.balance/1e9).toFixed(2)}B` : asset.balance >= 1e6 ? `${(asset.balance/1e6).toFixed(2)}M` : asset.balance >= 1e3 ? `${(asset.balance/1e3).toFixed(1)}K` : asset.balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}{' '}
+                                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--fg-subtle)' }}>{asset.symbol}</span>
+                                </div>
+                                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg-muted)', fontFamily: 'JetBrains Mono, monospace', marginTop: 2 }}>${asset.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                              </div>
+                              {/* Bottom row: change badge + portfolio % + sparkline */}
+                              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                                  <span className={pct >= 0 ? 'change-badge-pos' : 'change-badge-neg'}>
+                                    {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(1)}%
+                                  </span>
+                                  <span style={{ fontSize: 10, color: 'var(--fg-subtle)', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 999, border: '1px solid rgba(255,255,255,0.08)', fontFamily: 'JetBrains Mono, monospace' }}>
+                                    {share.toFixed(1)}%
+                                  </span>
+                                </div>
+                                <div className="sparkline-container" style={{ width: 76, height: 36 }}>
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={sparkData} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
+                                      <defs>
+                                        <linearGradient id={`spark-${asset.id}`} x1="0" y1="0" x2="0" y2="1">
+                                          <stop offset="0%" stopColor={pct >= 0 ? '#00FF9F' : '#f43f5e'} stopOpacity={0.35} />
+                                          <stop offset="100%" stopColor={pct >= 0 ? '#00FF9F' : '#f43f5e'} stopOpacity={0} />
+                                        </linearGradient>
+                                      </defs>
+                                      <Area type="monotone" dataKey="v" stroke={pct >= 0 ? '#00FF9F' : '#f43f5e'} strokeWidth={1.5} fill={`url(#spark-${asset.id})`} dot={false} isAnimationActive={false} />
+                                    </AreaChart>
+                                  </ResponsiveContainer>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   );
                 })()}
 
@@ -2888,7 +3007,7 @@ export default function App() {
                       <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, borderBottom: isCollapsed('perf-chart') ? 'none' : `1px solid ${t.borderLight}` }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           <div style={{ fontSize: 13, fontWeight: 600, color: t.text }}>Portfolio Performance</div>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: periodChange >= 0 ? '#00c076' : '#ef4444' }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: periodChange >= 0 ? '#00FF9F' : '#ef4444' }}>
                             {periodChange >= 0 ? '+' : ''}{periodChange.toFixed(2)}%
                           </div>
                           {isSimulated && <span style={{ fontSize: 13, color: t.textSecondary, background: t.cardHigh, padding: '2px 8px', borderRadius: 4 }}>Simulated</span>}
@@ -2899,10 +3018,11 @@ export default function App() {
                             <div style={{ display: 'flex', gap: 2, background: t.cardHigh, border: `1px solid ${t.border}`, borderRadius: 8, padding: 3 }}>
                               {(['1d','1w','1y','all'] as const).map(p => (
                                 <button key={p} onClick={() => setPerfPeriod(p)}
-                                  style={{ padding: '4px 10px', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', border: 'none', transition: 'all .12s',
-                                    background: perfPeriod === p ? '#00c076' : 'transparent',
-                                    color: perfPeriod === p ? '#000' : t.textMuted }}>
-                                  {p.toUpperCase()}
+                                  style={{ padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none', transition: 'all .12s',
+                                    background: perfPeriod === p ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
+                                    color: perfPeriod === p ? '#000' : 'var(--fg-muted)',
+                                    boxShadow: perfPeriod === p ? '0 0 10px rgba(0,255,159,0.25)' : 'none' }}>
+                                  {p === '1d' ? '24H' : p === '1w' ? '7D' : p === '1y' ? '1Y' : 'ALL'}
                                 </button>
                               ))}
                             </div>
@@ -2923,8 +3043,8 @@ export default function App() {
                               <AreaChart data={chartPoints}>
                                 <defs>
                                   <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#00c076" stopOpacity={0.2}/>
-                                    <stop offset="95%" stopColor="#00c076" stopOpacity={0}/>
+                                    <stop offset="5%" stopColor="#00FF9F" stopOpacity={0.25}/>
+                                    <stop offset="95%" stopColor="#00FF9F" stopOpacity={0}/>
                                   </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#1a1a1a' : '#e8e8e8'} vertical={false} />
@@ -2934,7 +3054,7 @@ export default function App() {
                                   contentStyle={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 13, color: t.text }}
                                   formatter={(v: any) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Value']}
                                 />
-                                <Area type="monotone" dataKey="value" stroke="#00c076" fillOpacity={1} fill="url(#colorValue)" strokeWidth={2} dot={false} />
+                                <Area type="monotone" dataKey="value" stroke="#00FF9F" fillOpacity={1} fill="url(#colorValue)" strokeWidth={2} dot={false} />
                               </AreaChart>
                             </ResponsiveContainer>
                           </div>
@@ -2960,7 +3080,7 @@ export default function App() {
                       {([['1h','1H'],['6h','6H'],['24h','24H'],['7d','7D']] as const).map(([p, label]) => (
                         <button key={p} onClick={() => setPriceChangePeriod(p)}
                           style={{ padding: '4px 10px', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all .12s', border: 'none',
-                            background: priceChangePeriod === p ? '#00c076' : 'transparent',
+                            background: priceChangePeriod === p ? '#00FF9F' : 'transparent',
                             color: priceChangePeriod === p ? '#000' : t.textMuted }}>
                           {label}
                         </button>
@@ -2968,7 +3088,7 @@ export default function App() {
                     </div>
                     <button onClick={() => setHideDust(!hideDust)}
                       style={{ padding: '6px 14px', borderRadius: 8, border: `1px solid ${t.border}`,
-                        background: hideDust ? '#00c076' : t.cardHigh, color: hideDust ? '#000' : t.textSecondary,
+                        background: hideDust ? '#00FF9F' : t.cardHigh, color: hideDust ? '#000' : t.textSecondary,
                         fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all .12s' }}>
                       Hide Dust
                     </button>
@@ -2986,7 +3106,7 @@ export default function App() {
                         transition: 'all .12s', display: 'flex', alignItems: 'center', gap: 5 }}>
                       {isScanning ? '⟳ Scanning…' : 'Scan'}
                       {scanResult !== null && !isScanning && (
-                        <span style={{ background: scanResult > 0 ? '#f739ff33' : '#00c07633', color: scanResult > 0 ? '#f739ff' : '#00c076',
+                        <span style={{ background: scanResult > 0 ? '#f739ff33' : '#00FF9F33', color: scanResult > 0 ? '#f739ff' : '#00FF9F',
                           borderRadius: 4, padding: '1px 5px', fontSize: 13 }}>
                           {scanResult > 0 ? `+${scanResult} spam` : '✓ clean'}
                         </span>
@@ -3029,7 +3149,7 @@ export default function App() {
                               else { setAssetSortField(field as any); setAssetSortDir('desc'); }
                             } : undefined}
                               style={{ padding: '11px 16px', fontSize: 13, fontWeight: 600,
-                                color: assetSortField === field ? '#00c076' : t.textSecondary,
+                                color: assetSortField === field ? '#00FF9F' : t.textSecondary,
                                 textTransform: 'uppercase', letterSpacing: '.5px',
                                 textAlign: align as any, whiteSpace: 'nowrap', background: t.card,
                                 cursor: field ? 'pointer' : 'default', userSelect: 'none' }}>
@@ -3115,7 +3235,7 @@ export default function App() {
                                           ? <a href={explUrl} target="_blank" rel="noopener noreferrer"
                                               style={{ fontSize: 14, fontWeight: 600, color: '#fff', textDecoration: 'none' }}
                                               onClick={e => e.stopPropagation()}
-                                              onMouseOver={e => (e.currentTarget.style.color = '#00c076')}
+                                              onMouseOver={e => (e.currentTarget.style.color = '#00FF9F')}
                                               onMouseOut={e => (e.currentTarget.style.color = '#fff')}>
                                               {asset.symbol}
                                             </a>
@@ -3154,7 +3274,7 @@ export default function App() {
                                   <PriceDisplay price={asset.price} className="" />
                                 </td>
                                 <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap',
-                                  fontSize: 13, fontWeight: 600, color: pct >= 0 ? '#00c076' : '#ef4444' }}>
+                                  fontSize: 13, fontWeight: 600, color: pct >= 0 ? '#00FF9F' : '#ef4444' }}>
                                   {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%
                                 </td>
                                 <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
@@ -3171,7 +3291,7 @@ export default function App() {
                                 <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap', minWidth: 90 }}>
                                   <div style={{ fontSize: 13, color: '#999', marginBottom: 3 }}>{share.toFixed(1)}%</div>
                                   <div style={{ height: 2, background: '#1a1a1a', borderRadius: 1 }}>
-                                    <div style={{ height: '100%', width: `${Math.min(share, 100)}%`, background: '#00c076', borderRadius: 1 }} />
+                                    <div style={{ height: '100%', width: `${Math.min(share, 100)}%`, background: '#00FF9F', borderRadius: 1 }} />
                                   </div>
                                 </td>
                                 <td style={{ padding: '11px 12px', textAlign: 'right' }}>
@@ -3192,7 +3312,7 @@ export default function App() {
                                       title="Hide">
                                       <Trash2 size={13} />
                                     </button>
-                                    <span style={{ color: isExpanded ? '#00c076' : '#444', padding: 4, display: 'inline-flex', transition: 'color .12s' }}>
+                                    <span style={{ color: isExpanded ? '#00FF9F' : '#444', padding: 4, display: 'inline-flex', transition: 'color .12s' }}>
                                       {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                                     </span>
                                   </div>
@@ -3222,21 +3342,21 @@ export default function App() {
                                           {(asset.priceChange1h ?? null) !== null && (
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                               <span style={{ fontSize: 12, color: '#888' }}>1H</span>
-                                              <span style={{ fontSize: 12, fontWeight: 700, color: (asset.priceChange1h ?? 0) >= 0 ? '#00c076' : '#ef4444' }}>
+                                              <span style={{ fontSize: 12, fontWeight: 700, color: (asset.priceChange1h ?? 0) >= 0 ? '#00FF9F' : '#ef4444' }}>
                                                 {(asset.priceChange1h ?? 0) >= 0 ? '▲' : '▼'} {Math.abs(asset.priceChange1h ?? 0).toFixed(2)}%
                                               </span>
                                             </div>
                                           )}
                                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <span style={{ fontSize: 12, color: '#888' }}>24H</span>
-                                            <span style={{ fontSize: 12, fontWeight: 700, color: (asset.priceChange24h ?? asset.pnl24h ?? 0) >= 0 ? '#00c076' : '#ef4444' }}>
+                                            <span style={{ fontSize: 12, fontWeight: 700, color: (asset.priceChange24h ?? asset.pnl24h ?? 0) >= 0 ? '#00FF9F' : '#ef4444' }}>
                                               {(asset.priceChange24h ?? asset.pnl24h ?? 0) >= 0 ? '▲' : '▼'} {Math.abs(asset.priceChange24h ?? asset.pnl24h ?? 0).toFixed(2)}%
                                             </span>
                                           </div>
                                           {(asset.priceChange7d ?? null) !== null && (
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                               <span style={{ fontSize: 12, color: '#888' }}>7D</span>
-                                              <span style={{ fontSize: 12, fontWeight: 700, color: (asset.priceChange7d ?? 0) >= 0 ? '#00c076' : '#ef4444' }}>
+                                              <span style={{ fontSize: 12, fontWeight: 700, color: (asset.priceChange7d ?? 0) >= 0 ? '#00FF9F' : '#ef4444' }}>
                                                 {(asset.priceChange7d ?? 0) >= 0 ? '▲' : '▼'} {Math.abs(asset.priceChange7d ?? 0).toFixed(2)}%
                                               </span>
                                             </div>
@@ -3260,7 +3380,7 @@ export default function App() {
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                                   <span style={{ fontSize: 12, color: '#888' }}>Liquidity</span>
-                                                  <span style={{ fontSize: 13, fontWeight: 700, color: '#00c076' }}>{md ? fmtNum(md.liquidity) : <span style={{ color: 'var(--fg-subtle)' }}>—</span>}</span>
+                                                  <span style={{ fontSize: 13, fontWeight: 700, color: '#00FF9F' }}>{md ? fmtNum(md.liquidity) : <span style={{ color: 'var(--fg-subtle)' }}>—</span>}</span>
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                                   <span style={{ fontSize: 12, color: '#888' }}>24H Volume</span>
@@ -3322,7 +3442,7 @@ export default function App() {
                                             </div>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 4, borderTop: '1px solid #222', marginTop: 2 }}>
                                               <span style={{ fontSize: 12, color: '#888', fontWeight: 700 }}>Net PnL</span>
-                                              <span style={{ fontSize: 14, fontWeight: 800, color: pnlPls >= 0 ? '#00c076' : '#ef4444' }}>
+                                              <span style={{ fontSize: 14, fontWeight: 800, color: pnlPls >= 0 ? '#00FF9F' : '#ef4444' }}>
                                                 {pnlPls >= 0 ? '+' : ''}{pnlPls.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS
                                               </span>
                                             </div>
@@ -3349,7 +3469,7 @@ export default function App() {
                                           )}
                                           {explUrl && (
                                             <a href={explUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-                                              style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#00c076', textDecoration: 'none', transition: 'opacity .12s' }}
+                                              style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#00FF9F', textDecoration: 'none', transition: 'opacity .12s' }}
                                               onMouseOver={e => (e.currentTarget.style.opacity = '0.75')}
                                               onMouseOut={e => (e.currentTarget.style.opacity = '1')}>
                                               <ExternalLink size={11} /> Explorer
@@ -3469,7 +3589,7 @@ export default function App() {
                           </div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <div style={{ fontSize: 20, fontWeight: 800, color: realizedPnl >= 0 ? '#00c076' : '#ef4444' }}>
+                          <div style={{ fontSize: 20, fontWeight: 800, color: realizedPnl >= 0 ? '#00FF9F' : '#ef4444' }}>
                             {realizedPnl >= 0 ? '+' : ''}${fmtDec(realizedPnl)}
                           </div>
                           <button onClick={() => setPnlAsset(null)}
@@ -3494,11 +3614,11 @@ export default function App() {
                             <div style={{ color: 'var(--fg-subtle)', fontSize: 16, marginTop: 8 }}>→</div>
                             <div>
                               <div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>Proceeds</div>
-                              <div style={{ fontSize: 14, fontWeight: 700, color: '#00c076' }}>${fmtDec(proceedsUsd)}</div>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: '#00FF9F' }}>${fmtDec(proceedsUsd)}</div>
                             </div>
                             <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
                               <div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>P&amp;L</div>
-                              <div style={{ fontSize: 14, fontWeight: 700, color: realizedPnl >= 0 ? '#00c076' : '#ef4444' }}>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: realizedPnl >= 0 ? '#00FF9F' : '#ef4444' }}>
                                 {realizedPnl >= 0 ? '+' : ''}${fmtDec(realizedPnl)}
                               </div>
                             </div>
@@ -3561,8 +3681,8 @@ export default function App() {
                                   {/* Side badge */}
                                   <div style={{ width: 36, flexShrink: 0, textAlign: 'center', fontSize: 13, fontWeight: 800, letterSpacing: '.5px',
                                     padding: '3px 0', borderRadius: 5,
-                                    background: isBuy ? 'rgba(0,192,118,0.12)' : 'rgba(239,68,68,0.12)',
-                                    color: isBuy ? '#00c076' : '#ef4444' }}>
+                                    background: isBuy ? 'rgba(0,255,159,0.12)' : 'rgba(239,68,68,0.12)',
+                                    color: isBuy ? '#00FF9F' : '#ef4444' }}>
                                     {isBuy ? 'BUY' : 'SELL'}
                                   </div>
                                   {/* Amounts */}
@@ -3612,7 +3732,7 @@ export default function App() {
 
                 {/* Daily Yield Banner */}
                 {currentStakes.length > 0 && (
-                  <div style={{ background: theme === 'dark' ? 'linear-gradient(90deg, rgba(139,92,246,.08) 0%, rgba(0,192,118,.06) 100%)' : 'linear-gradient(90deg, rgba(139,92,246,.05) 0%, rgba(0,160,102,.04) 100%)', border: theme === 'dark' ? '1px solid rgba(139,92,246,.2)' : '1px solid rgba(139,92,246,.15)', borderRadius: 12, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                  <div style={{ background: theme === 'dark' ? 'linear-gradient(90deg, rgba(139,92,246,.08) 0%, rgba(0,255,159,.06) 100%)' : 'linear-gradient(90deg, rgba(139,92,246,.05) 0%, rgba(0,160,102,.04) 100%)', border: theme === 'dark' ? '1px solid rgba(139,92,246,.2)' : '1px solid rgba(139,92,246,.15)', borderRadius: 12, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#8b5cf6', animation: 'pulse 2s infinite' }} />
                       <span style={{ fontSize: 13, fontWeight: 600, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: '.6px' }}>Daily HEX Yield</span>
@@ -3625,7 +3745,7 @@ export default function App() {
                         <div style={{ fontSize: 11, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px' }}>HEX/day</div>
                       </div>
                       <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: 20, fontWeight: 800, color: '#00c076', fontVariantNumeric: 'tabular-nums' }}>
+                        <div style={{ fontSize: 20, fontWeight: 800, color: '#00FF9F', fontVariantNumeric: 'tabular-nums' }}>
                           ${stakeSummary.estimatedDailyPayoutUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                         </div>
                         <div style={{ fontSize: 11, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px' }}>USD/day</div>
@@ -3715,7 +3835,7 @@ export default function App() {
                           {(['all', 'pulsechain', 'ethereum'] as const).map(c => (
                             <button key={c} onClick={() => setStakeChainFilter(c)}
                               style={{ padding: '5px 14px', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', border: 'none', transition: 'all .12s',
-                                background: stakeChainFilter === c ? (c === 'pulsechain' ? '#f739ff' : c === 'ethereum' ? '#627EEA' : '#00c076') : 'transparent',
+                                background: stakeChainFilter === c ? (c === 'pulsechain' ? '#f739ff' : c === 'ethereum' ? '#627EEA' : '#00FF9F') : 'transparent',
                                 color: stakeChainFilter === c ? '#fff' : t.textMuted }}>
                               {c === 'all' ? 'All' : c === 'pulsechain' ? 'PulseChain' : 'Ethereum'}
                             </button>
@@ -3731,7 +3851,7 @@ export default function App() {
                         {[
                           { label: (stakeChainFilter === 'ethereum' ? 'eHEX' : stakeChainFilter === 'pulsechain' ? 'pHEX' : 'HEX') + ' Staked', val: `${fStakedHex.toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX`, sub: `+${fInterestHex.toLocaleString(undefined, { maximumFractionDigits: 0 })} interest` },
                           { label: 'Value Now', val: `$${fValueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${(fStakedHex + fInterestHex).toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX`, color: '#fff' },
-                          { label: 'Value at Maturity', val: `$${(fMaturityHex * phexHp).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${fMaturityHex.toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX`, color: '#00c076' },
+                          { label: 'Value at Maturity', val: `$${(fMaturityHex * phexHp).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${fMaturityHex.toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX`, color: '#00FF9F' },
                           { label: 'Active T-Shares', val: fTShares.toLocaleString(undefined, { maximumFractionDigits: 2 }), sub: `≈ ${(fTShares * 6.2).toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX/day` },
                         ].map(({ label, val, sub, color }) => (
                           <div key={label} style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, padding: 18 }}>
@@ -3762,7 +3882,7 @@ export default function App() {
                     <div style={{ padding: '14px 18px', borderBottom: isCollapsed('lp-positions') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>LP Positions</span>
-                        <span style={{ fontSize: 13, background: 'rgba(0,192,118,.1)', color: '#00c076', border: '1px solid rgba(0,192,118,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
+                        <span style={{ fontSize: 13, background: 'rgba(0,255,159,.1)', color: '#00FF9F', border: '1px solid rgba(0,255,159,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
                           {lpPositions.length} pairs · ${lpPositions.reduce((a, b) => a + b.totalUsd, 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                         </span>
                       </div>
@@ -3797,7 +3917,7 @@ export default function App() {
                                 <div style={{ color: '#fff' }}>{lp.token1Amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {lp.token1Symbol}</div>
                                 <div style={{ fontSize: 13, color: '#888' }}>${lp.token1Usd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
                               </td>
-                              <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 14, fontWeight: 700, color: '#00c076' }}>
+                              <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 14, fontWeight: 700, color: '#00FF9F' }}>
                                 ${lp.totalUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                               </td>
                             </tr>
@@ -3843,7 +3963,7 @@ export default function App() {
                               <td style={{ padding: '9px 14px', fontSize: 13, fontWeight: 600 }}>{farm.pairName}</td>
                               <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, color: '#fff' }}>{farm.stakedLp.toLocaleString(undefined, { maximumFractionDigits: 4 })}</td>
                               <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, color: '#fb923c', fontWeight: 600 }}>{farm.pendingInc.toLocaleString(undefined, { maximumFractionDigits: 4 })} INC</td>
-                              <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 14, fontWeight: 700, color: '#00c076' }}>
+                              <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 14, fontWeight: 700, color: '#00FF9F' }}>
                                 ${farm.pendingIncUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                               </td>
                             </tr>
@@ -3962,10 +4082,10 @@ export default function App() {
                                       <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#fb923c' }}>
                                         ${usdNow.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                       </td>
-                                      <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, fontWeight: 600, color: '#00c076' }}>
+                                      <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, fontWeight: 600, color: '#00FF9F' }}>
                                         {hexAtMaturity.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                       </td>
-                                      <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#00c076' }}>
+                                      <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#00FF9F' }}>
                                         ${usdAtMaturity.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                       </td>
                                       <td style={{ padding: '9px 14px', textAlign: 'right', minWidth: 100 }}>
@@ -3975,7 +4095,7 @@ export default function App() {
                                         </div>
                                       </td>
                                       <td style={{ padding: '9px 14px', textAlign: 'right' }}>
-                                        <div style={{ fontSize: 13, fontWeight: 700, color: daysLeft < 14 ? '#ef4444' : daysLeft < 90 ? '#f97316' : daysLeft < 365 ? '#00c076' : '#666' }}>
+                                        <div style={{ fontSize: 13, fontWeight: 700, color: daysLeft < 14 ? '#ef4444' : daysLeft < 90 ? '#f97316' : daysLeft < 365 ? '#00FF9F' : '#666' }}>
                                           {daysLeft.toLocaleString()}d
                                         </div>
                                         {daysLeft < 90 && (
@@ -3992,13 +4112,13 @@ export default function App() {
                                           <div style={{ padding: '14px 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
                                             {[
                                               { label: 'Staked HEX', val: stakedHex.toLocaleString(undefined, { maximumFractionDigits: 0 }), sub: 'Principal' },
-                                              { label: 'Accrued Interest', val: `+${interestHex.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'HEX earned so far', color: '#00c076' },
-                                              { label: 'Projected Yield', val: `+${(stake.stakeHexYield ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'At full maturity', color: '#00c076' },
+                                              { label: 'Accrued Interest', val: `+${interestHex.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'HEX earned so far', color: '#00FF9F' },
+                                              { label: 'Projected Yield', val: `+${(stake.stakeHexYield ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'At full maturity', color: '#00FF9F' },
                                               { label: 'T-Shares', val: tShares.toLocaleString(undefined, { maximumFractionDigits: 3 }), sub: 'Active T-Shares' },
                                               { label: 'Locked Day', val: stake.lockedDay.toString(), sub: `End Day ${endDay}` },
                                               { label: 'Duration', val: `${stake.stakedDays}d`, sub: `${(stake.stakedDays / 365.25).toFixed(1)} years` },
                                               { label: 'Wallet', val: walletShort || stake.walletLabel || '—', sub: stake.chain === 'pulsechain' ? 'PulseChain' : 'Ethereum' },
-                                              { label: 'Total ROI', val: `${hexAtMaturity > 0 ? ((hexAtMaturity / stakedHex - 1) * 100).toFixed(1) : '0.0'}%`, sub: 'Full return on maturity', color: '#00c076' },
+                                              { label: 'Total ROI', val: `${hexAtMaturity > 0 ? ((hexAtMaturity / stakedHex - 1) * 100).toFixed(1) : '0.0'}%`, sub: 'Full return on maturity', color: '#00FF9F' },
                                             ].map(({ label, val, sub, color }) => (
                                               <div key={label}>
                                                 <div style={{ fontSize: 13, color: '#888', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>{label}</div>
@@ -4025,10 +4145,10 @@ export default function App() {
                                 <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#fb923c' }}>
                                   ${totUsdNow.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                 </td>
-                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#00c076' }}>
+                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#00FF9F' }}>
                                   {totHexMat.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                 </td>
-                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#00c076' }}>
+                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#00FF9F' }}>
                                   ${totUsdMat.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                 </td>
                                 <td colSpan={2} />
@@ -4058,9 +4178,9 @@ export default function App() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }} className="max-sm:grid-cols-2">
               {[
                 { label: 'Total Invested', val: `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'All-time capital invested', color: '#fff' },
-                { label: 'Total P&L', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'All-time profit & loss', color: summary.unifiedPnl >= 0 ? '#00c076' : '#ef4444' },
-                { label: 'Realized P&L', val: `${summary.realizedPnl >= 0 ? '+' : ''}$${Math.abs(summary.realizedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Closed trade profit', color: summary.realizedPnl >= 0 ? '#00c076' : '#ef4444' },
-                { label: 'Unrealized P&L', val: `${summary.pnl24h >= 0 ? '+' : ''}$${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: "Today's portfolio change", color: summary.pnl24h >= 0 ? '#00c076' : '#ef4444' },
+                { label: 'Total P&L', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'All-time profit & loss', color: summary.unifiedPnl >= 0 ? '#00FF9F' : '#ef4444' },
+                { label: 'Realized P&L', val: `${summary.realizedPnl >= 0 ? '+' : ''}$${Math.abs(summary.realizedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Closed trade profit', color: summary.realizedPnl >= 0 ? '#00FF9F' : '#ef4444' },
+                { label: 'Unrealized P&L', val: `${summary.pnl24h >= 0 ? '+' : ''}$${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: "Today's portfolio change", color: summary.pnl24h >= 0 ? '#00FF9F' : '#ef4444' },
               ].map(({ label, val, sub, color }) => (
                 <div key={label} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 18 }}>
                   <div style={{ fontSize: 13, color: '#aaa', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>{label}</div>
@@ -4103,7 +4223,7 @@ export default function App() {
                         {(['1d','1w','1y','all'] as const).map(p => (
                           <button key={p} onClick={() => setPerfPeriod(p)}
                             style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
-                              background: perfPeriod === p ? '#00c076' : 'transparent',
+                              background: perfPeriod === p ? '#00FF9F' : 'transparent',
                               color: perfPeriod === p ? '#000' : '#555' }}>
                             {p.toUpperCase()}
                           </button>
@@ -4114,8 +4234,8 @@ export default function App() {
                       <AreaChart data={histChartPoints}>
                         <defs>
                           <linearGradient id="histColorValue" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#00c076" stopOpacity={0.2}/>
-                            <stop offset="95%" stopColor="#00c076" stopOpacity={0}/>
+                            <stop offset="5%" stopColor="#00FF9F" stopOpacity={0.2}/>
+                            <stop offset="95%" stopColor="#00FF9F" stopOpacity={0}/>
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -4123,7 +4243,7 @@ export default function App() {
                         <YAxis hide />
                         <RechartsTooltip contentStyle={{ background: '#111', border: '1px solid #222', borderRadius: 8, fontSize: 13 }}
                           formatter={(v: any) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Value']} />
-                        <Area type="monotone" dataKey="value" stroke="#00c076" fillOpacity={1} fill="url(#histColorValue)" strokeWidth={2} dot={false} />
+                        <Area type="monotone" dataKey="value" stroke="#00FF9F" fillOpacity={1} fill="url(#histColorValue)" strokeWidth={2} dot={false} />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
@@ -4141,7 +4261,7 @@ export default function App() {
                       formatter={(v: any) => [`${Number(v) >= 0 ? '+' : ''}$${Math.abs(Number(v)).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Profit / Loss']} />
                     <Bar dataKey="pnl" radius={[3, 3, 0, 0]}>
                       {monthlyPnlData.map((_entry: any, index: number) => (
-                        <Cell key={index} fill={monthlyPnlData[index].pnl >= 0 ? '#00c076' : '#ef4444'} />
+                        <Cell key={index} fill={monthlyPnlData[index].pnl >= 0 ? '#00FF9F' : '#ef4444'} />
                       ))}
                     </Bar>
                   </BarChart>
@@ -4263,8 +4383,8 @@ export default function App() {
               <div style={{ padding: '14px 18px', borderBottom: isCollapsed('history-txs') ? 'none' : `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ fontSize: 14, fontWeight: 600, color: t.text }}>Recent Activity</span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, background: 'rgba(0,192,118,.1)', color: '#00c076', border: '1px solid rgba(0,192,118,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
-                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#00c076', display: 'inline-block', animation: 'pulse 2s infinite' }} />
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, background: 'rgba(0,255,159,.1)', color: '#00FF9F', border: '1px solid rgba(0,255,159,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
+                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#00FF9F', display: 'inline-block', animation: 'pulse 2s infinite' }} />
                     Live
                   </span>
                 </div>
@@ -4325,8 +4445,8 @@ export default function App() {
                         onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           <div style={{ width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: tx.type === 'transfer_in' ? 'rgba(0,192,118,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
-                            color: tx.type === 'transfer_in' ? '#00c076' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444', flexShrink: 0 }}>
+                            background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
+                            color: tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444', flexShrink: 0 }}>
                             {tx.type === 'transfer_in' ? <ArrowDownLeft size={15} /> : tx.type === 'swap' ? <RefreshCcw size={15} /> : <ArrowUpRight size={15} />}
                           </div>
                           {/* Coin icon for filter */}
@@ -4341,8 +4461,8 @@ export default function App() {
                           <div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                               <span style={{ fontSize: 13, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
-                                background: tx.type === 'transfer_in' ? 'rgba(0,192,118,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
-                                color: tx.type === 'transfer_in' ? '#00c076' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444' }}>
+                                background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
+                                color: tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444' }}>
                                 {tx.type === 'transfer_in' ? 'Received' : tx.type === 'transfer_out' ? 'Sent' : 'Swap'}
                               </span>
                               <span style={{ fontSize: 13, padding: '1px 6px', borderRadius: 3, fontWeight: 600, background: t.cardHighest, color: t.textSecondary }}>{tx.chain}</span>
@@ -4357,7 +4477,7 @@ export default function App() {
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
                           <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: tx.type === 'transfer_in' ? '#00c076' : t.text }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: tx.type === 'transfer_in' ? '#00FF9F' : t.text }}>
                               {tx.type === 'transfer_in' ? '+' : '-'}{tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {tx.asset}
                             </div>
                             {tx.valueUsd && <div style={{ fontSize: 13, color: t.textSecondary }}>${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>}
@@ -4365,10 +4485,10 @@ export default function App() {
                           <button
                             title={isHidden ? 'Unhide' : 'Hide'}
                             onClick={e => { e.stopPropagation(); setHiddenTxIds(prev => isHidden ? prev.filter(id => id !== tx.id) : [...prev, tx.id]); }}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: isHidden ? '#00c076' : t.textTertiary, padding: 4, flexShrink: 0 }}>
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: isHidden ? '#00FF9F' : t.textTertiary, padding: 4, flexShrink: 0 }}>
                             {isHidden ? <Eye size={14} /> : <EyeOff size={14} />}
                           </button>
-                          <span style={{ color: isTxExpanded ? '#00c076' : t.textMuted, transition: 'color .12s' }}>
+                          <span style={{ color: isTxExpanded ? '#00FF9F' : t.textMuted, transition: 'color .12s' }}>
                             {isTxExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                           </span>
                         </div>
@@ -4381,12 +4501,12 @@ export default function App() {
                               { label: 'Amount', val: `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${tx.asset}`, sub: 'Token amount' },
                               { label: 'USD Value', val: tx.valueUsd ? `$${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—', sub: 'At time of transaction' },
                               { label: 'Current Price', val: coinAsset?.price ? `$${coinAsset.price < 0.001 ? coinAsset.price.toFixed(8) : coinAsset.price.toLocaleString(undefined, { maximumFractionDigits: 4 })}` : '—', sub: coinAsset ? `${tx.asset} price now` : 'Unknown token' },
-                              { label: 'Current Value', val: coinAsset ? `$${(tx.amount * coinAsset.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—', sub: 'If held to now', color: coinAsset && tx.valueUsd ? ((tx.amount * coinAsset.price) >= tx.valueUsd ? '#00c076' : '#ef4444') : undefined },
+                              { label: 'Current Value', val: coinAsset ? `$${(tx.amount * coinAsset.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—', sub: 'If held to now', color: coinAsset && tx.valueUsd ? ((tx.amount * coinAsset.price) >= tx.valueUsd ? '#00FF9F' : '#ef4444') : undefined },
                               ...(tx.valueUsd && coinAsset ? [{
                                 label: 'Profit / Loss',
                                 val: `${(tx.amount * coinAsset.price - tx.valueUsd) >= 0 ? '+' : ''}$${Math.abs(tx.amount * coinAsset.price - tx.valueUsd).toLocaleString(undefined, { maximumFractionDigits: 2 })}`,
                                 sub: `${(((tx.amount * coinAsset.price) / tx.valueUsd - 1) * 100).toFixed(1)}% change`,
-                                color: (tx.amount * coinAsset.price - tx.valueUsd) >= 0 ? '#00c076' : '#ef4444'
+                                color: (tx.amount * coinAsset.price - tx.valueUsd) >= 0 ? '#00FF9F' : '#ef4444'
                               }] : []),
                               { label: 'Chain', val: tx.chain === 'pulsechain' ? 'PulseChain' : tx.chain === 'ethereum' ? 'Ethereum' : 'Base', sub: tx.type === 'transfer_in' ? `From ${tx.from.slice(0,6)}…${tx.from.slice(-4)}` : tx.type === 'transfer_out' ? `To ${tx.to.slice(0,6)}…${tx.to.slice(-4)}` : 'Swap' },
                               { label: 'Date', val: format(tx.timestamp, 'MMM d, yyyy'), sub: format(tx.timestamp, 'HH:mm:ss') },
@@ -4401,7 +4521,7 @@ export default function App() {
                           <div style={{ marginTop: 8 }}>
                             <a href={`${tx.chain === 'pulsechain' ? 'https://scan.pulsechain.com' : tx.chain === 'ethereum' ? 'https://etherscan.io' : 'https://basescan.org'}/tx/${tx.hash}`}
                               target="_blank" rel="noopener noreferrer"
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#00c076', textDecoration: 'none' }}>
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#00FF9F', textDecoration: 'none' }}>
                               <ExternalLink size={11} /> View on Explorer
                             </a>
                           </div>
@@ -4427,11 +4547,11 @@ export default function App() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: 12, color: '#aaa', fontWeight: 600, letterSpacing: '.5px', textTransform: 'uppercase', marginBottom: 2 }}>Net PLS</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: plsSwapData.totalNet >= 0 ? '#00c076' : '#ef4444' }}>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: plsSwapData.totalNet >= 0 ? '#00FF9F' : '#ef4444' }}>
                       {plsSwapData.totalNet >= 0 ? '+' : ''}{plsSwapData.totalNet.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS
                     </div>
                     {plsSwapData.netUsd !== 0 && plsSwapData.plsPrice > 0 && (
-                      <div style={{ fontSize: 12, color: plsSwapData.netUsd >= 0 ? '#00c07688' : '#ef444488' }}>
+                      <div style={{ fontSize: 12, color: plsSwapData.netUsd >= 0 ? '#00FF9F88' : '#ef444488' }}>
                         ≈ {plsSwapData.netUsd >= 0 ? '+' : ''}${Math.abs(plsSwapData.netUsd).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                       </div>
                     )}
@@ -4479,7 +4599,7 @@ export default function App() {
                                   </>
                                 ) : tx.type === 'transfer_in' ? (
                                   <>
-                                    <span style={{ fontSize: 11, padding: '1px 5px', borderRadius: 3, background: 'rgba(0,192,118,.1)', color: '#00c076', fontWeight: 700 }}>IN</span>
+                                    <span style={{ fontSize: 11, padding: '1px 5px', borderRadius: 3, background: 'rgba(0,255,159,.1)', color: '#00FF9F', fontWeight: 700 }}>IN</span>
                                     <span style={{ color: '#aaa' }}>from {tx.from.slice(0,6)}…{tx.from.slice(-4)}</span>
                                   </>
                                 ) : (
@@ -4500,10 +4620,10 @@ export default function App() {
                             <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: 13, fontWeight: 600, color: plsSpent > 0 ? '#ef4444' : '#555' }}>
                               {plsSpent > 0 ? `-${plsSpent.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—'}
                             </td>
-                            <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: 13, fontWeight: 600, color: plsReceived > 0 ? '#00c076' : '#555' }}>
+                            <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: 13, fontWeight: 600, color: plsReceived > 0 ? '#00FF9F' : '#555' }}>
                               {plsReceived > 0 ? `+${plsReceived.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—'}
                             </td>
-                            <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: netPls >= 0 ? '#00c076' : '#ef4444' }}>
+                            <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: netPls >= 0 ? '#00FF9F' : '#ef4444' }}>
                               {netPls >= 0 ? '+' : ''}{netPls.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </td>
                           </tr>
@@ -4515,11 +4635,11 @@ export default function App() {
                           <td style={{ padding: '11px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#ef4444' }}>
                             -{plsSwapData.totalSpent.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS
                           </td>
-                          <td style={{ padding: '11px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#00c076' }}>
+                          <td style={{ padding: '11px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#00FF9F' }}>
                             +{plsSwapData.totalReceived.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS
                           </td>
                           <td style={{ padding: '11px 16px', textAlign: 'right' }}>
-                            <div style={{ fontSize: 15, fontWeight: 800, color: plsSwapData.totalNet >= 0 ? '#00c076' : '#ef4444' }}>
+                            <div style={{ fontSize: 15, fontWeight: 800, color: plsSwapData.totalNet >= 0 ? '#00FF9F' : '#ef4444' }}>
                               {plsSwapData.totalNet >= 0 ? '+' : ''}{plsSwapData.totalNet.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS
                             </div>
                             {plsSwapData.plsPrice > 0 && (
@@ -4552,10 +4672,10 @@ export default function App() {
             {/* Stats grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }} className="max-sm:grid-cols-2">
               {[
-                { label: 'PLS Received', val: plsSwapData.totalReceived >= 1e9 ? `${(plsSwapData.totalReceived/1e9).toFixed(2)}B` : plsSwapData.totalReceived >= 1e6 ? `${(plsSwapData.totalReceived/1e6).toFixed(2)}M` : plsSwapData.totalReceived.toLocaleString(undefined,{maximumFractionDigits:0}), sub: 'Total PLS inflow', color: '#00c076' },
+                { label: 'PLS Received', val: plsSwapData.totalReceived >= 1e9 ? `${(plsSwapData.totalReceived/1e9).toFixed(2)}B` : plsSwapData.totalReceived >= 1e6 ? `${(plsSwapData.totalReceived/1e6).toFixed(2)}M` : plsSwapData.totalReceived.toLocaleString(undefined,{maximumFractionDigits:0}), sub: 'Total PLS inflow', color: '#00FF9F' },
                 { label: 'PLS Spent', val: plsSwapData.totalSpent >= 1e9 ? `${(plsSwapData.totalSpent/1e9).toFixed(2)}B` : plsSwapData.totalSpent >= 1e6 ? `${(plsSwapData.totalSpent/1e6).toFixed(2)}M` : plsSwapData.totalSpent.toLocaleString(undefined,{maximumFractionDigits:0}), sub: 'Total PLS outflow', color: '#ef4444' },
-                { label: 'Net PLS', val: `${plsSwapData.totalNet >= 0 ? '+' : ''}${plsSwapData.totalNet >= 1e9 ? (plsSwapData.totalNet/1e9).toFixed(2)+'B' : plsSwapData.totalNet >= 1e6 ? (plsSwapData.totalNet/1e6).toFixed(2)+'M' : plsSwapData.totalNet.toLocaleString(undefined,{maximumFractionDigits:0})}`, sub: 'Net balance', color: plsSwapData.totalNet >= 0 ? '#00c076' : '#ef4444' },
-                { label: 'Net USD', val: `${plsSwapData.netUsd >= 0 ? '+' : ''}$${Math.abs(plsSwapData.netUsd).toLocaleString(undefined,{maximumFractionDigits:0})}`, sub: `@ $${(plsSwapData.plsPrice||0).toFixed(6)}/PLS`, color: plsSwapData.netUsd >= 0 ? '#00c076' : '#ef4444' },
+                { label: 'Net PLS', val: `${plsSwapData.totalNet >= 0 ? '+' : ''}${plsSwapData.totalNet >= 1e9 ? (plsSwapData.totalNet/1e9).toFixed(2)+'B' : plsSwapData.totalNet >= 1e6 ? (plsSwapData.totalNet/1e6).toFixed(2)+'M' : plsSwapData.totalNet.toLocaleString(undefined,{maximumFractionDigits:0})}`, sub: 'Net balance', color: plsSwapData.totalNet >= 0 ? '#00FF9F' : '#ef4444' },
+                { label: 'Net USD', val: `${plsSwapData.netUsd >= 0 ? '+' : ''}$${Math.abs(plsSwapData.netUsd).toLocaleString(undefined,{maximumFractionDigits:0})}`, sub: `@ $${(plsSwapData.plsPrice||0).toFixed(6)}/PLS`, color: plsSwapData.netUsd >= 0 ? '#00FF9F' : '#ef4444' },
               ].map(({ label, val, sub, color }) => (
                 <div key={label} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 18 }}>
                   <div style={{ fontSize: 13, color: '#aaa', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>{label}</div>
@@ -4648,20 +4768,20 @@ export default function App() {
                             onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                               <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                background: tx.type === 'transfer_in' ? 'rgba(0,192,118,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
-                                color: tx.type === 'transfer_in' ? '#00c076' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444', flexShrink: 0 }}>
+                                background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
+                                color: tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444', flexShrink: 0 }}>
                                 {tx.type === 'transfer_in' ? <ArrowDownLeft size={13} /> : tx.type === 'swap' ? <RefreshCcw size={13} /> : <ArrowUpRight size={13} />}
                               </div>
                               <div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 1 }}>
                                   <span style={{ fontSize: 12, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
-                                    background: tx.type === 'transfer_in' ? 'rgba(0,192,118,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
-                                    color: tx.type === 'transfer_in' ? '#00c076' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444' }}>
+                                    background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
+                                    color: tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444' }}>
                                     {tx.type === 'swap' ? 'Swap' : tx.type === 'transfer_in' ? 'In' : 'Out'}
                                   </span>
                                   <span style={{ fontSize: 13, color: t.textSecondary }}>{format(tx.timestamp, 'MMM d, yyyy')}</span>
                                 </div>
-                                <div style={{ fontSize: 13, fontWeight: 700, color: netPls >= 0 ? '#00c076' : '#ef4444' }}>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: netPls >= 0 ? '#00FF9F' : '#ef4444' }}>
                                   {netPls >= 0 ? '+' : ''}{Math.abs(netPls) >= 1e6 ? (netPls/1e6).toFixed(2)+'M' : netPls.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS
                                   <span style={{ fontSize: 12, color: t.textTertiary, fontWeight: 500, marginLeft: 6 }}>
                                     {netUsdRow !== 0 ? `≈ ${netUsdRow >= 0 ? '+' : ''}$${Math.abs(netUsdRow).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ''}
@@ -4669,7 +4789,7 @@ export default function App() {
                                 </div>
                               </div>
                             </div>
-                            <span style={{ color: isRowExpanded ? '#00c076' : t.textMuted, transition: 'color .12s' }}>
+                            <span style={{ color: isRowExpanded ? '#00FF9F' : t.textMuted, transition: 'color .12s' }}>
                               {isRowExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                             </span>
                           </div>
@@ -4677,9 +4797,9 @@ export default function App() {
                             <div style={{ padding: '0 18px 14px', background: t.expandedBg }}>
                               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, paddingTop: 10, borderTop: `1px solid ${t.borderLight}` }}>
                                 {[
-                                  { label: 'PLS Received', val: plsReceived > 0 ? `+${plsReceived >= 1e6 ? (plsReceived/1e6).toFixed(2)+'M' : plsReceived.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—', sub: 'Inflow', color: '#00c076' },
+                                  { label: 'PLS Received', val: plsReceived > 0 ? `+${plsReceived >= 1e6 ? (plsReceived/1e6).toFixed(2)+'M' : plsReceived.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—', sub: 'Inflow', color: '#00FF9F' },
                                   { label: 'PLS Spent', val: plsSpent > 0 ? `-${plsSpent >= 1e6 ? (plsSpent/1e6).toFixed(2)+'M' : plsSpent.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—', sub: 'Outflow', color: '#ef4444' },
-                                  { label: 'Net PLS', val: `${netPls >= 0 ? '+' : ''}${Math.abs(netPls) >= 1e6 ? (netPls/1e6).toFixed(2)+'M' : netPls.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Balance change', color: netPls >= 0 ? '#00c076' : '#ef4444' },
+                                  { label: 'Net PLS', val: `${netPls >= 0 ? '+' : ''}${Math.abs(netPls) >= 1e6 ? (netPls/1e6).toFixed(2)+'M' : netPls.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Balance change', color: netPls >= 0 ? '#00FF9F' : '#ef4444' },
                                   { label: 'Net USD', val: netUsdRow !== 0 ? `${netUsdRow >= 0 ? '+' : ''}$${Math.abs(netUsdRow).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—', sub: `@ $${(plsSwapData.plsPrice || 0).toFixed(6)}/PLS`, color: t.textSecondary },
                                   { label: 'Type', val: tx.type === 'swap' ? 'Swap' : tx.type === 'transfer_in' ? 'Transfer In' : 'Transfer Out', sub: tx.type === 'swap' ? `${tx.counterAsset || ''} ↔ ${tx.asset}` : tx.type === 'transfer_in' ? `From ${tx.from.slice(0,6)}…${tx.from.slice(-4)}` : `To ${tx.to.slice(0,6)}…${tx.to.slice(-4)}` },
                                   { label: 'Date', val: format(tx.timestamp, 'MMM d, yyyy'), sub: format(tx.timestamp, 'HH:mm:ss') },
@@ -4694,7 +4814,7 @@ export default function App() {
                               <div style={{ marginTop: 8 }}>
                                 <a href={`${tx.chain === 'pulsechain' ? 'https://scan.pulsechain.com' : tx.chain === 'ethereum' ? 'https://etherscan.io' : 'https://basescan.org'}/tx/${tx.hash}`}
                                   target="_blank" rel="noopener noreferrer"
-                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#00c076', textDecoration: 'none' }}>
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#00FF9F', textDecoration: 'none' }}>
                                   <ExternalLink size={11} /> View on Explorer
                                 </a>
                               </div>
@@ -4748,7 +4868,7 @@ export default function App() {
                       <span style={{ fontSize: 13, color: '#aaa', background: '#1a1a1a', padding: '2px 8px', borderRadius: 4 }}>{swaps.length} swaps · approx.</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <span style={{ fontSize: 20, fontWeight: 800, color: totalPnl >= 0 ? '#00c076' : '#ef4444' }}>{totalPnl >= 0 ? '+' : ''}${Math.abs(totalPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                      <span style={{ fontSize: 20, fontWeight: 800, color: totalPnl >= 0 ? '#00FF9F' : '#ef4444' }}>{totalPnl >= 0 ? '+' : ''}${Math.abs(totalPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                       <button onClick={() => toggleSection('tracker-pnl')} style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888' }}
                         onMouseOver={e => (e.currentTarget.style.color = '#fff')} onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
                         {isCollapsed('tracker-pnl') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
@@ -4778,9 +4898,9 @@ export default function App() {
                               </td>
                               <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#aaa' }}>{r.bought > 1e6 ? `${(r.bought/1e6).toFixed(2)}M` : r.bought.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
                               <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#aaa' }}>{r.sold > 1e6 ? `${(r.sold/1e6).toFixed(2)}M` : r.sold.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                              <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#00c076' }}>${r.proceedsUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                              <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#00FF9F' }}>${r.proceedsUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
                               <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#ef4444' }}>${r.realizedCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                              <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontSize: 13, color: r.realizedPnl >= 0 ? '#00c076' : '#ef4444' }}>
+                              <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontSize: 13, color: r.realizedPnl >= 0 ? '#00FF9F' : '#ef4444' }}>
                                 {r.realizedPnl >= 0 ? '+' : ''}${r.realizedPnl.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                               </td>
                             </tr>
@@ -4789,7 +4909,7 @@ export default function App() {
                         <tfoot>
                           <tr style={{ borderTop: '1px solid #252525' }}>
                             <td colSpan={6} style={{ padding: '10px 14px', fontSize: 13, color: '#888', fontWeight: 600 }}>TOTAL REALIZED P&amp;L</td>
-                            <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 800, fontSize: 14, color: totalPnl >= 0 ? '#00c076' : '#ef4444' }}>
+                            <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 800, fontSize: 14, color: totalPnl >= 0 ? '#00FF9F' : '#ef4444' }}>
                               {totalPnl >= 0 ? '+' : ''}${Math.abs(totalPnl).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                             </td>
                           </tr>
@@ -4829,22 +4949,24 @@ export default function App() {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: wallets.length > 0 ? `1px solid ${t.borderLight}` : 'none' }}>
                   <div>
                     <span style={{ fontSize: 15, fontWeight: 700, color: t.text }}>Connected Wallets</span>
-                    <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, color: '#00c076', background: 'rgba(0,192,118,.12)', padding: '1px 7px', borderRadius: 100, border: '1px solid rgba(0,192,118,.2)' }}>{wallets.length}</span>
+                    <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, color: '#00FF9F', background: 'rgba(0,255,159,.12)', padding: '1px 7px', borderRadius: 100, border: '1px solid rgba(0,255,159,.2)' }}>{wallets.length}</span>
                   </div>
                   <button
                     onClick={() => setIsAddingWallet(true)}
                     aria-label="Add wallet"
                     style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', minHeight: 36,
-                      background: 'rgba(0,192,118,.1)', color: '#00c076', fontWeight: 700, fontSize: 12,
-                      border: '1px solid rgba(0,192,118,.2)', borderRadius: 8, cursor: 'pointer', transition: 'all .12s' }}
-                    onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,192,118,.18)'; }}
-                    onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,192,118,.1)'; }}>
+                      background: 'rgba(0,255,159,.1)', color: '#00FF9F', fontWeight: 700, fontSize: 12,
+                      border: '1px solid rgba(0,255,159,.2)', borderRadius: 8, cursor: 'pointer', transition: 'all .12s' }}
+                    onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,255,159,.18)'; }}
+                    onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,255,159,.1)'; }}>
                     <Plus size={13} /> Add Wallet
                   </button>
                 </div>
                 {wallets.length === 0 && (
                   <div style={{ padding: '20px 16px', textAlign: 'center' }}>
-                    <div role="img" aria-label="Wallet icon" style={{ fontSize: 28, marginBottom: 8 }}>👛</div>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(0,255,159,0.08)', border: '1px solid rgba(0,255,159,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
+                      <WalletIcon size={20} color="#00FF9F" />
+                    </div>
                     <div style={{ fontSize: 13, color: t.textMuted }}>No wallets added yet.</div>
                     <div style={{ fontSize: 12, color: t.textMuted, marginTop: 4 }}>Tap "Add Wallet" to get started.</div>
                   </div>
@@ -4923,7 +5045,7 @@ export default function App() {
                   ${totalUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-                  <span style={{ background: 'rgba(0,192,118,0.15)', color: '#00c076', padding: '4px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600 }}>
+                  <span style={{ background: 'rgba(0,255,159,0.15)', color: '#00FF9F', padding: '4px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600 }}>
                     Wallet ${walletUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </span>
                   <span style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', padding: '4px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600 }}>
@@ -4956,7 +5078,7 @@ export default function App() {
                       {([['1h','1H'],['6h','6H'],['24h','24H'],['7d','7D']] as const).map(([p, label]) => (
                         <button key={p} onClick={() => setPriceChangePeriod(p)}
                           style={{ padding: '4px 10px', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all .12s', border: 'none',
-                            background: priceChangePeriod === p ? '#00c076' : 'transparent',
+                            background: priceChangePeriod === p ? '#00FF9F' : 'transparent',
                             color: priceChangePeriod === p ? '#000' : '#555' }}>
                           {label}
                         </button>
@@ -4990,7 +5112,7 @@ export default function App() {
                             else { setAssetSortField(field as any); setAssetSortDir('desc'); }
                           } : undefined}
                             style={{ padding: '11px 16px', fontSize: 13, fontWeight: 600,
-                              color: assetSortField === field ? '#00c076' : '#aaa',
+                              color: assetSortField === field ? '#00FF9F' : '#aaa',
                               textTransform: 'uppercase', letterSpacing: '.5px',
                               textAlign: align as any, whiteSpace: 'nowrap', background: 'var(--bg-surface)',
                               cursor: field ? 'pointer' : 'default', userSelect: 'none' }}>
@@ -5047,7 +5169,7 @@ export default function App() {
                                       {explUrl
                                         ? <a href={explUrl} target="_blank" rel="noopener noreferrer"
                                             style={{ fontSize: 14, fontWeight: 600, color: '#fff', textDecoration: 'none' }}
-                                            onMouseOver={e => (e.currentTarget.style.color = '#00c076')}
+                                            onMouseOver={e => (e.currentTarget.style.color = '#00FF9F')}
                                             onMouseOut={e => (e.currentTarget.style.color = '#fff')}>
                                             {asset.symbol}
                                           </a>
@@ -5083,7 +5205,7 @@ export default function App() {
                                 <PriceDisplay price={asset.price} className="" />
                               </td>
                               <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap',
-                                fontSize: 13, fontWeight: 600, color: pct >= 0 ? '#00c076' : '#ef4444' }}>
+                                fontSize: 13, fontWeight: 600, color: pct >= 0 ? '#00FF9F' : '#ef4444' }}>
                                 {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%
                               </td>
                               <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
@@ -5100,7 +5222,7 @@ export default function App() {
                               <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap', minWidth: 90 }}>
                                 <div style={{ fontSize: 13, color: '#999', marginBottom: 3 }}>{share.toFixed(1)}%</div>
                                 <div style={{ height: 2, background: '#1a1a1a', borderRadius: 1 }}>
-                                  <div style={{ height: '100%', width: `${Math.min(share, 100)}%`, background: '#00c076', borderRadius: 1 }} />
+                                  <div style={{ height: '100%', width: `${Math.min(share, 100)}%`, background: '#00FF9F', borderRadius: 1 }} />
                                 </div>
                               </td>
                               <td style={{ padding: '11px 12px', textAlign: 'right' }}>
@@ -5121,7 +5243,7 @@ export default function App() {
                                     title="Hide">
                                     <Trash2 size={13} />
                                   </button>
-                                  <span style={{ color: expandedWalletAssetIds.has(asset.id) ? '#00c076' : '#444', padding: 4, display: 'inline-flex', transition: 'color .12s' }}>
+                                  <span style={{ color: expandedWalletAssetIds.has(asset.id) ? '#00FF9F' : '#444', padding: 4, display: 'inline-flex', transition: 'color .12s' }}>
                                     {expandedWalletAssetIds.has(asset.id) ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                                   </span>
                                 </div>
@@ -5145,7 +5267,7 @@ export default function App() {
                                         <div style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>
                                           {wPriceInPls > 0 ? `${wPriceInPls >= 1000 ? `${(wPriceInPls/1000).toFixed(2)}K` : wPriceInPls.toFixed(4)} PLS` : ''}
                                         </div>
-                                        <div style={{ fontSize: 12, fontWeight: 700, color: pct >= 0 ? '#00c076' : '#ef4444', marginTop: 4 }}>
+                                        <div style={{ fontSize: 12, fontWeight: 700, color: pct >= 0 ? '#00FF9F' : '#ef4444', marginTop: 4 }}>
                                           {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}% (24h)
                                         </div>
                                       </div>
@@ -5173,7 +5295,7 @@ export default function App() {
                                             </div>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 4, borderTop: '1px solid #222', marginTop: 4 }}>
                                               <span style={{ fontSize: 12, fontWeight: 700, color: '#888' }}>Net P&L</span>
-                                              <span style={{ fontSize: 14, fontWeight: 800, color: wPnlPls !== null && wPnlPls >= 0 ? '#00c076' : '#ef4444' }}>
+                                              <span style={{ fontSize: 14, fontWeight: 800, color: wPnlPls !== null && wPnlPls >= 0 ? '#00FF9F' : '#ef4444' }}>
                                                 {wPnlPls !== null ? `${wPnlPls >= 0 ? '+' : ''}${wPnlPls.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS` : '—'}
                                               </span>
                                             </div>
@@ -5213,9 +5335,9 @@ export default function App() {
                                              </div>
                                              <button
                                                onClick={e => { e.stopPropagation(); setTxAssetFilter(asset.symbol); setActiveTab('history'); }}
-                                               style={{ fontSize: 11, fontWeight: 700, color: '#00c076', background: 'rgba(0,192,118,.1)', border: '1px solid rgba(0,192,118,.2)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', transition: 'all .12s' }}
-                                               onMouseOver={e => (e.currentTarget.style.background = 'rgba(0,192,118,.2)')}
-                                               onMouseOut={e => (e.currentTarget.style.background = 'rgba(0,192,118,.1)')}>
+                                               style={{ fontSize: 11, fontWeight: 700, color: '#00FF9F', background: 'rgba(0,255,159,.1)', border: '1px solid rgba(0,255,159,.2)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', transition: 'all .12s' }}
+                                               onMouseOver={e => (e.currentTarget.style.background = 'rgba(0,255,159,.2)')}
+                                               onMouseOut={e => (e.currentTarget.style.background = 'rgba(0,255,159,.1)')}>
                                                View all in History →
                                              </button>
                                            </div>
@@ -5231,9 +5353,9 @@ export default function App() {
                                                {totalProceedsUsd > 0 && <span style={{ color: 'var(--fg-subtle)', marginLeft: 4 }}>(${totalProceedsUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })})</span>}
                                              </div>
                                              {(totalCostUsd > 0 || totalProceedsUsd > 0) && (
-                                               <div style={{ background: realizedPnlTok >= 0 ? 'rgba(0,192,118,.1)' : 'rgba(244,63,94,.1)', border: `1px solid ${realizedPnlTok >= 0 ? 'rgba(0,192,118,.25)' : 'rgba(244,63,94,.25)'}`, borderRadius: 8, padding: '6px 12px', fontSize: 12 }}>
+                                               <div style={{ background: realizedPnlTok >= 0 ? 'rgba(0,255,159,.1)' : 'rgba(244,63,94,.1)', border: `1px solid ${realizedPnlTok >= 0 ? 'rgba(0,255,159,.25)' : 'rgba(244,63,94,.25)'}`, borderRadius: 8, padding: '6px 12px', fontSize: 12 }}>
                                                  <span style={{ color: 'var(--fg-subtle)' }}>Realized P&amp;L </span>
-                                                 <span style={{ fontWeight: 800, color: realizedPnlTok >= 0 ? '#00c076' : '#f43f5e' }}>{realizedPnlTok >= 0 ? '+' : ''}${realizedPnlTok.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                                                 <span style={{ fontWeight: 800, color: realizedPnlTok >= 0 ? '#00FF9F' : '#f43f5e' }}>{realizedPnlTok >= 0 ? '+' : ''}${realizedPnlTok.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                                                </div>
                                              )}
                                            </div>
@@ -5249,7 +5371,7 @@ export default function App() {
                                                <tbody>
                                                  {showTxs.map((tx, ti) => {
                                                    const isBuyTx = tx.type === 'transfer_in' || (tx.type === 'swap' && tx.counterAsset !== asset.symbol);
-                                                   const typeColor = tx.type === 'transfer_in' ? '#00c076' : tx.type === 'transfer_out' ? 'var(--fg-muted)' : isBuyTx ? '#00c076' : '#f43f5e';
+                                                   const typeColor = tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'transfer_out' ? 'var(--fg-muted)' : isBuyTx ? '#00FF9F' : '#f43f5e';
                                                    const typeLabel = tx.type === 'transfer_in' ? '↓ In' : tx.type === 'transfer_out' ? '↑ Out' : isBuyTx ? '↓ Buy' : '↑ Sell';
                                                    return (
                                                      <tr key={ti} style={{ borderBottom: '1px solid var(--border)' }}
@@ -5277,7 +5399,7 @@ export default function App() {
                                                <div style={{ textAlign: 'center', padding: '8px', fontSize: 12, color: 'var(--fg-subtle)' }}>
                                                  +{tokenTxs.length - 8} more —{' '}
                                                  <button onClick={e => { e.stopPropagation(); setTxAssetFilter(asset.symbol); setActiveTab('history'); }}
-                                                   style={{ fontSize: 12, color: '#00c076', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
+                                                   style={{ fontSize: 12, color: '#00FF9F', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
                                                    view all in History
                                                  </button>
                                                </div>
@@ -5350,7 +5472,7 @@ export default function App() {
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ fontSize: 20, fontWeight: 800, color: realizedPnl >= 0 ? '#00c076' : '#ef4444' }}>{realizedPnl >= 0 ? '+' : ''}${fmtDec(realizedPnl)}</div>
+                        <div style={{ fontSize: 20, fontWeight: 800, color: realizedPnl >= 0 ? '#00FF9F' : '#ef4444' }}>{realizedPnl >= 0 ? '+' : ''}${fmtDec(realizedPnl)}</div>
                         <button onClick={() => setPnlAsset(null)} style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888' }} onMouseOver={e => (e.currentTarget.style.color = '#fff')} onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}><X size={16} /></button>
                       </div>
                     </div>
@@ -5360,8 +5482,8 @@ export default function App() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <div><div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>Cost</div><div style={{ fontSize: 14, fontWeight: 700, color: '#ef4444' }}>${fmtDec(realizedCostUsd)}</div></div>
                           <div style={{ color: 'var(--fg-subtle)', fontSize: 16, marginTop: 8 }}>→</div>
-                          <div><div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>Proceeds</div><div style={{ fontSize: 14, fontWeight: 700, color: '#00c076' }}>${fmtDec(proceedsUsd)}</div></div>
-                          <div style={{ marginLeft: 'auto', textAlign: 'right' }}><div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>P&amp;L</div><div style={{ fontSize: 14, fontWeight: 700, color: realizedPnl >= 0 ? '#00c076' : '#ef4444' }}>{realizedPnl >= 0 ? '+' : ''}${fmtDec(realizedPnl)}</div></div>
+                          <div><div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>Proceeds</div><div style={{ fontSize: 14, fontWeight: 700, color: '#00FF9F' }}>${fmtDec(proceedsUsd)}</div></div>
+                          <div style={{ marginLeft: 'auto', textAlign: 'right' }}><div style={{ fontSize: 13, color: '#999', marginBottom: 2 }}>P&amp;L</div><div style={{ fontSize: 14, fontWeight: 700, color: realizedPnl >= 0 ? '#00FF9F' : '#ef4444' }}>{realizedPnl >= 0 ? '+' : ''}${fmtDec(realizedPnl)}</div></div>
                         </div>
                         <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #242424', display: 'flex', gap: 16 }}>
                           <div><div style={{ fontSize: 13, color: '#888' }}>Bought</div><div style={{ fontSize: 13, color: '#aaa', fontWeight: 600 }}>{fmtTok(totalBought)} {pnlAsset.symbol}</div></div>
@@ -5395,7 +5517,7 @@ export default function App() {
                             return (
                               <div key={tx.id + i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 18px', borderBottom: '1px solid #111', background: i % 2 === 0 ? 'transparent' : '#0a0a0a' }}
                                 onMouseOver={e => (e.currentTarget.style.background = '#131313')} onMouseOut={e => (e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : '#0a0a0a')}>
-                                <div style={{ width: 36, flexShrink: 0, textAlign: 'center', fontSize: 13, fontWeight: 800, letterSpacing: '.5px', padding: '3px 0', borderRadius: 5, background: isBuy ? 'rgba(0,192,118,0.12)' : 'rgba(239,68,68,0.12)', color: isBuy ? '#00c076' : '#ef4444' }}>{isBuy ? 'BUY' : 'SELL'}</div>
+                                <div style={{ width: 36, flexShrink: 0, textAlign: 'center', fontSize: 13, fontWeight: 800, letterSpacing: '.5px', padding: '3px 0', borderRadius: 5, background: isBuy ? 'rgba(0,255,159,0.12)' : 'rgba(239,68,68,0.12)', color: isBuy ? '#00FF9F' : '#ef4444' }}>{isBuy ? 'BUY' : 'SELL'}</div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                   <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                     {isBuy ? '+' : '-'}{fmtTok(tokenAmt)} {pnlAsset.symbol}
@@ -5473,7 +5595,7 @@ export default function App() {
                         <span style={{ fontSize: 13, color: '#aaa', background: '#1a1a1a', padding: '2px 8px', borderRadius: 4 }}>{swaps.length} swaps · approx.</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <span style={{ fontSize: 20, fontWeight: 800, color: totalPnl >= 0 ? '#00c076' : '#ef4444' }}>{totalPnl >= 0 ? '+' : ''}${Math.abs(totalPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                        <span style={{ fontSize: 20, fontWeight: 800, color: totalPnl >= 0 ? '#00FF9F' : '#ef4444' }}>{totalPnl >= 0 ? '+' : ''}${Math.abs(totalPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                         <button onClick={() => toggleSection('wallet-pnl')}
                           style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888' }}
                           onMouseOver={e => (e.currentTarget.style.color = '#fff')} onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}
@@ -5505,9 +5627,9 @@ export default function App() {
                                 <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#aaa' }}>{r.swapCount}</td>
                                 <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#aaa' }}>{r.bought > 1e6 ? `${(r.bought/1e6).toFixed(2)}M` : r.bought.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
                                 <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#aaa' }}>{r.sold > 1e6 ? `${(r.sold/1e6).toFixed(2)}M` : r.sold.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#00c076' }}>${r.proceedsUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#00FF9F' }}>${r.proceedsUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
                                 <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#ef4444' }}>${r.realizedCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                                <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontSize: 13, color: r.realizedPnl >= 0 ? '#00c076' : '#ef4444' }}>
+                                <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontSize: 13, color: r.realizedPnl >= 0 ? '#00FF9F' : '#ef4444' }}>
                                   {r.realizedPnl >= 0 ? '+' : ''}${r.realizedPnl.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                 </td>
                               </tr>
@@ -5516,7 +5638,7 @@ export default function App() {
                           <tfoot>
                             <tr style={{ borderTop: '1px solid #252525' }}>
                               <td colSpan={6} style={{ padding: '10px 14px', fontSize: 13, color: '#888', fontWeight: 600 }}>TOTAL REALIZED P&amp;L</td>
-                              <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 800, fontSize: 14, color: totalPnl >= 0 ? '#00c076' : '#ef4444' }}>
+                              <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 800, fontSize: 14, color: totalPnl >= 0 ? '#00FF9F' : '#ef4444' }}>
                                 {totalPnl >= 0 ? '+' : ''}${Math.abs(totalPnl).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                               </td>
                             </tr>
@@ -5546,8 +5668,8 @@ export default function App() {
                     <div style={{ padding: '14px 18px', borderBottom: isCollapsed('wallet-txs') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: 14, fontWeight: 600 }}>Recent Activity</span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, background: 'rgba(0,192,118,.1)', color: '#00c076', border: '1px solid rgba(0,192,118,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
-                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#00c076', display: 'inline-block' }} />
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, background: 'rgba(0,255,159,.1)', color: '#00FF9F', border: '1px solid rgba(0,255,159,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
+                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#00FF9F', display: 'inline-block' }} />
                           {baseTxs.length} txs
                         </span>
                       </div>
@@ -5582,15 +5704,15 @@ export default function App() {
                               onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                 <div style={{ width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  background: tx.type === 'transfer_in' ? 'rgba(0,192,118,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
-                                  color: tx.type === 'transfer_in' ? '#00c076' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444', flexShrink: 0 }}>
+                                  background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
+                                  color: tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444', flexShrink: 0 }}>
                                   {tx.type === 'transfer_in' ? <ArrowDownLeft size={15} /> : tx.type === 'swap' ? <RefreshCcw size={15} /> : <ArrowUpRight size={15} />}
                                 </div>
                                 <div>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                                     <span style={{ fontSize: 13, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
-                                      background: tx.type === 'transfer_in' ? 'rgba(0,192,118,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
-                                      color: tx.type === 'transfer_in' ? '#00c076' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444' }}>
+                                      background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
+                                      color: tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444' }}>
                                       {tx.type === 'transfer_in' ? 'Received' : tx.type === 'transfer_out' ? 'Sent' : 'Swap'}
                                     </span>
                                     <span style={{ fontSize: 13, padding: '1px 6px', borderRadius: 3, fontWeight: 600, background: '#1a1a1a', color: '#aaa' }}>{tx.chain}</span>
@@ -5607,7 +5729,7 @@ export default function App() {
                               </div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
                                 <div style={{ textAlign: 'right' }}>
-                                  <div style={{ fontSize: 13, fontWeight: 600, color: tx.type === 'transfer_in' ? '#00c076' : '#fff' }}>
+                                  <div style={{ fontSize: 13, fontWeight: 600, color: tx.type === 'transfer_in' ? '#00FF9F' : '#fff' }}>
                                     {tx.type === 'transfer_in' ? '+' : '-'}{tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {tx.asset}
                                   </div>
                                   {tx.valueUsd && <div style={{ fontSize: 13, color: '#aaa' }}>${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>}
@@ -5619,8 +5741,8 @@ export default function App() {
                                 </a>
                                 <button title={isHidden ? 'Unhide' : 'Hide'}
                                   onClick={() => setHiddenTxIds(prev => isHidden ? prev.filter(id => id !== tx.id) : [...prev, tx.id])}
-                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: isHidden ? '#00c076' : '#666', padding: 4 }}
-                                  onMouseOver={e => (e.currentTarget.style.color = isHidden ? '#00c076' : '#888')} onMouseOut={e => (e.currentTarget.style.color = isHidden ? '#00c076' : '#666')}>
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: isHidden ? '#00FF9F' : '#666', padding: 4 }}
+                                  onMouseOver={e => (e.currentTarget.style.color = isHidden ? '#00FF9F' : '#888')} onMouseOut={e => (e.currentTarget.style.color = isHidden ? '#00FF9F' : '#666')}>
                                   {isHidden ? <Eye size={14} /> : <EyeOff size={14} />}
                                 </button>
                               </div>
@@ -5721,7 +5843,7 @@ export default function App() {
                     style={{ width: '100%', background: t.cardHigh, border: `1px solid ${t.border}`,
                       borderRadius: 10, color: t.text, fontSize: 14, padding: '11px 14px',
                       outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace', transition: 'border-color .15s' }}
-                    onFocus={e => (e.currentTarget.style.borderColor = '#00c076')}
+                    onFocus={e => (e.currentTarget.style.borderColor = '#00FF9F')}
                     onBlur={e => (e.currentTarget.style.borderColor = t.border)}
                   />
                 </div>
@@ -5738,7 +5860,7 @@ export default function App() {
                     style={{ width: '100%', background: t.cardHigh, border: `1px solid ${t.border}`,
                       borderRadius: 10, color: t.text, fontSize: 14, padding: '11px 14px',
                       outline: 'none', boxSizing: 'border-box', transition: 'border-color .15s' }}
-                    onFocus={e => (e.currentTarget.style.borderColor = '#00c076')}
+                    onFocus={e => (e.currentTarget.style.borderColor = '#00FF9F')}
                     onBlur={e => (e.currentTarget.style.borderColor = t.border)}
                   />
                 </div>
@@ -5752,7 +5874,7 @@ export default function App() {
                   </button>
                   <button 
                     onClick={addWallet}
-                    style={{ flex: 1, minHeight: 44, borderRadius: 10, background: '#00c076',
+                    style={{ flex: 1, minHeight: 44, borderRadius: 10, background: '#00FF9F',
                       border: 'none', color: '#000', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
                   >
                     Add Wallet
@@ -5792,7 +5914,7 @@ export default function App() {
                 <div style={{ width: 36, height: 4, borderRadius: 2, background: t.border }} />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-                <Pencil size={18} style={{ color: '#00c076' }} />
+                <Pencil size={18} style={{ color: '#00FF9F' }} />
                 <span style={{ fontSize: 16, fontWeight: 700, color: t.text }}>Rename Wallet</span>
               </div>
               <div style={{ fontSize: 12, color: t.textMuted, fontFamily: 'monospace', marginBottom: 16, padding: '6px 10px', background: t.cardHigh, borderRadius: 6 }}>
@@ -5811,7 +5933,7 @@ export default function App() {
                   style={{ width: '100%', background: t.cardHigh, border: `1px solid ${t.border}`,
                     borderRadius: 10, color: t.text, fontSize: 14, padding: '11px 14px',
                     outline: 'none', boxSizing: 'border-box', transition: 'border-color .15s' }}
-                  onFocus={e => (e.currentTarget.style.borderColor = '#00c076')}
+                  onFocus={e => (e.currentTarget.style.borderColor = '#00FF9F')}
                   onBlur={e => (e.currentTarget.style.borderColor = t.border)}
                 />
               </div>
@@ -5822,7 +5944,7 @@ export default function App() {
                   Cancel
                 </button>
                 <button onClick={() => renameWallet(editingWalletAddress, editWalletName)}
-                  style={{ flex: 1, padding: '11px 0', borderRadius: 10, background: '#00c076',
+                  style={{ flex: 1, padding: '11px 0', borderRadius: 10, background: '#00FF9F',
                     border: 'none', color: '#000', fontWeight: 700, fontSize: 13, cursor: 'pointer', minHeight: 44 }}>
                   Save
                 </button>
@@ -5843,7 +5965,7 @@ export default function App() {
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               style={{ position: 'relative', width: '100%', maxWidth: 480, background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 20, padding: 28 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-                <Settings size={18} style={{ color: '#00c076' }} />
+                <Settings size={18} style={{ color: '#00FF9F' }} />
                 <span style={{ fontSize: 16, fontWeight: 700 }}>API Keys</span>
               </div>
               <p style={{ fontSize: 13, color: '#aaa', marginBottom: 14, lineHeight: 1.6 }}>
@@ -5873,7 +5995,7 @@ export default function App() {
                   setIsApiKeyModalOpen(false);
                   setTimeout(fetchPortfolio, 100);
                 }}
-                  style={{ flex: 1, padding: '10px 0', borderRadius: 10, background: '#00c076',
+                  style={{ flex: 1, padding: '10px 0', borderRadius: 10, background: '#00FF9F',
                     border: 'none', color: '#000', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
                   Save &amp; Refresh
                 </button>
