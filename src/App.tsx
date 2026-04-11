@@ -4497,79 +4497,82 @@ export default function App() {
                 ) : filteredTransactions.filter(tx => showHiddenTxs || !hiddenTxIds.includes(tx.id)).map((tx) => {
                   const isHidden = hiddenTxIds.includes(tx.id);
                   const isTxExpanded = expandedTxIds.has(tx.id);
-                  // Find coin PNL data for expanded dropdown
                   const coinAsset = currentAssets.find(a => a.symbol.toUpperCase() === tx.asset.toUpperCase() && a.chain === tx.chain);
                   const coinLogo = coinAsset ? getTokenLogoUrl(coinAsset) : '';
+                  const chainDotColor: Record<string, string> = { pulsechain: '#f739ff', ethereum: '#627EEA', base: '#0052FF' };
                   return (
                     <div key={tx.id} style={{ borderBottom: `1px solid ${t.borderLight}`, opacity: isHidden ? 0.35 : 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', transition: 'background .1s', cursor: 'pointer' }}
                         onClick={() => setExpandedTxIds(prev => { const s = new Set(prev); s.has(tx.id) ? s.delete(tx.id) : s.add(tx.id); return s; })}
                         onMouseOver={e => (e.currentTarget.style.background = t.hoverBg)}
                         onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
+                        {/* LEFT — icon + text (mirrors PLS Movement layout) */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <div style={{ width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
                             background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
                             color: tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444', flexShrink: 0 }}>
-                            {tx.type === 'transfer_in' ? <ArrowDownLeft size={15} /> : tx.type === 'swap' ? <RefreshCcw size={15} /> : <ArrowUpRight size={15} />}
+                            {tx.type === 'transfer_in' ? <ArrowDownLeft size={13} /> : tx.type === 'swap' ? <RefreshCcw size={13} /> : <ArrowUpRight size={13} />}
                           </div>
-                          {/* Coin icon for filter */}
+                          <div>
+                            {/* Row 1: type badge + chain dot + date */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 1 }}>
+                              <span style={{ fontSize: 12, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
+                                background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
+                                color: tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444' }}>
+                                {tx.type === 'swap' ? 'Swap' : tx.type === 'transfer_in' ? 'In' : 'Out'}
+                              </span>
+                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: chainDotColor[tx.chain] || t.textMuted, flexShrink: 0, display: 'inline-block' }} title={tx.chain} />
+                              <span style={{ fontSize: 13, color: t.textSecondary }}>{format(tx.timestamp, 'MMM d, yyyy')}</span>
+                            </div>
+                            {/* Row 2: amount + USD (green/red like PLS Movement) */}
+                            <div style={{ fontSize: 13, fontWeight: 700, color: tx.type === 'transfer_in' ? t.green : tx.type === 'swap' ? t.text : t.red, fontFamily: 'JetBrains Mono, monospace' }}>
+                              {tx.type === 'transfer_in' ? '+' : tx.type === 'transfer_out' ? '-' : ''}
+                              {tx.type === 'swap' && tx.counterAsset
+                                ? `${tx.counterAmount?.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.counterAsset} → ${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`
+                                : `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`}
+                              {tx.valueUsd ? (
+                                <span style={{ fontSize: 12, color: t.textTertiary, fontWeight: 500, marginLeft: 6 }}>
+                                  ≈ ${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+                        </div>
+                        {/* RIGHT — coin filter + hide + chevron */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                           {coinLogo && (
                             <button onClick={e => { e.stopPropagation(); setTxAssetFilter(tx.asset); }}
                               title={`Filter by ${tx.asset}`}
-                              style={{ width: 24, height: 24, borderRadius: '50%', overflow: 'hidden', border: `1px solid ${t.border}`, background: t.cardHighest, flexShrink: 0, cursor: 'pointer', padding: 0 }}>
+                              style={{ width: 20, height: 20, borderRadius: '50%', overflow: 'hidden', border: `1px solid ${t.border}`, background: t.cardHighest, flexShrink: 0, cursor: 'pointer', padding: 0 }}>
                               <img src={coinLogo} alt={tx.asset} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
                                 onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                             </button>
                           )}
-                          <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                              <span style={{ fontSize: 13, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
-                                background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
-                                color: tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444' }}>
-                                {tx.type === 'transfer_in' ? 'Received' : tx.type === 'transfer_out' ? 'Sent' : 'Swap'}
-                              </span>
-                              <span style={{ fontSize: 13, padding: '1px 6px', borderRadius: 3, fontWeight: 600, background: t.cardHighest, color: t.textSecondary }}>{tx.chain}</span>
-                              <span style={{ fontSize: 13, fontWeight: 600, color: t.text }}>
-                                {tx.type === 'swap' && tx.counterAsset ? `${tx.counterAmount?.toLocaleString()} ${tx.counterAsset} → ${tx.amount.toLocaleString()} ${tx.asset}` : `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`}
-                              </span>
-                            </div>
-                            <div style={{ fontSize: 13, color: t.textSecondary, fontFamily: 'monospace' }}>
-                              {tx.hash.slice(0, 6)}…{tx.hash.slice(-4)} · {format(tx.timestamp, 'MMM d, yyyy HH:mm')}
-                            </div>
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: tx.type === 'transfer_in' ? '#00FF9F' : t.text }}>
-                              {tx.type === 'transfer_in' ? '+' : '-'}{tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {tx.asset}
-                            </div>
-                            {tx.valueUsd && <div style={{ fontSize: 13, color: t.textSecondary }}>${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>}
-                          </div>
                           <button
                             title={isHidden ? 'Unhide' : 'Hide'}
                             onClick={e => { e.stopPropagation(); setHiddenTxIds(prev => isHidden ? prev.filter(id => id !== tx.id) : [...prev, tx.id]); }}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: isHidden ? '#00FF9F' : t.textTertiary, padding: 4, flexShrink: 0 }}>
-                            {isHidden ? <Eye size={14} /> : <EyeOff size={14} />}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: isHidden ? t.green : t.textTertiary, padding: 4, flexShrink: 0 }}>
+                            {isHidden ? <Eye size={13} /> : <EyeOff size={13} />}
                           </button>
-                          <span style={{ color: isTxExpanded ? '#00FF9F' : t.textMuted, transition: 'color .12s' }}>
+                          <span style={{ color: isTxExpanded ? t.green : t.textMuted, transition: 'color .12s' }}>
                             {isTxExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                           </span>
                         </div>
                       </div>
-                      {/* Expanded detail dropdown — matches HEX stake detail style */}
+                      {/* Expanded detail — same grid card style as PLS Movement */}
                       {isTxExpanded && (
                         <div style={{ padding: '0 18px 14px', background: t.expandedBg }}>
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, paddingTop: 10, borderTop: `1px solid ${t.borderLight}` }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, paddingTop: 10, borderTop: `1px solid ${t.borderLight}` }}>
                             {[
                               { label: 'Amount', val: `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${tx.asset}`, sub: 'Token amount' },
-                              { label: 'USD Value', val: tx.valueUsd ? `$${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—', sub: 'At time of transaction' },
-                              { label: 'Current Price', val: coinAsset?.price ? `$${coinAsset.price < 0.001 ? coinAsset.price.toFixed(8) : coinAsset.price.toLocaleString(undefined, { maximumFractionDigits: 4 })}` : '—', sub: coinAsset ? `${tx.asset} price now` : 'Unknown token' },
-                              { label: 'Current Value', val: coinAsset ? `$${(tx.amount * coinAsset.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—', sub: 'If held to now', color: coinAsset && tx.valueUsd ? ((tx.amount * coinAsset.price) >= tx.valueUsd ? '#00FF9F' : '#ef4444') : undefined },
+                              { label: 'USD Value', val: tx.valueUsd ? `$${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—', sub: 'At time of tx' },
+                              { label: 'Current Price', val: coinAsset?.price ? `$${coinAsset.price < 0.001 ? coinAsset.price.toFixed(8) : coinAsset.price.toLocaleString(undefined, { maximumFractionDigits: 4 })}` : '—', sub: coinAsset ? `${tx.asset} now` : 'Unknown' },
+                              { label: 'Current Value', val: coinAsset ? `$${(tx.amount * coinAsset.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—', sub: 'If held to now', color: coinAsset && tx.valueUsd ? ((tx.amount * coinAsset.price) >= tx.valueUsd ? t.green : t.red) : undefined },
                               ...(tx.valueUsd && coinAsset ? [{
                                 label: 'Profit / Loss',
                                 val: `${(tx.amount * coinAsset.price - tx.valueUsd) >= 0 ? '+' : ''}$${Math.abs(tx.amount * coinAsset.price - tx.valueUsd).toLocaleString(undefined, { maximumFractionDigits: 2 })}`,
                                 sub: `${(((tx.amount * coinAsset.price) / tx.valueUsd - 1) * 100).toFixed(1)}% change`,
-                                color: (tx.amount * coinAsset.price - tx.valueUsd) >= 0 ? '#00FF9F' : '#ef4444'
+                                color: (tx.amount * coinAsset.price - tx.valueUsd) >= 0 ? t.green : t.red
                               }] : []),
                               { label: 'Chain', val: tx.chain === 'pulsechain' ? 'PulseChain' : tx.chain === 'ethereum' ? 'Ethereum' : 'Base', sub: tx.type === 'transfer_in' ? `From ${tx.from.slice(0,6)}…${tx.from.slice(-4)}` : tx.type === 'transfer_out' ? `To ${tx.to.slice(0,6)}…${tx.to.slice(-4)}` : 'Swap' },
                               { label: 'Date', val: format(tx.timestamp, 'MMM d, yyyy'), sub: format(tx.timestamp, 'HH:mm:ss') },
@@ -4584,7 +4587,7 @@ export default function App() {
                           <div style={{ marginTop: 8 }}>
                             <a href={`${tx.chain === 'pulsechain' ? 'https://scan.pulsechain.com' : tx.chain === 'ethereum' ? 'https://etherscan.io' : 'https://basescan.org'}/tx/${tx.hash}`}
                               target="_blank" rel="noopener noreferrer"
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#00FF9F', textDecoration: 'none' }}>
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: t.green, textDecoration: 'none' }}>
                               <ExternalLink size={11} /> View on Explorer
                             </a>
                           </div>
