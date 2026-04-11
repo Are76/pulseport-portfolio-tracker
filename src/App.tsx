@@ -321,7 +321,7 @@ export default function App() {
   const [sidebarWalletsOpen, setSidebarWalletsOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const isFetchingRef = useRef(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'assets' | 'stakes' | 'history' | 'wallets'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'assets' | 'stakes' | 'history' | 'tracker' | 'wallets'>('overview');
   const [selectedWalletAddr, setSelectedWalletAddr] = useState<string>('all');
   const [walletAssets, setWalletAssets] = useState<Record<string, Asset[]>>({});
   const [walletChainFilter, setWalletChainFilter] = useState<'all' | 'pulsechain' | 'ethereum' | 'base'>('all');
@@ -389,6 +389,8 @@ export default function App() {
     const saved = localStorage.getItem('pulseport_collapsed');
     return saved ? JSON.parse(saved) : {};
   });
+  const [tokenMarketData, setTokenMarketData] = useState<Record<string, any>>({});
+  const [expandedWalletAssetIds, setExpandedWalletAssetIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     localStorage.setItem('pulseport_collapsed', JSON.stringify(collapsedSections));
@@ -2046,6 +2048,17 @@ export default function App() {
     };
   }, [realAssets, manualEntries, prices]);
 
+  const monthlyPnlData = useMemo(() => {
+    const pts = wallets.length > 0 ? history : MOCK_HISTORY;
+    const byMonth: Record<string, { month: string; pnl: number }> = {};
+    pts.forEach(p => {
+      const key = format(p.timestamp, 'MMM yy');
+      if (!byMonth[key]) byMonth[key] = { month: key, pnl: 0 };
+      byMonth[key].pnl += p.pnl;
+    });
+    return Object.values(byMonth).slice(-12);
+  }, [wallets.length, history]);
+
   const receivedAssetsData = useMemo(() => {
     const START_2021 = new Date('2021-01-01').getTime();
     const ethPrice = prices['ethereum']?.usd || 3400;
@@ -2158,6 +2171,38 @@ export default function App() {
     return { rows, totalReceived, totalSpent, totalNet, netUsd, plsPrice };
   }, [currentTransactions, prices]);
 
+  useEffect(() => {
+    const fetchMarketData = async () => {
+      for (const id of expandedAssetIds) {
+        if (tokenMarketData[id]) continue;
+        const asset = currentAssets.find(a => a.id === id);
+        if (!asset) continue;
+        const addr = (asset as any).address;
+        if (!addr || addr === 'native') continue;
+        try {
+          const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${addr}`);
+          if (!res.ok) continue;
+          const data = await res.json();
+          const pairs = data.pairs || [];
+          if (pairs.length === 0) continue;
+          const sorted = [...pairs].sort((a: any, b: any) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0));
+          const top = sorted[0];
+          setTokenMarketData(prev => ({
+            ...prev,
+            [id]: {
+              liquidity: sorted.reduce((s: number, p: any) => s + (p.liquidity?.usd || 0), 0),
+              volume24h: sorted.reduce((s: number, p: any) => s + (p.volume?.h24 || 0), 0),
+              pools: pairs.length,
+              txns24h: sorted.reduce((s: number, p: any) => s + (p.txns?.h24?.buys || 0) + (p.txns?.h24?.sells || 0), 0),
+              nativePriceUsd: top?.priceNative || null,
+            }
+          }));
+        } catch { /* ignore */ }
+      }
+    };
+    fetchMarketData();
+  }, [expandedAssetIds]); // intentionally omits tokenMarketData (cache check) and currentAssets (stable ref) to avoid re-fetching on unrelated renders
+
   const CHAIN_COLORS: Record<string, string> = {
     pulsechain: '#f739ff',
     ethereum: '#627EEA',
@@ -2230,6 +2275,7 @@ export default function App() {
             { id: 'assets',   label: 'Assets',   icon: WalletIcon },
             { id: 'stakes',   label: 'Stakes',   icon: Layers },
             { id: 'history',  label: 'History',  icon: History },
+            { id: 'tracker',  label: 'Tracker',  icon: TrendingUp },
             { id: 'wallets',  label: 'Wallets',  icon: User },
           ] as const).map(({ id, label, icon: Icon }) => (
             <button key={id} onClick={() => setActiveTab(id)}
@@ -2331,7 +2377,7 @@ export default function App() {
 
           {/* Tab strip */}
           <div className="hidden md:flex items-center gap-0">
-            {(['overview', 'assets', 'stakes', 'history', 'wallets'] as const).map((tab) => (
+            {(['overview', 'assets', 'stakes', 'history', 'tracker', 'wallets'] as const).map((tab) => (
               <button key={tab} onClick={() => setActiveTab(tab)}
                 style={{
                   padding: '0 16px', height: 52, fontSize: 13, fontWeight: activeTab === tab ? 600 : 500,
@@ -2456,50 +2502,92 @@ export default function App() {
                             <span style={{ fontSize: 12, color: '#444' }}>·</span>
                             <span style={{ fontSize: 12, color: '#666' }}>Wallets: <span style={{ color: '#aaa', fontWeight: 600 }}>{wallets.length}</span></span>
                           </div>
-                        </div>
-                        {/* Right: Static price ticker — 6 core PulseChain tokens (same as plsdashboard.link / gopulse.com) */}
-                        {(() => {
-                          const plsPriceH = prices['pulsechain']?.usd || 0;
-                          const corePriceCoins = [
-                            { symbol: 'PLS',  price: plsPriceH, change24h: prices['pulsechain']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png' },
-                            { symbol: 'PLSX', price: prices['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd || prices['pulsex']?.usd || 0, change24h: prices['pulsex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x95B303987A60C71504D99Aa1b13B4DA07b0790ab.png' },
-                            { symbol: 'INC',  price: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd || prices['incentive']?.usd || 0, change24h: prices['incentive']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png' },
-                            { symbol: 'HEX',  price: prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0, change24h: prices['hex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39.png' },
-                            { symbol: 'PRVX', price: prices['pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11']?.usd || 0, change24h: null, logo: 'https://tokens.app.pulsex.com/images/tokens/0xf6f8dB0ABA00007681F8FAF16a0fdA1C9B030b11.png' },
-                            { symbol: 'eHEX', price: prices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['hex']?.usd || 0, change24h: prices['hex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x57fde0a71132198bbec939b98976993d8d89d225.png' },
-                          ];
-                          const fmtCoinPrice = (p: number) => {
-                            if (p === 0) return '—';
-                            if (p < 0.00001) return `$${p.toFixed(10)}`;
-                            if (p < 0.001) return `$${p.toFixed(8)}`;
-                            if (p < 1) return `$${p.toFixed(5)}`;
-                            return `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-                          };
-                          return (
-                            <div style={{ minWidth: 210 }} className="max-sm:w-full">
-                              <div style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 10 }}>Live Prices</div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                                {corePriceCoins.map(coin => (
-                                  <div key={coin.symbol} style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                                      <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#1e1e1e', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                        aria-label={coin.symbol}>
-                                        <img src={coin.logo} alt={coin.symbol} style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }}
+                          {/* Core coin icons row */}
+                          {(() => {
+                            const plsPriceH = prices['pulsechain']?.usd || 0;
+                            const corePriceCoins = [
+                              { symbol: 'PLS',  price: plsPriceH, change24h: prices['pulsechain']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png' },
+                              { symbol: 'PLSX', price: prices['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd || prices['pulsex']?.usd || 0, change24h: prices['pulsex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x95B303987A60C71504D99Aa1b13B4DA07b0790ab.png' },
+                              { symbol: 'INC',  price: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd || prices['incentive']?.usd || 0, change24h: prices['incentive']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png' },
+                              { symbol: 'HEX',  price: prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0, change24h: prices['hex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39.png' },
+                              { symbol: 'PRVX', price: prices['pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11']?.usd || 0, change24h: null, logo: 'https://tokens.app.pulsex.com/images/tokens/0xf6f8dB0ABA00007681F8FAF16a0fdA1C9B030b11.png' },
+                              { symbol: 'eHEX', price: prices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['hex']?.usd || 0, change24h: prices['hex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x57fde0a71132198bbec939b98976993d8d89d225.png' },
+                            ];
+                            const fmtCoinPrice = (p: number) => {
+                              if (p === 0) return '—';
+                              if (p < 0.00001) return `$${p.toFixed(10)}`;
+                              if (p < 0.001) return `$${p.toFixed(8)}`;
+                              if (p < 1) return `$${p.toFixed(5)}`;
+                              return `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+                            };
+                            return (
+                              <>
+                                <div style={{ height: 1, background: 'rgba(255,255,255,.06)', margin: '20px 0 16px' }} />
+                                <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+                                  {corePriceCoins.map(coin => (
+                                    <div key={coin.symbol} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, minWidth: 54 }}>
+                                      <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#1e1e1e', overflow: 'hidden', border: '1px solid #333', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <img src={coin.logo} alt={coin.symbol} style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover' }}
                                           onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                                       </div>
-                                      <span style={{ fontSize: 13, fontWeight: 700, color: '#ccc', minWidth: 36 }}>{coin.symbol}</span>
+                                      <span style={{ fontSize: 11, fontWeight: 700, color: '#ccc', letterSpacing: '.3px' }}>{coin.symbol}</span>
+                                      <span style={{ fontSize: 11, fontFamily: 'monospace', color: coin.change24h !== null ? (coin.change24h >= 0 ? '#00c076' : '#ef4444') : '#aaa' }}>
+                                        {fmtCoinPrice(coin.price)}
+                                      </span>
                                     </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                      <span style={{ fontSize: 13, fontFamily: 'monospace', color: '#fff' }}>{fmtCoinPrice(coin.price)}</span>
-                                      {coin.change24h !== null && (
-                                        <span style={{ fontSize: 12, fontWeight: 700, color: coin.change24h >= 0 ? '#00c076' : '#ef4444', minWidth: 56, textAlign: 'right' }}>
-                                          {coin.change24h >= 0 ? '▲' : '▼'} {Math.abs(coin.change24h).toFixed(2)}%
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                ))}
+                                  ))}
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </div>
+                        {/* Right: Portfolio Allocation */}
+                        {(() => {
+                          const ALLOC_COLORS2 = ['#00c076','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
+                          const alloc = assetAllocation.length > 0 ? assetAllocation : [];
+                          return (
+                            <div style={{ minWidth: 230 }} className="max-sm:w-full">
+                              <div style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <span>Portfolio Allocation</span>
+                                <div style={{ display: 'flex', gap: 4 }}>
+                                  {(['1h','24h','7d'] as const).map(id => (
+                                    <button key={id} onClick={() => setPriceChangePeriod(id)}
+                                      style={{ padding: '2px 8px', borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
+                                        background: priceChangePeriod === id ? '#00c076' : '#111',
+                                        color: priceChangePeriod === id ? '#000' : '#555' }}>
+                                      {id.toUpperCase()}
+                                    </button>
+                                  ))}
+                                </div>
                               </div>
+                              {alloc.length > 0 ? (
+                                <>
+                                  <div style={{ width: 130, height: 130, margin: '0 auto' }}>
+                                    <ResponsiveContainer width="100%" height="100%" debounce={50}>
+                                      <PieChart>
+                                        <Pie data={alloc} cx="50%" cy="50%" innerRadius={38} outerRadius={58} paddingAngle={3} dataKey="value">
+                                          {alloc.map((_, i) => <Cell key={i} fill={ALLOC_COLORS2[i % ALLOC_COLORS2.length]} />)}
+                                        </Pie>
+                                        <RechartsTooltip contentStyle={{ background: '#111', border: '1px solid #222', borderRadius: 8, fontSize: 13 }} />
+                                      </PieChart>
+                                    </ResponsiveContainer>
+                                  </div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 8 }}>
+                                    {alloc.map((a, i) => {
+                                      const pct = (a.value / (summary.totalValue || 1)) * 100;
+                                      return (
+                                        <div key={a.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                          <div style={{ width: 7, height: 7, borderRadius: 2, background: ALLOC_COLORS2[i % ALLOC_COLORS2.length], flexShrink: 0 }} />
+                                          <span style={{ fontSize: 12, color: '#ccc', minWidth: 48 }}>{a.name}</span>
+                                          <span style={{ fontSize: 12, color: '#aaa', fontVariantNumeric: 'tabular-nums', minWidth: 36 }}>{pct.toFixed(1)}%</span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </>
+                              ) : (
+                                <div style={{ fontSize: 12, color: '#555', textAlign: 'center', padding: '20px 0' }}>Add wallets to see allocation</div>
+                              )}
                             </div>
                           );
                         })()}
@@ -2521,68 +2609,6 @@ export default function App() {
                       ))}
                     </div>
                     </>
-                  );
-                })()}
-
-                {/* ── ALLOCATION CHART ── */}
-                {(() => {
-                  const ALLOC_COLORS2 = ['#00c076','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
-                  const alloc = assetAllocation.length > 0 ? assetAllocation : [];
-                  if (alloc.length === 0) return null;
-                  return (
-                    <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 14, overflow: 'hidden' }}>
-                      <div style={{ padding: '12px 18px', borderBottom: isCollapsed('alloc-chart') ? 'none' : '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>Portfolio Allocation</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          {([
-                            { id: '1h', label: '1H' },
-                            { id: '24h', label: '24H' },
-                            { id: '7d', label: '7D' },
-                          ] as const).map(({ id, label }) => (
-                            <button key={id} onClick={() => setPriceChangePeriod(id)}
-                              style={{ padding: '3px 10px', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none',
-                                background: priceChangePeriod === id ? '#00c076' : '#111',
-                                color: priceChangePeriod === id ? '#000' : '#555' }}>
-                              {label}
-                            </button>
-                          ))}
-                          <button onClick={() => toggleSection('alloc-chart')}
-                            style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888' }}
-                            onMouseOver={e => (e.currentTarget.style.color = '#fff')}
-                            onMouseOut={e => (e.currentTarget.style.color = '#888')}
-                            title={isCollapsed('alloc-chart') ? 'Expand' : 'Collapse'}>
-                            {isCollapsed('alloc-chart') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-                          </button>
-                        </div>
-                      </div>
-                      {!isCollapsed('alloc-chart') && (
-                        <div style={{ padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 28, flexWrap: 'wrap' }}>
-                          <div style={{ width: 130, height: 130, flexShrink: 0 }}>
-                            <ResponsiveContainer width="100%" height="100%" debounce={50}>
-                              <PieChart>
-                                <Pie data={alloc} cx="50%" cy="50%" innerRadius={38} outerRadius={58} paddingAngle={3} dataKey="value">
-                                  {alloc.map((_, i) => <Cell key={i} fill={ALLOC_COLORS2[i % ALLOC_COLORS2.length]} />)}
-                                </Pie>
-                                <RechartsTooltip contentStyle={{ background: '#111', border: '1px solid #222', borderRadius: 8, fontSize: 13 }} />
-                              </PieChart>
-                            </ResponsiveContainer>
-                          </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                            {alloc.map((a, i) => {
-                              const pct = (a.value / (summary.totalValue || 1)) * 100;
-                              return (
-                                <div key={a.name} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                  <div style={{ width: 8, height: 8, borderRadius: 2, background: ALLOC_COLORS2[i % ALLOC_COLORS2.length], flexShrink: 0 }} />
-                                  <span style={{ fontSize: 13, color: '#ccc', minWidth: 52 }}>{a.name}</span>
-                                  <span style={{ fontSize: 13, color: '#aaa', fontVariantNumeric: 'tabular-nums', minWidth: 40 }}>{pct.toFixed(1)}%</span>
-                                  <span style={{ fontSize: 13, color: '#555' }}>${a.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
                   );
                 })()}
 
@@ -3057,6 +3083,42 @@ export default function App() {
                                               </span>
                                             </div>
                                           )}
+                                        </div>
+                                      </div>
+                                      {/* Market Data */}
+                                      <div style={{ background: '#111', borderRadius: 8, padding: '12px 14px' }}>
+                                        <div style={{ fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Market Data</div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                                          {(() => {
+                                            const md = tokenMarketData[asset.id];
+                                            const fmtNum = (n: number) => n >= 1e9 ? `$${(n/1e9).toFixed(2)}B` : n >= 1e6 ? `$${(n/1e6).toFixed(2)}M` : n >= 1e3 ? `$${(n/1e3).toFixed(1)}K` : `$${n.toFixed(0)}`;
+                                            return (
+                                              <>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                  <span style={{ fontSize: 12, color: '#888' }}>Native Price</span>
+                                                  <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', fontFamily: 'monospace' }}>
+                                                    {md?.nativePriceUsd ? `${parseFloat(md.nativePriceUsd).toFixed(4)}` : '—'}
+                                                  </span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                  <span style={{ fontSize: 12, color: '#888' }}>Liquidity</span>
+                                                  <span style={{ fontSize: 13, fontWeight: 700, color: '#00c076' }}>{md ? fmtNum(md.liquidity) : <span style={{ color: '#555' }}>—</span>}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                  <span style={{ fontSize: 12, color: '#888' }}>24H Volume</span>
+                                                  <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{md ? fmtNum(md.volume24h) : <span style={{ color: '#555' }}>—</span>}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                  <span style={{ fontSize: 12, color: '#888' }}>Pools</span>
+                                                  <span style={{ fontSize: 13, fontWeight: 700, color: '#aaa' }}>{md ? md.pools : <span style={{ color: '#555' }}>—</span>}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                  <span style={{ fontSize: 12, color: '#888' }}>24H Txns</span>
+                                                  <span style={{ fontSize: 13, fontWeight: 700, color: '#aaa' }}>{md?.txns24h != null ? md.txns24h.toLocaleString() : <span style={{ color: '#555' }}>—</span>}</span>
+                                                </div>
+                                              </>
+                                            );
+                                          })()}
                                         </div>
                                       </div>
                                       {/* Holdings breakdown */}
@@ -3831,34 +3893,112 @@ export default function App() {
         {activeTab === 'history' && (
           <motion.div key="history" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
 
-            {/* PNL summary row */}
-            <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, overflow: 'hidden' }}>
-              <div style={{ padding: '12px 16px', borderBottom: isCollapsed('history-stats') ? 'none' : '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>Portfolio Stats</div>
-                <button onClick={() => toggleSection('history-stats')}
-                  style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
-                  onMouseOver={e => (e.currentTarget.style.color = '#fff')}
-                  onMouseOut={e => (e.currentTarget.style.color = '#555')}
-                  title={isCollapsed('history-stats') ? 'Expand' : 'Collapse'}>
-                  {isCollapsed('history-stats') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-                </button>
+            {/* Page header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 0 }}>
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 2 }}>Portfolio History</div>
+                <div style={{ fontSize: 13, color: '#aaa' }}>Performance tracking &amp; transaction history</div>
               </div>
-              {!isCollapsed('history-stats') && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0 }} className="max-sm:grid-cols-2">
-                  {[
-                    { label: 'Net Investment', val: `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Total Capital Inflow', color: '#fff' },
-                    { label: 'Unified PNL', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Portfolio P&L', color: summary.unifiedPnl >= 0 ? '#00c076' : '#ef4444' },
-                    { label: 'Realized PNL', val: `${summary.realizedPnl >= 0 ? '+' : ''}$${Math.abs(summary.realizedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'From Trades', color: summary.realizedPnl >= 0 ? '#00c076' : '#ef4444' },
-                    { label: 'Unrealized PNL', val: `${summary.pnl24h >= 0 ? '+' : ''}$${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: '24h Change', color: summary.pnl24h >= 0 ? '#00c076' : '#ef4444' },
-                  ].map(({ label, val, sub, color }) => (
-                    <div key={label} style={{ padding: 18, borderRight: '1px solid #1f1f1f' }}>
-                      <div style={{ fontSize: 13, color: '#aaa', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>{label}</div>
-                      <div style={{ fontSize: 20, fontWeight: 700, color, marginBottom: 2 }}>{val}</div>
-                      <div style={{ fontSize: 13, color: '#aaa' }}>{sub}</div>
-                    </div>
-                  ))}
+            </div>
+
+            {/* Stats grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }} className="max-sm:grid-cols-2">
+              {[
+                { label: 'Net Investment', val: `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Total Capital Inflow', color: '#fff' },
+                { label: 'Unified PNL', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Portfolio P&L', color: summary.unifiedPnl >= 0 ? '#00c076' : '#ef4444' },
+                { label: 'Realized PNL', val: `${summary.realizedPnl >= 0 ? '+' : ''}$${Math.abs(summary.realizedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'From Trades', color: summary.realizedPnl >= 0 ? '#00c076' : '#ef4444' },
+                { label: 'Unrealized PNL', val: `${summary.pnl24h >= 0 ? '+' : ''}$${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: '24h Change', color: summary.pnl24h >= 0 ? '#00c076' : '#ef4444' },
+              ].map(({ label, val, sub, color }) => (
+                <div key={label} style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, padding: 18 }}>
+                  <div style={{ fontSize: 13, color: '#aaa', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>{label}</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, color, marginBottom: 2 }}>{val}</div>
+                  <div style={{ fontSize: 13, color: '#aaa' }}>{sub}</div>
                 </div>
-              )}
+              ))}
+            </div>
+
+            {/* Charts row */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }} className="max-sm:block max-sm:space-y-3">
+              {/* Left: Portfolio Performance */}
+              {(() => {
+                const now = Date.now();
+                const cutoffs: Record<string, number> = { '1d': now - 24*3600*1000, '1w': now - 7*24*3600*1000, '1y': now - 365*24*3600*1000, 'all': 0 };
+                const cutoff = cutoffs[perfPeriod];
+                const realHistory = (wallets.length > 0 ? history : []).filter(p => p.timestamp >= cutoff);
+                const currentVal = summary.totalValue || 1;
+                const mockLast = MOCK_HISTORY[MOCK_HISTORY.length - 1]?.value || 1;
+                const scale = currentVal / mockLast;
+                const fmtLabel = (ts: number) => {
+                  if (perfPeriod === '1d') return format(ts, 'HH:mm');
+                  if (perfPeriod === '1w') return format(ts, 'EEE d');
+                  return format(ts, 'MMM d');
+                };
+                const byBucket = new Map<string, { value: number; ts: number }>();
+                realHistory.forEach(p => {
+                  const key = perfPeriod === '1d' ? format(p.timestamp, 'yyyy-MM-dd HH') : format(p.timestamp, 'yyyy-MM-dd');
+                  byBucket.set(key, { value: p.value, ts: p.timestamp });
+                });
+                const uniquePts = [...byBucket.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, { value, ts }]) => ({ day: fmtLabel(ts), value }));
+                let histChartPoints: { day: string; value: number }[];
+                if (uniquePts.length >= 3) {
+                  histChartPoints = uniquePts;
+                } else {
+                  const mockCount = perfPeriod === '1d' ? 24 : perfPeriod === '1w' ? 7 : perfPeriod === '1y' ? 52 : 30;
+                  histChartPoints = MOCK_HISTORY.slice(-mockCount).map(p => ({ day: format(p.timestamp, perfPeriod === '1d' ? 'HH:mm' : 'MMM d'), value: p.value * scale }));
+                  if (histChartPoints.length > 0) histChartPoints[histChartPoints.length - 1].value = currentVal;
+                }
+                return (
+                  <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, padding: '18px 18px 10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.6px' }}>Portfolio Performance</div>
+                      <div style={{ display: 'flex', gap: 2, background: '#111', border: '1px solid #252525', borderRadius: 8, padding: 3 }}>
+                        {(['1d','1w','1y','all'] as const).map(p => (
+                          <button key={p} onClick={() => setPerfPeriod(p)}
+                            style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
+                              background: perfPeriod === p ? '#00c076' : 'transparent',
+                              color: perfPeriod === p ? '#000' : '#555' }}>
+                            {p.toUpperCase()}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <ResponsiveContainer width="100%" height={220}>
+                      <AreaChart data={histChartPoints}>
+                        <defs>
+                          <linearGradient id="histColorValue" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#00c076" stopOpacity={0.2}/>
+                            <stop offset="95%" stopColor="#00c076" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.06)" />
+                        <XAxis dataKey="day" tick={{ fill: '#777', fontSize: 11 }} axisLine={{ stroke: '#222' }} tickLine={false} interval={Math.max(0, Math.floor(histChartPoints.length / 6) - 1)} />
+                        <YAxis hide />
+                        <RechartsTooltip contentStyle={{ background: '#111', border: '1px solid #222', borderRadius: 8, fontSize: 13 }}
+                          formatter={(v: any) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Value']} />
+                        <Area type="monotone" dataKey="value" stroke="#00c076" fillOpacity={1} fill="url(#histColorValue)" strokeWidth={2} dot={false} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                );
+              })()}
+              {/* Right: Monthly P&L bar chart */}
+              <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, padding: '18px 18px 10px' }}>
+                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.6px' }}>Monthly P&amp;L</div>
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={monthlyPnlData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.06)" />
+                    <XAxis dataKey="month" tick={{ fill: '#777', fontSize: 11 }} axisLine={{ stroke: '#222' }} tickLine={false} />
+                    <YAxis tick={{ fill: '#777', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <RechartsTooltip contentStyle={{ background: '#111', border: '1px solid #222', borderRadius: 8, fontSize: 13 }}
+                      formatter={(v: any) => [`${Number(v) >= 0 ? '+' : ''}$${Math.abs(Number(v)).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'PNL']} />
+                    <Bar dataKey="pnl" radius={[3, 3, 0, 0]}>
+                      {monthlyPnlData.map((_entry: any, index: number) => (
+                        <Cell key={index} fill={monthlyPnlData[index].pnl >= 0 ? '#00c076' : '#ef4444'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
 
             {/* Received Assets History */}
@@ -4199,6 +4339,244 @@ export default function App() {
           </motion.div>
         )}
 
+        {activeTab === 'tracker' && (
+          <motion.div key="tracker" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+
+            {/* Page header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 2 }}>PLS Movement &amp; P&amp;L Tracker</div>
+                <div style={{ fontSize: 13, color: '#aaa' }}>Track PLS flows and realized profits across all wallets</div>
+              </div>
+            </div>
+
+            {/* Stats grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }} className="max-sm:grid-cols-2">
+              {[
+                { label: 'PLS Received', val: plsSwapData.totalReceived >= 1e9 ? `${(plsSwapData.totalReceived/1e9).toFixed(2)}B` : plsSwapData.totalReceived >= 1e6 ? `${(plsSwapData.totalReceived/1e6).toFixed(2)}M` : plsSwapData.totalReceived.toLocaleString(undefined,{maximumFractionDigits:0}), sub: 'Total PLS inflow', color: '#00c076' },
+                { label: 'PLS Spent', val: plsSwapData.totalSpent >= 1e9 ? `${(plsSwapData.totalSpent/1e9).toFixed(2)}B` : plsSwapData.totalSpent >= 1e6 ? `${(plsSwapData.totalSpent/1e6).toFixed(2)}M` : plsSwapData.totalSpent.toLocaleString(undefined,{maximumFractionDigits:0}), sub: 'Total PLS outflow', color: '#ef4444' },
+                { label: 'Net PLS', val: `${plsSwapData.totalNet >= 0 ? '+' : ''}${plsSwapData.totalNet >= 1e9 ? (plsSwapData.totalNet/1e9).toFixed(2)+'B' : plsSwapData.totalNet >= 1e6 ? (plsSwapData.totalNet/1e6).toFixed(2)+'M' : plsSwapData.totalNet.toLocaleString(undefined,{maximumFractionDigits:0})}`, sub: 'Net balance', color: plsSwapData.totalNet >= 0 ? '#00c076' : '#ef4444' },
+                { label: 'Net USD', val: `${plsSwapData.netUsd >= 0 ? '+' : ''}$${Math.abs(plsSwapData.netUsd).toLocaleString(undefined,{maximumFractionDigits:0})}`, sub: `@ $${(plsSwapData.plsPrice||0).toFixed(6)}/PLS`, color: plsSwapData.netUsd >= 0 ? '#00c076' : '#ef4444' },
+              ].map(({ label, val, sub, color }) => (
+                <div key={label} style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, padding: 18 }}>
+                  <div style={{ fontSize: 13, color: '#aaa', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>{label}</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color, marginBottom: 2 }}>{val}</div>
+                  {sub && <div style={{ fontSize: 13, color: '#aaa' }}>{sub}</div>}
+                </div>
+              ))}
+            </div>
+
+            {/* Charts row */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }} className="max-sm:block max-sm:space-y-3">
+              {(() => {
+                const plsPrice = plsSwapData.plsPrice || 0;
+                const pts = [...plsSwapData.rows].reverse();
+                let cumulative = 0;
+                const chartPts = pts.map(r => {
+                  cumulative += r.netPls;
+                  return { day: format(r.tx.timestamp, 'MMM d'), pls: cumulative };
+                });
+                return (
+                  <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, padding: '18px 18px 10px' }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.6px' }}>Cumulative PLS Balance</div>
+                    <ResponsiveContainer width="100%" height={220}>
+                      <AreaChart data={chartPts}>
+                        <defs>
+                          <linearGradient id="plsGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#f739ff" stopOpacity={0.2}/>
+                            <stop offset="95%" stopColor="#f739ff" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.06)" />
+                        <XAxis dataKey="day" tick={{ fill: '#777', fontSize: 11 }} axisLine={{ stroke: '#222' }} tickLine={false} interval={Math.max(0, Math.floor(chartPts.length / 6) - 1)} />
+                        <YAxis hide />
+                        <RechartsTooltip contentStyle={{ background: '#111', border: '1px solid #222', borderRadius: 8, fontSize: 13 }}
+                          formatter={(v: any) => [Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' PLS', 'Balance']} />
+                        <Area type="monotone" dataKey="pls" stroke="#f739ff" fillOpacity={1} fill="url(#plsGrad)" strokeWidth={2} dot={false} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                );
+              })()}
+              {(() => {
+                const plsPrice = plsSwapData.plsPrice || 0.00005;
+                const histPts = wallets.length > 0 ? history : MOCK_HISTORY;
+                const chartPts = histPts.map(p => ({ day: format(p.timestamp, 'MMM d'), pls: p.nativeValue || p.value / plsPrice }));
+                return (
+                  <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, padding: '18px 18px 10px' }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.6px' }}>Portfolio Value in PLS</div>
+                    <ResponsiveContainer width="100%" height={220}>
+                      <AreaChart data={chartPts}>
+                        <defs>
+                          <linearGradient id="plsPortGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#627EEA" stopOpacity={0.2}/>
+                            <stop offset="95%" stopColor="#627EEA" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.06)" />
+                        <XAxis dataKey="day" tick={{ fill: '#777', fontSize: 11 }} axisLine={{ stroke: '#222' }} tickLine={false} interval={Math.max(0, Math.floor(chartPts.length / 6) - 1)} />
+                        <YAxis hide />
+                        <RechartsTooltip contentStyle={{ background: '#111', border: '1px solid #222', borderRadius: 8, fontSize: 13 }}
+                          formatter={(v: any) => [Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' PLS', 'Value']} />
+                        <Area type="monotone" dataKey="pls" stroke="#627EEA" fillOpacity={1} fill="url(#plsPortGrad)" strokeWidth={2} dot={false} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* PLS Movement table */}
+            {plsSwapData.rows.length > 0 && (
+              <div style={{ background: '#0d0d0d', border: '1px solid #242424', borderRadius: 12, overflow: 'hidden' }}>
+                <div style={{ padding: '14px 18px', borderBottom: isCollapsed('tracker-pls') ? 'none' : '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>PLS Movement</div>
+                  <button onClick={() => toggleSection('tracker-pls')} style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888' }}
+                    onMouseOver={e => (e.currentTarget.style.color = '#fff')} onMouseOut={e => (e.currentTarget.style.color = '#555')}>
+                    {isCollapsed('tracker-pls') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                  </button>
+                </div>
+                {!isCollapsed('tracker-pls') && (
+                  <div style={{ maxHeight: 420, overflowY: 'auto' }} className="custom-scrollbar">
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid #242424' }}>
+                          {['Date', 'Type', 'PLS Received', 'PLS Spent', 'Net', 'Net USD'].map((h, i) => (
+                            <th key={h} style={{ padding: '9px 14px', fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '.6px', textAlign: i === 0 ? 'left' : 'right', whiteSpace: 'nowrap', background: '#0d0d0d' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {plsSwapData.rows.map(({ tx, plsReceived, plsSpent, netPls }, i) => {
+                          const netUsdRow = netPls * (plsSwapData.plsPrice || 0);
+                          return (
+                            <tr key={tx.id + i} style={{ borderBottom: '1px solid #111', transition: 'background .1s' }}
+                              onMouseOver={e => (e.currentTarget.style.background = '#111')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
+                              <td style={{ padding: '9px 14px', fontSize: 13, color: '#aaa' }}>{format(tx.timestamp, 'MMM d, yyyy')}</td>
+                              <td style={{ padding: '9px 14px', textAlign: 'right' }}>
+                                <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 4, fontWeight: 600,
+                                  background: tx.type === 'transfer_in' ? 'rgba(0,192,118,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
+                                  color: tx.type === 'transfer_in' ? '#00c076' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444' }}>
+                                  {tx.type === 'swap' ? 'Swap' : tx.type === 'transfer_in' ? 'In' : 'Out'}
+                                </span>
+                              </td>
+                              <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, color: '#00c076', fontWeight: 600 }}>
+                                {plsReceived > 0 ? `+${plsReceived >= 1e6 ? (plsReceived/1e6).toFixed(2)+'M' : plsReceived.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—'}
+                              </td>
+                              <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, color: '#ef4444', fontWeight: 600 }}>
+                                {plsSpent > 0 ? `-${plsSpent >= 1e6 ? (plsSpent/1e6).toFixed(2)+'M' : plsSpent.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—'}
+                              </td>
+                              <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: netPls >= 0 ? '#00c076' : '#ef4444' }}>
+                                {netPls >= 0 ? '+' : ''}{Math.abs(netPls) >= 1e6 ? (netPls/1e6).toFixed(2)+'M' : netPls.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                              </td>
+                              <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, color: '#aaa' }}>
+                                {netUsdRow !== 0 ? `${netUsdRow >= 0 ? '+' : ''}$${Math.abs(netUsdRow).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* P&L Tracker */}
+            {(() => {
+              const swaps = currentTransactions.filter(tx => tx.type === 'swap');
+              if (swaps.length === 0) return null;
+              const tokenMap: Record<string, any> = {};
+              swaps.forEach(tx => {
+                const buyKey = `${tx.chain}:${tx.asset}`;
+                if (!tokenMap[buyKey]) {
+                  const foundAsset = currentAssets.find(a => a.chain === tx.chain && a.symbol.toUpperCase() === tx.asset.toUpperCase());
+                  tokenMap[buyKey] = { sym: tx.asset, chain: tx.chain, bought: 0, sold: 0, proceedsUsd: 0, currentPrice: foundAsset?.price ?? 0 };
+                }
+                tokenMap[buyKey].bought += tx.amount;
+                if (tx.counterAsset && tx.counterAmount) {
+                  const sellKey = `${tx.chain}:${tx.counterAsset}`;
+                  if (!tokenMap[sellKey]) {
+                    const foundAsset2 = currentAssets.find(a => a.chain === tx.chain && a.symbol.toUpperCase() === tx.counterAsset!.toUpperCase());
+                    tokenMap[sellKey] = { sym: tx.counterAsset, chain: tx.chain, bought: 0, sold: 0, proceedsUsd: 0, currentPrice: foundAsset2?.price ?? 0 };
+                  }
+                  tokenMap[sellKey].sold += tx.counterAmount;
+                  tokenMap[sellKey].proceedsUsd += tx.valueUsd ?? 0;
+                }
+              });
+              const pnlRows = Object.values(tokenMap).filter((r: any) => r.sold > 0 || r.bought > 0).map((r: any) => {
+                const costUsd = r.bought * r.currentPrice;
+                const soldFraction = r.bought > 0 ? Math.min(r.sold / r.bought, 1) : 0;
+                const realizedCost = costUsd * soldFraction;
+                const realizedPnl = r.proceedsUsd - realizedCost;
+                return { ...r, costUsd, realizedCost, realizedPnl };
+              }).filter((r: any) => Math.abs(r.realizedPnl) > 0.01 || r.sold > 0).sort((a: any, b: any) => Math.abs(b.realizedPnl) - Math.abs(a.realizedPnl));
+              const totalPnl = pnlRows.reduce((s: number, r: any) => s + r.realizedPnl, 0);
+              const chainDot: Record<string, string> = { pulsechain: '#f739ff', ethereum: '#627EEA', base: '#0052FF' };
+              return (
+                <div style={{ background: '#0d0d0d', borderRadius: 14, border: '1px solid #242424', overflow: 'hidden' }}>
+                  <div style={{ height: 2, background: 'linear-gradient(90deg,#7c3aed,#ec4899)' }} />
+                  <div style={{ padding: '14px 18px', borderBottom: isCollapsed('tracker-pnl') ? 'none' : '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>P&amp;L Tracker</span>
+                      <span style={{ fontSize: 13, color: '#aaa', background: '#1a1a1a', padding: '2px 8px', borderRadius: 4 }}>{swaps.length} swaps · approx.</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <span style={{ fontSize: 20, fontWeight: 800, color: totalPnl >= 0 ? '#00c076' : '#ef4444' }}>{totalPnl >= 0 ? '+' : ''}${Math.abs(totalPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                      <button onClick={() => toggleSection('tracker-pnl')} style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888' }}
+                        onMouseOver={e => (e.currentTarget.style.color = '#fff')} onMouseOut={e => (e.currentTarget.style.color = '#555')}>
+                        {isCollapsed('tracker-pnl') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                      </button>
+                    </div>
+                  </div>
+                  {!isCollapsed('tracker-pnl') && (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 540 }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid #1f1f1f' }}>
+                            {['Token', 'Chain', 'Bought', 'Sold', 'Proceeds', 'Cost (est.)', 'Realized P&L'].map(h => (
+                              <th key={h} style={{ padding: '9px 14px', textAlign: h === 'Token' || h === 'Chain' ? 'left' : 'right', fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', whiteSpace: 'nowrap', background: '#0d0d0d' }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pnlRows.map((r: any) => (
+                            <tr key={r.sym + r.chain} style={{ borderBottom: '1px solid #111' }}
+                              onMouseOver={e => (e.currentTarget.style.background = '#111')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
+                              <td style={{ padding: '10px 14px', whiteSpace: 'nowrap', fontSize: 13, fontWeight: 600, color: '#fff' }}>{r.sym}</td>
+                              <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: chainDot[r.chain] || '#555' }} />
+                                  <span style={{ fontSize: 12, color: '#888' }}>{r.chain}</span>
+                                </div>
+                              </td>
+                              <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#aaa' }}>{r.bought > 1e6 ? `${(r.bought/1e6).toFixed(2)}M` : r.bought.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                              <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#aaa' }}>{r.sold > 1e6 ? `${(r.sold/1e6).toFixed(2)}M` : r.sold.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                              <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#00c076' }}>${r.proceedsUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                              <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, color: '#ef4444' }}>${r.realizedCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                              <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontSize: 13, color: r.realizedPnl >= 0 ? '#00c076' : '#ef4444' }}>
+                                {r.realizedPnl >= 0 ? '+' : ''}${r.realizedPnl.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot>
+                          <tr style={{ borderTop: '1px solid #252525' }}>
+                            <td colSpan={6} style={{ padding: '10px 14px', fontSize: 13, color: '#888', fontWeight: 600 }}>TOTAL REALIZED P&amp;L</td>
+                            <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 800, fontSize: 14, color: totalPnl >= 0 ? '#00c076' : '#ef4444' }}>
+                              {totalPnl >= 0 ? '+' : ''}${Math.abs(totalPnl).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                            </td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </motion.div>
+        )}
+
         {activeTab === 'wallets' && (() => {
           const isAll = selectedWalletAddr === 'all';
           const selWallet = wallets.find(w => w.address.toLowerCase() === selectedWalletAddr);
@@ -4356,8 +4734,10 @@ export default function App() {
                           const explUrl = explorerUrl(asset.chain, addr);
                           const dsUrl = dexScreenerUrl(asset.chain, addr);
                           return (
-                            <tr key={asset.id}
-                              style={{ borderBottom: '1px solid #1e1e1e', transition: 'background .1s' }}
+                            <React.Fragment key={asset.id}>
+                            <tr
+                              style={{ borderBottom: '1px solid #1e1e1e', transition: 'background .1s', cursor: 'pointer' }}
+                              onClick={() => setExpandedWalletAssetIds(prev => { const n = new Set(prev); n.has(asset.id) ? n.delete(asset.id) : n.add(asset.id); return n; })}
                               onMouseOver={e => (e.currentTarget.style.background = '#111')}
                               onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                               <td style={{ padding: '11px 16px', whiteSpace: 'nowrap' }}>
@@ -4432,7 +4812,7 @@ export default function App() {
                               <td style={{ padding: '11px 12px', textAlign: 'right' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2 }}>
                                   <button
-                                    onClick={() => setPnlAsset(pnlAsset?.id === asset.id ? null : asset)}
+                                    onClick={e => { e.stopPropagation(); setPnlAsset(pnlAsset?.id === asset.id ? null : asset); }}
                                     title="Analyse P&L"
                                     style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', transition: 'color .12s',
                                       color: pnlAsset?.id === asset.id ? '#a78bfa' : '#555' }}
@@ -4440,16 +4820,85 @@ export default function App() {
                                     onMouseOut={e => (e.currentTarget.style.color = pnlAsset?.id === asset.id ? '#a78bfa' : '#555')}>
                                     <Calculator size={13} />
                                   </button>
-                                  <button onClick={() => setHiddenTokens([...hiddenTokens, asset.id])}
+                                  <button onClick={e => { e.stopPropagation(); setHiddenTokens([...hiddenTokens, asset.id]); }}
                                     style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#888', transition: 'color .12s' }}
                                     onMouseOver={e => (e.currentTarget.style.color = '#ef4444')}
                                     onMouseOut={e => (e.currentTarget.style.color = '#555')}
                                     title="Hide">
                                     <Trash2 size={13} />
                                   </button>
+                                  <span style={{ color: expandedWalletAssetIds.has(asset.id) ? '#00c076' : '#444', padding: 4, display: 'inline-flex', transition: 'color .12s' }}>
+                                    {expandedWalletAssetIds.has(asset.id) ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                                  </span>
                                 </div>
                               </td>
                             </tr>
+                            {/* Expanded wallet asset row */}
+                            {expandedWalletAssetIds.has(asset.id) && (() => {
+                              const plsPrice = prices['pulsechain']?.usd || 0.00005;
+                              const wPriceInPls = plsPrice > 0 ? asset.price / plsPrice : 0;
+                              const wCurrentPlsValue = asset.value / plsPrice;
+                              const wEntryPls = manualEntries[asset.id];
+                              const wPnlPls = wEntryPls ? wCurrentPlsValue - wEntryPls : null;
+                              return (
+                                <tr style={{ borderBottom: '1px solid #1e1e1e', background: '#0a0a0a' }}>
+                                  <td colSpan={7} style={{ padding: '0 16px 14px' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 10, paddingTop: 12 }}>
+                                      {/* Price card */}
+                                      <div style={{ background: '#111', borderRadius: 8, padding: '12px 14px' }}>
+                                        <div style={{ fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Price</div>
+                                        <div style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}><PriceDisplay price={asset.price} /></div>
+                                        <div style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>
+                                          {wPriceInPls > 0 ? `${wPriceInPls >= 1000 ? `${(wPriceInPls/1000).toFixed(2)}K` : wPriceInPls.toFixed(4)} PLS` : ''}
+                                        </div>
+                                        <div style={{ fontSize: 12, fontWeight: 700, color: pct >= 0 ? '#00c076' : '#ef4444', marginTop: 4 }}>
+                                          {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}% (24h)
+                                        </div>
+                                      </div>
+                                      {/* Holdings card */}
+                                      <div style={{ background: '#111', borderRadius: 8, padding: '12px 14px' }}>
+                                        <div style={{ fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Holdings</div>
+                                        <div style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>
+                                          {asset.balance >= 1e6 ? `${(asset.balance/1e6).toFixed(2)}M` : asset.balance >= 1e3 ? `${(asset.balance/1e3).toFixed(2)}K` : asset.balance.toLocaleString(undefined, { maximumFractionDigits: 4 })} {asset.symbol}
+                                        </div>
+                                        <div style={{ fontSize: 13, color: '#aaa', marginTop: 4 }}>${asset.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+                                        {wCurrentPlsValue > 0 && <div style={{ fontSize: 12, color: '#f739ff', marginTop: 2 }}>{wCurrentPlsValue >= 1e6 ? `${(wCurrentPlsValue/1e6).toFixed(2)}M` : wCurrentPlsValue >= 1e3 ? `${(wCurrentPlsValue/1e3).toFixed(2)}K` : wCurrentPlsValue.toFixed(0)} PLS</div>}
+                                      </div>
+                                      {/* P&L card */}
+                                      <div style={{ background: '#111', borderRadius: 8, padding: '12px 14px' }}>
+                                        <div style={{ fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>P&amp;L (PLS basis)</div>
+                                        {wEntryPls ? (
+                                          <>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                              <span style={{ fontSize: 12, color: '#888' }}>Entry</span>
+                                              <span style={{ fontSize: 13, fontWeight: 600, color: '#aaa' }}>{wEntryPls.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                              <span style={{ fontSize: 12, color: '#888' }}>Now</span>
+                                              <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{wCurrentPlsValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 4, borderTop: '1px solid #222', marginTop: 4 }}>
+                                              <span style={{ fontSize: 12, fontWeight: 700, color: '#888' }}>Net P&L</span>
+                                              <span style={{ fontSize: 14, fontWeight: 800, color: wPnlPls !== null && wPnlPls >= 0 ? '#00c076' : '#ef4444' }}>
+                                                {wPnlPls !== null ? `${wPnlPls >= 0 ? '+' : ''}${wPnlPls.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS` : '—'}
+                                              </span>
+                                            </div>
+                                          </>
+                                        ) : (
+                                          <div>
+                                            <div style={{ fontSize: 12, color: '#555', marginBottom: 8 }}>Set entry to track P&L</div>
+                                            <input type="number" placeholder="Entry PLS amount"
+                                              style={{ width: '100%', background: '#0d0d0d', border: '1px solid #333', borderRadius: 6, color: '#fff', fontSize: 12, padding: '5px 8px', outline: 'none' }}
+                                              onBlur={e => { const v = parseFloat(e.target.value); if (!isNaN(v) && v > 0) setManualEntries(prev => ({ ...prev, [asset.id]: v })); }} />
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })()}
+                            </React.Fragment>
                           );
                         })
                       )}
@@ -4815,6 +5264,7 @@ export default function App() {
           { id: 'assets',   label: 'Assets',   icon: WalletIcon },
           { id: 'stakes',   label: 'Stakes',   icon: Layers },
           { id: 'history',  label: 'History',  icon: History },
+          { id: 'tracker',  label: 'Tracker',  icon: TrendingUp },
           { id: 'wallets',  label: 'Wallets',  icon: User },
         ] as const).map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setActiveTab(id)}
