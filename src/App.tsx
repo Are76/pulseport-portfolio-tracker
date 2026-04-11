@@ -28,7 +28,9 @@ import {
   Calculator,
   X,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -391,6 +393,45 @@ export default function App() {
   });
   const [tokenMarketData, setTokenMarketData] = useState<Record<string, any>>({});
   const [expandedWalletAssetIds, setExpandedWalletAssetIds] = useState<Set<string>>(new Set());
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const saved = localStorage.getItem('pulseport_theme');
+    return (saved === 'light') ? 'light' : 'dark';
+  });
+  const [expandedTxIds, setExpandedTxIds] = useState<Set<string>>(new Set());
+  const [trackerExpandedIds, setTrackerExpandedIds] = useState<Set<string>>(new Set());
+
+  // Apply theme to document
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('pulseport_theme', theme);
+  }, [theme]);
+
+  // Theme-aware color helpers
+  const t = useMemo(() => ({
+    surface: theme === 'dark' ? '#050505' : '#f5f5f5',
+    card: theme === 'dark' ? '#0d0d0d' : '#ffffff',
+    cardHigh: theme === 'dark' ? '#111111' : '#f0f0f0',
+    cardHighest: theme === 'dark' ? '#1a1a1a' : '#e8e8e8',
+    border: theme === 'dark' ? '#242424' : '#d0d0d0',
+    borderLight: theme === 'dark' ? '#1f1f1f' : '#e0e0e0',
+    text: theme === 'dark' ? '#ffffff' : '#1a1a1a',
+    textSecondary: theme === 'dark' ? '#aaaaaa' : '#555555',
+    textMuted: theme === 'dark' ? '#555555' : '#888888',
+    textTertiary: theme === 'dark' ? '#888888' : '#666666',
+    sidebar: theme === 'dark' ? '#080808' : '#fafafa',
+    header: theme === 'dark' ? '#000000' : '#ffffff',
+    hoverBg: theme === 'dark' ? '#111' : '#f5f5f5',
+    expandedBg: theme === 'dark' ? '#0a0a0a' : '#f8f8f8',
+    green: '#00c076',
+    red: '#ef4444',
+    purple: '#8b5cf6',
+    orange: '#f97316',
+    blue: '#627EEA',
+    pink: '#f739ff',
+    gradientHero: theme === 'dark'
+      ? 'linear-gradient(135deg, #081a10 0%, #050f09 40%, #060d14 100%)'
+      : 'linear-gradient(135deg, #f0faf5 0%, #f5f5f5 40%, #f0f2fa 100%)',
+  }), [theme]);
 
   useEffect(() => {
     localStorage.setItem('pulseport_collapsed', JSON.stringify(collapsedSections));
@@ -2254,12 +2295,12 @@ export default function App() {
 
   // ── RENDER ────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-dashboard-bg text-white font-sans flex" style={{ fontSize: 14 }}>
+    <div className="min-h-screen font-sans flex" style={{ fontSize: 14, background: t.surface, color: t.text }}>
       {/* ── SIDEBAR ── */}
-      <aside style={{ width: 220, minWidth: 220, background: '#080808', borderRight: '1px solid #1f1f1f' }}
+      <aside style={{ width: 220, minWidth: 220, background: t.sidebar, borderRight: `1px solid ${t.borderLight}` }}
         className="hidden md:flex flex-col sticky top-0 h-screen overflow-y-auto custom-scrollbar">
         {/* Logo */}
-        <div style={{ padding: '20px 18px 16px', borderBottom: '1px solid #1f1f1f' }} className="flex items-center gap-2.5">
+        <div style={{ padding: '20px 18px 16px', borderBottom: `1px solid ${t.borderLight}` }} className="flex items-center gap-2.5">
           <div style={{ width: 28, height: 28, background: '#00c076', borderRadius: 8 }} className="flex items-center justify-center shrink-0">
             <Activity size={16} className="text-black" />
           </div>
@@ -2282,8 +2323,8 @@ export default function App() {
               style={{
                 display: 'flex', alignItems: 'center', gap: 10,
                 padding: '9px 12px', borderRadius: 8,
-                background: activeTab === id ? '#141414' : 'transparent',
-                color: activeTab === id ? '#fff' : '#555',
+                background: activeTab === id ? t.cardHigh : 'transparent',
+                color: activeTab === id ? t.text : t.textMuted,
                 fontWeight: activeTab === id ? 600 : 500,
                 fontSize: 13, border: 'none', cursor: 'pointer',
                 transition: 'all .12s', width: '100%', textAlign: 'left',
@@ -2297,7 +2338,7 @@ export default function App() {
         </nav>
 
         {/* Wallets */}
-        <div style={{ padding: '8px 8px 0', borderTop: '1px solid #1a1a1a', marginTop: 'auto' }}>
+        <div style={{ padding: '8px 8px 0', borderTop: `1px solid ${t.borderLight}`, marginTop: 'auto' }}>
           <button
             onClick={() => setSidebarWalletsOpen(v => !v)}
             style={{
@@ -2365,7 +2406,7 @@ export default function App() {
       {/* ── MAIN ── */}
       <main className="flex-1 min-w-0 flex flex-col">
         {/* Top Nav */}
-        <header style={{ height: 52, background: '#000', borderBottom: '1px solid #1f1f1f', position: 'sticky', top: 0, zIndex: 50 }}
+        <header style={{ height: 52, background: t.header, borderBottom: `1px solid ${t.borderLight}`, position: 'sticky', top: 0, zIndex: 50 }}
           className="flex items-center justify-between px-5 gap-4 shrink-0">
           {/* Mobile logo */}
           <div className="flex md:hidden items-center gap-2">
@@ -2381,7 +2422,7 @@ export default function App() {
               <button key={tab} onClick={() => setActiveTab(tab)}
                 style={{
                   padding: '0 16px', height: 52, fontSize: 13, fontWeight: activeTab === tab ? 600 : 500,
-                  color: activeTab === tab ? '#fff' : '#555',
+                  color: activeTab === tab ? t.text : t.textMuted,
                   background: 'none', borderBottom: activeTab === tab ? '2px solid #00c076' : '2px solid transparent',
                   cursor: 'pointer', transition: 'all .12s', textTransform: 'capitalize',
                 }}>
@@ -2392,17 +2433,23 @@ export default function App() {
 
           <div className="flex items-center gap-3">
             {lastUpdated && (
-              <span style={{ fontSize: 12, color: '#555', display: 'flex', alignItems: 'center', gap: 5 }} className="hidden sm:inline-flex">
+              <span style={{ fontSize: 12, color: t.textMuted, display: 'flex', alignItems: 'center', gap: 5 }} className="hidden sm:inline-flex">
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00c076', display: 'inline-block', animation: 'pulse 2s infinite' }} />
                 {timeSinceLastUpdate}s ago
               </span>
             )}
+            <button
+              onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
+              className="theme-toggle"
+              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
+              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
             <button onClick={() => { setApiKeyInput(etherscanApiKey); setBasescanApiKeyInput(basescanApiKey); setIsApiKeyModalOpen(true); }}
               title={etherscanApiKey ? 'API key set ✓' : 'Set Etherscan API key'}
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px',
-                background: etherscanApiKey ? 'rgba(0,192,118,.08)' : '#111',
-                border: `1px solid ${etherscanApiKey ? 'rgba(0,192,118,.25)' : '#1c1c1c'}`,
-                borderRadius: 8, color: etherscanApiKey ? '#00c076' : '#555',
+                background: etherscanApiKey ? 'rgba(0,192,118,.08)' : t.cardHigh,
+                border: `1px solid ${etherscanApiKey ? 'rgba(0,192,118,.25)' : t.border}`,
+                borderRadius: 8, color: etherscanApiKey ? '#00c076' : t.textMuted,
                 fontSize: 13, fontWeight: 500, cursor: 'pointer', transition: 'all .12s' }}>
               <Settings size={13} />
               <span className="hidden sm:inline">{etherscanApiKey ? 'API Key ✓' : 'API Key'}</span>
@@ -2410,10 +2457,8 @@ export default function App() {
             <button onClick={fetchPortfolio}
               className={isLoading ? 'btn-loading' : ''}
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px',
-                background: '#111', border: '1px solid #252525', borderRadius: 8,
-                color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer', transition: 'all .12s' }}
-              onMouseOver={e => (e.currentTarget.style.borderColor = '#333')}
-              onMouseOut={e => (e.currentTarget.style.borderColor = '#1c1c1c')}>
+                background: t.cardHigh, border: `1px solid ${t.border}`, borderRadius: 8,
+                color: t.text, fontSize: 13, fontWeight: 500, cursor: 'pointer', transition: 'all .12s' }}>
               <RefreshCcw size={13} className={isLoading ? 'animate-spin' : ''} />
               <span className="hidden sm:inline">Refresh</span>
             </button>

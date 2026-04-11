@@ -13,7 +13,7 @@
   --color-violet: #8b5cf6;
   --color-violet-soft: rgba(139, 92, 246, 0.12);
 
-  /* Dashboard Backgrounds */
+  /* Dashboard Backgrounds (dark defaults, overridden by CSS vars) */
   --color-dashboard-bg: #050505;
   --color-card-bg: #0d0d0d;
   --color-border-brand: rgba(255, 255, 255, 0.06);
@@ -24,10 +24,72 @@
   --color-gray3: #222222;
 }
 
+/* ── MATERIAL DESIGN THEME VARIABLES ─────────────────────────────────── */
+:root {
+  /* Dark theme (default) */
+  --md-sys-color-surface: #050505;
+  --md-sys-color-surface-container: #0d0d0d;
+  --md-sys-color-surface-container-high: #111111;
+  --md-sys-color-surface-container-highest: #1a1a1a;
+  --md-sys-color-surface-variant: #1f1f1f;
+  --md-sys-color-on-surface: #ffffff;
+  --md-sys-color-on-surface-variant: #aaaaaa;
+  --md-sys-color-outline: #242424;
+  --md-sys-color-outline-variant: #1f1f1f;
+  --md-sys-color-primary: #00c076;
+  --md-sys-color-on-primary: #000000;
+  --md-sys-color-secondary: #627EEA;
+  --md-sys-color-tertiary: #8b5cf6;
+  --md-sys-color-error: #ef4444;
+  --md-sys-color-inverse-surface: #e6e6e6;
+  --md-sys-color-scrim: rgba(0,0,0,0.6);
+  --md-elevation-1: 0 1px 3px 1px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.5);
+  --md-elevation-2: 0 2px 6px 2px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.5);
+  --md-elevation-3: 0 4px 8px 3px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.5);
+  --md-sys-color-sidebar: #080808;
+  --md-sys-color-header: #000000;
+  --md-sys-color-text-muted: #555555;
+  --md-sys-color-text-secondary: #888888;
+  --md-sys-color-text-tertiary: #666666;
+  --md-sys-shape-corner-m: 12px;
+  --md-sys-shape-corner-l: 16px;
+  --md-sys-shape-corner-xl: 20px;
+}
+
+[data-theme="light"] {
+  --md-sys-color-surface: #f5f5f5;
+  --md-sys-color-surface-container: #ffffff;
+  --md-sys-color-surface-container-high: #f0f0f0;
+  --md-sys-color-surface-container-highest: #e8e8e8;
+  --md-sys-color-surface-variant: #e0e0e0;
+  --md-sys-color-on-surface: #1a1a1a;
+  --md-sys-color-on-surface-variant: #555555;
+  --md-sys-color-outline: #d0d0d0;
+  --md-sys-color-outline-variant: #e0e0e0;
+  --md-sys-color-primary: #00a066;
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-secondary: #4a66c8;
+  --md-sys-color-tertiary: #7c3aed;
+  --md-sys-color-error: #dc2626;
+  --md-sys-color-inverse-surface: #1a1a1a;
+  --md-sys-color-scrim: rgba(0,0,0,0.3);
+  --md-elevation-1: 0 1px 3px 1px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.12);
+  --md-elevation-2: 0 2px 6px 2px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.12);
+  --md-elevation-3: 0 4px 8px 3px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12);
+  --md-sys-color-sidebar: #fafafa;
+  --md-sys-color-header: #ffffff;
+  --md-sys-color-text-muted: #888888;
+  --md-sys-color-text-secondary: #666666;
+  --md-sys-color-text-tertiary: #999999;
+}
+
 @layer base {
   body {
     @apply bg-dashboard-bg text-white antialiased;
     font-size: 14px;
+    background: var(--md-sys-color-surface);
+    color: var(--md-sys-color-on-surface);
+    transition: background-color 0.25s ease, color 0.25s ease;
   }
 }
 
@@ -210,4 +272,99 @@ a {
   body {
     overflow-x: hidden;
   }
+}
+
+/* ── MATERIAL DESIGN UTILITIES ─────────────────────────────────────────── */
+.md-surface {
+  background: var(--md-sys-color-surface-container);
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--md-sys-shape-corner-m);
+}
+.md-surface-high {
+  background: var(--md-sys-color-surface-container-high);
+}
+.md-elevation-1 { box-shadow: var(--md-elevation-1); }
+.md-elevation-2 { box-shadow: var(--md-elevation-2); }
+.md-elevation-3 { box-shadow: var(--md-elevation-3); }
+
+/* Light mode overrides for components that use inline dark-theme colors */
+[data-theme="light"] .md-surface { border-color: var(--md-sys-color-outline); }
+[data-theme="light"] table tr { border-color: var(--md-sys-color-outline) !important; }
+
+/* Theme toggle button */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--md-sys-color-outline);
+  background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.theme-toggle:hover {
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+}
+
+/* ── TRANSACTION CARD ──────────────────────────────────────────────────── */
+.tx-card {
+  background: var(--md-sys-color-surface-container);
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--md-sys-shape-corner-m);
+  overflow: hidden;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.tx-card:hover {
+  box-shadow: var(--md-elevation-1);
+  border-color: var(--md-sys-color-outline-variant);
+}
+.tx-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer;
+  gap: 12px;
+}
+.tx-card-detail {
+  padding: 0 16px 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  border-top: 1px solid var(--md-sys-color-outline);
+}
+.tx-detail-item {
+  background: var(--md-sys-color-surface-container-high);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.tx-detail-item .label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--md-sys-color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.tx-detail-item .value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--md-sys-color-on-surface);
+}
+.tx-detail-item .sub {
+  font-size: 12px;
+  color: var(--md-sys-color-text-secondary);
+  margin-top: 1px;
+}
+
+/* Light-mode specific body text reset */
+[data-theme="light"] {
+  color-scheme: light;
+}
+[data-theme="light"] body {
+  color: #1a1a1a;
 }
