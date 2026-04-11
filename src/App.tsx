@@ -554,6 +554,37 @@ export default function App() {
         }
       }
       
+      // 1a2. Fetch DexScreener 24h % change for PulseChain tokens (INC, PRVX, etc.)
+      // CoinGecko often lacks data for these — DexScreener has reliable 24h change from PulseX pairs
+      const dexScreenerChanges: Record<string, number> = {};
+      try {
+        const dsTokenAddrs = [
+          '0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d', // INC
+          '0xf6f8db0aba00007681f8faf16a0fda1c9b030b11', // PRVX
+          '0x95b303987a60c71504d99aa1b13b4da07b0790ab', // PLSX
+          '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39', // pHEX
+          '0xa1077a294dde1b09bb078844df40758a5d0f9a27', // WPLS (PLS)
+        ];
+        const dsResults = await Promise.allSettled(
+          dsTokenAddrs.map(addr =>
+            fetch(`https://api.dexscreener.com/latest/dex/tokens/${addr}`)
+              .then(r => r.ok ? r.json() : null)
+              .then(data => {
+                if (!data?.pairs?.length) return;
+                // Pick the pair with highest liquidity on PulseChain
+                const pcPairs = data.pairs.filter((p: any) => p.chainId === 'pulsechain');
+                if (pcPairs.length === 0) return;
+                const best = pcPairs.sort((a: any, b: any) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
+                if (best?.priceChange?.h24 != null) {
+                  dexScreenerChanges[addr] = parseFloat(best.priceChange.h24);
+                }
+              })
+          )
+        );
+      } catch (e) {
+        console.warn('DexScreener 24h change fetch failed:', e);
+      }
+
       // 1b. Fetch PulseChain prices from on-chain LP reserves (authoritative source per skill doc)
       // Uses getReserves() on PulseX V2 LP pairs — more reliable than subgraph which can lag/rate-limit
       try {
@@ -604,13 +635,18 @@ export default function App() {
 
         if (wplsUSD > 0) {
           if (!fetchedPrices.pulsechain) fetchedPrices.pulsechain = {};
+          const plsDs24h = dexScreenerChanges['0xa1077a294dde1b09bb078844df40758a5d0f9a27'];
           fetchedPrices.pulsechain.usd = wplsUSD;
-          fetchedPrices['pulsechain:native'] = { usd: wplsUSD };
+          if (plsDs24h != null) fetchedPrices.pulsechain.usd_24h_change = plsDs24h;
+          fetchedPrices['pulsechain:native'] = { usd: wplsUSD, ...(plsDs24h != null ? { usd_24h_change: plsDs24h } : {}) };
 
           const setTokenPrice = (addrLower: string, priceUSD: number, cgId?: string) => {
             if (priceUSD <= 0) return;
             const existing = cgId ? (fetchedPrices[cgId] || {}) : {};
-            fetchedPrices[`pulsechain:${addrLower}`] = { ...existing, usd: priceUSD };
+            const ds24h = dexScreenerChanges[addrLower];
+            // Prefer DexScreener 24h change (PulseChain-specific) over CoinGecko (may be ETH-based or missing)
+            const change24h = ds24h != null ? ds24h : existing.usd_24h_change;
+            fetchedPrices[`pulsechain:${addrLower}`] = { ...existing, usd: priceUSD, ...(change24h != null ? { usd_24h_change: change24h } : {}) };
           };
 
           // PLSX/WPLS — token0=PLSX(18), token1=WPLS(18)
@@ -2500,10 +2536,11 @@ export default function App() {
             <div className="ticker-wrapper hidden sm:flex flex-1 mx-4" style={{ height: 56, alignItems: 'center' }}>
               <div className="ticker-track" style={{ gap: 32 }}>
                 {[
-                  { sym: 'PLS',  price: prices['pulsechain']?.usd || 0, change: prices['pulsechain']?.usd_24h_change },
+                  { sym: 'PLS',  price: prices['pulsechain']?.usd || 0, change: prices['pulsechain']?.usd_24h_change ?? prices['pulsechain:native']?.usd_24h_change },
                   { sym: 'PLSX', price: prices['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd || prices['pulsex']?.usd || 0, change: prices['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd_24h_change ?? prices['pulsex']?.usd_24h_change },
                   { sym: 'HEX',  price: prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || 0, change: prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd_24h_change ?? prices['hex']?.usd_24h_change },
                   { sym: 'INC',  price: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd || prices['incentive']?.usd || 0, change: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd_24h_change ?? prices['incentive']?.usd_24h_change },
+                  { sym: 'PRVX', price: prices['pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11']?.usd || 0, change: prices['pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11']?.usd_24h_change },
                   { sym: 'eHEX', price: prices['hex']?.usd || 0, change: prices['hex']?.usd_24h_change },
                   { sym: 'ETH',  price: prices['ethereum']?.usd || 0, change: prices['ethereum']?.usd_24h_change },
                 ].flatMap(c => [c, { ...c }]).map((coin, i) => (
@@ -2649,12 +2686,18 @@ export default function App() {
                           </div>
                           {/* Compact stats */}
                           <div style={{ height: 1, background: theme === 'dark' ? 'var(--border)' : 'rgba(0,0,0,.08)', margin: '18px 0 14px' }} />
-                          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
                             <span style={{ fontSize: 12, color: t.textTertiary }}>Liquid: <span style={{ color: t.textSecondary, fontWeight: 600 }}>${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></span>
                             <span style={{ fontSize: 12, color: t.textMuted }}>·</span>
                             <span style={{ fontSize: 12, color: t.textTertiary }}>Staked: <span style={{ color: t.textSecondary, fontWeight: 600 }}>${summary.stakingValueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></span>
                             <span style={{ fontSize: 12, color: t.textMuted }}>·</span>
-                            <span style={{ fontSize: 12, color: t.textTertiary }}>Wallets: <span style={{ color: t.textSecondary, fontWeight: 600 }}>{wallets.length}</span></span>
+                            {wallets.length > 0 ? (
+                              <span style={{ fontSize: 12, color: t.textTertiary }}>Wallets: <span style={{ color: t.textSecondary, fontWeight: 600 }}>{wallets.length}</span></span>
+                            ) : (
+                              <button onClick={() => setIsAddingWallet(true)} style={{ fontSize: 12, color: 'var(--accent)', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 6, padding: '2px 10px', cursor: 'pointer', fontWeight: 600, transition: 'all .15s' }}>
+                                + Add Wallet
+                              </button>
+                            )}
                           </div>
                           {/* Net Investment / PNL / Stakes at Maturity — inside hero under price */}
                           <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '16px 0 14px' }} />
@@ -2685,11 +2728,11 @@ export default function App() {
                           {/* Core coin icons */}
                           {(() => {
                             const corePriceCoins: { symbol: string; price: number; change24h: number | null; logo: string; fallbackLogo?: string }[] = [
-                              { symbol: 'PLS',  price: prices['pulsechain']?.usd || 0, change24h: prices['pulsechain']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png' },
-                              { symbol: 'PLSX', price: prices['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd || prices['pulsex']?.usd || 0, change24h: prices['pulsex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x95B303987A60C71504D99Aa1b13B4DA07b0790ab.png' },
-                              { symbol: 'INC',  price: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd || prices['incentive']?.usd || 0, change24h: prices['incentive']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png' },
-                              { symbol: 'HEX',  price: prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0, change24h: prices['hex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39.png' },
-                              { symbol: 'PRVX', price: prices['pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11']?.usd || 0, change24h: null, logo: 'https://tokens.app.pulsex.com/images/tokens/0xf6f8dB0ABA00007681F8FAF16a0fdA1C9B030b11.png', fallbackLogo: 'https://raw.githubusercontent.com/nicemans1/pulsechain-assets/main/tokens/0xf6f8dB0ABA00007681F8FAF16a0fdA1C9B030b11/logo.png' },
+                              { symbol: 'PLS',  price: prices['pulsechain']?.usd || 0, change24h: prices['pulsechain']?.usd_24h_change ?? prices['pulsechain:native']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png' },
+                              { symbol: 'PLSX', price: prices['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd || prices['pulsex']?.usd || 0, change24h: prices['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd_24h_change ?? prices['pulsex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x95B303987A60C71504D99Aa1b13B4DA07b0790ab.png' },
+                              { symbol: 'INC',  price: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd || prices['incentive']?.usd || 0, change24h: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd_24h_change ?? prices['incentive']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png' },
+                              { symbol: 'HEX',  price: prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0, change24h: prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd_24h_change ?? prices['hex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39.png' },
+                              { symbol: 'PRVX', price: prices['pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11']?.usd || 0, change24h: prices['pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0xf6f8dB0ABA00007681F8FAF16a0fdA1C9B030b11.png', fallbackLogo: 'https://raw.githubusercontent.com/nicemans1/pulsechain-assets/main/tokens/0xf6f8dB0ABA00007681F8FAF16a0fdA1C9B030b11/logo.png' },
                               { symbol: 'eHEX', price: prices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['hex']?.usd || 0, change24h: prices['hex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x57fde0a71132198bbec939b98976993d8d89d225.png', fallbackLogo: 'https://assets.coingecko.com/coins/images/4086/small/HEX-logo.png' },
                             ];
                             // Delegate to shared fmtPrice helper defined at render scope
@@ -3189,7 +3232,7 @@ export default function App() {
                         </tr>
                       </thead>
                       <tbody>
-                        {isLoading && wallets.length > 0 && [...Array(5)].map((_, i) => (
+                        {isLoading && wallets.length > 0 && currentAssets.length === 0 && [...Array(5)].map((_, i) => (
                           <tr key={`skel-${i}`}>
                             <td style={{ padding: '11px 16px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

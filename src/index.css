@@ -253,7 +253,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  background: linear-gradient(135deg, #0A0A0A 0%, #1A1A2E 100%);
+  background: linear-gradient(145deg, #050508 0%, #0A0A12 30%, #0F0F1A 100%);
   background-attachment: fixed;
   min-height: 100vh;
   color: var(--fg);
@@ -469,15 +469,15 @@ button, a {
 /* ── HERO BACKGROUNDS ────────────────────────────────────────────────── */
 .hero-bg-dark {
   background:
-    radial-gradient(ellipse at 10% 60%, rgba(0,255,159,0.09) 0%, transparent 55%),
-    radial-gradient(ellipse at 85% 15%, rgba(99,70,255,0.07) 0%, transparent 55%),
-    radial-gradient(ellipse at 50% 100%, rgba(0,255,159,0.03) 0%, transparent 50%),
-    linear-gradient(180deg, rgba(15,15,26,0.95) 0%, rgba(10,10,20,0.98) 100%);
+    radial-gradient(ellipse at 10% 60%, rgba(0,255,159,0.10) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 15%, rgba(99,70,255,0.08) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 100%, rgba(0,255,159,0.04) 0%, transparent 50%),
+    linear-gradient(180deg, rgba(15,15,28,0.96) 0%, rgba(8,8,18,0.98) 100%);
 }
 .hero-bg-light {
   background:
-    radial-gradient(ellipse at 20% 50%, rgba(0,150,90,0.06) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 20%, rgba(99,126,234,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 20% 50%, rgba(0,150,90,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(99,126,234,0.07) 0%, transparent 60%),
     #f8f8ff;
 }
 
@@ -518,7 +518,7 @@ button, a {
 
 /* ── STAT CARD ────────────────────────────────────────────────────────── */
 .stat-card {
-  background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+  background: linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
   border: 1px solid rgba(255,255,255,0.09);
   border-radius: 14px;
   padding: 16px;
@@ -526,6 +526,8 @@ button, a {
   position: relative;
   overflow: hidden;
   will-change: transform;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 .stat-card::before {
   content: '';
@@ -537,7 +539,7 @@ button, a {
 }
 .stat-card:hover {
   border-color: rgba(0,255,159,0.22);
-  box-shadow: 0 0 16px rgba(0,255,159,0.08), 0 8px 24px rgba(0,0,0,0.3);
+  box-shadow: 0 0 20px rgba(0,255,159,0.08), 0 8px 32px rgba(0,0,0,0.3);
   transform: translateY(-2px);
 }
 
@@ -637,9 +639,9 @@ button, a {
 
 /* ── NEON CARD ───────────────────────────────────────────────────────── */
 .neon-card {
-  background: rgba(255,255,255,0.03);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(255,255,255,0.035);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: var(--radius-card);
   transition: border-color 0.2s var(--ease-spring), box-shadow 0.2s var(--ease-spring), transform 0.2s var(--ease-spring);
@@ -647,7 +649,7 @@ button, a {
 }
 .neon-card:hover {
   border-color: var(--accent-border);
-  box-shadow: 0 0 20px rgba(0,255,159,0.12), 0 8px 32px rgba(0,0,0,0.4);
+  box-shadow: 0 0 24px rgba(0,255,159,0.10), 0 12px 40px rgba(0,0,0,0.4);
   transform: translateY(-2px);
 }
 
@@ -696,9 +698,9 @@ button, a {
 
 /* ── PREMIUM ASSET CARD (overview 3×3 grid) ──────────────────────────── */
 .asset-card-premium {
-  background: linear-gradient(160deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0.018) 100%);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: linear-gradient(160deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255,255,255,0.09);
   border-radius: 18px;
   padding: 0;
@@ -719,18 +721,31 @@ button, a {
   transition: opacity 0.3s var(--ease-spring);
   pointer-events: none;
 }
+/* Subtle inner top glow */
+.asset-card-premium::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 10%, rgba(255,255,255,0.12) 50%, transparent 90%);
+  opacity: 0.5;
+  pointer-events: none;
+}
 .asset-card-premium:hover {
   border-color: rgba(0,255,159,0.30);
   box-shadow:
     0 0 0 1px rgba(0,255,159,0.10),
-    0 2px 12px rgba(0,255,159,0.14),
-    0 12px 40px rgba(0,0,0,0.50),
+    0 4px 16px rgba(0,255,159,0.12),
+    0 16px 48px rgba(0,0,0,0.50),
     inset 0 1px 0 rgba(255,255,255,0.08);
   transform: translateY(-4px);
 }
 .asset-card-premium:hover .card-top-accent { opacity: 1 !important; }
 .asset-card-premium:hover::after { opacity: 1; }
 .asset-card-premium:active { transform: translateY(-1px) scale(0.99); }
+/* Sparkline fades in on hover */
+.asset-card-premium .sparkline-container { opacity: 0.65; transition: opacity 0.2s var(--ease-spring); }
+.asset-card-premium:hover .sparkline-container { opacity: 1; }
 
 /* ── ASSET GRID 3-COLUMN RESPONSIVE ──────────────────────────────────── */
 .asset-grid-3col {
@@ -877,13 +892,15 @@ button, a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 7px 10px;
-  border-radius: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
   background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.05);
-  transition: background 0.15s, border-color 0.15s;
+  border: 1px solid rgba(255,255,255,0.06);
+  transition: all 0.2s var(--ease-spring);
 }
 .live-price-row:hover {
-  background: rgba(255,255,255,0.06);
-  border-color: rgba(255,255,255,0.1);
+  background: rgba(0,255,159,0.05);
+  border-color: rgba(0,255,159,0.15);
+  transform: translateX(2px);
+  box-shadow: 0 0 12px rgba(0,255,159,0.06);
 }
