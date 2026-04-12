@@ -4299,24 +4299,7 @@ export default function App() {
                   </div>
                 );
               })()}
-              {/* Right: Monthly P&L bar chart */}
-              <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 18px 10px' }}>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.6px' }}>Monthly P&amp;L</div>
-                <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={monthlyPnlData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                    <XAxis dataKey="month" tick={{ fill: '#7c8798', fontSize: 11 }} axisLine={{ stroke: '#222' }} tickLine={false} />
-                    <YAxis tick={{ fill: '#7c8798', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <RechartsTooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13 }}
-                      formatter={(v: any) => [`${Number(v) >= 0 ? '+' : ''}$${Math.abs(Number(v)).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Profit / Loss']} />
-                    <Bar dataKey="pnl" radius={[3, 3, 0, 0]}>
-                      {monthlyPnlData.map((_entry: any, index: number) => (
-                        <Cell key={index} fill={monthlyPnlData[index].pnl >= 0 ? '#00FF9F' : '#ef4444'} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+
             </div>
 
             {/* Received Assets History */}
