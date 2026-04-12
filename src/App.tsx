@@ -4241,8 +4241,8 @@ export default function App() {
             </div>
 
             {/* Charts row */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }} className="max-sm:block max-sm:space-y-3">
-              {/* Left: Portfolio Performance */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }} className="max-sm:block max-sm:space-y-3">
+              {/* Portfolio Performance */}
               {(() => {
                 const now = Date.now();
                 const cutoffs: Record<string, number> = { '1d': now - 24*3600*1000, '1w': now - 7*24*3600*1000, '1y': now - 365*24*3600*1000, 'all': 0 };
