@@ -42,8 +42,8 @@ function fmtTok(n: number): string {
   return abs.toLocaleString(undefined, { maximumFractionDigits: 4 });
 }
 function formatSign(n: number): string { return n >= 0 ? '+' : '−'; }
-function getProfitLossColor(n: number, green = '#00FF9F', red = '#f43f5e'): string {
-  return n >= 0 ? green : red;
+function getProfitLossColor(n: number): string {
+  return n >= 0 ? 'var(--positive)' : 'var(--negative)';
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -68,21 +68,20 @@ function StatRow({
 function Divider({ vertical }: { vertical?: boolean }) {
   return (
     <div style={vertical
-      ? { width: 1, alignSelf: 'stretch', background: 'rgba(255,255,255,0.07)', flexShrink: 0 }
-      : { height: 1, background: 'rgba(255,255,255,0.07)' }} />
+      ? { width: 1, alignSelf: 'stretch', background: 'var(--border)', flexShrink: 0 }
+      : { height: 1, background: 'var(--border)' }} />
   );
 }
 
 function TokenLogo({ symbol, logoUrl, size = 36 }: { symbol: string; logoUrl?: string; size?: number }) {
   const [imgErr, setImgErr] = useState(false);
-  const color = '#f739ff';
   return (
     <div style={{
       width: size, height: size, borderRadius: '50%', flexShrink: 0,
       background: `linear-gradient(135deg, rgba(247,57,255,0.18) 0%, rgba(99,70,255,0.12) 100%)`,
       border: `1.5px solid rgba(247,57,255,0.28)`,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      overflow: 'hidden', fontSize: Math.round(size * 0.38), fontWeight: 800, color,
+      overflow: 'hidden', fontSize: Math.round(size * 0.38), fontWeight: 800, color: 'var(--chain-pulse)',
     }}>
       {logoUrl && !imgErr ? (
         <img src={logoUrl} alt={symbol}
@@ -182,7 +181,7 @@ export function TokenPnLCard({
 
   return (
     <div style={{
-      background: 'linear-gradient(160deg, rgba(247,57,255,0.07) 0%, rgba(99,70,255,0.04) 50%, rgba(255,255,255,0.02) 100%)',
+      background: 'linear-gradient(160deg, rgba(247,57,255,0.07) 0%, rgba(99,70,255,0.04) 50%, var(--bg-inset) 100%)',
       border: '1px solid rgba(247,57,255,0.18)',
       borderRadius: 16,
       position: 'relative',
@@ -211,7 +210,7 @@ export function TokenPnLCard({
                 {symbol}
               </span>
               <span style={{
-                fontSize: 10, fontWeight: 700, color: '#f739ff',
+                fontSize: 10, fontWeight: 700, color: 'var(--chain-pulse)',
                 background: 'rgba(247,57,255,0.10)', border: '1px solid rgba(247,57,255,0.22)',
                 padding: '1px 7px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '.5px',
               }}>
@@ -270,8 +269,8 @@ export function TokenPnLCard({
             <div style={{
               display: 'flex', flexDirection: 'column', gap: 12,
               padding: '14px 16px',
-              background: 'rgba(255,255,255,0.02)',
-              borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)',
+              background: 'var(--bg-inset)',
+              borderRadius: 12, border: '1px solid var(--border-inset)',
             }}>
               {/* Column header */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
@@ -290,7 +289,7 @@ export function TokenPnLCard({
               <StatRow
                 label="Total Cost"
                 value={totalCost > 0 ? `−${fmtUsd(totalCost)}` : '—'}
-                valueColor={totalCost > 0 ? '#f43f5e' : 'var(--fg-subtle)'}
+                valueColor={totalCost > 0 ? 'var(--negative)' : 'var(--fg-subtle)'}
                 sub={buyCount > 0
                   ? `${buyCount} buy${buyCount > 1 ? 's' : ''}${transferInCount > 0 ? ` · ${transferInCount} received` : ''}`
                   : transferInCount > 0 ? `${transferInCount} received` : undefined}
@@ -299,7 +298,7 @@ export function TokenPnLCard({
               <StatRow
                 label="Total Proceeds"
                 value={totalProceeds > 0 ? `+${fmtUsd(totalProceeds)}` : '—'}
-                valueColor={totalProceeds > 0 ? '#00FF9F' : 'var(--fg-subtle)'}
+                valueColor={totalProceeds > 0 ? 'var(--positive)' : 'var(--fg-subtle)'}
                 sub={sellCount > 0
                   ? `${sellCount} sell${sellCount > 1 ? 's' : ''}${transferOutCount > 0 ? ` · ${transferOutCount} sent` : ''}`
                   : transferOutCount > 0 ? `${transferOutCount} sent` : undefined}
@@ -332,8 +331,8 @@ export function TokenPnLCard({
             <div style={{
               display: 'flex', flexDirection: 'column', gap: 12,
               padding: '14px 16px',
-              background: 'rgba(255,255,255,0.02)',
-              borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)',
+              background: 'var(--bg-inset)',
+              borderRadius: 12, border: '1px solid var(--border-inset)',
             }}>
               {/* Column header */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
@@ -342,7 +341,7 @@ export function TokenPnLCard({
                   background: 'rgba(247,57,255,0.10)', border: '1px solid rgba(247,57,255,0.22)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <Wallet size={11} style={{ color: '#f739ff' }} />
+                  <Wallet size={11} style={{ color: 'var(--chain-pulse)' }} />
                 </div>
                 <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.6px' }}>
                   Holdings
@@ -380,7 +379,7 @@ export function TokenPnLCard({
                   Unrealized
                 </span>
                 <span style={{
-                  fontSize: 15, fontWeight: 800, color: currentValue > 0 ? '#f739ff' : 'var(--fg-subtle)',
+                  fontSize: 15, fontWeight: 800, color: currentValue > 0 ? 'var(--chain-pulse)' : 'var(--fg-subtle)',
                   fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.03em',
                 }}>
                   {currentValue > 0 ? `+${fmtUsd(currentValue)}` : '—'}
@@ -394,7 +393,7 @@ export function TokenPnLCard({
             marginTop: 12, display: 'flex', alignItems: 'center',
             justifyContent: 'space-between', flexWrap: 'wrap', gap: 8,
             padding: '9px 12px', borderRadius: 10,
-            background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+            background: 'var(--bg-inset)', border: '1px solid var(--border-inset)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               {gasFeePls > 0 && (
@@ -427,7 +426,7 @@ export function TokenPnLCard({
                 fontSize: 11, fontWeight: 600, color: 'var(--fg-subtle)',
                 textDecoration: 'none', transition: 'color .12s',
               }}
-              onMouseOver={e => ((e.currentTarget as HTMLElement).style.color = '#f739ff')}
+              onMouseOver={e => ((e.currentTarget as HTMLElement).style.color = 'var(--chain-pulse)')}
               onMouseOut={e => ((e.currentTarget as HTMLElement).style.color = 'var(--fg-subtle)')}
             >
               Explorer <ExternalLink size={10} />

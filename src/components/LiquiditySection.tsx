@@ -655,16 +655,16 @@ export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySect
         <>
           {stakedPositions.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ height: 1, flex: 1, background: 'rgba(255,255,255,0.07)' }} />
+              <div style={{ height: 1, flex: 1, background: 'var(--border-inset)' }} />
               <span style={{
                 fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)',
                 textTransform: 'uppercase', letterSpacing: '.7px',
-                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                background: 'var(--bg-inset)', border: '1px solid var(--border-inset)',
                 padding: '3px 10px', borderRadius: 100,
               }}>
                 LP Positions ({regularPositions.length})
               </span>
-              <div style={{ height: 1, flex: 1, background: 'rgba(255,255,255,0.07)' }} />
+              <div style={{ height: 1, flex: 1, background: 'var(--border-inset)' }} />
             </div>
           )}
           <div className="asset-grid-3col">
@@ -689,7 +689,7 @@ export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySect
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 0 32px rgba(247,57,255,0.08)',
           }}>
-            <Droplets size={30} style={{ color: '#f739ff', opacity: 0.7 }} />
+            <Droplets size={30} style={{ color: 'var(--chain-pulse)', opacity: 0.7 }} />
           </div>
           <div>
             <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--fg)', marginBottom: 7 }}>
@@ -707,7 +707,7 @@ export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySect
                 display: 'inline-flex', alignItems: 'center', gap: 6,
                 padding: '11px 22px', borderRadius: 10,
                 background: 'rgba(247,57,255,0.12)', border: '1px solid rgba(247,57,255,0.28)',
-                color: '#f739ff', fontSize: 13, fontWeight: 700, textDecoration: 'none',
+                color: 'var(--chain-pulse)', fontSize: 13, fontWeight: 700, textDecoration: 'none',
                 transition: 'all .15s',
               }}
               onMouseOver={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(247,57,255,0.2)')}
@@ -721,12 +721,12 @@ export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySect
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 6,
                 padding: '11px 22px', borderRadius: 10,
-                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.10)',
+                background: 'var(--bg-inset)', border: '1px solid var(--border-inset)',
                 color: 'var(--fg-muted)', fontSize: 13, fontWeight: 700, textDecoration: 'none',
                 transition: 'all .15s',
               }}
-              onMouseOver={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.08)')}
-              onMouseOut={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)')}
+              onMouseOver={e => ((e.currentTarget as HTMLElement).style.background = 'var(--border)')}
+              onMouseOut={e => ((e.currentTarget as HTMLElement).style.background = 'var(--bg-inset)')}
             >
               <Zap size={12} /> Explore Farms
             </a>
