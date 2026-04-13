@@ -399,6 +399,9 @@ export default function App() {
   };
   const [tokenLogos, setTokenLogos] = useState<Record<string, string>>(STATIC_LOGOS);
   const [stakeChainFilter, setStakeChainFilter] = useState<'all' | 'pulsechain' | 'ethereum'>('all');
+  const [yieldUnit, setYieldUnit] = useState<'hex' | 'usd'>(() => {
+    return (localStorage.getItem('pulseport_yield_unit') as 'hex' | 'usd') || 'usd';
+  });
   const [expandedStakeIds, setExpandedStakeIds] = useState<Set<string>>(new Set());
   const [expandedAssetIds, setExpandedAssetIds] = useState<Set<string>>(new Set());
   const [priceDisplayCurrency, setPriceDisplayCurrency] = useState<'usd' | 'pls'>('usd');
@@ -498,6 +501,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('pulseport_hidden_txs', JSON.stringify(hiddenTxIds));
   }, [hiddenTxIds]);
+
+  useEffect(() => {
+    localStorage.setItem('pulseport_yield_unit', yieldUnit);
+  }, [yieldUnit]);
 
   useEffect(() => {
     localStorage.setItem('pulseport_manual_entries', JSON.stringify(manualEntries));
@@ -3734,46 +3741,110 @@ export default function App() {
               <motion.div key="stakes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
 
                 {/* Daily Yield Banner */}
-                {currentStakes.length > 0 && (
-                  <div style={{
-                    background: theme === 'dark'
-                      ? 'linear-gradient(135deg, rgba(139,92,246,.12) 0%, rgba(99,70,255,.08) 50%, rgba(0,255,159,.06) 100%)'
-                      : 'linear-gradient(135deg, rgba(139,92,246,.08) 0%, rgba(99,70,255,.05) 50%, rgba(0,160,102,.04) 100%)',
-                    border: theme === 'dark' ? '1px solid rgba(139,92,246,.28)' : '1px solid rgba(139,92,246,.20)',
-                    borderRadius: 16, padding: '20px 24px',
-                    boxShadow: theme === 'dark' ? '0 0 40px rgba(139,92,246,.10)' : 'none',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(139,92,246,.15)', border: '1px solid rgba(139,92,246,.30)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontSize: 18 }}>⚡</span>
+                {currentStakes.length > 0 && (() => {
+                  const dailyHex = stakeSummary.estimatedDailyPayoutHex;
+                  const dailyUsd = stakeSummary.estimatedDailyPayoutUsd;
+                  const isHex = yieldUnit === 'hex';
+
+                  const fmtNum = (hex: number, usd: number, opts?: { forceDecimals?: boolean }) => {
+                    if (isHex) {
+                      return hex >= 1e6
+                        ? `${(hex / 1e6).toFixed(2)}M`
+                        : hex.toLocaleString(undefined, { maximumFractionDigits: 0 });
+                    }
+                    const v = usd;
+                    if (opts?.forceDecimals || v < 10) {
+                      return `$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    }
+                    return `$${v >= 1e6 ? `${(v / 1e6).toFixed(2)}M` : v.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+                  };
+
+                  const cards = [
+                    {
+                      label: `${isHex ? 'HEX' : 'USD'} / Day`,
+                      value: fmtNum(dailyHex, dailyUsd, { forceDecimals: !isHex }),
+                      bg: theme === 'dark' ? 'rgba(139,92,246,.10)' : 'rgba(139,92,246,.06)',
+                      border: 'rgba(139,92,246,.18)',
+                      color: '#8b5cf6',
+                    },
+                    {
+                      label: `${isHex ? 'HEX' : 'USD'} / Week`,
+                      value: fmtNum(dailyHex * 7, dailyUsd * 7),
+                      bg: theme === 'dark' ? 'rgba(0,255,159,.07)' : 'rgba(0,160,102,.05)',
+                      border: 'rgba(0,255,159,.18)',
+                      color: t.green,
+                    },
+                    {
+                      label: `${isHex ? 'HEX' : 'USD'} / Year`,
+                      value: fmtNum(dailyHex * 365, dailyUsd * 365),
+                      bg: theme === 'dark' ? 'rgba(249,115,22,.08)' : 'rgba(234,88,12,.05)',
+                      border: 'rgba(249,115,22,.20)',
+                      color: '#f97316',
+                    },
+                  ];
+
+                  return (
+                    <div style={{
+                      background: theme === 'dark'
+                        ? 'linear-gradient(135deg, rgba(139,92,246,.12) 0%, rgba(99,70,255,.08) 50%, rgba(0,255,159,.06) 100%)'
+                        : 'linear-gradient(135deg, rgba(139,92,246,.08) 0%, rgba(99,70,255,.05) 50%, rgba(0,160,102,.04) 100%)',
+                      border: theme === 'dark' ? '1px solid rgba(139,92,246,.28)' : '1px solid rgba(139,92,246,.20)',
+                      borderRadius: 16, padding: '20px 24px',
+                      boxShadow: theme === 'dark' ? '0 0 40px rgba(139,92,246,.10)' : 'none',
+                    }}>
+                      {/* Header row */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(139,92,246,.15)', border: '1px solid rgba(139,92,246,.30)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span style={{ fontSize: 18 }}>⚡</span>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 14, fontWeight: 800, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: '.7px' }}>Daily HEX Yield</div>
+                            <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 1 }}>Estimated from active T-Shares</div>
+                          </div>
+                        </div>
+                        {/* HEX / USD toggle */}
+                        <div style={{
+                          display: 'flex', alignItems: 'center',
+                          background: theme === 'dark' ? 'rgba(0,0,0,0.25)' : 'rgba(139,92,246,0.08)',
+                          border: '1px solid rgba(139,92,246,0.22)',
+                          borderRadius: 9, padding: 3, gap: 2,
+                        }}>
+                          {(['hex', 'usd'] as const).map(unit => (
+                            <button
+                              key={unit}
+                              onClick={() => setYieldUnit(unit)}
+                              style={{
+                                padding: '5px 14px', borderRadius: 6,
+                                fontSize: 12, fontWeight: 800, cursor: 'pointer', border: 'none',
+                                transition: 'background 0.14s, color 0.14s, box-shadow 0.14s',
+                                background: yieldUnit === unit ? 'rgba(139,92,246,0.28)' : 'transparent',
+                                color: yieldUnit === unit ? '#a78bfa' : 'var(--fg-subtle)',
+                                boxShadow: yieldUnit === unit ? '0 0 0 1px rgba(139,92,246,0.35), 0 1px 4px rgba(139,92,246,0.15)' : 'none',
+                                letterSpacing: '.04em',
+                              }}
+                            >
+                              {unit.toUpperCase()}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: '.7px' }}>Daily HEX Yield</div>
-                        <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 1 }}>Estimated from active T-Shares</div>
+                      {/* Stat cards */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+                        {cards.map(({ label, value, bg, border, color }) => (
+                          <div key={label} style={{ background: bg, border: `1px solid ${border}`, borderRadius: 12, padding: '16px 18px' }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>
+                              {label}
+                            </div>
+                            <div style={{ fontSize: 32, fontWeight: 800, color, fontVariantNumeric: 'tabular-nums', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.03em', lineHeight: 1 }}>
+                              {value}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-                      <div style={{ background: theme === 'dark' ? 'rgba(139,92,246,.10)' : 'rgba(139,92,246,.06)', border: '1px solid rgba(139,92,246,.18)', borderRadius: 12, padding: '16px 18px' }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>HEX / Day</div>
-                        <div style={{ fontSize: 32, fontWeight: 800, color: '#8b5cf6', fontVariantNumeric: 'tabular-nums', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.03em', lineHeight: 1 }}>
-                          {stakeSummary.estimatedDailyPayoutHex >= 1e6 ? `${(stakeSummary.estimatedDailyPayoutHex/1e6).toFixed(2)}M` : stakeSummary.estimatedDailyPayoutHex.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                        </div>
-                      </div>
-                      <div style={{ background: theme === 'dark' ? 'rgba(0,255,159,.07)' : 'rgba(0,160,102,.05)', border: '1px solid rgba(0,255,159,.18)', borderRadius: 12, padding: '16px 18px' }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>USD / Day</div>
-                        <div style={{ fontSize: 32, fontWeight: 800, color: t.green, fontVariantNumeric: 'tabular-nums', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.03em', lineHeight: 1 }}>
-                          ${stakeSummary.estimatedDailyPayoutUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </div>
-                      </div>
-                      <div style={{ background: theme === 'dark' ? 'rgba(249,115,22,.08)' : 'rgba(234,88,12,.05)', border: '1px solid rgba(249,115,22,.20)', borderRadius: 12, padding: '16px 18px' }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>Projected / Year</div>
-                        <div style={{ fontSize: 32, fontWeight: 800, color: '#f97316', fontVariantNumeric: 'tabular-nums', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.03em', lineHeight: 1 }}>
-                          ${(stakeSummary.estimatedDailyPayoutUsd * 365).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* pHEX / eHEX total boxes */}
                 {(() => {
