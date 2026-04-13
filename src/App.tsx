@@ -312,6 +312,8 @@ interface WalletSelectorProps {
   walletLabels?: Record<string, string>;
 }
 
+const WALLET_DOT_COLORS = ['#00FF9F','#f739ff','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
+
 function WalletSelector({ wallets, activeWallet, onSelect, onAdd, walletLabels = {} }: WalletSelectorProps) {
   if (wallets.length === 0) {
     return (
@@ -326,16 +328,23 @@ function WalletSelector({ wallets, activeWallet, onSelect, onAdd, walletLabels =
         <span className="wallet-dot wallet-dot-multi" />
         All ({wallets.length})
       </button>
-      {wallets.map(addr => {
+      {wallets.map((addr, idx) => {
         const label = walletLabels[addr] ?? shortenAddr(addr);
+        const dotColor = WALLET_DOT_COLORS[idx % WALLET_DOT_COLORS.length];
+        const isActive = activeWallet === addr;
         return (
           <button
             key={addr}
-            className={`wallet-pill${activeWallet === addr ? ' active' : ''}`}
+            className={`wallet-pill${isActive ? ' active' : ''}`}
             onClick={() => onSelect(addr)}
             title={addr}
+            style={isActive ? {
+              background: `${dotColor}1a`,
+              borderColor: `${dotColor}55`,
+              color: dotColor,
+            } : undefined}
           >
-            <span className="wallet-dot wallet-dot-pulse" />
+            <span className="wallet-dot" style={{ background: dotColor, boxShadow: `0 0 5px ${dotColor}bb` }} />
             {label}
           </button>
         );
@@ -2679,7 +2688,7 @@ export default function App() {
 
           {/* Price ticker — desktop only */}
           {Object.keys(prices).length > 0 && (
-            <div className="ticker-wrapper hidden sm:flex flex-1 mx-4" style={{ height: 56, alignItems: 'center' }}>
+            <div className="ticker-wrapper hidden sm:flex flex-1 mx-4" style={{ height: 56, alignItems: 'center', overflow: 'hidden' }}>
               <div className="ticker-track" style={{ gap: 0 }}>
                 {([
                   { sym: 'PLS',  dot: '#00FF9F', price: prices['pulsechain']?.usd || 0, change: prices['pulsechain']?.usd_24h_change ?? prices['pulsechain:native']?.usd_24h_change },
@@ -2692,16 +2701,16 @@ export default function App() {
                 ] as { sym: string; dot: string; price: number; change?: number | null }[]).flatMap(c => [c, { ...c }]).map((coin, i) => (
                   <React.Fragment key={i}>
                     <div className="ticker-item">
-                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: coin.dot, flexShrink: 0, boxShadow: `0 0 7px ${coin.dot}aa` }} />
-                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.05em' }}>{coin.sym}</span>
-                      <span className="tabular-nums" style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg)' }}>{fmtPrice(coin.price)}</span>
+                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: coin.dot, flexShrink: 0, boxShadow: `0 0 6px ${coin.dot}cc` }} />
+                      <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.06em' }}>{coin.sym}</span>
+                      <span className="tabular-nums" style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg)', letterSpacing: '-0.01em' }}>{fmtPrice(coin.price)}</span>
                       {coin.change != null && (
                         <span className={coin.change >= 0 ? 'ticker-pct-pos' : 'ticker-pct-neg'}>
                           {coin.change >= 0 ? '+' : ''}{coin.change.toFixed(1)}%
                         </span>
                       )}
                     </div>
-                    <div className="ticker-dot-sep" />
+                    <div className="ticker-sep" />
                   </React.Fragment>
                 ))}
               </div>
@@ -2751,8 +2760,8 @@ export default function App() {
           </div>
         </header>
 
-        {/* ── Wallet Selector Bar (wallets tab only) ── */}
-        {activeTab === 'wallets' && wallets.length > 0 && (
+        {/* ── Wallet Selector Bar (all tabs) ── */}
+        {wallets.length > 0 && (
           <div style={{ padding: '8px 20px', borderBottom: '1px solid var(--border)' }}>
             <WalletSelector
               wallets={wallets.map(w => w.address)}

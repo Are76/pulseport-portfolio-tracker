@@ -520,15 +520,16 @@ button, a {
 }
 .ticker-wrapper {
   overflow: hidden;
-  mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
-  -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent);
+  border-radius: 8px;
 }
 .ticker-track {
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 4px;
   width: max-content;
-  animation: ticker-scroll 35s linear infinite;
+  animation: ticker-scroll 38s linear infinite;
 }
 .ticker-wrapper:hover .ticker-track { animation-play-state: paused; }
 
@@ -1306,14 +1307,14 @@ button, a {
 .ticker-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 18px;
+  gap: 7px;
+  padding: 4px 14px;
   white-space: nowrap;
 }
 .ticker-pct-pos {
   display: inline-flex;
   align-items: center;
-  padding: 2px 7px;
+  padding: 2px 8px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
@@ -1326,7 +1327,7 @@ button, a {
 .ticker-pct-neg {
   display: inline-flex;
   align-items: center;
-  padding: 2px 7px;
+  padding: 2px 8px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
@@ -1343,8 +1344,16 @@ button, a {
   background: var(--border-strong);
   flex-shrink: 0;
 }
-[data-theme="light"] .ticker-dot-sep {
-  background: rgba(0,0,0,0.20);
+.ticker-sep {
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+  flex-shrink: 0;
+  margin: 0 4px;
+  opacity: 0.6;
+}
+[data-theme="light"] .ticker-sep {
+  background: rgba(0,0,0,0.15);
 }
 
 /* ── STAKE SUMMARY CARD — highlight ──────────────────────────────────── */
@@ -1380,30 +1389,43 @@ button, a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 3px 8px;
-  border-radius: 7px;
+  padding: 4px 10px;
+  border-radius: 8px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
   border: 1px solid transparent;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
 }
 .days-left-expiring {
   color: #ef4444;
-  background: rgba(239,68,68,0.10);
-  border-color: rgba(239,68,68,0.28);
+  background: rgba(239,68,68,0.13);
+  border-color: rgba(239,68,68,0.35);
+  box-shadow: 0 0 8px rgba(239,68,68,0.12);
 }
 .days-left-soon {
   color: #f97316;
-  background: rgba(249,115,22,0.10);
-  border-color: rgba(249,115,22,0.28);
+  background: rgba(249,115,22,0.13);
+  border-color: rgba(249,115,22,0.35);
+}
+.days-left-healthy {
+  color: var(--positive-text);
+  background: rgba(0,255,159,0.08);
+  border-color: rgba(0,255,159,0.22);
 }
 [data-theme="light"] .days-left-expiring {
-  background: rgba(239,68,68,0.08);
-  border-color: rgba(239,68,68,0.22);
+  background: rgba(239,68,68,0.09);
+  border-color: rgba(239,68,68,0.28);
+  box-shadow: none;
 }
 [data-theme="light"] .days-left-soon {
   background: rgba(249,115,22,0.08);
-  border-color: rgba(249,115,22,0.22);
+  border-color: rgba(249,115,22,0.25);
+}
+[data-theme="light"] .days-left-healthy {
+  background: rgba(0,122,77,0.07);
+  border-color: rgba(0,122,77,0.22);
 }
 
 /* ── LIGHT MODE: LP card fixes ──────────────────────────────────────── */
@@ -1429,7 +1451,7 @@ button, a {
 .wallet-selector-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
   padding: 6px 10px;
   background: var(--bg-elevated);
@@ -1438,14 +1460,14 @@ button, a {
 }
 [data-theme="light"] .wallet-selector-bar {
   background: #ffffff;
-  border-color: rgba(0,0,0,0.12);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  border-color: rgba(0,0,0,0.14);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
 }
 .wallet-pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px 4px 8px;
+  padding: 5px 12px 5px 9px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--bg-surface);
@@ -1467,20 +1489,23 @@ button, a {
   background: var(--accent-dim);
   border-color: var(--accent-border);
   color: var(--accent);
+  font-weight: 700;
 }
 [data-theme="light"] .wallet-pill {
   background: #f5f5fa;
-  border-color: rgba(0,0,0,0.10);
+  border-color: rgba(0,0,0,0.12);
   color: var(--fg-muted);
 }
 [data-theme="light"] .wallet-pill:hover {
   background: #ebebf2;
   color: var(--fg);
+  border-color: rgba(0,0,0,0.20);
 }
 [data-theme="light"] .wallet-pill.active {
   background: rgba(0,122,77,0.08);
-  border-color: rgba(0,122,77,0.28);
+  border-color: rgba(0,122,77,0.30);
   color: #007a4d;
+  font-weight: 700;
 }
 .wallet-dot {
   width: 8px;
@@ -1513,17 +1538,6 @@ button, a {
   line-height: 1.1;
 }
 
-/* Days-left healthy state (> 180 days remaining) */
-.days-left-healthy {
-  color: var(--positive-text);
-  background: rgba(0,255,159,0.08);
-  border-color: rgba(0,255,159,0.22);
-}
-[data-theme="light"] .days-left-healthy {
-  background: rgba(0,122,77,0.07);
-  border-color: rgba(0,122,77,0.20);
-}
-
 /* ── DEFI EMPTY STATE ────────────────────────────────────────────────── */
 .defi-empty-state {
   display: flex;
@@ -1538,8 +1552,8 @@ button, a {
 }
 [data-theme="light"] .defi-empty-state {
   background: #ffffff;
-  border-color: rgba(0,0,0,0.10);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  border-color: rgba(0,0,0,0.13);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
 }
 .defi-empty-info-card {
   background: var(--bg-elevated);
@@ -1552,8 +1566,8 @@ button, a {
   text-align: left;
 }
 [data-theme="light"] .defi-empty-info-card {
-  background: #f5f5fa;
-  border-color: rgba(0,0,0,0.09);
+  background: #f3f4f9;
+  border-color: rgba(0,0,0,0.11);
 }
 
 /* ── OVERVIEW GRID spacing ───────────────────────────────────────────── */
