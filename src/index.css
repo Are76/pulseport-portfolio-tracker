@@ -108,8 +108,8 @@
   --accent-dim: rgba(0,122,77,0.08);
   --accent-border: rgba(0,122,77,0.22);
   /* Inset panel backgrounds — invert alpha on light bg */
-  --bg-inset: rgba(0,0,0,0.04);
-  --border-inset: rgba(0,0,0,0.09);
+  --bg-inset: rgba(0,0,0,0.05);
+  --border-inset: rgba(0,0,0,0.13);
 
   /* Overlay for modals */
   --overlay: rgba(0,0,0,0.45);
@@ -153,43 +153,12 @@
   border: 1px solid rgba(0,0,0,0.10);
 }
 
-/* Premium asset cards in light mode */
-[data-theme="light"] .asset-card-premium {
-  background: #ffffff;
-  border: 1px solid rgba(0,0,0,0.10);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-}
-[data-theme="light"] .asset-card-premium:hover {
-  border-color: rgba(0,180,100,0.35);
-  box-shadow: 0 4px 20px rgba(0,180,100,0.12), 0 1px 4px rgba(0,0,0,0.08);
-}
-
-/* Asset card in light mode */
-[data-theme="light"] .asset-card {
-  background: #ffffff;
-  border: 1px solid rgba(0,0,0,0.10);
-}
-[data-theme="light"] .asset-card:hover {
-  border-color: rgba(0,180,100,0.30);
-  box-shadow: 0 4px 16px rgba(0,180,100,0.10);
-}
-
 /* Chart tooltip in light mode */
 [data-theme="light"] .chart-tooltip {
   background: #ffffff;
   border: 1px solid rgba(0,0,0,0.12);
   color: #0a0a14;
   box-shadow: 0 4px 20px rgba(0,0,0,0.12);
-}
-
-/* Stat cards in light mode */
-[data-theme="light"] .stat-card {
-  background: #ffffff;
-  border: 1px solid rgba(0,0,0,0.10);
-}
-[data-theme="light"] .stat-card:hover {
-  border-color: rgba(0,180,100,0.25);
-  box-shadow: 0 4px 16px rgba(0,180,100,0.08);
 }
 
 /* Remove neon glow filters from text in light mode — they blur text */
@@ -267,7 +236,7 @@
 
 /* Table row hover in light mode */
 [data-theme="light"] .table-row-hover:hover {
-  background: rgba(0,0,0,0.04) !important;
+  background: rgba(0,0,0,0.05) !important;
 }
 
 /* Custom scrollbar in light mode */
@@ -308,34 +277,34 @@
 /* Neon card in light mode */
 [data-theme="light"] .neon-card {
   background: #ffffff;
-  border-color: rgba(0,0,0,0.10);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  border: 1px solid rgba(0,0,0,0.14);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.09), 0 1px 3px rgba(0,0,0,0.05);
 }
 [data-theme="light"] .neon-card:hover {
-  border-color: rgba(0,122,77,0.28);
-  box-shadow: 0 4px 16px rgba(0,122,77,0.08), 0 1px 3px rgba(0,0,0,0.06);
+  border-color: rgba(0,122,77,0.35);
+  box-shadow: 0 6px 20px rgba(0,122,77,0.10), 0 2px 8px rgba(0,0,0,0.08);
 }
 
 /* Asset card in light mode */
 [data-theme="light"] .asset-card {
   background: #ffffff;
-  border-color: rgba(0,0,0,0.09);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  border-color: rgba(0,0,0,0.13);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.09), 0 1px 3px rgba(0,0,0,0.05);
 }
 [data-theme="light"] .asset-card:hover {
-  border-color: rgba(0,122,77,0.28);
-  box-shadow: 0 4px 16px rgba(0,122,77,0.10), 0 1px 3px rgba(0,0,0,0.06);
+  border-color: rgba(0,122,77,0.35);
+  box-shadow: 0 6px 20px rgba(0,122,77,0.12), 0 2px 8px rgba(0,0,0,0.08);
 }
 
 /* Asset card premium in light mode */
 [data-theme="light"] .asset-card-premium {
   background: #ffffff;
-  border-color: rgba(0,0,0,0.09);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  border-color: rgba(0,0,0,0.14);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10), 0 1px 3px rgba(0,0,0,0.06);
 }
 [data-theme="light"] .asset-card-premium:hover {
-  border-color: rgba(0,122,77,0.28);
-  box-shadow: 0 4px 16px rgba(0,122,77,0.10), 0 1px 3px rgba(0,0,0,0.06);
+  border-color: rgba(0,150,90,0.40);
+  box-shadow: 0 6px 24px rgba(0,150,90,0.14), 0 2px 8px rgba(0,0,0,0.10);
 }
 [data-theme="light"] .asset-card-premium::before {
   background: linear-gradient(90deg, transparent 10%, rgba(0,122,77,0.15) 50%, transparent 90%);
@@ -344,11 +313,12 @@
 /* Stat card in light mode */
 [data-theme="light"] .stat-card {
   background: #ffffff;
-  border-color: rgba(0,0,0,0.09);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  border-color: rgba(0,0,0,0.13);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.09), 0 1px 3px rgba(0,0,0,0.05);
 }
 [data-theme="light"] .stat-card:hover {
-  border-color: rgba(0,122,77,0.28);
+  border-color: rgba(0,122,77,0.35);
+  box-shadow: 0 6px 20px rgba(0,122,77,0.10), 0 2px 8px rgba(0,0,0,0.08);
 }
 
 /* ── GLOBAL RESETS ───────────────────────────────────────────────────── */
@@ -1045,10 +1015,10 @@ button, a {
 
 /* ── PREMIUM ASSET CARD (overview 3×3 grid) ──────────────────────────── */
 .asset-card-premium {
-  background: linear-gradient(160deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
+  background: linear-gradient(160deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.09);
+  border: 1px solid rgba(255,255,255,0.13);
   border-radius: 18px;
   padding: 0;
   transition: border-color 0.22s var(--ease-spring), box-shadow 0.28s var(--ease-spring), transform 0.22s var(--ease-spring);
@@ -1056,8 +1026,8 @@ button, a {
   overflow: hidden;
   cursor: pointer;
   will-change: transform;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.28), 0 0 0 0 transparent;
-  min-height: 160px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.06);
+  min-height: 185px;
 }
 /* Ambient inner glow — bottom */
 .asset-card-premium::after {
@@ -1169,10 +1139,10 @@ button, a {
   gap: 28px;
 }
 @media (max-width: 900px) {
-  .asset-grid-3col { grid-template-columns: repeat(2, 1fr); gap: 18px; }
+  .asset-grid-3col { grid-template-columns: repeat(2, 1fr); gap: 20px; }
 }
 @media (max-width: 540px) {
-  .asset-grid-3col { grid-template-columns: 1fr; gap: 14px; }
+  .asset-grid-3col { grid-template-columns: 1fr; gap: 16px; }
 }
 
 /* ── CHART TOOLTIP ───────────────────────────────────────────────────── */

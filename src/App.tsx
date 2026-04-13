@@ -3120,11 +3120,11 @@ export default function App() {
                             }));
                             return (
                               <div key={asset.id} className="asset-card-premium" onClick={() => setActiveTab('assets')}>
-                                <div style={{ padding: '20px 20px 0' }}>
+                                <div style={{ padding: '24px 24px 0' }}>
                                   {/* Row 1: Logo + symbol + 24h % */}
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 }}>
                                     <div style={{
-                                      width: 32, height: 32, borderRadius: '50%',
+                                      width: 36, height: 36, borderRadius: '50%',
                                       background: `${accentColor}18`, border: `1.5px solid ${accentColor}55`,
                                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                                       fontSize: 12, fontWeight: 800, color: accentColor,
@@ -3158,7 +3158,7 @@ export default function App() {
                                   </div>
                                 </div>
                                 {/* Row 4: Sparkline at bottom */}
-                                <div className="sparkline-container" style={{ height: 36 }}>
+                                <div className="sparkline-container" style={{ height: 44 }}>
                                   <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={sparkData} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
                                       <defs>
