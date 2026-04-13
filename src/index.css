@@ -221,16 +221,6 @@
   -webkit-backdrop-filter: blur(8px);
 }
 
-/* Live price row in light mode */
-[data-theme="light"] .live-price-row {
-  background: rgba(0,0,0,0.03);
-  border: 1px solid rgba(0,0,0,0.07);
-}
-[data-theme="light"] .live-price-row:hover {
-  background: rgba(0,0,0,0.06);
-  border-color: rgba(0,0,0,0.12);
-}
-
 /* Change badges in light mode — readable on white (#00FF9F is 1.5:1 on white) */
 [data-theme="light"] .change-badge-pos {
   background: rgba(0,122,77,0.10);
@@ -262,6 +252,103 @@
 [data-theme="light"] .recharts-cartesian-grid-horizontal line,
 [data-theme="light"] .recharts-cartesian-grid-vertical line {
   stroke: rgba(0,0,0,0.07);
+}
+
+/* Ghost button in light mode */
+[data-theme="light"] .btn-ghost {
+  background: rgba(0,0,0,0.04);
+  border-color: rgba(0,0,0,0.12);
+  color: var(--fg-muted);
+}
+[data-theme="light"] .btn-ghost:hover {
+  background: rgba(0,0,0,0.08);
+  color: var(--fg);
+}
+
+/* Table row hover in light mode */
+[data-theme="light"] .table-row-hover:hover {
+  background: rgba(0,0,0,0.04) !important;
+}
+
+/* Custom scrollbar in light mode */
+[data-theme="light"] .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.14);
+}
+
+/* Live price row in light mode — override any rgba(255,255,255,...) if re-used */
+[data-theme="light"] .live-price-row {
+  background: rgba(0,0,0,0.04);
+  border-color: rgba(0,0,0,0.09);
+}
+[data-theme="light"] .live-price-row:hover {
+  background: rgba(0,122,77,0.07);
+  border-color: rgba(0,122,77,0.18);
+  box-shadow: none;
+}
+
+/* Skeleton shimmer uses bg-elevated which is already light-mode-aware */
+[data-theme="light"] .skeleton {
+  background: linear-gradient(
+    90deg,
+    #e8e8f0 25%,
+    #f0f0f8 50%,
+    #e8e8f0 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+/* Onboarding step icon in light mode */
+[data-theme="light"] .onboarding-step-icon:hover {
+  background: rgba(0,122,77,0.12);
+  border-color: rgba(0,122,77,0.28);
+  box-shadow: 0 0 14px rgba(0,122,77,0.12);
+}
+
+/* Neon card in light mode */
+[data-theme="light"] .neon-card {
+  background: #ffffff;
+  border-color: rgba(0,0,0,0.10);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+}
+[data-theme="light"] .neon-card:hover {
+  border-color: rgba(0,122,77,0.28);
+  box-shadow: 0 4px 16px rgba(0,122,77,0.08), 0 1px 3px rgba(0,0,0,0.06);
+}
+
+/* Asset card in light mode */
+[data-theme="light"] .asset-card {
+  background: #ffffff;
+  border-color: rgba(0,0,0,0.09);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+[data-theme="light"] .asset-card:hover {
+  border-color: rgba(0,122,77,0.28);
+  box-shadow: 0 4px 16px rgba(0,122,77,0.10), 0 1px 3px rgba(0,0,0,0.06);
+}
+
+/* Asset card premium in light mode */
+[data-theme="light"] .asset-card-premium {
+  background: #ffffff;
+  border-color: rgba(0,0,0,0.09);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+[data-theme="light"] .asset-card-premium:hover {
+  border-color: rgba(0,122,77,0.28);
+  box-shadow: 0 4px 16px rgba(0,122,77,0.10), 0 1px 3px rgba(0,0,0,0.06);
+}
+[data-theme="light"] .asset-card-premium::before {
+  background: linear-gradient(90deg, transparent 10%, rgba(0,122,77,0.15) 50%, transparent 90%);
+}
+
+/* Stat card in light mode */
+[data-theme="light"] .stat-card {
+  background: #ffffff;
+  border-color: rgba(0,0,0,0.09);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+[data-theme="light"] .stat-card:hover {
+  border-color: rgba(0,122,77,0.28);
 }
 
 /* ── GLOBAL RESETS ───────────────────────────────────────────────────── */
@@ -445,6 +532,59 @@ button, a {
   animation: ticker-scroll 35s linear infinite;
 }
 .ticker-wrapper:hover .ticker-track { animation-play-state: paused; }
+
+/* ── P&L MODAL ANIMATIONS ─────────────────────────────────────────────── */
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes modalSlideIn {
+  from { opacity: 0; transform: scale(0.96) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ── FILTER CHIPS ─────────────────────────────────────────────────────── */
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid rgba(139,92,246,0.28);
+  background: rgba(139,92,246,0.10);
+  color: #a78bfa;
+  transition: all .12s;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+.filter-chip:hover {
+  background: rgba(139,92,246,0.20);
+  border-color: rgba(139,92,246,0.44);
+}
+.filter-chip .chip-x {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: rgba(139,92,246,0.18);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 900; line-height: 1;
+  flex-shrink: 0;
+  transition: background .12s;
+}
+.filter-chip:hover .chip-x { background: rgba(139,92,246,0.36); }
+[data-theme="light"] .filter-chip {
+  background: rgba(109,40,217,0.08);
+  border-color: rgba(109,40,217,0.22);
+  color: #6d28d9;
+}
+[data-theme="light"] .filter-chip:hover {
+  background: rgba(109,40,217,0.15);
+  border-color: rgba(109,40,217,0.36);
+}
+[data-theme="light"] .filter-chip .chip-x { background: rgba(109,40,217,0.14); }
+[data-theme="light"] .filter-chip:hover .chip-x { background: rgba(109,40,217,0.28); }
 
 /* ── CARDS ───────────────────────────────────────────────────────────── */
 .card {
@@ -745,6 +885,8 @@ button, a {
   overflow: hidden;
   cursor: pointer;
   will-change: transform;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.28), 0 0 0 0 transparent;
+  min-height: 140px;
 }
 /* Ambient inner glow — bottom */
 .asset-card-premium::after {
@@ -853,13 +995,13 @@ button, a {
 .asset-grid-3col {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  gap: 24px;
 }
 @media (max-width: 900px) {
-  .asset-grid-3col { grid-template-columns: repeat(2, 1fr); }
+  .asset-grid-3col { grid-template-columns: repeat(2, 1fr); gap: 16px; }
 }
 @media (max-width: 540px) {
-  .asset-grid-3col { grid-template-columns: 1fr; }
+  .asset-grid-3col { grid-template-columns: 1fr; gap: 12px; }
 }
 
 /* ── CHART TOOLTIP ───────────────────────────────────────────────────── */
@@ -996,13 +1138,13 @@ button, a {
   justify-content: space-between;
   padding: 8px 12px;
   border-radius: 10px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
+  background: var(--bg-inset);
+  border: 1px solid var(--border-inset);
   transition: all 0.2s var(--ease-spring);
 }
 .live-price-row:hover {
-  background: rgba(0,255,159,0.05);
-  border-color: rgba(0,255,159,0.15);
+  background: var(--accent-dim);
+  border-color: var(--accent-border);
   transform: translateX(2px);
-  box-shadow: 0 0 12px rgba(0,255,159,0.06);
+  box-shadow: 0 0 12px var(--accent-glow);
 }
