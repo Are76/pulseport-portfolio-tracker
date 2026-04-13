@@ -3368,11 +3368,38 @@ export default function App() {
             {activeTab === 'assets' && (
               <motion.div key="assets" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
 
+                {/* ── All Wallets hero banner ── */}
+                <div style={{ background: 'var(--bg-elevated)', borderRadius: 16, padding: '24px', border: '1px solid var(--accent-border)' }}>
+                  <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 8 }}>All Wallets</div>
+                  <div style={{ fontSize: 36, fontWeight: 800, color: 'var(--fg)', marginBottom: 16 }}>
+                    ${summary.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+                    <span className="wallet-stat-pill-green">
+                      Wallet ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    </span>
+                    <span style={{ background: 'rgba(239,68,68,0.12)', color: t.red, padding: '4px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: '1px solid rgba(239,68,68,0.20)' }}>
+                      Staking ${summary.stakingValueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {(['all', 'pulsechain', 'ethereum', 'base'] as const).map(c => (
+                      <button key={c} onClick={() => setWalletChainFilter(c)}
+                        style={{ padding: '5px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: '1px solid', transition: 'all .12s',
+                          background: walletChainFilter === c ? '#fff' : 'transparent',
+                          color: walletChainFilter === c ? '#000' : '#aaa',
+                          borderColor: walletChainFilter === c ? 'var(--fg)' : 'var(--border)' }}>
+                        {c === 'all' ? 'All' : c === 'pulsechain' ? 'PulseChain' : c === 'ethereum' ? 'Ethereum' : 'Base'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Header row */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                   <div>
                     <div style={{ fontSize: 18, fontWeight: 700, color: t.text, marginBottom: 2 }}>Token Positions</div>
-                    <div style={{ fontSize: 13, color: t.textSecondary }}>{currentAssets.length} assets · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} liquid</div>
+                    <div style={{ fontSize: 13, color: t.textSecondary }}>{(walletChainFilter === 'all' ? currentAssets : currentAssets.filter(a => a.chain === walletChainFilter)).length} assets · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} liquid</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', gap: 3, background: t.cardHigh, border: `1px solid ${t.border}`, borderRadius: 8, padding: 3 }}>
@@ -3419,7 +3446,7 @@ export default function App() {
                   <div style={{ padding: '14px 16px', borderBottom: isCollapsed('assets-table') ? 'none' : `1px solid ${t.borderLight}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
                       <div style={{ fontSize: 15, fontWeight: 700, color: t.text }}>Assets</div>
-                      <div style={{ fontSize: 13, color: t.textSecondary, marginTop: 2 }}>{currentAssets.length} tokens · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                      <div style={{ fontSize: 13, color: t.textSecondary, marginTop: 2 }}>{(walletChainFilter === 'all' ? currentAssets : currentAssets.filter(a => a.chain === walletChainFilter)).length} tokens · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                     </div>
                     <button onClick={() => toggleSection('assets-table')}
                       style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s' }}
@@ -3483,7 +3510,7 @@ export default function App() {
                             </td>
                           </tr>
                         ) : (
-                          [...currentAssets].sort((a, b) => {
+                          [...(walletChainFilter === 'all' ? currentAssets : currentAssets.filter(a => a.chain === walletChainFilter))].sort((a, b) => {
                             const getVal = (x: any) => assetSortField === 'change'
                               ? (priceChangePeriod === '1h' ? (x.priceChange1h ?? 0)
                                 : priceChangePeriod === '7d' ? (x.priceChange7d ?? 0)
@@ -5663,6 +5690,7 @@ export default function App() {
           background: 'var(--bg-header)',
           borderTop: '1px solid var(--border)',
         }}>
+        <div className="mobile-bottom-nav-inner">
         {([
           { id: 'overview', label: 'Overview', icon: LayoutDashboard },
           { id: 'assets',   label: 'Assets',   icon: WalletIcon },
@@ -5688,6 +5716,7 @@ export default function App() {
             <span style={{ fontSize: 10, fontWeight: activeTab === id ? 700 : 500, lineHeight: 1, marginTop: 3 }}>{label}</span>
           </button>
         ))}
+        </div>
       </nav>
 
       {/* Add Wallet Modal */}

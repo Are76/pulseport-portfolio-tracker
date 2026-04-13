@@ -98,6 +98,7 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
   return (
     // Full-screen backdrop
     <div
+      className="pnl-modal-backdrop"
       onClick={handleBackdrop}
       style={{
         position: 'fixed', inset: 0, zIndex: 200,
@@ -111,6 +112,7 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
 
       {/* Modal panel */}
       <div
+        className="pnl-modal-panel"
         style={{
           position: 'relative',
           width: '100%', maxWidth: 680,
@@ -228,8 +230,7 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
         <div style={{ overflowY: 'auto', flex: 1 }} className="custom-scrollbar">
 
           {/* Two-col stats */}
-          <div style={{
-            display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, padding: '16px 20px',
+          <div className="pnl-modal-stats-grid" style={{
           }}>
             {/* REALIZED */}
             <div style={{

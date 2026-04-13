@@ -195,14 +195,16 @@ export function TokenPnLCard({
       }} />
 
       {/* ── Header ── */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '14px 18px',
-        borderBottom: expanded ? '1px solid rgba(247,57,255,0.10)' : 'none',
-        cursor: 'pointer',
-        background: 'linear-gradient(90deg, rgba(247,57,255,0.04) 0%, transparent 60%)',
-      }} onClick={() => setExpanded(v => !v)}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div
+        className="pnl-card-header"
+        style={{
+          borderBottom: expanded ? '1px solid rgba(247,57,255,0.10)' : 'none',
+          cursor: 'pointer',
+          background: 'linear-gradient(90deg, rgba(247,57,255,0.04) 0%, transparent 60%)',
+        }}
+        onClick={() => setExpanded(v => !v)}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flexWrap: 'wrap' }}>
           <TokenLogo symbol={symbol} logoUrl={logoUrl} size={38} />
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -229,13 +231,13 @@ export function TokenPnLCard({
         </div>
 
         {/* Right: Total P&L hero number */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.55px', marginBottom: 3 }}>
               Total P&amp;L
             </div>
             <div style={{
-              fontSize: 22, fontWeight: 800, color: totalPnlColor,
+              fontSize: 'clamp(16px, 4.5vw, 22px)', fontWeight: 800, color: totalPnlColor,
               fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.04em',
               display: 'flex', alignItems: 'center', gap: 6,
             }}>
@@ -263,7 +265,7 @@ export function TokenPnLCard({
         <div style={{ padding: '16px 18px 14px' }}>
 
           {/* Two-column breakdown */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 0 }} className="max-sm:grid-cols-1">
+          <div className="pnl-cols">
 
             {/* ── LEFT: Realized ── */}
             <div style={{
@@ -323,9 +325,6 @@ export function TokenPnLCard({
                 </span>
               </div>
             </div>
-
-            {/* Vertical divider (hidden on mobile) */}
-            <div className="max-sm:hidden" style={{ width: 12 }} />
 
             {/* ── RIGHT: Holdings ── */}
             <div style={{
