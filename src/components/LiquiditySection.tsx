@@ -11,20 +11,8 @@ import {
 } from 'lucide-react';
 import { useLiquidityPositions } from '../hooks/useLiquidityPositions';
 import { LiquidityPositionCard } from './LiquidityPositionCard';
+import { fmtUsd, fmtTok } from '../lib/utils';
 import type { LpPositionEnriched } from '../types';
-
-// ─── Formatting helpers ───────────────────────────────────────────────────────
-function fmtUsd(n: number, maxFrac = 2): string {
-  if (n >= 1e6) return `$${(n / 1e6).toFixed(2)}M`;
-  if (n >= 1e3) return `$${(n / 1e3).toFixed(1)}K`;
-  return `$${n.toLocaleString(undefined, { maximumFractionDigits: maxFrac })}`;
-}
-function fmtTok(n: number): string {
-  if (n >= 1e9) return `${(n / 1e9).toFixed(2)}B`;
-  if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M`;
-  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
-  return n.toLocaleString(undefined, { maximumFractionDigits: 4 });
-}
 
 // ─── Skeleton row ─────────────────────────────────────────────────────────────
 function SkeletonRow() {
@@ -240,68 +228,66 @@ function FarmingRewardsBanner({ stakedPositions, incPrice }: FarmingRewardsBanne
       </div>
 
       {/* Per-pool breakdown */}
-      {stakedPositions.length > 0 && (
-        <div style={{
-          marginTop: 16, paddingTop: 14,
-          borderTop: '1px solid rgba(247,57,255,0.12)',
-        }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 10 }}>
-            Active Pools
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {stakedPositions.map(pos => {
-              const pendingInc = incPrice > 0 ? (pos.pendingIncUsd ?? 0) / incPrice : 0;
-              return (
-                <div key={pos.pairAddress} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '8px 12px', borderRadius: 10,
-                  background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(247,57,255,0.08)',
-                  flexWrap: 'wrap', gap: 8,
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {/* Pool ID badge */}
-                    {pos.poolId !== undefined && (
-                      <span style={{
-                        fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)',
-                        background: 'rgba(255,255,255,0.06)', padding: '2px 7px', borderRadius: 100,
-                        fontFamily: 'JetBrains Mono, monospace',
-                      }}>
-                        Pool #{pos.poolId}
-                      </span>
-                    )}
-                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>
-                      {pos.pairName}
+      <div style={{
+        marginTop: 16, paddingTop: 14,
+        borderTop: '1px solid rgba(247,57,255,0.12)',
+      }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 10 }}>
+          Active Pools
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {stakedPositions.map(pos => {
+            const pendingInc = incPrice > 0 ? (pos.pendingIncUsd ?? 0) / incPrice : 0;
+            return (
+              <div key={pos.pairAddress} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '8px 12px', borderRadius: 10,
+                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(247,57,255,0.08)',
+                flexWrap: 'wrap', gap: 8,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {/* Pool ID badge */}
+                  {pos.poolId !== undefined && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)',
+                      background: 'rgba(255,255,255,0.06)', padding: '2px 7px', borderRadius: 100,
+                      fontFamily: 'JetBrains Mono, monospace',
+                    }}>
+                      Pool #{pos.poolId}
                     </span>
-                  </div>
+                  )}
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>
+                    {pos.pairName}
+                  </span>
+                </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>Staked LP</div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace' }}>
-                        {fmtUsd(pos.totalUsd)}
-                      </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>Staked LP</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace' }}>
+                      {fmtUsd(pos.totalUsd)}
                     </div>
-                    <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.08)' }} />
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>Pending INC</div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: '#f739ff', fontFamily: 'JetBrains Mono, monospace' }}>
-                        {fmtTok(pendingInc)} INC
-                      </div>
+                  </div>
+                  <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.08)' }} />
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>Pending INC</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#f739ff', fontFamily: 'JetBrains Mono, monospace' }}>
+                      {fmtTok(pendingInc)} INC
                     </div>
-                    <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.08)' }} />
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>Value</div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: '#00FF9F', fontFamily: 'JetBrains Mono, monospace' }}>
-                        {fmtUsd(pos.pendingIncUsd ?? 0)}
-                      </div>
+                  </div>
+                  <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.08)' }} />
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>Value</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#00FF9F', fontFamily: 'JetBrains Mono, monospace' }}>
+                      {fmtUsd(pos.pendingIncUsd ?? 0)}
                     </div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -455,25 +441,18 @@ function SectionHeader({ positions, loading, onRefetch, onViewAll }: SectionHead
 }
 
 // ─── Hook auto-fetch helper ───────────────────────────────────────────────────
+// Uses a stable ref so price changes (which recreate `refetch`) don't trigger
+// a second RPC round-trip — only wallet list changes cause a re-fetch.
 function useAutoFetch(walletAddresses: string[], refetch: () => void) {
-  const hasFetchedRef = useRef(false);
-  const prevWalletsRef = useRef<string[]>([]);
+  const refetchRef = useRef(refetch);
+  // Keep ref current after every render (no-dep effect runs first within same cycle)
+  useEffect(() => { refetchRef.current = refetch; });
 
+  const walletsKey = walletAddresses.join(',');
   useEffect(() => {
-    if (walletAddresses.length > 0 && !hasFetchedRef.current) {
-      hasFetchedRef.current = true;
-      refetch();
-    }
-  }, [walletAddresses, refetch]);
-
-  useEffect(() => {
-    const prev = prevWalletsRef.current;
-    const curr = walletAddresses;
-    if (prev.length !== curr.length || prev.some((a, i) => a !== curr[i])) {
-      prevWalletsRef.current = [...curr];
-      if (curr.length > 0 && hasFetchedRef.current) refetch();
-    }
-  }, [walletAddresses, refetch]);
+    if (walletAddresses.length > 0) refetchRef.current();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [walletsKey]);
 }
 
 // ─── OVERVIEW STRIP ───────────────────────────────────────────────────────────

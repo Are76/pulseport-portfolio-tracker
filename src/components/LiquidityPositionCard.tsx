@@ -4,27 +4,13 @@ import {
   AreaChart,
   Area,
   ResponsiveContainer,
-  Tooltip as RechartsTooltip,
 } from 'recharts';
 import type { LpPositionEnriched } from '../types';
+import { fmtUsd, fmtTok } from '../lib/utils';
 
 // ─── Token logo URL ────────────────────────────────────────────────────────────
 function tokenLogoUrl(address: string): string {
   return `https://tokens.app.pulsex.com/images/tokens/${address}.png`;
-}
-
-// ─── Number formatting helpers ────────────────────────────────────────────────
-function fmtUsd(n: number, maxFrac = 2): string {
-  if (n >= 1e6) return `$${(n / 1e6).toFixed(2)}M`;
-  if (n >= 1e3) return `$${(n / 1e3).toFixed(1)}K`;
-  return `$${n.toLocaleString(undefined, { maximumFractionDigits: maxFrac })}`;
-}
-
-function fmtTok(n: number): string {
-  if (n >= 1e9) return `${(n / 1e9).toFixed(2)}B`;
-  if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M`;
-  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
-  return n.toLocaleString(undefined, { maximumFractionDigits: 4 });
 }
 
 // ─── Token Logo ───────────────────────────────────────────────────────────────

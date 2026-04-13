@@ -390,51 +390,49 @@ export function TokenPnLCard({
           </div>
 
           {/* ── Bottom bar: gas + links ── */}
-          {(gasFeePls > 0 || true) && (
-            <div style={{
-              marginTop: 12, display: 'flex', alignItems: 'center',
-              justifyContent: 'space-between', flexWrap: 'wrap', gap: 8,
-              padding: '9px 12px', borderRadius: 10,
-              background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                {gasFeePls > 0 && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px' }}>
-                      Gas:
-                    </span>
-                    <span style={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: 'var(--fg-muted)', fontWeight: 600 }}>
-                      {fmtTok(gasFeePls)} PLS
-                    </span>
-                    {plsPriceUsd > 0 && (
-                      <span style={{ fontSize: 12, color: 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace' }}>
-                        ({fmtUsd(gasFeePls * plsPriceUsd, 4)})
-                      </span>
-                    )}
-                  </div>
-                )}
-                {gasFeePls === 0 && (
-                  <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>
-                    Gas data not available for these transactions
+          <div style={{
+            marginTop: 12, display: 'flex', alignItems: 'center',
+            justifyContent: 'space-between', flexWrap: 'wrap', gap: 8,
+            padding: '9px 12px', borderRadius: 10,
+            background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              {gasFeePls > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px' }}>
+                    Gas:
                   </span>
-                )}
-              </div>
-              <a
-                href={`https://scan.pulsechain.com/search?q=${symbol}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 4,
-                  fontSize: 11, fontWeight: 600, color: 'var(--fg-subtle)',
-                  textDecoration: 'none', transition: 'color .12s',
-                }}
-                onMouseOver={e => ((e.currentTarget as HTMLElement).style.color = '#f739ff')}
-                onMouseOut={e => ((e.currentTarget as HTMLElement).style.color = 'var(--fg-subtle)')}
-              >
-                Explorer <ExternalLink size={10} />
-              </a>
+                  <span style={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: 'var(--fg-muted)', fontWeight: 600 }}>
+                    {fmtTok(gasFeePls)} PLS
+                  </span>
+                  {plsPriceUsd > 0 && (
+                    <span style={{ fontSize: 12, color: 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace' }}>
+                      ({fmtUsd(gasFeePls * plsPriceUsd, 4)})
+                    </span>
+                  )}
+                </div>
+              )}
+              {gasFeePls === 0 && (
+                <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>
+                  Gas data not available for these transactions
+                </span>
+              )}
             </div>
-          )}
+            <a
+              href={`https://scan.pulsechain.com/search?q=${symbol}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                fontSize: 11, fontWeight: 600, color: 'var(--fg-subtle)',
+                textDecoration: 'none', transition: 'color .12s',
+              }}
+              onMouseOver={e => ((e.currentTarget as HTMLElement).style.color = '#f739ff')}
+              onMouseOut={e => ((e.currentTarget as HTMLElement).style.color = 'var(--fg-subtle)')}
+            >
+              Explorer <ExternalLink size={10} />
+            </a>
+          </div>
 
           {/* ── Disclaimer note ── */}
           <div style={{ marginTop: 8, fontSize: 10, color: 'var(--fg-subtle)', lineHeight: 1.5, textAlign: 'center' }}>
