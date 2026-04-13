@@ -62,6 +62,7 @@ import { CHAINS, HEX_ABI, TOKENS, PULSEX_V2_PAIR_ABI, PULSEX_LP_PAIRS } from './
 import type { Asset, Wallet, Chain, HexStake, LpPosition, FarmPosition, PortfolioSummary, HistoryPoint, Transaction } from './types';
 import { LiquidityOverviewStrip, LiquiditySection } from './components/LiquiditySection';
 import { TokenPnLCard } from './components/TokenPnLCard';
+import { PnLModal } from './components/PnLModal';
 
 const ERC20_ABI = [
   {
@@ -357,6 +358,7 @@ export default function App() {
   const [selectedWalletAddr, setSelectedWalletAddr] = useState<string>('all');
   const [walletAssets, setWalletAssets] = useState<Record<string, Asset[]>>({});
   const [walletChainFilter, setWalletChainFilter] = useState<'all' | 'pulsechain' | 'ethereum' | 'base'>('all');
+  const [overviewChainFilter, setOverviewChainFilter] = useState<'all' | 'pulsechain' | 'ethereum' | 'base'>('all');
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
   const [historyRange, setHistoryRange] = useState<'1D' | '1W' | '1M'>('1M');
   const [txTypeFilter, setTxTypeFilter] = useState<string>('all');
@@ -2890,27 +2892,58 @@ export default function App() {
                     DAI: '#f5a623', WETH: '#627EEA', BNB: '#f0b90b', SOL: '#9945FF',
                     pDAI: '#f5a623', pUSDC: '#2775ca', pUSDT: '#26a17b', pWETH: '#627EEA',
                   };
-                  const displayAssets = currentAssets.length > 0
-                    ? [...currentAssets].sort((a, b) => b.value - a.value).slice(0, 9)
-                    : MOCK_ASSETS.slice(0, 9);
-                  if (displayAssets.length === 0) return null;
+                  const baseAssets = currentAssets.length > 0 ? currentAssets : MOCK_ASSETS;
+                  const chainFilteredAssets = overviewChainFilter === 'all'
+                    ? baseAssets
+                    : baseAssets.filter(a => a.chain === overviewChainFilter);
+                  const displayAssets = [...chainFilteredAssets].sort((a, b) => b.value - a.value).slice(0, 9);
+                  if (displayAssets.length === 0 && currentAssets.length === 0) return null;
                   const totalShown = displayAssets.reduce((s, a) => s + a.value, 0);
                   const fmtValue = (v: number) => v >= 1e6 ? `$${(v/1e6).toFixed(2)}M` : v >= 1e3 ? `$${(v/1e3).toFixed(0)}K` : `$${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
                   return (
                     <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 16, overflow: 'hidden' }}>
-                      <div style={{ padding: '16px 20px', borderBottom: `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div>
-                          <div style={{ fontSize: 14, fontWeight: 700, color: t.text }}>Top Holdings</div>
-                          <div style={{ fontSize: 12, color: t.textSecondary, marginTop: 2 }}>
-                            {displayAssets.length} tokens · {fmtValue(totalShown)} tracked
+                      {/* Header */}
+                      <div style={{ padding: '16px 20px', borderBottom: `1px solid ${t.border}` }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                          <div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: t.text }}>Top Holdings</div>
+                            <div style={{ fontSize: 12, color: t.textSecondary, marginTop: 2 }}>
+                              {displayAssets.length} tokens{overviewChainFilter !== 'all' ? ` on ${overviewChainFilter === 'pulsechain' ? 'PulseChain' : overviewChainFilter === 'ethereum' ? 'Ethereum' : 'Base'}` : ''} · {fmtValue(totalShown)} tracked
+                            </div>
                           </div>
+                          <button onClick={() => setActiveTab('assets')}
+                            style={{ fontSize: 12, color: 'var(--accent)', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 8, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', transition: 'all .15s' }}
+                            onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent-border)'; }}
+                            onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent-dim)'; }}>
+                            View all <ChevronRight size={12} />
+                          </button>
                         </div>
-                        <button onClick={() => setActiveTab('assets')}
-                          style={{ fontSize: 12, color: 'var(--accent)', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 8, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', transition: 'all .15s' }}
-                          onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent-border)'; }}
-                          onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent-dim)'; }}>
-                          View all <ChevronRight size={12} />
-                        </button>
+                        {/* Chain filter chips */}
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          {(['all', 'pulsechain', 'ethereum', 'base'] as const).map(c => {
+                            const count = c === 'all' ? baseAssets.length : baseAssets.filter(a => a.chain === c).length;
+                            if (count === 0 && c !== 'all') return null;
+                            return (
+                              <button key={c} onClick={() => setOverviewChainFilter(c)}
+                                className={overviewChainFilter === c ? '' : 'filter-chip'}
+                                style={{
+                                  padding: '4px 12px', borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                                  border: '1px solid', transition: 'all .12s',
+                                  background: overviewChainFilter === c ? 'rgba(139,92,246,0.18)' : 'transparent',
+                                  color: overviewChainFilter === c ? '#a78bfa' : 'var(--fg-subtle)',
+                                  borderColor: overviewChainFilter === c ? 'rgba(139,92,246,0.36)' : 'var(--border)',
+                                }}>
+                                {c === 'all' ? `All (${baseAssets.length})` : c === 'pulsechain' ? `PulseChain (${count})` : c === 'ethereum' ? `Ethereum (${count})` : `Base (${count})`}
+                              </button>
+                            );
+                          })}
+                          {overviewChainFilter !== 'all' && (
+                            <button className="filter-chip" onClick={() => setOverviewChainFilter('all')}>
+                              {overviewChainFilter === 'pulsechain' ? 'PulseChain' : overviewChainFilter === 'ethereum' ? 'Ethereum' : 'Base'}
+                              <span className="chip-x">✕</span>
+                            </button>
+                          )}
+                        </div>
                       </div>
                       <div style={{ padding: '20px' }}>
                         <div className="asset-grid-3col">
@@ -3650,209 +3683,6 @@ export default function App() {
                   </>)}
                 </div>
 
-                {/* ── TOKEN P&L PANEL ── */}
-                {pnlAsset && (() => {
-                  const sym = pnlAsset.symbol.toUpperCase();
-                  const assetName = (pnlAsset as any).name || pnlAsset.symbol;
-                  const chainKey = pnlAsset.chain;
-                  const currentPrice = pnlAsset.price;
-                  const plsPriceUsd = prices['pulsechain']?.usd || 0.00005;
-                  const ethPriceUsd = prices['ethereum']?.usd || 3400;
-                  const nativePriceUsd = chainKey === 'ethereum' ? ethPriceUsd : plsPriceUsd;
-
-                  // Match swaps for this token/chain
-                  const chainSwaps = currentTransactions.filter(tx => tx.type === 'swap' && tx.chain === chainKey);
-                  const symMatch = (s: string) => s.toUpperCase() === sym || s.toUpperCase().startsWith(sym + ' ');
-
-                  const buys = chainSwaps.filter(tx => symMatch(tx.asset));
-                  const sells = chainSwaps.filter(tx => symMatch(tx.counterAsset || ''));
-                  const swapCount = buys.length + sells.length;
-
-                  const totalBought = buys.reduce((s, tx) => s + tx.amount, 0);
-                  const totalSold = sells.reduce((s, tx) => s + (tx.counterAmount ?? 0), 0);
-
-                  // Cost: what buying cost IN USD (valued at current price since we have no historical)
-                  const costUsd = totalBought * currentPrice;
-                  // Proceeds: what selling yielded (valueUsd of the received side)
-                  const proceedsUsd = sells.reduce((s, tx) => s + (tx.valueUsd ?? 0), 0);
-
-                  // Realized P&L applies only to the sold fraction
-                  const soldFraction = totalBought > 0 ? Math.min(totalSold / totalBought, 1) : 0;
-                  const realizedCostUsd = costUsd * soldFraction;
-                  const realizedPnl = proceedsUsd - realizedCostUsd;
-
-                  // Gas: sum of fees from all matching txs (gas is on the native token)
-                  const allMatchTxs = [...buys, ...sells];
-                  const gasNative = allMatchTxs.reduce((s, tx) => s + (tx.fee ?? 0), 0);
-                  const gasUsd = gasNative * nativePriceUsd;
-
-                  // Holdings
-                  const holdingsBal = pnlAsset.balance;
-                  const holdingsUsd = pnlAsset.value;
-
-
-                  // All swap rows for the transaction list (buys + sells merged, sorted by time)
-                  const allRows = [
-                    ...buys.map(tx => ({ tx, side: 'buy' as const })),
-                    ...sells.map(tx => ({ tx, side: 'sell' as const }))
-                  ].sort((a, b) => b.tx.timestamp - a.tx.timestamp);
-
-                  return (
-                    <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', position: 'relative' }}>
-                      {/* Gradient top accent */}
-                      <div style={{ height: 2, background: 'linear-gradient(90deg, #7c3aed, #ec4899)' }} />
-
-                      {/* Header */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 10px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          {(() => {
-                            const logo = (pnlAsset as any).logoUrl || tokenLogos[(pnlAsset as any).address?.toLowerCase?.()] || getTokenLogoUrl(pnlAsset);
-                            return logo
-                              ? <img src={logo} alt={pnlAsset.symbol} style={{ width: 28, height: 28, borderRadius: '50%' }}
-                                  onError={e => { const el = e.target as HTMLImageElement; el.style.display='none'; const fb = document.createElement('div'); Object.assign(fb.style, { width: '28px', height: '28px', borderRadius: '50%', background: '#2a1a3a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '800', color: '#a78bfa' }); fb.textContent = pnlAsset.symbol[0]; el.parentNode?.insertBefore(fb, el.nextSibling); }} />
-                              : <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#2a1a3a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#a78bfa' }}>{pnlAsset.symbol[0]}</div>;
-                          })()}
-                          <div>
-                            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)' }}>{assetName} P&amp;L</div>
-                            <div style={{ fontSize: 13, color: 'var(--fg-subtle)', marginTop: 1 }}>{swapCount} swap{swapCount !== 1 ? 's' : ''} analyzed · approximate (current prices)</div>
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <div style={{ fontSize: 20, fontWeight: 800, color: realizedPnl >= 0 ? t.green : t.red }}>
-                            {realizedPnl >= 0 ? '+' : ''}${fmtDec(realizedPnl)}
-                          </div>
-                          <button onClick={() => setPnlAsset(null)}
-                            style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)' }}
-                            onMouseOver={e => (e.currentTarget.style.color = 'var(--fg)')}
-                            onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
-                            <X size={16} />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Stats row */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: '0 14px 14px' }}>
-                        {/* REALIZED */}
-                        <div style={{ background: 'var(--bg-elevated)', borderRadius: 10, padding: '14px 16px' }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-subtle)', letterSpacing: '.8px', marginBottom: 10 }}>REALIZED</div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <div>
-                              <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 2 }}>Cost</div>
-                              <div style={{ fontSize: 14, fontWeight: 700, color: t.red }}>${fmtDec(realizedCostUsd)}</div>
-                            </div>
-                            <div style={{ color: 'var(--fg-subtle)', fontSize: 16, marginTop: 8 }}>→</div>
-                            <div>
-                              <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 2 }}>Proceeds</div>
-                              <div style={{ fontSize: 14, fontWeight: 700, color: t.green }}>${fmtDec(proceedsUsd)}</div>
-                            </div>
-                            <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                              <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 2 }}>P&amp;L</div>
-                              <div style={{ fontSize: 14, fontWeight: 700, color: realizedPnl >= 0 ? t.green : t.red }}>
-                                {realizedPnl >= 0 ? '+' : ''}${fmtDec(realizedPnl)}
-                              </div>
-                            </div>
-                          </div>
-                          <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #242424', display: 'flex', gap: 16 }}>
-                            <div>
-                              <div style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>Bought</div>
-                              <div style={{ fontSize: 13, color: 'var(--fg-muted)', fontWeight: 600 }}>{fmtTok(totalBought)} {pnlAsset.symbol}</div>
-                            </div>
-                            <div>
-                              <div style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>Sold</div>
-                              <div style={{ fontSize: 13, color: 'var(--fg-muted)', fontWeight: 600 }}>{fmtTok(totalSold)} {pnlAsset.symbol}</div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* HOLDINGS */}
-                        <div style={{ background: 'var(--bg-elevated)', borderRadius: 10, padding: '14px 16px' }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-subtle)', letterSpacing: '.8px', marginBottom: 10 }}>HOLDINGS</div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div>
-                              <div style={{ fontSize: 13, color: 'var(--fg-subtle)', marginBottom: 2 }}>Balance</div>
-                              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>{fmtTok(holdingsBal)} {pnlAsset.symbol}</div>
-                            </div>
-                            <div style={{ textAlign: 'right' }}>
-                              <div style={{ fontSize: 13, color: 'var(--fg-subtle)', marginBottom: 2 }}>Value</div>
-                              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>${fmtDec(holdingsUsd)}</div>
-                            </div>
-                          </div>
-                          {gasNative > 0 && (
-                            <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #242424', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <div style={{ fontSize: 13, color: 'var(--fg-subtle)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                                ⛽ Gas paid
-                              </div>
-                              <div style={{ fontSize: 13, color: 'var(--fg-muted)', fontWeight: 600 }}>
-                                {fmtTok(gasNative)} {chainKey === 'ethereum' ? 'ETH' : 'PLS'} <span style={{ color: 'var(--fg-subtle)' }}>(${fmtDec(gasUsd)})</span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Swap list */}
-                      {allRows.length > 0 && (
-                        <div style={{ borderTop: '1px solid var(--border)' }}>
-                          <div style={{ padding: '8px 18px', fontSize: 13, fontWeight: 700, color: 'var(--fg-subtle)', letterSpacing: '.8px' }}>SWAP HISTORY</div>
-                          <div style={{ maxHeight: 280, overflowY: 'auto' }}>
-                            {allRows.map(({ tx, side }, i) => {
-                              const isBuy = side === 'buy';
-                              const tokenAmt = isBuy ? tx.amount : (tx.counterAmount ?? 0);
-                              const otherAmt = isBuy ? (tx.counterAmount ?? 0) : tx.amount;
-                              const otherSym = isBuy ? (tx.counterAsset || '?') : tx.asset;
-                              const date = new Date(tx.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' });
-                              const valUsd = tx.valueUsd ?? 0;
-                              return (
-                                <div key={tx.id + i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 18px',
-                                  borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--bg-elevated)' }}
-                                  onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
-                                  onMouseOut={e => (e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'var(--bg-elevated)')}>
-                                  {/* Side badge */}
-                                  <div style={{ width: 36, flexShrink: 0, textAlign: 'center', fontSize: 13, fontWeight: 800, letterSpacing: '.5px',
-                                    padding: '3px 0', borderRadius: 5,
-                                    background: isBuy ? 'rgba(0,255,159,0.12)' : 'rgba(239,68,68,0.12)',
-                                    color: isBuy ? '#00FF9F' : '#ef4444' }}>
-                                    {isBuy ? 'BUY' : 'SELL'}
-                                  </div>
-                                  {/* Amounts */}
-                                  <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                      {isBuy ? '+' : '-'}{fmtTok(tokenAmt)} {pnlAsset.symbol}
-                                      <span style={{ color: 'var(--fg-subtle)', fontWeight: 400, marginLeft: 6 }}>
-                                        {isBuy ? 'for' : 'sold for'} {fmtTok(otherAmt)} {otherSym}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  {/* Value + date */}
-                                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)' }}>${fmtDec(valUsd)}</div>
-                                    <div style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>{date}</div>
-                                  </div>
-                                  {/* Tx link */}
-                                  {tx.hash && (
-                                    <a href={`${CHAINS[chainKey].explorer}/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer"
-                                      style={{ color: 'var(--fg-subtle)', flexShrink: 0 }}
-                                      onMouseOver={e => (e.currentTarget.style.color = '#a78bfa')}
-                                      onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
-                                      <ExternalLink size={11} />
-                                    </a>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {swapCount === 0 && (
-                        <div style={{ padding: '24px', textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 13 }}>
-                          No swaps found for {pnlAsset.symbol} on {chainKey}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-
               </motion.div>
             )}
 
@@ -4589,7 +4419,7 @@ export default function App() {
                   <button
                     onClick={() => {
                       const hdrs = ['Date', 'Type', 'Asset', 'Amount', 'Counter Asset', 'Counter Amount', 'Value USD', 'Chain', 'Hash'];
-                      const rows = filteredTxs.map(tx => [
+                      const rows = filteredTransactions.map(tx => [
                         new Date(tx.timestamp).toISOString().slice(0, 10),
                         tx.type,
                         tx.asset,
@@ -4629,6 +4459,47 @@ export default function App() {
                       Clear all
                     </button>
                   </div>
+                </div>
+              )}
+              {/* ── Active Filter Chips ── */}
+              {(txTypeFilter !== 'all' || txAssetFilter !== 'all' || txChainFilter !== 'all' || txYearFilter !== 'all' || txCoinCategory !== 'all') && (
+                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, padding: '8px 18px', borderBottom: '1px solid var(--border)' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginRight: 4 }}>Filtering by:</span>
+                  {txTypeFilter !== 'all' && (
+                    <button className="filter-chip" onClick={() => setTxTypeFilter('all')}>
+                      {txTypeFilter === 'transfer_in' ? 'Received' : txTypeFilter === 'transfer_out' ? 'Sent' : 'Swaps'}
+                      <span className="chip-x">✕</span>
+                    </button>
+                  )}
+                  {txAssetFilter !== 'all' && (
+                    <button className="filter-chip" onClick={() => setTxAssetFilter('all')}>
+                      {txAssetFilter}
+                      <span className="chip-x">✕</span>
+                    </button>
+                  )}
+                  {txChainFilter !== 'all' && (
+                    <button className="filter-chip" onClick={() => setTxChainFilter('all')}>
+                      {txChainFilter === 'pulsechain' ? 'PulseChain' : txChainFilter === 'ethereum' ? 'Ethereum' : 'Base'}
+                      <span className="chip-x">✕</span>
+                    </button>
+                  )}
+                  {txYearFilter !== 'all' && (
+                    <button className="filter-chip" onClick={() => setTxYearFilter('all')}>
+                      {txYearFilter}
+                      <span className="chip-x">✕</span>
+                    </button>
+                  )}
+                  {txCoinCategory !== 'all' && (
+                    <button className="filter-chip" onClick={() => setTxCoinCategory('all')}>
+                      {txCoinCategory === 'stablecoins' ? 'Stablecoins' : txCoinCategory === 'eth_weth' ? 'ETH/WETH' : txCoinCategory === 'hex' ? 'HEX/eHEX' : txCoinCategory === 'pls_wpls' ? 'PLS/WPLS' : 'Bridged'}
+                      <span className="chip-x">✕</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { setTxTypeFilter('all'); setTxAssetFilter('all'); setTxChainFilter('all'); setTxYearFilter('all'); setTxCoinCategory('all'); }}
+                    style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', textDecoration: 'underline', marginLeft: 4 }}>
+                    Clear all
+                  </button>
                 </div>
               )}
               <div style={{ maxHeight: 600, overflowY: 'auto' }} className="custom-scrollbar">
@@ -5367,112 +5238,7 @@ export default function App() {
                 </>)}
               </div>
 
-              {/* P&L panel — shown when a token's calculator is clicked */}
-              {pnlAsset && (() => {
-                const sym = pnlAsset.symbol.toUpperCase();
-                const assetName = (pnlAsset as any).name || pnlAsset.symbol;
-                const chainKey = pnlAsset.chain;
-                const currentPrice = pnlAsset.price;
-                const plsPriceUsd = prices['pulsechain']?.usd || 0.00005;
-                const ethPriceUsd = prices['ethereum']?.usd || 3400;
-                const nativePriceUsd = chainKey === 'ethereum' ? ethPriceUsd : plsPriceUsd;
-                const baseTxs = isAll ? currentTransactions : currentTransactions.filter(tx => tx.from?.toLowerCase() === selectedWalletAddr || tx.to?.toLowerCase() === selectedWalletAddr);
-                const chainSwaps = baseTxs.filter(tx => tx.type === 'swap' && tx.chain === chainKey);
-                const symMatch = (s: string) => s.toUpperCase() === sym || s.toUpperCase().startsWith(sym + ' ');
-                const buys = chainSwaps.filter(tx => symMatch(tx.asset));
-                const sells = chainSwaps.filter(tx => symMatch(tx.counterAsset || ''));
-                const swapCount = buys.length + sells.length;
-                const totalBought = buys.reduce((s, tx) => s + tx.amount, 0);
-                const totalSold = sells.reduce((s, tx) => s + (tx.counterAmount ?? 0), 0);
-                const costUsd = totalBought * currentPrice;
-                const proceedsUsd = sells.reduce((s, tx) => s + (tx.valueUsd ?? 0), 0);
-                const soldFraction = totalBought > 0 ? Math.min(totalSold / totalBought, 1) : 0;
-                const realizedCostUsd = costUsd * soldFraction;
-                const realizedPnl = proceedsUsd - realizedCostUsd;
-                const gasNative = [...buys, ...sells].reduce((s, tx) => s + (tx.fee ?? 0), 0);
-                const gasUsd = gasNative * nativePriceUsd;
-                const allRows = [...buys.map(tx => ({ tx, side: 'buy' as const })), ...sells.map(tx => ({ tx, side: 'sell' as const }))].sort((a, b) => b.tx.timestamp - a.tx.timestamp);
-                const logo2 = (pnlAsset as any).logoUrl || tokenLogos[(pnlAsset as any).address?.toLowerCase?.()] || getTokenLogoUrl(pnlAsset);
-                return (
-                  <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
-                    <div style={{ height: 2, background: 'linear-gradient(90deg,#7c3aed,#ec4899)' }} />
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 10px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        {logo2 ? <img src={logo2} alt={pnlAsset.symbol} style={{ width: 28, height: 28, borderRadius: '50%' }}
-                            onError={e => { const el = e.target as HTMLImageElement; el.style.display='none'; const fb = document.createElement('div'); Object.assign(fb.style, { width: '28px', height: '28px', borderRadius: '50%', background: '#2a1a3a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '800', color: '#a78bfa' }); fb.textContent = pnlAsset.symbol[0]; el.parentNode?.insertBefore(fb, el.nextSibling); }} /> : <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#2a1a3a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#a78bfa' }}>{pnlAsset.symbol[0]}</div>}
-                        <div>
-                          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)' }}>{assetName} P&amp;L</div>
-                          <div style={{ fontSize: 13, color: 'var(--fg-subtle)', marginTop: 1 }}>{swapCount} swap{swapCount !== 1 ? 's' : ''} · approximate (current prices)</div>
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ fontSize: 20, fontWeight: 800, color: realizedPnl >= 0 ? t.green : t.red }}>{realizedPnl >= 0 ? '+' : ''}${fmtDec(realizedPnl)}</div>
-                        <button onClick={() => setPnlAsset(null)} style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)' }} onMouseOver={e => (e.currentTarget.style.color = 'var(--fg)')} onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}><X size={16} /></button>
-                      </div>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: '0 14px 14px' }}>
-                      <div style={{ background: 'var(--bg-elevated)', borderRadius: 10, padding: '14px 16px' }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-subtle)', letterSpacing: '.8px', marginBottom: 10 }}>REALIZED</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div><div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 2 }}>Cost</div><div style={{ fontSize: 14, fontWeight: 700, color: t.red }}>${fmtDec(realizedCostUsd)}</div></div>
-                          <div style={{ color: 'var(--fg-subtle)', fontSize: 16, marginTop: 8 }}>→</div>
-                          <div><div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 2 }}>Proceeds</div><div style={{ fontSize: 14, fontWeight: 700, color: t.green }}>${fmtDec(proceedsUsd)}</div></div>
-                          <div style={{ marginLeft: 'auto', textAlign: 'right' }}><div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 2 }}>P&amp;L</div><div style={{ fontSize: 14, fontWeight: 700, color: realizedPnl >= 0 ? t.green : t.red }}>{realizedPnl >= 0 ? '+' : ''}${fmtDec(realizedPnl)}</div></div>
-                        </div>
-                        <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #242424', display: 'flex', gap: 16 }}>
-                          <div><div style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>Bought</div><div style={{ fontSize: 13, color: 'var(--fg-muted)', fontWeight: 600 }}>{fmtTok(totalBought)} {pnlAsset.symbol}</div></div>
-                          <div><div style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>Sold</div><div style={{ fontSize: 13, color: 'var(--fg-muted)', fontWeight: 600 }}>{fmtTok(totalSold)} {pnlAsset.symbol}</div></div>
-                        </div>
-                      </div>
-                      <div style={{ background: 'var(--bg-elevated)', borderRadius: 10, padding: '14px 16px' }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-subtle)', letterSpacing: '.8px', marginBottom: 10 }}>HOLDINGS</div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <div><div style={{ fontSize: 13, color: 'var(--fg-subtle)', marginBottom: 2 }}>Balance</div><div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>{fmtTok(pnlAsset.balance)} {pnlAsset.symbol}</div></div>
-                          <div style={{ textAlign: 'right' }}><div style={{ fontSize: 13, color: 'var(--fg-subtle)', marginBottom: 2 }}>Value</div><div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>${fmtDec(pnlAsset.value)}</div></div>
-                        </div>
-                        {gasNative > 0 && (
-                          <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #242424', display: 'flex', justifyContent: 'space-between' }}>
-                            <div style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>⛽ Gas</div>
-                            <div style={{ fontSize: 13, color: 'var(--fg-muted)', fontWeight: 600 }}>{fmtTok(gasNative)} {chainKey === 'ethereum' ? 'ETH' : 'PLS'} <span style={{ color: 'var(--fg-subtle)' }}>(${fmtDec(gasUsd)})</span></div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    {allRows.length > 0 && (
-                      <div style={{ borderTop: '1px solid var(--border)' }}>
-                        <div style={{ padding: '8px 18px', fontSize: 13, fontWeight: 700, color: 'var(--fg-subtle)', letterSpacing: '.8px' }}>SWAP HISTORY</div>
-                        <div style={{ maxHeight: 280, overflowY: 'auto' }}>
-                          {allRows.map(({ tx, side }, i) => {
-                            const isBuy = side === 'buy';
-                            const tokenAmt = isBuy ? tx.amount : (tx.counterAmount ?? 0);
-                            const otherAmt = isBuy ? (tx.counterAmount ?? 0) : tx.amount;
-                            const otherSym = isBuy ? (tx.counterAsset || '?') : tx.asset;
-                            const date = new Date(tx.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' });
-                            return (
-                              <div key={tx.id + i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 18px', borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--bg-elevated)' }}
-                                onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')} onMouseOut={e => (e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'var(--bg-elevated)')}>
-                                <div style={{ width: 36, flexShrink: 0, textAlign: 'center', fontSize: 13, fontWeight: 800, letterSpacing: '.5px', padding: '3px 0', borderRadius: 5, background: isBuy ? 'rgba(0,255,159,0.12)' : 'rgba(239,68,68,0.12)', color: isBuy ? '#00FF9F' : '#ef4444' }}>{isBuy ? 'BUY' : 'SELL'}</div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                    {isBuy ? '+' : '-'}{fmtTok(tokenAmt)} {pnlAsset.symbol}
-                                    <span style={{ color: 'var(--fg-subtle)', fontWeight: 400, marginLeft: 6 }}>{isBuy ? 'for' : 'sold for'} {fmtTok(otherAmt)} {otherSym}</span>
-                                  </div>
-                                </div>
-                                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)' }}>${fmtDec(tx.valueUsd ?? 0)}</div>
-                                  <div style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>{date}</div>
-                                </div>
-                                {tx.hash && <a href={`${CHAINS[chainKey].explorer}/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--fg-subtle)', flexShrink: 0 }} onMouseOver={e => (e.currentTarget.style.color = '#a78bfa')} onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}><ExternalLink size={11} /></a>}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                    {swapCount === 0 && <div style={{ padding: '24px', textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 13 }}>No swaps found for {pnlAsset.symbol} on {chainKey}</div>}
-                  </div>
-                );
-              })()}
+
 
               {/* ── WALLET TRANSACTIONS (Recent Activity style) ── */}
               {(() => {
@@ -5780,6 +5546,18 @@ export default function App() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* ── P&L Modal ── */}
+      {pnlAsset && (
+        <PnLModal
+          asset={pnlAsset}
+          transactions={currentTransactions}
+          prices={prices}
+          logoUrl={(pnlAsset as any).logoUrl || tokenLogos[(pnlAsset as any).address?.toLowerCase?.()] || getTokenLogoUrl(pnlAsset)}
+          onClose={() => setPnlAsset(null)}
+          walletAddress={selectedWalletAddr !== 'all' ? selectedWalletAddr : undefined}
+        />
+      )}
 
       {/* API Key Modal */}
       <AnimatePresence>
