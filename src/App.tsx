@@ -302,6 +302,19 @@ export default function App() {
   const fmtDec = (n: number, dp = 2) => n.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp });
   const fmtTok = (n: number) => n > 1e6 ? `${(n/1e6).toFixed(2)}M` : n > 1000 ? `${(n/1000).toFixed(2)}K` : n.toLocaleString(undefined, { maximumFractionDigits: 4 });
 
+  // ── CSV Export helper ──────────────────────────────────────────────────────
+  const exportCSV = (filename: string, headers: string[], rows: (string | number)[][]) => {
+    const escCell = (c: string | number) => {
+      const s = String(c);
+      return s.includes(',') || s.includes('"') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+    const csv = [headers, ...rows].map(r => r.map(escCell).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const [wallets, setWallets] = useState<Wallet[]>(() => {
     const saved = localStorage.getItem('pulseport_wallets');
     return saved ? JSON.parse(saved) : [];
@@ -491,10 +504,10 @@ export default function App() {
     if (wallets.length > 0) {
       fetchPortfolio();
       
-      // Auto-refresh every 5 minutes
+      // Auto-refresh every 30 seconds
       const interval = setInterval(() => {
         fetchPortfolio();
-      }, 300000);
+      }, 30000);
       
       return () => clearInterval(interval);
     }
@@ -4573,6 +4586,26 @@ export default function App() {
                       </select>
                     ))}
                   </>)}
+                  <button
+                    onClick={() => {
+                      const hdrs = ['Date', 'Type', 'Asset', 'Amount', 'Counter Asset', 'Counter Amount', 'Value USD', 'Chain', 'Hash'];
+                      const rows = filteredTxs.map(tx => [
+                        new Date(tx.timestamp).toISOString().slice(0, 10),
+                        tx.type,
+                        tx.asset,
+                        tx.amount,
+                        tx.counterAsset ?? '',
+                        tx.counterAmount ?? '',
+                        tx.valueUsd ?? '',
+                        tx.chain,
+                        tx.hash ?? '',
+                      ]);
+                      exportCSV(`pulseport-history-${Date.now()}.csv`, hdrs, rows);
+                    }}
+                    title="Export CSV"
+                    style={{ padding: '5px 10px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 6, cursor: 'pointer', color: 'var(--accent)', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <Download size={12} /> CSV
+                  </button>
                   <button onClick={() => toggleSection('history-txs')}
                     style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: t.textTertiary, transition: 'color .12s' }}
                     onMouseOver={e => (e.currentTarget.style.color = t.text)}
