@@ -32,6 +32,19 @@ export interface PnLModalProps {
   walletAddress?: string;
 }
 
+type FilterPeriod = 'all' | '1y' | '1m' | '1w' | '1d';
+
+const PERIOD_LABELS: Record<FilterPeriod, string> = { '1d': '1D', '1w': '1W', '1m': '1M', '1y': '1Y', 'all': 'All' };
+const PERIOD_MS: Record<FilterPeriod, number> = {
+  '1d': 24 * 3600 * 1000,
+  '1w': 7 * 24 * 3600 * 1000,
+  '1m': 30 * 24 * 3600 * 1000,
+  '1y': 365 * 24 * 3600 * 1000,
+  'all': Infinity,
+};
+
+const SWAP_PRESETS = [10, 25, 50, 100] as const;
+
 // ─── Component ───────────────────────────────────────────────────────────────
 export function PnLModal({ asset, transactions, prices, logoUrl, onClose, walletAddress }: PnLModalProps) {
   // Close on Escape
@@ -47,6 +60,11 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
     return () => { document.body.style.overflow = ''; };
   }, []);
 
+  const [imgErr, setImgErr] = React.useState(false);
+  const [filterPeriod, setFilterPeriod] = React.useState<FilterPeriod>('all');
+  const [maxSwaps, setMaxSwaps] = React.useState<number | null>(null);
+  const [swapInput, setSwapInput] = React.useState('');
+
   const sym       = asset.symbol.toUpperCase();
   const chainKey  = asset.chain as keyof typeof CHAINS;
   const assetName = (asset as any).name || asset.symbol;
@@ -54,27 +72,64 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
   const ethPrice  = prices['ethereum']?.usd || 3400;
   const nativePrice = chainKey === 'ethereum' ? ethPrice : plsPrice;
 
+  // ── Symbol alias: PulseChain fork-copy tokens store their original symbol
+  //    on-chain (e.g. pDAI uses symbol 'DAI' in transactions).
+  const symAliases = new Set([sym]);
+  if (chainKey === 'pulsechain' && sym.startsWith('P') && sym.length > 1) {
+    symAliases.add(sym.slice(1)); // 'PDAI' → also try 'DAI'
+  }
+  const symMatch = (s: string) => {
+    const u = s.toUpperCase();
+    return [...symAliases].some(alias => u === alias || u.startsWith(alias + ' '));
+  };
+
   // Scope transactions to wallet if provided
   const baseTxs = walletAddress
     ? transactions.filter(tx => tx.from?.toLowerCase() === walletAddress || tx.to?.toLowerCase() === walletAddress)
     : transactions;
 
   const chainSwaps = baseTxs.filter(tx => tx.type === 'swap' && tx.chain === chainKey);
-  const symMatch   = (s: string) => s.toUpperCase() === sym || s.toUpperCase().startsWith(sym + ' ');
 
-  const buys  = chainSwaps.filter(tx => symMatch(tx.asset));
-  const sells = chainSwaps.filter(tx => symMatch(tx.counterAsset || ''));
-  const swapCount = buys.length + sells.length;
+  const allBuys  = chainSwaps.filter(tx => symMatch(tx.asset));
+  const allSells = chainSwaps.filter(tx => symMatch(tx.counterAsset || ''));
 
-  const totalBought   = buys.reduce((s, tx) => s + tx.amount, 0);
-  const totalSold     = sells.reduce((s, tx) => s + (tx.counterAmount ?? 0), 0);
-  const proceedsUsd   = sells.reduce((s, tx) => s + (tx.valueUsd ?? 0), 0);
-  const costUsd       = totalBought * asset.price;
-  const soldFraction  = totalBought > 0 ? Math.min(totalSold / totalBought, 1) : 0;
+  // Build unified rows sorted by newest first
+  const allRows = [
+    ...allBuys.map(tx => ({ tx, side: 'buy' as const })),
+    ...allSells.map(tx => ({ tx, side: 'sell' as const })),
+  ].sort((a, b) => b.tx.timestamp - a.tx.timestamp);
+
+  // ── Apply filters ──────────────────────────────────────────────────────────
+  const now = Date.now();
+  let filteredRows = allRows;
+
+  // 1. Period filter
+  if (filterPeriod !== 'all') {
+    const cutoff = now - PERIOD_MS[filterPeriod];
+    filteredRows = filteredRows.filter(r => r.tx.timestamp >= cutoff);
+  }
+
+  // 2. Max swaps cap (applied after period filter, most-recent first)
+  if (maxSwaps !== null && filteredRows.length > maxSwaps) {
+    filteredRows = filteredRows.slice(0, maxSwaps);
+  }
+
+  // ── Recompute stats from filtered rows ─────────────────────────────────────
+  const filteredBuys  = filteredRows.filter(r => r.side === 'buy').map(r => r.tx);
+  const filteredSells = filteredRows.filter(r => r.side === 'sell').map(r => r.tx);
+
+  const swapCount = filteredRows.length;
+  const totalBought = filteredBuys.reduce((s, tx) => s + tx.amount, 0);
+  const totalSold   = filteredSells.reduce((s, tx) => s + (tx.counterAmount ?? 0), 0);
+
+  // Use sum of tx.valueUsd for cost — consistent with how proceedsUsd is computed
+  const costUsd         = filteredBuys.reduce((s, tx) => s + (tx.valueUsd ?? 0), 0);
+  const proceedsUsd     = filteredSells.reduce((s, tx) => s + (tx.valueUsd ?? 0), 0);
+  const soldFraction    = totalBought > 0 ? Math.min(totalSold / totalBought, 1) : 0;
   const realizedCostUsd = costUsd * soldFraction;
-  const realizedPnl   = proceedsUsd - realizedCostUsd;
+  const realizedPnl     = proceedsUsd - realizedCostUsd;
 
-  const gasNative = [...buys, ...sells].reduce((s, tx) => s + (tx.fee ?? 0), 0);
+  const gasNative = filteredRows.reduce((s, r) => s + (r.tx.fee ?? 0), 0);
   const gasUsd    = gasNative * nativePrice;
 
   const holdingsBal = asset.balance;
@@ -83,17 +138,24 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
 
   const realPct = costUsd > 0 ? (realizedPnl / costUsd) * 100 : null;
 
-  const allRows = [
-    ...buys.map(tx => ({ tx, side: 'buy' as const })),
-    ...sells.map(tx => ({ tx, side: 'sell' as const })),
-  ].sort((a, b) => b.tx.timestamp - a.tx.timestamp);
-
-  const [imgErr, setImgErr] = React.useState(false);
   const explorerBase = CHAINS[chainKey]?.explorer ?? 'https://scan.pulsechain.com';
 
   const handleBackdrop = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) onClose();
   }, [onClose]);
+
+  const handleSwapCountInput = (val: string) => {
+    setSwapInput(val);
+    const n = parseInt(val, 10);
+    setMaxSwaps(!val ? null : (n > 0 ? n : null));
+  };
+
+  const applyPreset = (n: number) => {
+    setMaxSwaps(n);
+    setSwapInput(String(n));
+  };
+
+  const clearCount = () => { setMaxSwaps(null); setSwapInput(''); };
 
   return (
     // Full-screen backdrop
@@ -115,7 +177,7 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
         className="pnl-modal-panel"
         style={{
           position: 'relative',
-          width: '100%', maxWidth: 680,
+          width: '100%', maxWidth: 700,
           maxHeight: 'calc(100vh - 32px)',
           display: 'flex', flexDirection: 'column',
           background: 'var(--bg-surface)',
@@ -170,6 +232,9 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
               </div>
               <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 2 }}>
                 {swapCount} swap{swapCount !== 1 ? 's' : ''} analyzed
+                {allRows.length !== swapCount && (
+                  <span style={{ color: 'var(--fg-subtle)', marginLeft: 4 }}>· {allRows.length} total</span>
+                )}
                 {chainKey && (
                   <span style={{ color: 'var(--fg-subtle)', marginLeft: 4 }}>
                     · {chainKey === 'ethereum' ? 'Ethereum' : chainKey === 'pulsechain' ? 'PulseChain' : chainKey}
@@ -223,6 +288,75 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
               }}>
               <X size={15} />
             </button>
+          </div>
+        </div>
+
+        {/* ── Filter bar ── */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+          padding: '10px 20px',
+          background: 'rgba(139,92,246,0.04)',
+          borderBottom: '1px solid rgba(139,92,246,0.10)',
+          flexShrink: 0,
+        }}>
+          {/* Period pills */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.6px', marginRight: 2 }}>Period</span>
+            <div style={{ display: 'flex', gap: 2, background: 'var(--bg-elevated)', border: '1px solid rgba(139,92,246,0.18)', borderRadius: 8, padding: 3 }}>
+              {(['1d','1w','1m','1y','all'] as FilterPeriod[]).map(p => (
+                <button key={p} onClick={() => setFilterPeriod(p)}
+                  style={{
+                    padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none', transition: 'all .12s',
+                    background: filterPeriod === p ? '#a855f7' : 'transparent',
+                    color: filterPeriod === p ? '#fff' : 'var(--fg-muted)',
+                    boxShadow: filterPeriod === p ? '0 0 8px rgba(168,85,247,0.35)' : 'none',
+                  }}>
+                  {PERIOD_LABELS[p]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div style={{ width: 1, height: 20, background: 'rgba(139,92,246,0.18)' }} />
+
+          {/* Swap count */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.6px', marginRight: 2 }}>Swaps</span>
+            <div style={{ display: 'flex', gap: 2, background: 'var(--bg-elevated)', border: '1px solid rgba(139,92,246,0.18)', borderRadius: 8, padding: 3 }}>
+              {SWAP_PRESETS.map(n => (
+                <button key={n} onClick={() => maxSwaps === n ? clearCount() : applyPreset(n)}
+                  style={{
+                    padding: '3px 9px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none', transition: 'all .12s',
+                    background: maxSwaps === n ? '#a855f7' : 'transparent',
+                    color: maxSwaps === n ? '#fff' : 'var(--fg-muted)',
+                    boxShadow: maxSwaps === n ? '0 0 8px rgba(168,85,247,0.35)' : 'none',
+                  }}>
+                  {n}
+                </button>
+              ))}
+              <button onClick={clearCount}
+                style={{
+                  padding: '3px 9px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none', transition: 'all .12s',
+                  background: maxSwaps === null ? '#a855f7' : 'transparent',
+                  color: maxSwaps === null ? '#fff' : 'var(--fg-muted)',
+                  boxShadow: maxSwaps === null ? '0 0 8px rgba(168,85,247,0.35)' : 'none',
+                }}>
+                All
+              </button>
+            </div>
+            {/* Custom count input */}
+            <input
+              type="number" min={1} placeholder="Custom"
+              value={swapInput}
+              onChange={e => handleSwapCountInput(e.target.value)}
+              style={{
+                width: 66, padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                background: 'var(--bg-elevated)', border: '1px solid rgba(139,92,246,0.25)',
+                color: swapInput ? '#a78bfa' : 'var(--fg-subtle)', outline: 'none',
+                fontFamily: 'JetBrains Mono, monospace',
+              }}
+            />
           </div>
         </div>
 
@@ -326,7 +460,7 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
           </div>
 
           {/* ── Swap history list ── */}
-          {allRows.length > 0 && (
+          {filteredRows.length > 0 && (
             <div style={{ margin: '0 20px 20px', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
               <div style={{
                 padding: '10px 16px', background: 'var(--bg-elevated)',
@@ -335,6 +469,11 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
               }}>
                 <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.7px', flex: 1 }}>
                   Swap History
+                  {filteredRows.length < allRows.length && (
+                    <span style={{ marginLeft: 6, color: '#a78bfa', fontWeight: 600 }}>
+                      ({filteredRows.length} of {allRows.length})
+                    </span>
+                  )}
                 </span>
                 <a href={`${explorerBase}/search?q=${sym}`} target="_blank" rel="noopener noreferrer"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: 'var(--fg-subtle)', textDecoration: 'none', transition: 'color .12s' }}
@@ -344,7 +483,7 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
                 </a>
               </div>
               <div style={{ maxHeight: 260, overflowY: 'auto' }} className="custom-scrollbar">
-                {allRows.map(({ tx, side }, i) => {
+                {filteredRows.map(({ tx, side }, i) => {
                   const isBuy    = side === 'buy';
                   const tokenAmt = isBuy ? tx.amount : (tx.counterAmount ?? 0);
                   const otherAmt = isBuy ? (tx.counterAmount ?? 0) : tx.amount;
@@ -354,7 +493,7 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
                     <div key={tx.id + i}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 10, padding: '9px 16px',
-                        borderBottom: i < allRows.length - 1 ? '1px solid var(--border)' : 'none',
+                        borderBottom: i < filteredRows.length - 1 ? '1px solid var(--border)' : 'none',
                         transition: 'background .1s',
                       }}
                       onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
@@ -409,13 +548,27 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
           {swapCount === 0 && (
             <div style={{ padding: '32px', textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 14 }}>
               No swap transactions found for <strong style={{ color: 'var(--fg-muted)' }}>{sym}</strong>
-              {chainKey && <span> on {chainKey === 'pulsechain' ? 'PulseChain' : 'Ethereum'}</span>}.
+              {chainKey && <span> on {chainKey === 'pulsechain' ? 'PulseChain' : 'Ethereum'}</span>}
+              {filterPeriod !== 'all' && (
+                <div style={{ marginTop: 8, fontSize: 12 }}>
+                  in the selected period —{' '}
+                  <button onClick={() => setFilterPeriod('all')}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a78bfa', fontSize: 12, padding: 0, textDecoration: 'underline' }}>
+                    show all time
+                  </button>
+                </div>
+              )}
+              {allRows.length === 0 && (
+                <div style={{ marginTop: 8, fontSize: 12, color: 'var(--fg-subtle)' }}>
+                  Swaps are detected from on-chain token-transfer pairs in your transaction history.
+                </div>
+              )}
             </div>
           )}
 
           {/* Disclaimer */}
           <div style={{ padding: '0 20px 16px', fontSize: 10, color: 'var(--fg-subtle)', textAlign: 'center', lineHeight: 1.5 }}>
-            P&amp;L is estimated from on-chain transaction values at time of execution.
+            P&amp;L is estimated from on-chain transaction values at time of data refresh.
             Cost = USD value of acquisitions · Proceeds = USD value of disposals.
           </div>
         </div>
