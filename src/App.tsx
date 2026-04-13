@@ -1261,19 +1261,26 @@ export default function App() {
               const priceChange24h = priceData?.usd_24h_change ?? fetchedPrices[token.coinGeckoId]?.usd_24h_change ?? 0;
               const priceChange1h = priceData?.usd_1h_change ?? fetchedPrices[token.coinGeckoId]?.usd_1h_change ?? 0;
               const priceChange7d = priceData?.usd_7d_change ?? fetchedPrices[token.coinGeckoId]?.usd_7d_change ?? 0;
-              const assetKey = `${chainKey}-${token.symbol}`;
-              
+              // WPLS (wrapped native PLS) is economically equivalent to PLS.
+              // Merge it into the 'pulsechain-PLS' bucket so users see one unified PLS entry.
+              // LP pair internals still reference WPLS by address — only wallet holdings are merged.
+              const isWplsMerge = chainKey === 'pulsechain' && token.symbol === 'WPLS';
+              const assetKey = isWplsMerge ? 'pulsechain-PLS' : `${chainKey}-${token.symbol}`;
+
               if (assetMap[assetKey]) {
                 assetMap[assetKey].balance += balanceNum;
                 assetMap[assetKey].value += balanceNum * price;
+                if (isWplsMerge) (assetMap[assetKey] as any).wrappedBalance = ((assetMap[assetKey] as any).wrappedBalance || 0) + balanceNum;
               } else {
                 // Logo: CoinGecko image → Trust Wallet (ETH/Base) → PulseX CDN (PulseChain)
                 // All CDN paths require EIP-55 checksummed addresses — use getAddress() to ensure that.
+                // For WPLS merge: use the PLS/WPLS logo (same icon on PulseX CDN).
+                const effectiveAddress = isWplsMerge ? 'native' : token.address;
                 const cgLogo = priceData?.image || fetchedPrices[token.coinGeckoId]?.image;
                 const twChain = chainKey === 'ethereum' ? 'ethereum' : chainKey === 'base' ? 'base' : null;
                 let twLogo: string | null = null;
-                if (twChain && token.address !== 'native') {
-                  try { twLogo = `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${twChain}/assets/${getAddress(token.address)}/logo.png`; } catch { /* invalid address */ }
+                if (twChain && effectiveAddress !== 'native') {
+                  try { twLogo = `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${twChain}/assets/${getAddress(effectiveAddress)}/logo.png`; } catch { /* invalid address */ }
                 }
                 let pulsexLogo: string | null = null;
                 if (chainKey === 'pulsechain' && token.address !== 'native') {
@@ -1283,8 +1290,8 @@ export default function App() {
 
                 assetMap[assetKey] = {
                   id: assetKey,
-                  symbol: token.symbol,
-                  name: (token as any).name || (token.symbol === 'eHEX' ? 'HEX (from Ethereum)' : `${token.symbol} (${chainConfig.name})`),
+                  symbol: isWplsMerge ? 'PLS' : token.symbol,
+                  name: isWplsMerge ? 'PulseChain' : ((token as any).name || (token.symbol === 'eHEX' ? 'HEX (from Ethereum)' : `${token.symbol} (${chainConfig.name})`)),
                   balance: balanceNum,
                   price: price,
                   priceChange24h: priceChange24h,
@@ -1293,11 +1300,12 @@ export default function App() {
                   value: balanceNum * price,
                   chain: chainKey,
                   pnl24h: priceChange24h,
-                  isCore: ['PLSX', 'eHEX', 'HEX', 'PLS', 'PRVX'].includes(token.symbol),
-                  isBridged: (token as any).bridged || false,
-                  address: token.address,
-                  isSpam: (token as any).isSpam || false,
-                  logoUrl
+                  isCore: true,
+                  isBridged: false,
+                  address: effectiveAddress,
+                  isSpam: false,
+                  logoUrl,
+                  wrappedBalance: isWplsMerge ? balanceNum : 0,
                 } as any;
               }
 
@@ -3434,7 +3442,6 @@ export default function App() {
                                               {asset.symbol}
                                             </a>
                                           : <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>{asset.symbol}</span>}
-                                        {asset.isBridged && <span style={{ fontSize: 13, background: 'rgba(99,102,241,0.15)', color: '#a5b4fc', padding: '1px 5px', borderRadius: 4, fontWeight: 600 }}>bridged</span>}
                                         {/* Copy CA */}
                                         {addr && addr !== 'native' && (
                                           <button onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(addr); }}
@@ -5171,7 +5178,6 @@ export default function App() {
                                             {asset.symbol}
                                           </a>
                                         : <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>{asset.symbol}</span>}
-                                      {asset.isBridged && <span style={{ fontSize: 13, background: 'rgba(99,102,241,0.15)', color: '#a5b4fc', padding: '1px 5px', borderRadius: 4, fontWeight: 600 }}>bridged</span>}
                                       {addr && addr !== 'native' && (
                                         <button onClick={() => navigator.clipboard.writeText(addr)}
                                           title={`Copy contract address: ${addr}`}
