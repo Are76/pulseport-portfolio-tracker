@@ -431,6 +431,8 @@ export default function App() {
   const [txChainFilter, setTxChainFilter] = useState<string>('all');
   const [txYearFilter, setTxYearFilter] = useState<string>('all');
   const [txCoinCategory, setTxCoinCategory] = useState<string>('all');
+  const [viewAsYou, setViewAsYou] = useState(false);
+  const [txCompact, setTxCompact] = useState(false);
   const [receivedCoinFilter, setReceivedCoinFilter] = useState<string>('all');
   const [receivedChainFilter, setReceivedChainFilter] = useState<string>('all');
   const [timeSinceLastUpdate, setTimeSinceLastUpdate] = useState<number>(0);
@@ -4439,10 +4441,81 @@ export default function App() {
 
             {/* Page header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 0 }}>
-              <div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)', marginBottom: 2 }}>Portfolio History</div>
-                <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Performance tracking &amp; transaction history</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+                <div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)', marginBottom: 2 }}>Transactions</div>
+                  <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Performance tracking &amp; transaction history</div>
+                </div>
+                {/* View as You toggle */}
+                <button onClick={() => setViewAsYou(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}>
+                  <div style={{ width: 36, height: 20, borderRadius: 10, background: viewAsYou ? '#00FF9F' : 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.1)', transition: 'background .15s', position: 'relative', flexShrink: 0 }}>
+                    <div style={{ position: 'absolute', top: 2, left: viewAsYou ? 18 : 2, width: 14, height: 14, borderRadius: '50%', background: 'white', transition: 'left .15s', boxShadow: '0 1px 3px rgba(0,0,0,0.4)' }} />
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg-muted)', whiteSpace: 'nowrap' }}>
+                    View as <span style={{ color: '#00FF9F' }}>You</span>
+                  </span>
+                </button>
+                {/* Compact toggle */}
+                <button onClick={() => setTxCompact(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}>
+                  <div style={{ width: 36, height: 20, borderRadius: 10, background: txCompact ? '#00FF9F' : 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.1)', transition: 'background .15s', position: 'relative', flexShrink: 0 }}>
+                    <div style={{ position: 'absolute', top: 2, left: txCompact ? 18 : 2, width: 14, height: 14, borderRadius: '50%', background: 'white', transition: 'left .15s', boxShadow: '0 1px 3px rgba(0,0,0,0.4)' }} />
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg-muted)', whiteSpace: 'nowrap' }}>Compact</span>
+                </button>
               </div>
+            </div>
+
+            {/* Type filter pills + active filter chips */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              {([
+                { value: 'all', label: 'All' },
+                { value: 'transfer_in', label: 'Received' },
+                { value: 'transfer_out', label: 'Sent' },
+                { value: 'swap', label: 'Swaps' },
+              ] as { value: string; label: string }[]).map(({ value, label }) => (
+                <button key={value}
+                  onClick={() => setTxTypeFilter(value)}
+                  style={{
+                    padding: '5px 16px', borderRadius: 999, fontSize: 12, fontWeight: 700,
+                    cursor: 'pointer', transition: 'all .12s',
+                    background: txTypeFilter === value ? 'var(--fg)' : 'transparent',
+                    color: txTypeFilter === value ? 'var(--bg)' : 'var(--fg-muted)',
+                    border: `1px solid ${txTypeFilter === value ? 'var(--fg)' : 'var(--border)'}`,
+                  }}>
+                  {label}
+                </button>
+              ))}
+              {/* Active filter chips for chain / asset / year / category */}
+              {(txAssetFilter !== 'all' || txChainFilter !== 'all' || txYearFilter !== 'all' || txCoinCategory !== 'all') && (
+                <>
+                  <div style={{ width: 1, height: 18, background: 'var(--border)', flexShrink: 0 }} />
+                  {txAssetFilter !== 'all' && (
+                    <button className="filter-chip" onClick={() => setTxAssetFilter('all')}>
+                      {txAssetFilter}<span className="chip-x">✕</span>
+                    </button>
+                  )}
+                  {txChainFilter !== 'all' && (
+                    <button className="filter-chip" onClick={() => setTxChainFilter('all')}>
+                      {txChainFilter === 'pulsechain' ? 'PulseChain' : txChainFilter === 'ethereum' ? 'Ethereum' : 'Base'}<span className="chip-x">✕</span>
+                    </button>
+                  )}
+                  {txYearFilter !== 'all' && (
+                    <button className="filter-chip" onClick={() => setTxYearFilter('all')}>
+                      {txYearFilter}<span className="chip-x">✕</span>
+                    </button>
+                  )}
+                  {txCoinCategory !== 'all' && (
+                    <button className="filter-chip" onClick={() => setTxCoinCategory('all')}>
+                      {txCoinCategory === 'stablecoins' ? 'Stablecoins' : txCoinCategory === 'eth_weth' ? 'ETH/WETH' : txCoinCategory === 'hex' ? 'HEX/eHEX' : txCoinCategory === 'pls_wpls' ? 'PLS/WPLS' : 'Bridged'}<span className="chip-x">✕</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { setTxTypeFilter('all'); setTxAssetFilter('all'); setTxChainFilter('all'); setTxYearFilter('all'); setTxCoinCategory('all'); }}
+                    style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', background: 'none', border: 'none', cursor: 'pointer', padding: '3px 6px', textDecoration: 'underline' }}>
+                    Clear all
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Stats grid */}
@@ -4712,7 +4785,6 @@ export default function App() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   {!isCollapsed('history-txs') && (<>
                     {[
-                      { value: txTypeFilter, onChange: setTxTypeFilter, options: [['all','All Types'],['transfer_in','Received'],['transfer_out','Sent'],['swap','Swaps']] as [string,string][] },
                       { value: txChainFilter, onChange: setTxChainFilter, options: [['all','All Chains'],['pulsechain','PulseChain'],['ethereum','Ethereum'],['base','Base']] as [string,string][] },
                       { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Assets'], ...Array.from(new Set(currentTransactions.map(tx => tx.asset))).sort().map(a => [a,a])] as [string,string][] },
                       { value: txYearFilter, onChange: setTxYearFilter, options: [['all','All Years'],['2026','2026'],['2025','2025'],['2024','2024'],['2023','2023'],['2022','2022'],['2021','2021']] as [string,string][] },
@@ -4769,16 +4841,10 @@ export default function App() {
                   </div>
                 </div>
               )}
-              {/* ── Active Filter Chips ── */}
-              {(txTypeFilter !== 'all' || txAssetFilter !== 'all' || txChainFilter !== 'all' || txYearFilter !== 'all' || txCoinCategory !== 'all') && (
+              {/* ── Active Filter Chips (secondary filters only — type handled by top pills) ── */}
+              {(txAssetFilter !== 'all' || txChainFilter !== 'all' || txYearFilter !== 'all' || txCoinCategory !== 'all') && (
                 <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, padding: '8px 18px', borderBottom: '1px solid var(--border)' }}>
                   <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginRight: 4 }}>Filtering by:</span>
-                  {txTypeFilter !== 'all' && (
-                    <button className="filter-chip" onClick={() => setTxTypeFilter('all')}>
-                      {txTypeFilter === 'transfer_in' ? 'Received' : txTypeFilter === 'transfer_out' ? 'Sent' : 'Swaps'}
-                      <span className="chip-x">✕</span>
-                    </button>
-                  )}
                   {txAssetFilter !== 'all' && (
                     <button className="filter-chip" onClick={() => setTxAssetFilter('all')}>
                       {txAssetFilter}
@@ -4819,42 +4885,52 @@ export default function App() {
                   const coinAsset = currentAssets.find(a => a.symbol.toUpperCase() === tx.asset.toUpperCase() && a.chain === tx.chain);
                   const coinLogo = coinAsset ? getTokenLogoUrl(coinAsset) : '';
                   const chainDotColor: Record<string, string> = { pulsechain: '#f739ff', ethereum: '#627EEA', base: '#0052FF' };
+                  const explorerBase = tx.chain === 'pulsechain' ? 'https://scan.pulsechain.com' : tx.chain === 'ethereum' ? 'https://etherscan.io' : 'https://basescan.org';
+                  // View as You helper
+                  const isOwn = (addr: string | undefined) => viewAsYou && addr && wallets.some(w => w.address.toLowerCase() === addr.toLowerCase());
+                  const displayAddr = (addr: string | undefined) => isOwn(addr) ? 'You' : addr ? `${addr.slice(0,6)}…${addr.slice(-4)}` : '?';
                   return (
                     <div key={tx.id} style={{ borderBottom: `1px solid ${t.borderLight}`, opacity: isHidden ? 0.35 : 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', transition: 'background .1s', cursor: 'pointer' }}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: txCompact ? '6px 18px' : '10px 18px', transition: 'background .1s', cursor: 'pointer' }}
                         onClick={() => setExpandedTxIds(prev => { const s = new Set(prev); s.has(tx.id) ? s.delete(tx.id) : s.add(tx.id); return s; })}
                         onMouseOver={e => (e.currentTarget.style.background = t.hoverBg)}
                         onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
-                        {/* LEFT — icon + text (mirrors PLS Movement layout) */}
+                        {/* LEFT — icon + text */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
-                            color: tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444', flexShrink: 0 }}>
-                            {tx.type === 'transfer_in' ? <ArrowDownLeft size={13} /> : tx.type === 'swap' ? <RefreshCcw size={13} /> : <ArrowUpRight size={13} />}
-                          </div>
+                          {!txCompact && (
+                            <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
+                              color: tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444', flexShrink: 0 }}>
+                              {tx.type === 'transfer_in' ? <ArrowDownLeft size={13} /> : tx.type === 'swap' ? <RefreshCcw size={13} /> : <ArrowUpRight size={13} />}
+                            </div>
+                          )}
                           <div>
                             {/* Row 1: type badge + chain dot + date */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 1 }}>
-                              <span style={{ fontSize: 12, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: txCompact ? 0 : 1 }}>
+                              <span style={{ fontSize: txCompact ? 11 : 12, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
                                 background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
                                 color: tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444' }}>
-                                {tx.type === 'swap' ? 'Swap' : tx.type === 'transfer_in' ? 'Received' : 'Sent'}
+                                {tx.type === 'swap'
+                                  ? (viewAsYou ? `Swap · ${displayAddr(tx.from)} → ${displayAddr(tx.to)}` : 'Swap')
+                                  : tx.type === 'transfer_in' ? 'Received' : 'Sent'}
                               </span>
                               <span style={{ width: 6, height: 6, borderRadius: '50%', background: chainDotColor[tx.chain] || t.textMuted, flexShrink: 0, display: 'inline-block' }} title={tx.chain} />
-                              <span style={{ fontSize: 13, color: t.textSecondary }}>{format(tx.timestamp, 'MMM d, yyyy')}</span>
+                              <span style={{ fontSize: txCompact ? 11 : 13, color: t.textSecondary }}>{format(tx.timestamp, 'MMM d, yyyy')}</span>
                             </div>
-                            {/* Row 2: amount + USD (green/red like PLS Movement) */}
-                            <div style={{ fontSize: 13, fontWeight: 700, color: tx.type === 'transfer_in' ? t.green : tx.type === 'swap' ? t.text : t.red, fontFamily: 'JetBrains Mono, monospace' }}>
-                              {tx.type === 'transfer_in' ? '+' : tx.type === 'transfer_out' ? '-' : ''}
-                              {tx.type === 'swap' && tx.counterAsset
-                                ? `${tx.counterAmount?.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.counterAsset} → ${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`
-                                : `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`}
-                              {tx.valueUsd ? (
-                                <span style={{ fontSize: 12, color: t.textTertiary, fontWeight: 500, marginLeft: 6 }}>
-                                  ≈ ${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                </span>
-                              ) : null}
-                            </div>
+                            {/* Row 2: amount (hide in compact for transfers) */}
+                            {(!txCompact || tx.type === 'swap') && (
+                              <div style={{ fontSize: txCompact ? 12 : 13, fontWeight: 700, color: tx.type === 'transfer_in' ? t.green : tx.type === 'swap' ? t.text : t.red, fontFamily: 'JetBrains Mono, monospace' }}>
+                                {tx.type === 'transfer_in' ? '+' : tx.type === 'transfer_out' ? '-' : ''}
+                                {tx.type === 'swap' && tx.counterAsset
+                                  ? `${tx.counterAmount?.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.counterAsset} → ${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`
+                                  : `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`}
+                                {!txCompact && tx.valueUsd ? (
+                                  <span style={{ fontSize: 12, color: t.textTertiary, fontWeight: 500, marginLeft: 6 }}>
+                                    ≈ ${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                  </span>
+                                ) : null}
+                              </div>
+                            )}
                           </div>
                         </div>
                         {/* RIGHT — coin filter + hide + chevron */}
@@ -4878,38 +4954,204 @@ export default function App() {
                           </span>
                         </div>
                       </div>
-                      {/* Expanded detail — same grid card style as PLS Movement */}
+                      {/* Expanded detail */}
                       {isTxExpanded && (
                         <div style={{ padding: '0 18px 14px', background: t.expandedBg }}>
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, paddingTop: 10, borderTop: `1px solid ${t.borderLight}` }}>
-                            {[
-                              { label: 'Amount', val: `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${tx.asset}`, sub: 'Token amount' },
-                              { label: 'USD Value', val: tx.valueUsd ? `$${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—', sub: 'At time of tx' },
-                              { label: 'Current Price', val: coinAsset?.price ? `$${coinAsset.price < 0.001 ? coinAsset.price.toFixed(8) : coinAsset.price.toLocaleString(undefined, { maximumFractionDigits: 4 })}` : '—', sub: coinAsset ? `${tx.asset} now` : 'Unknown' },
-                              { label: 'Current Value', val: coinAsset ? `$${(tx.amount * coinAsset.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—', sub: 'If held to now', color: coinAsset && tx.valueUsd ? ((tx.amount * coinAsset.price) >= tx.valueUsd ? t.green : t.red) : undefined },
-                              ...(tx.valueUsd && coinAsset ? [{
-                                label: 'Profit / Loss',
-                                val: `${(tx.amount * coinAsset.price - tx.valueUsd) >= 0 ? '+' : ''}$${Math.abs(tx.amount * coinAsset.price - tx.valueUsd).toLocaleString(undefined, { maximumFractionDigits: 2 })}`,
-                                sub: `${(((tx.amount * coinAsset.price) / tx.valueUsd - 1) * 100).toFixed(1)}% change`,
-                                color: (tx.amount * coinAsset.price - tx.valueUsd) >= 0 ? t.green : t.red
-                              }] : []),
-                              { label: 'Chain', val: tx.chain === 'pulsechain' ? 'PulseChain' : tx.chain === 'ethereum' ? 'Ethereum' : 'Base', sub: tx.type === 'transfer_in' ? `From ${tx.from.slice(0,6)}…${tx.from.slice(-4)}` : tx.type === 'transfer_out' ? `To ${tx.to.slice(0,6)}…${tx.to.slice(-4)}` : 'Swap' },
-                              { label: 'Date', val: format(tx.timestamp, 'MMM d, yyyy'), sub: format(tx.timestamp, 'HH:mm:ss') },
-                            ].map(({ label, val, sub, color }) => (
-                              <div key={label} style={{ background: t.cardHigh, borderRadius: 8, padding: '10px 12px' }}>
-                                <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>{label}</div>
-                                <div style={{ fontSize: 14, fontWeight: 700, color: color || t.text }}>{val}</div>
-                                <div style={{ fontSize: 12, color: t.textTertiary, marginTop: 1 }}>{sub}</div>
+                          {tx.type === 'swap' ? (() => {
+                            // ── Enhanced swap expanded row ──
+                            const counterAsset = tx.counterAsset
+                              ? currentAssets.find(a => a.symbol.toUpperCase() === tx.counterAsset!.toUpperCase() && a.chain === tx.chain)
+                              : undefined;
+                            const counterLogo = counterAsset ? getTokenLogoUrl(counterAsset) : '';
+                            const nowPriceReceived = coinAsset?.price ?? 0;
+                            const nowPriceSpent = counterAsset?.price ?? 0;
+                            const thenPriceReceived = tx.valueUsd && tx.amount > 0 ? tx.valueUsd / tx.amount : 0;
+                            const thenPriceSpent = tx.valueUsd && tx.counterAmount && tx.counterAmount > 0 ? tx.valueUsd / tx.counterAmount : 0;
+                            // Dollar P/L: received asset current value vs what was paid
+                            const dollarPnl = tx.valueUsd != null && nowPriceReceived > 0
+                              ? (tx.amount * nowPriceReceived) - tx.valueUsd
+                              : null;
+                            // Trade P/L: current value of received vs current value of spent
+                            const tradePnl = nowPriceReceived > 0 && nowPriceSpent > 0 && tx.counterAmount
+                              ? (tx.amount * nowPriceReceived) - (tx.counterAmount * nowPriceSpent)
+                              : null;
+                            const fmtPnl = (n: number) => {
+                              const abs = Math.abs(n);
+                              const dp = abs < 0.001 ? 6 : abs < 0.1 ? 4 : 2;
+                              return `${n >= 0 ? '+' : ''}$${Math.abs(n).toFixed(dp)}`;
+                            };
+                            const fmtPrice = (p: number) => p <= 0 ? '—' : p < 0.001 ? `$${p.toFixed(8)}` : p < 1 ? `$${p.toFixed(6)}` : `$${p.toFixed(4)}`;
+                            return (
+                              <div style={{ paddingTop: 10, borderTop: `1px solid ${t.borderLight}` }}>
+                                {/* "from / to" context */}
+                                <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 10, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                                  <span>
+                                    Swap from{' '}
+                                    <strong style={{ color: isOwn(tx.from) ? '#00FF9F' : 'var(--fg)' }}>{displayAddr(tx.from)}</strong>
+                                    {' '}to{' '}
+                                    <strong style={{ color: isOwn(tx.to) ? '#00FF9F' : 'var(--fg)' }}>{displayAddr(tx.to)}</strong>
+                                  </span>
+                                  {tx.fee != null && tx.fee > 0 && (
+                                    <span style={{ color: 'var(--fg-subtle)', fontSize: 11 }}>
+                                      ⛽ {tx.fee.toLocaleString(undefined, { maximumFractionDigits: 4 })} {tx.chain === 'ethereum' ? 'ETH' : 'PLS'}
+                                    </span>
+                                  )}
+                                  <span style={{ marginLeft: 'auto', color: 'var(--fg-subtle)', fontSize: 11 }}>{format(tx.timestamp, 'MMM d, yyyy HH:mm')}</span>
+                                </div>
+
+                                {/* P/L summary cards */}
+                                {(tradePnl !== null || dollarPnl !== null) && (
+                                  <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                                    {tradePnl !== null && (
+                                      <div style={{
+                                        flex: 1, padding: '10px 14px', borderRadius: 10,
+                                        background: tradePnl >= 0 ? 'rgba(0,255,159,0.06)' : 'rgba(244,63,94,0.06)',
+                                        border: `1px solid ${tradePnl >= 0 ? 'rgba(0,255,159,0.18)' : 'rgba(244,63,94,0.18)'}`,
+                                        display: 'flex', flexDirection: 'column', gap: 3,
+                                      }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                                          {tradePnl >= 0
+                                            ? <TrendingUp size={11} style={{ color: t.green }} />
+                                            : <TrendingDown size={11} style={{ color: t.red }} />}
+                                          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Trade P/L</span>
+                                        </div>
+                                        <div style={{ fontSize: 14, fontWeight: 800, color: tradePnl >= 0 ? t.green : t.red, fontFamily: 'JetBrains Mono, monospace' }}>
+                                          {fmtPnl(tradePnl)}
+                                        </div>
+                                        <div style={{ fontSize: 10, color: 'var(--fg-subtle)' }}>At current prices</div>
+                                      </div>
+                                    )}
+                                    {dollarPnl !== null && (
+                                      <div style={{
+                                        flex: 1, padding: '10px 14px', borderRadius: 10,
+                                        background: dollarPnl >= 0 ? 'rgba(0,255,159,0.06)' : 'rgba(244,63,94,0.06)',
+                                        border: `1px solid ${dollarPnl >= 0 ? 'rgba(0,255,159,0.18)' : 'rgba(244,63,94,0.18)'}`,
+                                        display: 'flex', flexDirection: 'column', gap: 3,
+                                      }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                                          {dollarPnl >= 0
+                                            ? <TrendingUp size={11} style={{ color: t.green }} />
+                                            : <TrendingDown size={11} style={{ color: t.red }} />}
+                                          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Dollar P/L</span>
+                                        </div>
+                                        <div style={{ fontSize: 14, fontWeight: 800, color: dollarPnl >= 0 ? t.green : t.red, fontFamily: 'JetBrains Mono, monospace' }}>
+                                          {fmtPnl(dollarPnl)}
+                                        </div>
+                                        <div style={{ fontSize: 10, color: 'var(--fg-subtle)' }}>Position change</div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Received leg */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--bg-inset)', borderRadius: 8, marginBottom: 6 }}>
+                                  {coinLogo
+                                    ? <img src={coinLogo} alt={tx.asset} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                    : <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,255,159,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: t.green, flexShrink: 0 }}>{tx.asset[0]}</div>
+                                  }
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontSize: 13, fontWeight: 700, color: t.green, fontFamily: 'JetBrains Mono, monospace' }}>
+                                      + {tx.amount.toLocaleString(undefined, { maximumFractionDigits: 6 })} {tx.asset}
+                                    </div>
+                                    {thenPriceReceived > 0 && (
+                                      <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 1 }}>
+                                        Then: <span style={{ color: 'var(--fg-muted)' }}>{fmtPrice(thenPriceReceived)}</span>
+                                        {nowPriceReceived > 0 && <> · Now: <span style={{ color: nowPriceReceived >= thenPriceReceived ? t.green : t.red }}>{fmtPrice(nowPriceReceived)}</span></>}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <a href={`${explorerBase}/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer"
+                                    onClick={e => e.stopPropagation()}
+                                    style={{ color: 'var(--fg-subtle)', transition: 'color .12s', flexShrink: 0 }}
+                                    onMouseOver={e => ((e.currentTarget as HTMLAnchorElement).style.color = t.green)}
+                                    onMouseOut={e => ((e.currentTarget as HTMLAnchorElement).style.color = 'var(--fg-subtle)')}>
+                                    <ExternalLink size={12} />
+                                  </a>
+                                  <button onClick={e => { e.stopPropagation(); setTxAssetFilter(tx.asset); }}
+                                    title={`Filter by ${tx.asset}`}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', padding: 2, transition: 'color .12s', flexShrink: 0 }}
+                                    onMouseOver={e => (e.currentTarget.style.color = '#a78bfa')}
+                                    onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
+                                    <Filter size={12} />
+                                  </button>
+                                </div>
+
+                                {/* Spent leg */}
+                                {tx.counterAsset && tx.counterAmount != null && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--bg-inset)', borderRadius: 8 }}>
+                                    {counterLogo
+                                      ? <img src={counterLogo} alt={tx.counterAsset} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                      : <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(244,63,94,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: t.red, flexShrink: 0 }}>{tx.counterAsset[0]}</div>
+                                    }
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      <div style={{ fontSize: 13, fontWeight: 700, color: t.red, fontFamily: 'JetBrains Mono, monospace' }}>
+                                        − {tx.counterAmount.toLocaleString(undefined, { maximumFractionDigits: 6 })} {tx.counterAsset}
+                                      </div>
+                                      {thenPriceSpent > 0 && (
+                                        <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 1 }}>
+                                          Then: <span style={{ color: 'var(--fg-muted)' }}>{fmtPrice(thenPriceSpent)}</span>
+                                          {nowPriceSpent > 0 && <> · Now: <span style={{ color: nowPriceSpent >= thenPriceSpent ? t.green : t.red }}>{fmtPrice(nowPriceSpent)}</span></>}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <a href={`${explorerBase}/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer"
+                                      onClick={e => e.stopPropagation()}
+                                      style={{ color: 'var(--fg-subtle)', transition: 'color .12s', flexShrink: 0 }}
+                                      onMouseOver={e => ((e.currentTarget as HTMLAnchorElement).style.color = t.green)}
+                                      onMouseOut={e => ((e.currentTarget as HTMLAnchorElement).style.color = 'var(--fg-subtle)')}>
+                                      <ExternalLink size={12} />
+                                    </a>
+                                    <button onClick={e => { e.stopPropagation(); setTxAssetFilter(tx.counterAsset!); }}
+                                      title={`Filter by ${tx.counterAsset}`}
+                                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', padding: 2, transition: 'color .12s', flexShrink: 0 }}
+                                      onMouseOver={e => (e.currentTarget.style.color = '#a78bfa')}
+                                      onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
+                                      <Filter size={12} />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
-                            ))}
-                          </div>
-                          <div style={{ marginTop: 8 }}>
-                            <a href={`${tx.chain === 'pulsechain' ? 'https://scan.pulsechain.com' : tx.chain === 'ethereum' ? 'https://etherscan.io' : 'https://basescan.org'}/tx/${tx.hash}`}
-                              target="_blank" rel="noopener noreferrer"
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: t.green, textDecoration: 'none' }}>
-                              <ExternalLink size={11} /> View on Explorer
-                            </a>
-                          </div>
+                            );
+                          })() : (
+                            // ── Non-swap: classic card grid ──
+                            <div style={{ paddingTop: 10, borderTop: `1px solid ${t.borderLight}` }}>
+                              {/* Context line */}
+                              <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 10 }}>
+                                {tx.type === 'transfer_in'
+                                  ? <>Received from <strong style={{ color: isOwn(tx.from) ? '#00FF9F' : 'var(--fg)' }}>{displayAddr(tx.from)}</strong></>
+                                  : <>Sent to <strong style={{ color: isOwn(tx.to) ? '#00FF9F' : 'var(--fg)' }}>{displayAddr(tx.to)}</strong></>}
+                                <span style={{ color: 'var(--fg-subtle)', fontSize: 11, marginLeft: 10 }}>{format(tx.timestamp, 'MMM d, yyyy HH:mm')}</span>
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
+                                {[
+                                  { label: 'Amount', val: `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${tx.asset}`, sub: 'Token amount' },
+                                  { label: 'USD Value', val: tx.valueUsd ? `$${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—', sub: 'At time of tx' },
+                                  { label: 'Current Price', val: coinAsset?.price ? `$${coinAsset.price < 0.001 ? coinAsset.price.toFixed(8) : coinAsset.price.toLocaleString(undefined, { maximumFractionDigits: 4 })}` : '—', sub: coinAsset ? `${tx.asset} now` : 'Unknown' },
+                                  { label: 'Current Value', val: coinAsset ? `$${(tx.amount * coinAsset.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—', sub: 'If held to now', color: coinAsset && tx.valueUsd ? ((tx.amount * coinAsset.price) >= tx.valueUsd ? t.green : t.red) : undefined },
+                                  ...(tx.valueUsd && coinAsset ? [{
+                                    label: 'Profit / Loss',
+                                    val: `${(tx.amount * coinAsset.price - tx.valueUsd) >= 0 ? '+' : ''}$${Math.abs(tx.amount * coinAsset.price - tx.valueUsd).toLocaleString(undefined, { maximumFractionDigits: 2 })}`,
+                                    sub: `${(((tx.amount * coinAsset.price) / tx.valueUsd - 1) * 100).toFixed(1)}% change`,
+                                    color: (tx.amount * coinAsset.price - tx.valueUsd) >= 0 ? t.green : t.red
+                                  }] : []),
+                                  { label: 'Chain', val: tx.chain === 'pulsechain' ? 'PulseChain' : tx.chain === 'ethereum' ? 'Ethereum' : 'Base', sub: tx.type === 'transfer_in' ? `From ${displayAddr(tx.from)}` : `To ${displayAddr(tx.to)}` },
+                                  { label: 'Date', val: format(tx.timestamp, 'MMM d, yyyy'), sub: format(tx.timestamp, 'HH:mm:ss') },
+                                ].map(({ label, val, sub, color }) => (
+                                  <div key={label} style={{ background: t.cardHigh, borderRadius: 8, padding: '10px 12px' }}>
+                                    <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>{label}</div>
+                                    <div style={{ fontSize: 14, fontWeight: 700, color: (color as string | undefined) || t.text }}>{val}</div>
+                                    <div style={{ fontSize: 12, color: t.textTertiary, marginTop: 1 }}>{sub}</div>
+                                  </div>
+                                ))}
+                              </div>
+                              <div style={{ marginTop: 8 }}>
+                                <a href={`${explorerBase}/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer"
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: t.green, textDecoration: 'none' }}>
+                                  <ExternalLink size={11} /> View on Explorer
+                                </a>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
