@@ -3367,6 +3367,9 @@ export default function App() {
 
             {activeTab === 'assets' && (
               <motion.div key="assets" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+                {(() => {
+                  const chainAssets = walletChainFilter === 'all' ? currentAssets : currentAssets.filter(a => a.chain === walletChainFilter);
+                  return (<>
 
                 {/* ── All Wallets hero banner ── */}
                 <div style={{ background: 'var(--bg-elevated)', borderRadius: 16, padding: '24px', border: '1px solid var(--accent-border)' }}>
@@ -3399,7 +3402,7 @@ export default function App() {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                   <div>
                     <div style={{ fontSize: 18, fontWeight: 700, color: t.text, marginBottom: 2 }}>Token Positions</div>
-                    <div style={{ fontSize: 13, color: t.textSecondary }}>{(walletChainFilter === 'all' ? currentAssets : currentAssets.filter(a => a.chain === walletChainFilter)).length} assets · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} liquid</div>
+                    <div style={{ fontSize: 13, color: t.textSecondary }}>{chainAssets.length} assets · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} liquid</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', gap: 3, background: t.cardHigh, border: `1px solid ${t.border}`, borderRadius: 8, padding: 3 }}>
@@ -3446,7 +3449,7 @@ export default function App() {
                   <div style={{ padding: '14px 16px', borderBottom: isCollapsed('assets-table') ? 'none' : `1px solid ${t.borderLight}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
                       <div style={{ fontSize: 15, fontWeight: 700, color: t.text }}>Assets</div>
-                      <div style={{ fontSize: 13, color: t.textSecondary, marginTop: 2 }}>{(walletChainFilter === 'all' ? currentAssets : currentAssets.filter(a => a.chain === walletChainFilter)).length} tokens · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                      <div style={{ fontSize: 13, color: t.textSecondary, marginTop: 2 }}>{chainAssets.length} tokens · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                     </div>
                     <button onClick={() => toggleSection('assets-table')}
                       style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s' }}
@@ -3510,7 +3513,7 @@ export default function App() {
                             </td>
                           </tr>
                         ) : (
-                          [...(walletChainFilter === 'all' ? currentAssets : currentAssets.filter(a => a.chain === walletChainFilter))].sort((a, b) => {
+                          [...chainAssets].sort((a, b) => {
                             const getVal = (x: any) => assetSortField === 'change'
                               ? (priceChangePeriod === '1h' ? (x.priceChange1h ?? 0)
                                 : priceChangePeriod === '7d' ? (x.priceChange7d ?? 0)
@@ -3865,6 +3868,8 @@ export default function App() {
                   </>)}
                 </div>
 
+                  </>);
+                })()}
               </motion.div>
             )}
 

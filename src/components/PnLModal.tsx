@@ -230,8 +230,7 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
         <div style={{ overflowY: 'auto', flex: 1 }} className="custom-scrollbar">
 
           {/* Two-col stats */}
-          <div className="pnl-modal-stats-grid" style={{
-          }}>
+          <div className="pnl-modal-stats-grid">
             {/* REALIZED */}
             <div style={{
               background: 'var(--bg-elevated)', borderRadius: 14, padding: '16px',
