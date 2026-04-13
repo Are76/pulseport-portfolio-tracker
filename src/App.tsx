@@ -470,11 +470,12 @@ export default function App() {
   const [expandedAssetIds, setExpandedAssetIds] = useState<Set<string>>(new Set());
   const [priceDisplayCurrency, setPriceDisplayCurrency] = useState<'usd' | 'pls'>('usd');
   const [pnlAsset, setPnlAsset] = useState<Asset | null>(null);
-  const [perfPeriod, setPerfPeriod] = useState<'1d' | '1w' | '1y' | 'all'>('all');
+  const [perfPeriod, setPerfPeriod] = useState<'1w' | '1m' | '1y' | 'all'>('all');
   const fmtLabel = (ts: number) => {
-    if (perfPeriod === '1d') return format(ts, 'HH:mm');
     if (perfPeriod === '1w') return format(ts, 'EEE d');
-    return format(ts, 'MMM d');
+    if (perfPeriod === '1m') return format(ts, 'MMM d');
+    if (perfPeriod === '1y') return format(ts, 'MMM yy');
+    return format(ts, 'MMM yy');
   };
   const [hiddenTxIds, setHiddenTxIds] = useState<string[]>(() => {
     const saved = localStorage.getItem('pulseport_hidden_txs');
@@ -2855,16 +2856,18 @@ export default function App() {
                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }} className="max-sm:grid-cols-1">
                              {[
                                { label: 'Total Invested', val: `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Amount put into portfolio', color: t.text,
-                                 icon: <TrendingUp size={14} color={t.textMuted} />, iconBg: t.cardHigh },
+                                 icon: <TrendingUp size={14} color={t.textMuted} />, iconBg: t.cardHigh, link: true },
                                { label: 'Total P&L', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${summary.unifiedPnl >= 0 ? '+' : ''}${summary.totalValue > 0 ? ((summary.unifiedPnl / Math.max(summary.netInvestment, 1)) * 100).toFixed(1) : '0.0'}% vs invested`, color: summary.unifiedPnl >= 0 ? t.green : t.red,
-                                 icon: <ArrowUpRight size={14} color={summary.unifiedPnl >= 0 ? t.green : t.red} />, iconBg: summary.unifiedPnl >= 0 ? 'rgba(0,255,159,0.1)' : 'rgba(244,63,94,0.1)' },
-                             ].map(({ label, val, sub, color, icon, iconBg }) => (
-                               <div key={label} className="stat-card">
+                                 icon: <ArrowUpRight size={14} color={summary.unifiedPnl >= 0 ? t.green : t.red} />, iconBg: summary.unifiedPnl >= 0 ? 'rgba(0,255,159,0.1)' : 'rgba(244,63,94,0.1)', link: false },
+                             ].map(({ label, val, sub, color, icon, iconBg, link }) => (
+                               <div key={label} className="stat-card" onClick={link ? () => setActiveTab('history') : undefined}
+                                 style={link ? { cursor: 'pointer' } : undefined}>
                                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
                                    <div style={{ width: 26, height: 26, borderRadius: 8, background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                      {icon}
                                    </div>
                                    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.8px' }}>{label}</div>
+                                   {link && <ExternalLink size={10} style={{ marginLeft: 'auto', color: 'var(--fg-subtle)', flexShrink: 0 }} />}
                                  </div>
                                  <div style={{ fontSize: 20, fontWeight: 800, color, fontVariantNumeric: 'tabular-nums', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.02em' }}>{val}</div>
                                  <div style={{ fontSize: 12, color: 'var(--fg-subtle)', marginTop: 3 }}>{sub}</div>
@@ -3250,8 +3253,8 @@ export default function App() {
                 {(() => {
                   const now = Date.now();
                   const cutoffs: Record<string, number> = {
-                    '1d': now - 24 * 3600 * 1000,
                     '1w': now - 7 * 24 * 3600 * 1000,
+                    '1m': now - 30 * 24 * 3600 * 1000,
                     '1y': now - 365 * 24 * 3600 * 1000,
                     'all': 0,
                   };
@@ -3261,12 +3264,10 @@ export default function App() {
                   const mockLast = MOCK_HISTORY[MOCK_HISTORY.length - 1]?.value || 1;
                   const scale = currentVal / mockLast;
 
-                  // Format label based on period
-
                   // Deduplicate by period-appropriate bucket, keeping latest value + timestamp per bucket
                   const byBucket = new Map<string, { value: number; ts: number }>();
                   realHistory.forEach(p => {
-                    const key = perfPeriod === '1d' ? format(p.timestamp, 'yyyy-MM-dd HH') : format(p.timestamp, 'yyyy-MM-dd');
+                    const key = perfPeriod === '1w' ? format(p.timestamp, 'yyyy-MM-dd HH') : format(p.timestamp, 'yyyy-MM-dd');
                     byBucket.set(key, { value: p.value, ts: p.timestamp });
                   });
                   const uniquePts = [...byBucket.entries()]
@@ -3280,9 +3281,9 @@ export default function App() {
                     chartPoints = uniquePts;
                   } else {
                     isSimulated = true;
-                    const mockCount = perfPeriod === '1d' ? 24 : perfPeriod === '1w' ? 7 : perfPeriod === '1y' ? 52 : 30;
+                    const mockCount = perfPeriod === '1w' ? 28 : perfPeriod === '1m' ? 30 : perfPeriod === '1y' ? 52 : 60;
                     chartPoints = MOCK_HISTORY.slice(-mockCount).map(p => ({
-                      day: format(p.timestamp, perfPeriod === '1d' ? 'HH:mm' : 'MMM d'),
+                      day: fmtLabel(p.timestamp),
                       value: p.value * scale
                     }));
                     if (chartPoints.length > 0) chartPoints[chartPoints.length - 1].value = currentVal;
@@ -3292,6 +3293,15 @@ export default function App() {
                     ? ((chartPoints[chartPoints.length - 1].value - chartPoints[0].value) / Math.max(1, chartPoints[0].value)) * 100
                     : 0;
 
+                  const periodLabel: Record<string, string> = { '1w': 'Week', '1m': 'Month', '1y': 'Year', 'all': 'All' };
+                  const xTickCount = perfPeriod === '1w' ? 7 : perfPeriod === '1m' ? 6 : 8;
+                  const xInterval = Math.max(0, Math.floor(chartPoints.length / xTickCount) - 1);
+
+                  const yMin = Math.min(...chartPoints.map(p => p.value));
+                  const yMax = Math.max(...chartPoints.map(p => p.value));
+                  const yPad = (yMax - yMin) * 0.1 || yMax * 0.1;
+                  const fmtYAxis = (v: number) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v.toFixed(0)}`;
+
                   return (
                     <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, overflow: 'hidden' }}>
                       <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, borderBottom: isCollapsed('perf-chart') ? 'none' : `1px solid ${t.borderLight}` }}>
@@ -3300,19 +3310,19 @@ export default function App() {
                           <div style={{ fontSize: 13, fontWeight: 700, color: periodChange >= 0 ? t.green : t.red }}>
                             {periodChange >= 0 ? '+' : ''}{periodChange.toFixed(2)}%
                           </div>
-
+                          {isSimulated && <div style={{ fontSize: 10, color: t.textMuted, fontStyle: 'italic' }}>simulated</div>}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           {/* Period tabs */}
                           {!isCollapsed('perf-chart') && (
                             <div style={{ display: 'flex', gap: 2, background: t.cardHigh, border: `1px solid ${t.border}`, borderRadius: 8, padding: 3 }}>
-                              {(['1d','1w','1y','all'] as const).map(p => (
+                              {(['1w','1m','1y','all'] as const).map(p => (
                                 <button key={p} onClick={() => setPerfPeriod(p)}
                                   style={{ padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none', transition: 'all .12s',
                                     background: perfPeriod === p ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
                                     color: perfPeriod === p ? '#000' : 'var(--fg-muted)',
                                     boxShadow: perfPeriod === p ? '0 0 10px rgba(0,255,159,0.25)' : 'none' }}>
-                                  {p === '1d' ? '24H' : p === '1w' ? '7D' : p === '1y' ? '1Y' : 'ALL'}
+                                  {periodLabel[p]}
                                 </button>
                               ))}
                             </div>
@@ -3327,24 +3337,25 @@ export default function App() {
                         </div>
                       </div>
                       {!isCollapsed('perf-chart') && (
-                        <div style={{ padding: '10px 18px 10px' }}>
-                          <div style={{ height: 260 }}>
+                        <div style={{ padding: '10px 4px 10px 0' }}>
+                          <div style={{ height: 270 }}>
                             <ResponsiveContainer width="100%" height="100%" debounce={50}>
-                              <AreaChart data={chartPoints}>
+                              <AreaChart data={chartPoints} margin={{ top: 4, right: 18, left: 0, bottom: 0 }}>
                                 <defs>
                                   <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#00FF9F" stopOpacity={0.25}/>
+                                    <stop offset="5%" stopColor="#00FF9F" stopOpacity={0.22}/>
                                     <stop offset="95%" stopColor="#00FF9F" stopOpacity={0}/>
                                   </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#1a1a1a' : '#e8e8e8'} vertical={false} />
-                                <XAxis dataKey="day" stroke={theme === 'dark' ? '#333' : '#ccc'} fontSize={11} tickLine={false} axisLine={false} tick={{ fill: t.textSecondary }} interval={Math.max(0, Math.floor(chartPoints.length / 7) - 1)} />
-                                <YAxis hide />
+                                <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#1e1e1e' : '#e8e8e8'} vertical={false} />
+                                <XAxis dataKey="day" stroke={theme === 'dark' ? '#333' : '#ccc'} fontSize={11} tickLine={false} axisLine={false} tick={{ fill: t.textSecondary }} interval={xInterval} />
+                                <YAxis width={54} fontSize={11} tickLine={false} axisLine={false} tick={{ fill: t.textSecondary }} tickFormatter={fmtYAxis} domain={[yMin - yPad, yMax + yPad]} />
                                 <RechartsTooltip
                                   contentStyle={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 13, color: t.text }}
-                                  formatter={(v: any) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Value']}
+                                  formatter={(v: any) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Portfolio Value']}
+                                  labelStyle={{ color: t.textSecondary, marginBottom: 4 }}
                                 />
-                                <Area type="monotone" dataKey="value" stroke="#00FF9F" fillOpacity={1} fill="url(#colorValue)" strokeWidth={2} dot={false} />
+                                <Area type="monotone" dataKey="value" stroke="#00FF9F" fillOpacity={1} fill="url(#colorValue)" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: '#00FF9F', strokeWidth: 0 }} />
                               </AreaChart>
                             </ResponsiveContainer>
                           </div>
@@ -3528,8 +3539,8 @@ export default function App() {
                               : (asset.priceChange24h ?? asset.pnl24h ?? 0);
                             const share = ((asset.value / (summary.totalValue || 1)) * 100);
                             const addr = (asset as any).address;
-                            const logo = (asset as any).logoUrl
-                              || tokenLogos[(asset as any).address?.toLowerCase?.()]
+                            const logo = tokenLogos[(asset as any).address?.toLowerCase?.()]
+                              || (asset as any).logoUrl
                               || getTokenLogoUrl(asset);
                             const explUrl = explorerUrl(asset.chain, addr);
                             const dsUrl = dexScreenerUrl(asset.chain, addr);
@@ -4092,10 +4103,10 @@ export default function App() {
                               Value at Maturity
                             </div>
                           </div>
-                          <div style={{ fontSize: 26, fontWeight: 800, color: t.green, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.03em', lineHeight: 1, marginBottom: 6 }}>
-                            ${(fMaturityHex * phexHp).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                          <div style={{ fontSize: 26, fontWeight: 800, color: t.green, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.03em', lineHeight: 1, marginBottom: 4 }}>
+                            {fMaturityHex.toLocaleString(undefined, { maximumFractionDigits: 0 })} <span style={{ fontSize: 14, fontWeight: 600, opacity: 0.75 }}>HEX</span>
                           </div>
-                          <div style={{ fontSize: 12, color: t.green, opacity: 0.75 }}>{fMaturityHex.toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX est.</div>
+                          <div style={{ fontSize: 13, color: t.green, opacity: 0.75, fontFamily: 'JetBrains Mono, monospace' }}>${(fMaturityHex * phexHp).toLocaleString(undefined, { maximumFractionDigits: 0 })} est.</div>
                         </div>
                         {/* T-Shares */}
                         <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, padding: 20 }}>
@@ -4455,7 +4466,7 @@ export default function App() {
               {/* Portfolio Performance */}
               {(() => {
                 const now = Date.now();
-                const cutoffs: Record<string, number> = { '1d': now - 24*3600*1000, '1w': now - 7*24*3600*1000, '1y': now - 365*24*3600*1000, 'all': 0 };
+                const cutoffs: Record<string, number> = { '1w': now - 7*24*3600*1000, '1m': now - 30*24*3600*1000, '1y': now - 365*24*3600*1000, 'all': 0 };
                 const cutoff = cutoffs[perfPeriod];
                 const realHistory = (wallets.length > 0 ? history : []).filter(p => p.timestamp >= cutoff);
                 const currentVal = summary.totalValue || 1;
@@ -4463,7 +4474,7 @@ export default function App() {
                 const scale = currentVal / mockLast;
                 const byBucket = new Map<string, { value: number; ts: number }>();
                 realHistory.forEach(p => {
-                  const key = perfPeriod === '1d' ? format(p.timestamp, 'yyyy-MM-dd HH') : format(p.timestamp, 'yyyy-MM-dd');
+                  const key = perfPeriod === '1w' ? format(p.timestamp, 'yyyy-MM-dd HH') : format(p.timestamp, 'yyyy-MM-dd');
                   byBucket.set(key, { value: p.value, ts: p.timestamp });
                 });
                 const uniquePts = [...byBucket.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, { value, ts }]) => ({ day: fmtLabel(ts), value }));
@@ -4471,39 +4482,45 @@ export default function App() {
                 if (uniquePts.length >= 3) {
                   histChartPoints = uniquePts;
                 } else {
-                  const mockCount = perfPeriod === '1d' ? 24 : perfPeriod === '1w' ? 7 : perfPeriod === '1y' ? 52 : 30;
-                  histChartPoints = MOCK_HISTORY.slice(-mockCount).map(p => ({ day: format(p.timestamp, perfPeriod === '1d' ? 'HH:mm' : 'MMM d'), value: p.value * scale }));
+                  const mockCount = perfPeriod === '1w' ? 28 : perfPeriod === '1m' ? 30 : perfPeriod === '1y' ? 52 : 60;
+                  histChartPoints = MOCK_HISTORY.slice(-mockCount).map(p => ({ day: fmtLabel(p.timestamp), value: p.value * scale }));
                   if (histChartPoints.length > 0) histChartPoints[histChartPoints.length - 1].value = currentVal;
                 }
+                const histPeriodLabel: Record<string, string> = { '1w': 'Week', '1m': 'Month', '1y': 'Year', 'all': 'All' };
+                const histYMin = Math.min(...histChartPoints.map(p => p.value));
+                const histYMax = Math.max(...histChartPoints.map(p => p.value));
+                const histYPad = (histYMax - histYMin) * 0.1 || histYMax * 0.1;
+                const fmtHistY = (v: number) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v.toFixed(0)}`;
                 return (
-                  <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 18px 10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                  <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 4px 10px 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, paddingLeft: 18, paddingRight: 18 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.6px' }}>Portfolio Performance</div>
                       <div style={{ display: 'flex', gap: 2, background: 'var(--bg-elevated)', border: '1px solid #252525', borderRadius: 8, padding: 3 }}>
-                        {(['1d','1w','1y','all'] as const).map(p => (
+                        {(['1w','1m','1y','all'] as const).map(p => (
                           <button key={p} onClick={() => setPerfPeriod(p)}
-                            style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
+                            style={{ padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
                               background: perfPeriod === p ? '#00FF9F' : 'transparent',
                               color: perfPeriod === p ? '#000' : '#555' }}>
-                            {p.toUpperCase()}
+                            {histPeriodLabel[p]}
                           </button>
                         ))}
                       </div>
                     </div>
-                    <ResponsiveContainer width="100%" height={220}>
-                      <AreaChart data={histChartPoints}>
+                    <ResponsiveContainer width="100%" height={230}>
+                      <AreaChart data={histChartPoints} margin={{ top: 4, right: 18, left: 0, bottom: 0 }}>
                         <defs>
                           <linearGradient id="histColorValue" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="5%" stopColor="#00FF9F" stopOpacity={0.2}/>
                             <stop offset="95%" stopColor="#00FF9F" stopOpacity={0}/>
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                        <XAxis dataKey="day" tick={{ fill: '#7c8798', fontSize: 11 }} axisLine={{ stroke: '#222' }} tickLine={false} interval={Math.max(0, Math.floor(histChartPoints.length / 6) - 1)} />
-                        <YAxis hide />
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                        <XAxis dataKey="day" tick={{ fill: '#7c8798', fontSize: 11 }} axisLine={{ stroke: '#222' }} tickLine={false} interval={Math.max(0, Math.floor(histChartPoints.length / 7) - 1)} />
+                        <YAxis width={54} fontSize={11} tickLine={false} axisLine={false} tick={{ fill: '#7c8798' }} tickFormatter={fmtHistY} domain={[histYMin - histYPad, histYMax + histYPad]} />
                         <RechartsTooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13 }}
-                          formatter={(v: any) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Value']} />
-                        <Area type="monotone" dataKey="value" stroke="#00FF9F" fillOpacity={1} fill="url(#histColorValue)" strokeWidth={2} dot={false} />
+                          formatter={(v: any) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Portfolio Value']}
+                          labelStyle={{ color: '#7c8798', marginBottom: 4 }} />
+                        <Area type="monotone" dataKey="value" stroke="#00FF9F" fillOpacity={1} fill="url(#histColorValue)" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: '#00FF9F', strokeWidth: 0 }} />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
