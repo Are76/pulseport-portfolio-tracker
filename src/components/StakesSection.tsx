@@ -291,14 +291,15 @@ export function StakesSection({
               Daily HEX Yield
             </div>
             <div className="tabular-nums" style={{
-              fontSize: 36, fontWeight: 800, lineHeight: 1,
+              fontSize: 44, fontWeight: 800, lineHeight: 1,
               fontFamily: "'JetBrains Mono', monospace",
               color: 'var(--positive)', letterSpacing: '-0.03em',
             }}>
               {fmtHex(dailyYieldHex)}
             </div>
-            <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 4 }}>
-              {fmtUsd(dailyYieldUsd)} · estimated across all active stakes
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)', marginTop: 6 }}>
+              <span style={{ color: 'var(--positive)' }}>{fmtUsd(dailyYieldUsd)}</span>
+              {' · '}estimated across all active stakes
             </div>
           </div>
         </div>
@@ -356,7 +357,8 @@ export function StakesSection({
       </div>
 
       {/* ── 3. Key Metrics ───────────────────────────────────────────────── */}
-      <div className="stakes-metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+      {/* Row A: 3 compact stats */}
+      <div className="stakes-metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
         {/* HEX Staked */}
         <div className="stakes-metric-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
@@ -381,18 +383,6 @@ export function StakesSection({
           <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>at current HEX price</div>
         </div>
 
-        {/* Value at Maturity — highlighted */}
-        <div className="stakes-metric-card stakes-maturity-highlight">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
-            <TrendingUp size={14} style={{ color: 'var(--positive)' }} />
-            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--positive)', textTransform: 'uppercase', letterSpacing: '.07em' }}>Value at Maturity</div>
-          </div>
-          <div className="tabular-nums" style={{ fontSize: 20, fontWeight: 800, color: 'var(--positive)', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-0.02em', marginBottom: 4 }}>
-            {fmtUsd(totalMaturityValueUsd)}
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>projected at full maturity</div>
-        </div>
-
         {/* Active T-Shares */}
         <div className="stakes-metric-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
@@ -403,6 +393,43 @@ export function StakesSection({
             {totalTShares.toLocaleString(undefined, { maximumFractionDigits: 2 })}
           </div>
           <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>across all chains</div>
+        </div>
+      </div>
+
+      {/* Row B: Value at Maturity — full-width highlight card */}
+      <div className="stakes-metric-card stakes-maturity-highlight" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
+            <TrendingUp size={14} style={{ color: 'var(--positive)' }} />
+            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--positive)', textTransform: 'uppercase', letterSpacing: '.07em' }}>Value at Maturity</div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, flexWrap: 'wrap' }}>
+            <div className="tabular-nums" style={{ fontSize: 32, fontWeight: 800, color: 'var(--positive)', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-0.03em', lineHeight: 1 }}>
+              {fmtUsd(totalMaturityValueUsd)}
+            </div>
+            {/* Guard: totalCurrentValueUsd > 0 is checked in the outer condition, so division is safe */}
+            {totalCurrentValueUsd > 0 && totalMaturityValueUsd > totalCurrentValueUsd && (
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--positive)', fontFamily: "'JetBrains Mono', monospace" }}>
+                +{fmtUsd(totalMaturityValueUsd - totalCurrentValueUsd)}
+                {' '}
+                <span style={{ fontSize: 12, fontWeight: 600, opacity: 0.8 }}>
+                  ({((totalMaturityValueUsd / totalCurrentValueUsd - 1) * 100).toFixed(1)}% yield)
+                </span>
+              </div>
+            )}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 6 }}>projected at full maturity · current value: {fmtUsd(totalCurrentValueUsd)}</div>
+        </div>
+        <div style={{ display: 'flex', gap: 16 }}>
+          {[
+            { label: 'Total HEX + Yield', val: fmtHex(stakes.reduce((s, st) => s + (st.stakedHex ?? 0) + (st.stakeHexYield ?? 0), 0)), color: '#fb923c' },
+            { label: 'Total Yield HEX', val: `+${fmtHex(stakes.reduce((s, st) => s + (st.stakeHexYield ?? 0), 0))}`, color: 'var(--positive)' },
+          ].map(({ label, val, color }) => (
+            <div key={label} style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 10, padding: '10px 16px', minWidth: 110 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 4 }}>{label}</div>
+              <div className="tabular-nums" style={{ fontSize: 15, fontWeight: 800, color, fontFamily: "'JetBrains Mono', monospace" }}>{val}</div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -526,9 +553,17 @@ export function StakesSection({
                         </div>
                       </td>
                       <td style={{ textAlign: 'right' }}>
-                        <span className={`days-left-pill ${daysClass(daysLeft)}`}>
-                          {fmtDays(daysLeft)}
-                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
+                          <span className={`days-left-pill ${daysClass(daysLeft)}`} style={{ fontSize: 12, padding: '4px 10px' }}>
+                            {fmtDays(daysLeft)}
+                          </span>
+                          {daysLeft <= 30 && daysLeft > 0 && (
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '.05em' }}>Expiring!</span>
+                          )}
+                          {daysLeft > 30 && daysLeft <= 180 && (
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#f97316', textTransform: 'uppercase', letterSpacing: '.05em' }}>Soon</span>
+                          )}
+                        </div>
                       </td>
                       <td className="col-hide-mobile" style={{ textAlign: 'right', color: 'var(--positive)', fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>
                         +{fmtHex(yieldHex)}
