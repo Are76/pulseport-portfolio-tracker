@@ -2590,17 +2590,17 @@ export default function App() {
                   { sym: 'ETH',  dot: '#627EEA', price: prices['ethereum']?.usd || 0, change: prices['ethereum']?.usd_24h_change },
                 ] as { sym: string; dot: string; price: number; change?: number | null }[]).flatMap(c => [c, { ...c }]).map((coin, i) => (
                   <React.Fragment key={i}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '0 16px', whiteSpace: 'nowrap' }}>
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: coin.dot, flexShrink: 0, boxShadow: `0 0 6px ${coin.dot}88` }} />
-                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.04em' }}>{coin.sym}</span>
-                      <span className="tabular-nums" style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)' }}>{fmtPrice(coin.price)}</span>
+                    <div className="ticker-item">
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: coin.dot, flexShrink: 0, boxShadow: `0 0 7px ${coin.dot}aa` }} />
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.05em' }}>{coin.sym}</span>
+                      <span className="tabular-nums" style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg)' }}>{fmtPrice(coin.price)}</span>
                       {coin.change != null && (
-                        <span style={{ fontSize: 10, fontWeight: 700, color: coin.change >= 0 ? 'var(--positive)' : 'var(--negative)', background: coin.change >= 0 ? 'var(--accent-dim)' : 'rgba(244,63,94,.1)', padding: '1px 5px', borderRadius: 4 }}>
+                        <span className={coin.change >= 0 ? 'ticker-pct-pos' : 'ticker-pct-neg'}>
                           {coin.change >= 0 ? '+' : ''}{coin.change.toFixed(1)}%
                         </span>
                       )}
                     </div>
-                    <div style={{ width: 1, height: 14, background: 'var(--border)', flexShrink: 0 }} />
+                    <div className="ticker-dot-sep" />
                   </React.Fragment>
                 ))}
               </div>
@@ -2630,28 +2630,20 @@ export default function App() {
             {/* API Key */}
             <button onClick={() => { setApiKeyInput(etherscanApiKey); setBasescanApiKeyInput(basescanApiKey); setIsApiKeyModalOpen(true); }}
               title={etherscanApiKey ? 'API key set ✓' : 'Set Etherscan API key'}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px',
-                background: etherscanApiKey ? 'var(--accent-dim)' : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${etherscanApiKey ? 'var(--accent-border)' : 'var(--border)'}`,
-                borderRadius: 8, color: etherscanApiKey ? 'var(--accent)' : 'var(--fg-muted)',
-                fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all .15s', minHeight: 36,
-              }}>
+              className="header-action-btn"
+              style={etherscanApiKey ? {
+                background: 'var(--accent-dim)',
+                borderColor: 'var(--accent-border)',
+                color: 'var(--accent)',
+              } : {}}>
               {etherscanApiKey ? <Check size={12} /> : <Settings size={12} />}
               <span className="hidden sm:inline">{etherscanApiKey ? 'API ✓' : 'API Key'}</span>
             </button>
 
             {/* Refresh */}
             <button onClick={fetchPortfolio}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px',
-                background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)',
-                borderRadius: 8, color: 'var(--fg)', fontSize: 12, fontWeight: 600,
-                cursor: 'pointer', transition: 'all .15s', minHeight: 36,
-              }}
-              className={isLoading ? 'btn-loading' : ''}
-              onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.08)'; }}
-              onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'; }}>
+              className={`header-action-btn${isLoading ? ' btn-loading' : ''}`}
+              style={{ color: 'var(--fg)' }}>
               <RefreshCcw size={12} className={isLoading ? 'animate-spin' : ''} />
               <span className="hidden sm:inline">Refresh</span>
             </button>
@@ -2990,7 +2982,7 @@ export default function App() {
                           )}
                         </div>
                       </div>
-                      <div style={{ padding: '20px' }}>
+                      <div style={{ padding: '24px' }}>
                         <div className="asset-grid-3col">
                           {displayAssets.map((asset) => {
                             const pct = asset.priceChange24h ?? asset.pnl24h ?? 0;
@@ -3003,7 +2995,7 @@ export default function App() {
                             }));
                             return (
                               <div key={asset.id} className="asset-card-premium" onClick={() => setActiveTab('assets')}>
-                                <div style={{ padding: '16px 16px 0' }}>
+                                <div style={{ padding: '20px 20px 0' }}>
                                   {/* Row 1: Logo + symbol + 24h % */}
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 }}>
                                     <div style={{
