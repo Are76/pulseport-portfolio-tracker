@@ -8,6 +8,7 @@ import {
   Zap,
   TrendingUp,
   Award,
+  Wallet,
 } from 'lucide-react';
 import { useLiquidityPositions } from '../hooks/useLiquidityPositions';
 import { LiquidityPositionCard } from './LiquidityPositionCard';
@@ -655,16 +656,16 @@ export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySect
         <>
           {stakedPositions.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ height: 1, flex: 1, background: 'var(--border-inset)' }} />
+              <div style={{ height: 1, flex: 1, background: 'var(--border)' }} />
               <span style={{
                 fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)',
                 textTransform: 'uppercase', letterSpacing: '.7px',
-                background: 'var(--bg-inset)', border: '1px solid var(--border-inset)',
+                background: 'var(--bg-inset)', border: '1px solid var(--border)',
                 padding: '3px 10px', borderRadius: 100,
               }}>
                 LP Positions ({regularPositions.length})
               </span>
-              <div style={{ height: 1, flex: 1, background: 'var(--border-inset)' }} />
+              <div style={{ height: 1, flex: 1, background: 'var(--border)' }} />
             </div>
           )}
           <div className="asset-grid-3col">
@@ -675,14 +676,32 @@ export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySect
         </>
       )}
 
+      {/* ── No wallets empty state ── */}
+      {!loading && walletAddresses.length === 0 && (
+        <div className="defi-empty-state">
+          <div style={{
+            width: 64, height: 64, borderRadius: 18,
+            background: 'linear-gradient(135deg, rgba(0,255,159,0.10) 0%, rgba(99,70,255,0.08) 100%)',
+            border: '1.5px solid rgba(0,255,159,0.20)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 0 28px rgba(0,255,159,0.08)',
+          }}>
+            <Wallet size={28} style={{ color: 'var(--accent)', opacity: 0.85 }} />
+          </div>
+          <div>
+            <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--fg)', marginBottom: 8, letterSpacing: '-0.02em' }}>
+              No wallets added
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--fg-muted)', maxWidth: 360, margin: '0 auto', lineHeight: 1.65 }}>
+              Add a wallet address to see your PulseX V2 liquidity positions and INC farming rewards here.
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Empty state ── */}
-      {!loading && positions.length === 0 && !error && (
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          padding: '56px 32px 48px', textAlign: 'center',
-          background: 'var(--bg-surface)', border: '1px solid var(--border)',
-          borderRadius: 18, gap: 20,
-        }}>
+      {!loading && walletAddresses.length > 0 && positions.length === 0 && !error && (
+        <div className="defi-empty-state">
           {/* Icon */}
           <div style={{
             width: 72, height: 72, borderRadius: 22,
@@ -709,11 +728,7 @@ export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySect
               { icon: <Zap size={18} />, title: 'Farm INC', desc: 'Stake your LP tokens in the MasterChef farm to earn INC rewards daily.' },
               { icon: <TrendingUp size={18} />, title: 'Track Returns', desc: 'Your USD value, token amounts, and pending rewards update in real time.' },
             ].map(({ icon, title, desc }) => (
-              <div key={title} style={{
-                background: 'var(--bg-elevated)', border: '1px solid var(--border-inset)',
-                borderRadius: 12, padding: '14px 14px',
-                display: 'flex', flexDirection: 'column', gap: 7, textAlign: 'left',
-              }}>
+              <div key={title} className="defi-empty-info-card">
                 <div style={{ color: 'var(--chain-pulse)', opacity: 0.8 }}>{icon}</div>
                 <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg)' }}>{title}</div>
                 <div style={{ fontSize: 11, color: 'var(--fg-muted)', lineHeight: 1.5 }}>{desc}</div>
@@ -744,7 +759,7 @@ export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySect
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 7,
                 padding: '11px 22px', borderRadius: 10,
-                background: 'var(--bg-elevated)', border: '1px solid var(--border-inset)',
+                background: 'var(--bg-elevated)', border: '1px solid var(--border)',
                 color: 'var(--fg-muted)', fontSize: 13, fontWeight: 700, textDecoration: 'none',
                 transition: 'all .15s',
               }}

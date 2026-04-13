@@ -297,6 +297,66 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
   );
 }
 
+// ── Wallet Selector ─────────────────────────────────────────────────────────
+function shortenAddr(addr: string): string {
+  if (!addr || addr.length < 10) return addr;
+  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+}
+
+interface WalletSelectorProps {
+  wallets: string[];
+  activeWallet: string | null;
+  onSelect: (addr: string | null) => void;
+  onAdd: () => void;
+  walletLabels?: Record<string, string>;
+}
+
+function WalletSelector({ wallets, activeWallet, onSelect, onAdd, walletLabels = {} }: WalletSelectorProps) {
+  if (wallets.length === 0) {
+    return (
+      <button onClick={onAdd} className="btn-ghost" style={{ fontSize: 12, gap: 6 }}>
+        <span style={{ fontSize: 14 }}>＋</span> Add Wallet
+      </button>
+    );
+  }
+  return (
+    <div className="wallet-selector-bar">
+      <button className={`wallet-pill${activeWallet === null ? ' active' : ''}`} onClick={() => onSelect(null)}>
+        <span className="wallet-dot wallet-dot-multi" />
+        All ({wallets.length})
+      </button>
+      {wallets.map(addr => {
+        const label = walletLabels[addr] ?? shortenAddr(addr);
+        return (
+          <button
+            key={addr}
+            className={`wallet-pill${activeWallet === addr ? ' active' : ''}`}
+            onClick={() => onSelect(addr)}
+            title={addr}
+          >
+            <span className="wallet-dot wallet-dot-pulse" />
+            {label}
+          </button>
+        );
+      })}
+      <button
+        onClick={onAdd}
+        style={{
+          display: 'inline-flex', alignItems: 'center',
+          padding: '4px 10px', borderRadius: 999,
+          border: '1px dashed var(--border-strong)',
+          background: 'transparent', color: 'var(--fg-subtle)',
+          fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.14s',
+        }}
+        onMouseOver={e => { (e.currentTarget as HTMLElement).style.color = 'var(--fg)'; }}
+        onMouseOut={e => { (e.currentTarget as HTMLElement).style.color = 'var(--fg-subtle)'; }}
+      >
+        ＋
+      </button>
+    </div>
+  );
+}
+
 export default function App() {
   // ── Formatting helpers (defined once here, used throughout) ────────────────
   const fmtBigNum = (n: number) => Math.round(n).toLocaleString('en-US').replace(/,/g, ' ');
@@ -353,6 +413,7 @@ export default function App() {
   };
   const [sidebarWalletsOpen, setSidebarWalletsOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeWallet, setActiveWallet] = useState<string | null>(null);
   const isFetchingRef = useRef(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'assets' | 'stakes' | 'history' | 'tracker' | 'wallets' | 'defi'>('overview');
   const [selectedWalletAddr, setSelectedWalletAddr] = useState<string>('all');
@@ -2665,6 +2726,19 @@ export default function App() {
           </div>
         </header>
 
+        {/* ── Wallet Selector Bar ── */}
+        {wallets.length > 0 && (
+          <div style={{ padding: '8px 20px', borderBottom: '1px solid var(--border)' }}>
+            <WalletSelector
+              wallets={wallets.map(w => w.address)}
+              activeWallet={activeWallet}
+              onSelect={setActiveWallet}
+              onAdd={() => setIsAddingWallet(true)}
+              walletLabels={Object.fromEntries(wallets.filter(w => w.name).map(w => [w.address, w.name!]))}
+            />
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto custom-scrollbar pb-16 md:pb-0">
           <div style={{ maxWidth: 1400, margin: '0 auto' }} className="space-y-5 px-3 py-4 sm:px-5 sm:py-6">
 
@@ -2831,7 +2905,8 @@ export default function App() {
                                </div>
                              );
                            })()}
-                           {/* Portfolio Allocation */}
+                           {/* Portfolio Allocation — hidden on mobile, shows live prices full-width instead */}
+                           <div className="hidden sm:block">
                            {(() => {
                              const ALLOC_COLORS2 = ['#00FF9F','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
                              const alloc = assetAllocation.length > 0 ? assetAllocation : [];
@@ -2881,6 +2956,7 @@ export default function App() {
                                </div>
                              );
                            })()}
+                           </div>
                          </div>
                        </div>
                      </div>
@@ -4199,8 +4275,11 @@ export default function App() {
                                       <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, fontWeight: 600, color: t.green }}>
                                         {hexAtMaturity.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                       </td>
-                                      <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: t.green }}>
-                                        ${usdAtMaturity.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                      <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                                        <span className="stake-maturity-value">
+                                          ${usdAtMaturity.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                        </span>
+                                        <div style={{ fontSize: 10, color: 'var(--fg-subtle)', marginTop: 2, fontFamily: 'JetBrains Mono, monospace' }}>at maturity</div>
                                       </td>
                                       <td style={{ padding: '9px 14px', textAlign: 'right', minWidth: 100 }}>
                                         <div style={{ fontSize: 13, color: '#fb923c', marginBottom: 3, textAlign: 'right' }}>{stake.progress}%</div>
@@ -4210,25 +4289,15 @@ export default function App() {
                                       </td>
                                       <td style={{ padding: '9px 14px', textAlign: 'right' }}>
                                         {(() => {
-                                          const pillClass = daysLeft < 14
-                                            ? 'days-left-pill days-left-expiring'
-                                            : daysLeft < 90
-                                              ? 'days-left-pill days-left-soon'
-                                              : undefined;
-                                          const plainColor = daysLeft < 365 ? t.green : t.textMuted;
+                                          const daysClass = (d: number) =>
+                                            d <= 30 ? 'days-left-expiring' : d <= 180 ? 'days-left-soon' : 'days-left-healthy';
                                           return (
                                             <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
-                                              {pillClass ? (
-                                                <span className={pillClass}>
-                                                  {daysLeft >= 365 ? `${(daysLeft/365).toFixed(1)}y` : `${daysLeft.toLocaleString('en-US')}d`}
-                                                </span>
-                                              ) : (
-                                                <span style={{ fontSize: 13, fontWeight: 800, color: plainColor, fontFamily: 'JetBrains Mono, monospace' }}>
-                                                  {daysLeft >= 365 ? `${(daysLeft/365).toFixed(1)}y` : `${daysLeft.toLocaleString('en-US')}d`}
-                                                </span>
-                                              )}
-                                              {daysLeft < 14 && <span style={{ fontSize: 10, fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '.4px' }}>Expiring!</span>}
-                                              {daysLeft >= 14 && daysLeft < 90 && <span style={{ fontSize: 10, fontWeight: 600, color: '#f97316', textTransform: 'uppercase', letterSpacing: '.4px' }}>Soon</span>}
+                                              <span className={`days-left-pill ${daysClass(daysLeft)}`}>
+                                                {daysLeft >= 365 ? `${(daysLeft/365).toFixed(1)}y` : `${daysLeft.toLocaleString('en-US')}d`}
+                                              </span>
+                                              {daysLeft <= 30 && <span style={{ fontSize: 10, fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '.4px' }}>Expiring!</span>}
+                                              {daysLeft > 30 && daysLeft <= 180 && <span style={{ fontSize: 10, fontWeight: 600, color: '#f97316', textTransform: 'uppercase', letterSpacing: '.4px' }}>Soon</span>}
                                             </div>
                                           );
                                         })()}
@@ -4255,6 +4324,14 @@ export default function App() {
                                                 <div style={{ fontSize: 13, color: 'var(--fg-subtle)', marginTop: 1 }}>{sub}</div>
                                               </div>
                                             ))}
+                                            {/* Daily HEX Yield — prominent */}
+                                            <div>
+                                              <div style={{ fontSize: 13, color: 'var(--fg-subtle)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Daily Yield</div>
+                                              <span className="stake-yield-hero">
+                                                +{((stake.stakeHexYield ?? 0) / Math.max(1, stake.stakedDays)).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                              </span>
+                                              <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 2, fontFamily: 'JetBrains Mono, monospace' }}>HEX/day</div>
+                                            </div>
                                           </div>
                                         </td>
                                       </tr>
@@ -5342,18 +5419,9 @@ export default function App() {
                                        const showTxs = tokenTxs.slice(0, 8);
                                        return (
                                          <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-                                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
-                                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                               <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.7px' }}>Transactions &amp; P&amp;L</span>
-                                               <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', background: 'var(--bg-elevated)', padding: '1px 6px', borderRadius: 20, border: '1px solid var(--border)' }}>{tokenTxs.length}</span>
-                                             </div>
-                                             <button
-                                               onClick={e => { e.stopPropagation(); setTxAssetFilter(asset.symbol); setActiveTab('history'); }}
-                                               style={{ fontSize: 11, fontWeight: 700, color: '#00FF9F', background: 'rgba(0,255,159,.1)', border: '1px solid rgba(0,255,159,.2)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', transition: 'all .12s' }}
-                                               onMouseOver={e => (e.currentTarget.style.background = 'rgba(0,255,159,.2)')}
-                                               onMouseOut={e => (e.currentTarget.style.background = 'rgba(0,255,159,.1)')}>
-                                               View all in History →
-                                             </button>
+                                           <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+                                             <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.7px' }}>Transactions &amp; P&amp;L</span>
+                                             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', background: 'var(--bg-elevated)', padding: '1px 6px', borderRadius: 20, border: '1px solid var(--border)' }}>{tokenTxs.length}</span>
                                            </div>
                                            <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
                                              <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 12px', fontSize: 12 }}>
@@ -5577,9 +5645,6 @@ export default function App() {
           { id: 'overview', label: 'Overview', icon: LayoutDashboard },
           { id: 'assets',   label: 'Assets',   icon: WalletIcon },
           { id: 'stakes',   label: 'Stakes',   icon: Layers },
-          { id: 'defi',     label: 'DeFi',     icon: Droplets },
-          { id: 'history',  label: 'History',  icon: History },
-          { id: 'tracker',  label: 'PLS Flow', icon: TrendingUp },
           { id: 'wallets',  label: 'Wallets',  icon: User },
         ] as const).map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setActiveTab(id)}
@@ -5591,7 +5656,7 @@ export default function App() {
               border: 'none',
               cursor: 'pointer',
               color: activeTab === id
-                ? (id === 'defi' ? '#f739ff' : 'var(--accent)')
+                ? 'var(--accent)'
                 : 'var(--fg-muted)',
               transition: 'color .15s',
             }}>
