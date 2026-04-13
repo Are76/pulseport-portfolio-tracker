@@ -678,57 +678,80 @@ export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySect
       {/* ── Empty state ── */}
       {!loading && positions.length === 0 && !error && (
         <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          padding: '64px 32px', textAlign: 'center',
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          padding: '56px 32px 48px', textAlign: 'center',
           background: 'var(--bg-surface)', border: '1px solid var(--border)',
-          borderRadius: 18, gap: 16,
+          borderRadius: 18, gap: 20,
         }}>
+          {/* Icon */}
           <div style={{
-            width: 68, height: 68, borderRadius: 20,
-            background: 'rgba(247,57,255,0.08)', border: '1px solid rgba(247,57,255,0.16)',
+            width: 72, height: 72, borderRadius: 22,
+            background: 'linear-gradient(135deg, rgba(247,57,255,0.12) 0%, rgba(99,70,255,0.08) 100%)',
+            border: '1.5px solid rgba(247,57,255,0.22)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 0 32px rgba(247,57,255,0.08)',
+            boxShadow: '0 0 36px rgba(247,57,255,0.10)',
           }}>
-            <Droplets size={30} style={{ color: 'var(--chain-pulse)', opacity: 0.7 }} />
+            <Droplets size={32} style={{ color: 'var(--chain-pulse)', opacity: 0.85 }} />
           </div>
+          {/* Heading */}
           <div>
-            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--fg)', marginBottom: 7 }}>
-              No LP positions found
+            <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--fg)', marginBottom: 8, letterSpacing: '-0.02em' }}>
+              No LP or farming positions found
             </div>
-            <div style={{ fontSize: 13, color: 'var(--fg-muted)', maxWidth: 340, margin: '0 auto', lineHeight: 1.6 }}>
-              Provide liquidity on PulseX to earn trading fees and INC farming rewards. Your positions will appear here automatically.
+            <div style={{ fontSize: 13, color: 'var(--fg-muted)', maxWidth: 380, margin: '0 auto', lineHeight: 1.65 }}>
+              Provide liquidity on PulseX V2 to earn trading fees and INC farming rewards. Your positions will appear here automatically once detected on-chain.
             </div>
           </div>
+          {/* Info cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, width: '100%', maxWidth: 560, margin: '4px 0' }}>
+            {[
+              { icon: <Droplets size={18} />, title: 'Add Liquidity', desc: 'Deposit two tokens into a V2 pair to earn swap fees on every trade.' },
+              { icon: <Zap size={18} />, title: 'Farm INC', desc: 'Stake your LP tokens in the MasterChef farm to earn INC rewards daily.' },
+              { icon: <TrendingUp size={18} />, title: 'Track Returns', desc: 'Your USD value, token amounts, and pending rewards update in real time.' },
+            ].map(({ icon, title, desc }) => (
+              <div key={title} style={{
+                background: 'var(--bg-elevated)', border: '1px solid var(--border-inset)',
+                borderRadius: 12, padding: '14px 14px',
+                display: 'flex', flexDirection: 'column', gap: 7, textAlign: 'left',
+              }}>
+                <div style={{ color: 'var(--chain-pulse)', opacity: 0.8 }}>{icon}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg)' }}>{title}</div>
+                <div style={{ fontSize: 11, color: 'var(--fg-muted)', lineHeight: 1.5 }}>{desc}</div>
+              </div>
+            ))}
+          </div>
+          {/* CTA buttons */}
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
             <a
               href="https://pulsex.com/#/add/v2"
               target="_blank" rel="noopener noreferrer"
               style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                padding: '11px 22px', borderRadius: 10,
-                background: 'rgba(247,57,255,0.12)', border: '1px solid rgba(247,57,255,0.28)',
+                display: 'inline-flex', alignItems: 'center', gap: 7,
+                padding: '11px 24px', borderRadius: 10,
+                background: 'linear-gradient(135deg, rgba(247,57,255,0.18) 0%, rgba(99,70,255,0.12) 100%)',
+                border: '1px solid rgba(247,57,255,0.32)',
                 color: 'var(--chain-pulse)', fontSize: 13, fontWeight: 700, textDecoration: 'none',
                 transition: 'all .15s',
               }}
-              onMouseOver={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(247,57,255,0.2)')}
-              onMouseOut={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(247,57,255,0.12)')}
+              onMouseOver={e => ((e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg, rgba(247,57,255,0.28) 0%, rgba(99,70,255,0.20) 100%)')}
+              onMouseOut={e => ((e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg, rgba(247,57,255,0.18) 0%, rgba(99,70,255,0.12) 100%)')}
             >
-              Add Liquidity <ExternalLink size={12} />
+              <Droplets size={14} /> Add Liquidity on PulseX <ExternalLink size={12} />
             </a>
             <a
               href="https://pulsex.com/#/farm"
               target="_blank" rel="noopener noreferrer"
               style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
+                display: 'inline-flex', alignItems: 'center', gap: 7,
                 padding: '11px 22px', borderRadius: 10,
-                background: 'var(--bg-inset)', border: '1px solid var(--border-inset)',
+                background: 'var(--bg-elevated)', border: '1px solid var(--border-inset)',
                 color: 'var(--fg-muted)', fontSize: 13, fontWeight: 700, textDecoration: 'none',
                 transition: 'all .15s',
               }}
-              onMouseOver={e => ((e.currentTarget as HTMLElement).style.background = 'var(--border)')}
-              onMouseOut={e => ((e.currentTarget as HTMLElement).style.background = 'var(--bg-inset)')}
+              onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-surface)'; (e.currentTarget as HTMLElement).style.color = 'var(--fg)'; }}
+              onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)'; (e.currentTarget as HTMLElement).style.color = 'var(--fg-muted)'; }}
             >
-              <Zap size={12} /> Explore Farms
+              <Zap size={14} /> Explore Farms <ExternalLink size={12} />
             </a>
           </div>
         </div>

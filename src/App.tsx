@@ -2901,83 +2901,90 @@ export default function App() {
                   return (
                     <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 16, overflow: 'hidden' }}>
                       {/* Header */}
-                      <div style={{ padding: '16px 20px', borderBottom: `1px solid ${t.border}` }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <div style={{ padding: '16px 20px 14px', borderBottom: `1px solid ${t.border}` }}>
+                        {/* Row 1: Title + View all */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                           <div>
                             <div style={{ fontSize: 14, fontWeight: 700, color: t.text }}>Top Holdings</div>
                             <div style={{ fontSize: 12, color: t.textSecondary, marginTop: 2 }}>
-                              {displayAssets.length} tokens{overviewChainFilter !== 'all' ? ` on ${overviewChainFilter === 'pulsechain' ? 'PulseChain' : overviewChainFilter === 'ethereum' ? 'Ethereum' : 'Base'}` : ''} · {fmtValue(totalShown)} tracked
+                              {displayAssets.length} token{displayAssets.length !== 1 ? 's' : ''}{overviewChainFilter !== 'all' ? ` on ${overviewChainFilter === 'pulsechain' ? 'PulseChain' : overviewChainFilter === 'ethereum' ? 'Ethereum' : 'Base'}` : ''} · {fmtValue(totalShown)} tracked
                             </div>
                           </div>
                           <button onClick={() => setActiveTab('assets')}
-                            style={{ fontSize: 12, color: 'var(--accent)', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 8, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', transition: 'all .15s' }}
+                            style={{ fontSize: 12, color: 'var(--accent)', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 8, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', transition: 'all .15s', flexShrink: 0 }}
                             onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent-border)'; }}
                             onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent-dim)'; }}>
                             View all <ChevronRight size={12} />
                           </button>
                         </div>
-                        {/* Chain filter chips */}
-                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                          {(['all', 'pulsechain', 'ethereum', 'base'] as const).map(c => {
-                            const count = c === 'all' ? baseAssets.length : baseAssets.filter(a => a.chain === c).length;
-                            if (count === 0 && c !== 'all') return null;
-                            return (
-                              <button key={c} onClick={() => setOverviewChainFilter(c)}
-                                className={overviewChainFilter === c ? '' : 'filter-chip'}
-                                style={{
-                                  padding: '4px 12px', borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                                  border: '1px solid', transition: 'all .12s',
-                                  background: overviewChainFilter === c ? 'rgba(139,92,246,0.18)' : 'transparent',
-                                  color: overviewChainFilter === c ? '#a78bfa' : 'var(--fg-subtle)',
-                                  borderColor: overviewChainFilter === c ? 'rgba(139,92,246,0.36)' : 'var(--border)',
-                                }}>
-                                {c === 'all' ? `All (${baseAssets.length})` : c === 'pulsechain' ? `PulseChain (${count})` : c === 'ethereum' ? `Ethereum (${count})` : `Base (${count})`}
-                              </button>
-                            );
-                          })}
-                          {overviewChainFilter !== 'all' && (
-                            <button className="filter-chip" onClick={() => setOverviewChainFilter('all')}>
-                              {overviewChainFilter === 'pulsechain' ? 'PulseChain' : overviewChainFilter === 'ethereum' ? 'Ethereum' : 'Base'}
-                              <span className="chip-x">✕</span>
-                            </button>
-                          )}
-                          {/* Active token search chip */}
-                          {overviewTokenSearch && (
-                            <button className="filter-chip" onClick={() => setOverviewTokenSearch('')}>
-                              {overviewTokenSearch}
-                              <span className="chip-x">✕</span>
-                            </button>
-                          )}
-                        </div>
-                        {/* Token search input row */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
-                          <div style={{ position: 'relative', flex: 1, maxWidth: 260 }}>
+                        {/* Row 2: Filter bar */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          {/* Chain segmented toggle */}
+                          <div className="chain-toggle-group">
+                            {(['all', 'pulsechain', 'ethereum', 'base'] as const).map(c => {
+                              const count = c === 'all' ? baseAssets.length : baseAssets.filter(a => a.chain === c).length;
+                              if (count === 0 && c !== 'all') return null;
+                              return (
+                                <button key={c} onClick={() => setOverviewChainFilter(c)}
+                                  className={`chain-toggle-btn${overviewChainFilter === c ? ' active' : ''}`}>
+                                  {c === 'all' ? 'All' : c === 'pulsechain' ? 'PulseChain' : c === 'ethereum' ? 'ETH' : 'Base'}
+                                  {c !== 'all' && (
+                                    <span style={{ marginLeft: 4, fontSize: 10, fontWeight: 600, opacity: 0.7 }}>{count}</span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          {/* Search input */}
+                          <div style={{ position: 'relative', flex: '1 1 160px', maxWidth: 240 }}>
                             <Search size={12} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--fg-subtle)', pointerEvents: 'none' }} />
                             <input
                               type="text"
+                              className="filter-search-input"
                               placeholder="Filter by token…"
                               value={overviewTokenSearch}
                               onChange={e => setOverviewTokenSearch(e.target.value)}
-                              style={{
-                                width: '100%', boxSizing: 'border-box',
-                                paddingLeft: 30, paddingRight: overviewTokenSearch ? 28 : 10, paddingTop: 6, paddingBottom: 6,
-                                borderRadius: 8, border: '1px solid var(--border)',
-                                background: 'var(--bg-elevated)', color: 'var(--fg)',
-                                fontSize: 12, outline: 'none', transition: 'border-color .15s',
-                              }}
-                              onFocus={e => (e.target.style.borderColor = 'rgba(139,92,246,0.45)')}
-                              onBlur={e => (e.target.style.borderColor = 'var(--border)')}
                             />
                             {overviewTokenSearch && (
                               <button onClick={() => setOverviewTokenSearch('')}
-                                style={{ position: 'absolute', right: 7, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', padding: 0, display: 'flex' }}>
+                                style={{ position: 'absolute', right: 7, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', padding: 0, display: 'flex', alignItems: 'center' }}>
                                 <X size={12} />
                               </button>
                             )}
                           </div>
-                          {tokenSearchFiltered.length !== baseAssets.length && (
-                            <span style={{ fontSize: 11, color: 'var(--fg-subtle)', whiteSpace: 'nowrap' }}>
-                              {tokenSearchFiltered.length} of {baseAssets.length}
+                          {/* Active token filter chip */}
+                          {overviewTokenSearch && (() => {
+                            const chipAsset =
+                              tokenSearchFiltered.find(a => a.symbol.toUpperCase() === overviewTokenSearch.toUpperCase()) ||
+                              (tokenSearchFiltered.length === 1 ? tokenSearchFiltered[0] : null);
+                            const chipLogo = chipAsset
+                              ? ((chipAsset as any).logoUrl || tokenLogos[(chipAsset as any).address?.toLowerCase?.()])
+                              : null;
+                            return (
+                              <button className="overview-token-chip" onClick={() => setOverviewTokenSearch('')}>
+                                {chipLogo ? (
+                                  <img src={chipLogo} alt=""
+                                    style={{ width: 16, height: 16, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+                                    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                ) : (
+                                  <span style={{ fontSize: 11, lineHeight: 1, flexShrink: 0 }}>🔍</span>
+                                )}
+                                <span>{overviewTokenSearch}</span>
+                                <span className="chip-x">✕</span>
+                              </button>
+                            );
+                          })()}
+                          {/* Clear all */}
+                          {(overviewChainFilter !== 'all' || overviewTokenSearch) && (
+                            <button className="filter-clear-btn"
+                              onClick={() => { setOverviewChainFilter('all'); setOverviewTokenSearch(''); }}>
+                              Clear all
+                            </button>
+                          )}
+                          {/* Result count */}
+                          {(overviewTokenSearch || overviewChainFilter !== 'all') && tokenSearchFiltered.length !== baseAssets.length && (
+                            <span style={{ fontSize: 11, color: 'var(--fg-subtle)', marginLeft: 'auto', fontVariantNumeric: 'tabular-nums' }}>
+                              {tokenSearchFiltered.length}/{baseAssets.length}
                             </span>
                           )}
                         </div>
@@ -3746,21 +3753,21 @@ export default function App() {
                       </div>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-                      <div style={{ background: theme === 'dark' ? 'rgba(139,92,246,.10)' : 'rgba(139,92,246,.06)', border: '1px solid rgba(139,92,246,.18)', borderRadius: 12, padding: '14px 16px' }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 6 }}>HEX / Day</div>
-                        <div style={{ fontSize: 26, fontWeight: 800, color: '#8b5cf6', fontVariantNumeric: 'tabular-nums', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.02em' }}>
+                      <div style={{ background: theme === 'dark' ? 'rgba(139,92,246,.10)' : 'rgba(139,92,246,.06)', border: '1px solid rgba(139,92,246,.18)', borderRadius: 12, padding: '16px 18px' }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>HEX / Day</div>
+                        <div style={{ fontSize: 32, fontWeight: 800, color: '#8b5cf6', fontVariantNumeric: 'tabular-nums', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.03em', lineHeight: 1 }}>
                           {stakeSummary.estimatedDailyPayoutHex >= 1e6 ? `${(stakeSummary.estimatedDailyPayoutHex/1e6).toFixed(2)}M` : stakeSummary.estimatedDailyPayoutHex.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                         </div>
                       </div>
-                      <div style={{ background: theme === 'dark' ? 'rgba(0,255,159,.07)' : 'rgba(0,160,102,.05)', border: '1px solid rgba(0,255,159,.18)', borderRadius: 12, padding: '14px 16px' }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 6 }}>USD / Day</div>
-                        <div style={{ fontSize: 26, fontWeight: 800, color: t.green, fontVariantNumeric: 'tabular-nums', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.02em' }}>
+                      <div style={{ background: theme === 'dark' ? 'rgba(0,255,159,.07)' : 'rgba(0,160,102,.05)', border: '1px solid rgba(0,255,159,.18)', borderRadius: 12, padding: '16px 18px' }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>USD / Day</div>
+                        <div style={{ fontSize: 32, fontWeight: 800, color: t.green, fontVariantNumeric: 'tabular-nums', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.03em', lineHeight: 1 }}>
                           ${stakeSummary.estimatedDailyPayoutUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                       </div>
-                      <div style={{ background: theme === 'dark' ? 'rgba(249,115,22,.08)' : 'rgba(234,88,12,.05)', border: '1px solid rgba(249,115,22,.20)', borderRadius: 12, padding: '14px 16px' }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 6 }}>Projected / Year</div>
-                        <div style={{ fontSize: 26, fontWeight: 800, color: '#f97316', fontVariantNumeric: 'tabular-nums', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.02em' }}>
+                      <div style={{ background: theme === 'dark' ? 'rgba(249,115,22,.08)' : 'rgba(234,88,12,.05)', border: '1px solid rgba(249,115,22,.20)', borderRadius: 12, padding: '16px 18px' }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>Projected / Year</div>
+                        <div style={{ fontSize: 32, fontWeight: 800, color: '#f97316', fontVariantNumeric: 'tabular-nums', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.03em', lineHeight: 1 }}>
                           ${(stakeSummary.estimatedDailyPayoutUsd * 365).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                         </div>
                       </div>
@@ -3871,16 +3878,14 @@ export default function App() {
                           <div style={{ fontSize: 12, color: t.textSecondary }}>{(fStakedHex + fInterestHex).toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX total</div>
                         </div>
                         {/* Value at Maturity — highlighted */}
-                        <div style={{
-                          background: theme === 'dark' ? 'linear-gradient(135deg, rgba(0,255,159,.10) 0%, rgba(0,255,159,.04) 100%)' : 'linear-gradient(135deg, rgba(0,122,77,.08) 0%, rgba(0,122,77,.02) 100%)',
-                          border: `2px solid ${theme === 'dark' ? 'rgba(0,255,159,.28)' : 'rgba(0,122,77,.22)'}`,
-                          borderRadius: 14, padding: 20,
-                          boxShadow: theme === 'dark' ? '0 0 24px rgba(0,255,159,.08)' : 'none',
-                        }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 10, color: t.green }}>
-                            Value at Maturity
+                        <div className="stake-maturity-card">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
+                            <span style={{ fontSize: 16 }}>⭐</span>
+                            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.7px', color: t.green }}>
+                              Value at Maturity
+                            </div>
                           </div>
-                          <div style={{ fontSize: 22, fontWeight: 800, color: t.green, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.02em', marginBottom: 4 }}>
+                          <div style={{ fontSize: 26, fontWeight: 800, color: t.green, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.03em', lineHeight: 1, marginBottom: 6 }}>
                             ${(fMaturityHex * phexHp).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                           </div>
                           <div style={{ fontSize: 12, color: t.green, opacity: 0.75 }}>{fMaturityHex.toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX est.</div>
@@ -4113,10 +4118,10 @@ export default function App() {
                                       <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#fb923c' }}>
                                         ${usdNow.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                       </td>
-                                      <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, fontWeight: 600, color: '#00FF9F' }}>
+                                      <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, fontWeight: 600, color: t.green }}>
                                         {hexAtMaturity.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                       </td>
-                                      <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#00FF9F' }}>
+                                      <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: t.green }}>
                                         ${usdAtMaturity.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                       </td>
                                       <td style={{ padding: '9px 14px', textAlign: 'right', minWidth: 100 }}>
@@ -4127,18 +4132,23 @@ export default function App() {
                                       </td>
                                       <td style={{ padding: '9px 14px', textAlign: 'right' }}>
                                         {(() => {
-                                          const urgentColor = daysLeft < 14 ? '#ef4444' : daysLeft < 90 ? '#f97316' : daysLeft < 365 ? t.green : t.textMuted;
-                                          const urgentBg = daysLeft < 14 ? 'rgba(239,68,68,.1)' : daysLeft < 90 ? 'rgba(249,115,22,.1)' : undefined;
+                                          const pillClass = daysLeft < 14
+                                            ? 'days-left-pill days-left-expiring'
+                                            : daysLeft < 90
+                                              ? 'days-left-pill days-left-soon'
+                                              : undefined;
+                                          const plainColor = daysLeft < 365 ? t.green : t.textMuted;
                                           return (
                                             <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
-                                              <span style={{
-                                                fontSize: 13, fontWeight: 800, color: urgentColor,
-                                                fontFamily: 'JetBrains Mono, monospace',
-                                                background: urgentBg, padding: urgentBg ? '2px 7px' : undefined,
-                                                borderRadius: urgentBg ? 6 : undefined,
-                                              }}>
-                                                {daysLeft >= 365 ? `${(daysLeft/365).toFixed(1)}y` : `${daysLeft.toLocaleString('en-US')}d`}
-                                              </span>
+                                              {pillClass ? (
+                                                <span className={pillClass}>
+                                                  {daysLeft >= 365 ? `${(daysLeft/365).toFixed(1)}y` : `${daysLeft.toLocaleString('en-US')}d`}
+                                                </span>
+                                              ) : (
+                                                <span style={{ fontSize: 13, fontWeight: 800, color: plainColor, fontFamily: 'JetBrains Mono, monospace' }}>
+                                                  {daysLeft >= 365 ? `${(daysLeft/365).toFixed(1)}y` : `${daysLeft.toLocaleString('en-US')}d`}
+                                                </span>
+                                              )}
                                               {daysLeft < 14 && <span style={{ fontSize: 10, fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '.4px' }}>Expiring!</span>}
                                               {daysLeft >= 14 && daysLeft < 90 && <span style={{ fontSize: 10, fontWeight: 600, color: '#f97316', textTransform: 'uppercase', letterSpacing: '.4px' }}>Soon</span>}
                                             </div>
@@ -4153,17 +4163,17 @@ export default function App() {
                                           <div style={{ padding: '14px 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
                                             {[
                                               { label: 'Staked HEX', val: stakedHex.toLocaleString(undefined, { maximumFractionDigits: 0 }), sub: 'Principal' },
-                                              { label: 'Accrued Interest', val: `+${interestHex.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'HEX earned so far', color: '#00FF9F' },
-                                              { label: 'Projected Yield', val: `+${(stake.stakeHexYield ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'At full maturity', color: '#00FF9F' },
+                                              { label: 'Accrued Interest', val: `+${interestHex.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'HEX earned so far', color: t.green },
+                                              { label: 'Projected Yield', val: `+${(stake.stakeHexYield ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'At full maturity', color: t.green },
                                               { label: 'T-Shares', val: tShares.toLocaleString(undefined, { maximumFractionDigits: 3 }), sub: 'Active T-Shares' },
                                               { label: 'Locked Day', val: stake.lockedDay.toString(), sub: `End Day ${endDay}` },
                                               { label: 'Duration', val: `${stake.stakedDays}d`, sub: `${(stake.stakedDays / 365.25).toFixed(1)} years` },
                                               { label: 'Wallet', val: walletShort || stake.walletLabel || '—', sub: stake.chain === 'pulsechain' ? 'PulseChain' : 'Ethereum' },
-                                              { label: 'Total ROI', val: `${hexAtMaturity > 0 ? ((hexAtMaturity / stakedHex - 1) * 100).toFixed(1) : '0.0'}%`, sub: 'Full return on maturity', color: '#00FF9F' },
+                                              { label: 'Total ROI', val: `${hexAtMaturity > 0 ? ((hexAtMaturity / stakedHex - 1) * 100).toFixed(1) : '0.0'}%`, sub: 'Full return on maturity', color: t.green },
                                             ].map(({ label, val, sub, color }) => (
                                               <div key={label}>
                                                 <div style={{ fontSize: 13, color: 'var(--fg-subtle)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>{label}</div>
-                                                <div style={{ fontSize: 14, fontWeight: 700, color: color || '#fff' }}>{val}</div>
+                                                <div style={{ fontSize: 14, fontWeight: 700, color: color || t.text }}>{val}</div>
                                                 <div style={{ fontSize: 13, color: 'var(--fg-subtle)', marginTop: 1 }}>{sub}</div>
                                               </div>
                                             ))}
@@ -4186,10 +4196,10 @@ export default function App() {
                                 <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#fb923c' }}>
                                   ${totUsdNow.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                 </td>
-                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#00FF9F' }}>
+                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: t.green }}>
                                   {totHexMat.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                 </td>
-                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#00FF9F' }}>
+                                <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: t.green }}>
                                   ${totUsdMat.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                 </td>
                                 <td colSpan={2} />
@@ -4894,12 +4904,12 @@ export default function App() {
                   }}>
                   <div style={{
                     width: 34, height: 34, borderRadius: 10, flexShrink: 0,
-                    background: isAll ? 'rgba(0,255,159,0.15)' : 'var(--bg-surface)',
-                    border: `1.5px solid ${isAll ? 'rgba(0,255,159,0.4)' : 'var(--border)'}`,
+                    background: isAll ? 'var(--accent-dim)' : 'var(--bg-surface)',
+                    border: `1.5px solid ${isAll ? 'var(--accent-border)' : 'var(--border)'}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
                   }}>🗂️</div>
                   <div>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: isAll ? '#00FF9F' : 'var(--fg)', letterSpacing: '-0.01em' }}>All Wallets</div>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: isAll ? 'var(--accent)' : 'var(--fg)', letterSpacing: '-0.01em' }}>All Wallets</div>
                     <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 1 }}>
                       {wallets.length} wallet{wallets.length !== 1 ? 's' : ''}
                     </div>
@@ -4922,16 +4932,18 @@ export default function App() {
                         transition: 'all .15s', textAlign: 'left', minWidth: 140,
                         background: isActive ? `${dotColor}18` : 'var(--bg-elevated)',
                         borderColor: isActive ? `${dotColor}55` : 'var(--border)',
-                        boxShadow: isActive ? `0 0 0 1px ${dotColor}22` : 'none',
+                        boxShadow: isActive ? `0 0 0 1px ${dotColor}22, 0 2px 10px ${dotColor}14` : 'none',
                       }}
                       onMouseOver={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'var(--bg-surface)'; }}
                       onMouseOut={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)'; }}>
-                      {/* Avatar */}
+                      {/* Avatar — larger dot */}
                       <div style={{
-                        width: 34, height: 34, borderRadius: 10, flexShrink: 0,
-                        background: `${dotColor}20`, border: `1.5px solid ${dotColor}55`,
+                        width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                        background: `${dotColor}22`, border: `2px solid ${dotColor}66`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: 14, fontWeight: 800, color: dotColor,
+                        boxShadow: isActive ? `0 0 10px ${dotColor}44` : 'none',
+                        transition: 'box-shadow .15s',
                       }}>
                         {w.name ? w.name[0].toUpperCase() : shortAddr[2].toUpperCase()}
                       </div>
@@ -4939,12 +4951,12 @@ export default function App() {
                         <div style={{ fontSize: 12, fontWeight: 800, color: isActive ? dotColor : 'var(--fg)', letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120 }}>
                           {w.name || shortAddr}
                         </div>
-                        <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 1, fontFamily: 'monospace' }}>
+                        <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 1, fontFamily: 'JetBrains Mono, monospace' }}>
                           {wVal > 0 ? `$${wVal >= 1000 ? `${(wVal/1000).toFixed(1)}K` : wVal.toFixed(0)}` : shortAddr}
                         </div>
                       </div>
                       {isActive && (
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: dotColor, flexShrink: 0, marginLeft: 'auto', boxShadow: `0 0 6px ${dotColor}` }} />
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: dotColor, flexShrink: 0, marginLeft: 'auto', boxShadow: `0 0 8px ${dotColor}` }} />
                       )}
                     </button>
                   );
@@ -4954,15 +4966,15 @@ export default function App() {
               {/* Hero card */}
               <div style={{ background: 'var(--bg-elevated)', borderRadius: 16, padding: '24px', border: '1px solid var(--accent-border)' }}>
                 <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 8 }}>{isAll ? 'All Wallets' : selWallet?.name}</div>
-                {!isAll && <div style={{ fontSize: 13, color: 'var(--fg-subtle)', fontFamily: 'monospace', marginBottom: 12 }}>{selWallet?.address}</div>}
+                {!isAll && <div style={{ fontSize: 13, color: 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace', marginBottom: 12 }}>{selWallet?.address}</div>}
                 <div style={{ fontSize: 36, fontWeight: 800, color: 'var(--fg)', marginBottom: 16 }}>
                   ${totalUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-                  <span style={{ background: 'rgba(0,255,159,0.15)', color: '#00FF9F', padding: '4px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600 }}>
+                  <span className="wallet-stat-pill-green">
                     Wallet ${walletUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </span>
-                  <span style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', padding: '4px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600 }}>
+                  <span style={{ background: 'rgba(239,68,68,0.12)', color: t.red, padding: '4px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: '1px solid rgba(239,68,68,0.20)' }}>
                     Staking ${stakingUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </span>
                 </div>
