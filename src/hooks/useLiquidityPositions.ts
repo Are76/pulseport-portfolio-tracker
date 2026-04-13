@@ -371,9 +371,9 @@ export function useLiquidityPositions(
             const { ratio: priceEntry } = JSON.parse(saved) as { ratio: number };
             const priceNow = currentRatio;
             if (priceEntry > 0 && priceNow > 0) {
-              const k = priceNow / priceEntry;
-              const ilRaw = (2 * Math.sqrt(k)) / (1 + k) - 1;
-              ilEstimate = ilRaw * 100; // as %
+              const priceRatio = priceNow / priceEntry;
+              const impermanentLossRatio = (2 * Math.sqrt(priceRatio)) / (1 + priceRatio) - 1;
+              ilEstimate = impermanentLossRatio * 100; // as %
             }
           } else if (currentRatio > 0) {
             // First discovery — save entry snapshot

@@ -61,6 +61,7 @@ import { cn } from './lib/utils';
 import { CHAINS, HEX_ABI, TOKENS, PULSEX_V2_PAIR_ABI, PULSEX_LP_PAIRS } from './constants';
 import type { Asset, Wallet, Chain, HexStake, LpPosition, FarmPosition, PortfolioSummary, HistoryPoint, Transaction } from './types';
 import { LiquidityOverviewStrip, LiquiditySection } from './components/LiquiditySection';
+import { TokenPnLCard } from './components/TokenPnLCard';
 
 const ERC20_ABI = [
   {
@@ -4458,6 +4459,32 @@ export default function App() {
               </div>
               </>)}
             </div>
+
+            {/* ── TOKEN P&L SUMMARY CARD — shown when a specific asset filter is active ── */}
+            {txAssetFilter !== 'all' && (() => {
+              const filteredAsset = currentAssets.find(a =>
+                a.symbol.toUpperCase() === txAssetFilter.toUpperCase()
+              );
+              const tokenPrice = filteredAsset?.price ?? 0;
+              const plsPrice   = prices['pulsechain']?.usd ?? 0;
+              const logoUrl    = filteredAsset ? getTokenLogoUrl(filteredAsset) : undefined;
+              // Collect ALL transactions for this symbol across type filters so the card
+              // always shows the full picture regardless of txTypeFilter
+              const allTokenTxs = currentTransactions.filter(tx =>
+                tx.asset.toUpperCase() === txAssetFilter.toUpperCase() ||
+                (tx.counterAsset ?? '').toUpperCase() === txAssetFilter.toUpperCase()
+              );
+              return (
+                <TokenPnLCard
+                  symbol={txAssetFilter}
+                  transactions={allTokenTxs}
+                  asset={filteredAsset}
+                  priceUsd={tokenPrice}
+                  plsPriceUsd={plsPrice}
+                  logoUrl={logoUrl}
+                />
+              );
+            })()}
 
             {/* Recent Activity */}
             <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, overflow: 'hidden' }} className="md-elevation-1">

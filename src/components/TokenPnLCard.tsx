@@ -1,0 +1,448 @@
+import React, { useMemo, useState } from 'react';
+import {
+  TrendingUp,
+  TrendingDown,
+  Wallet,
+  BarChart2,
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
+import type { Transaction, Asset } from '../types';
+
+// ─── Props ────────────────────────────────────────────────────────────────────
+export interface TokenPnLCardProps {
+  /** The single token being analysed (= txAssetFilter value, never 'all') */
+  symbol: string;
+  /** All transactions already filtered to this symbol (type + chain filters
+   *  may still be applied externally, but asset filter MUST match symbol) */
+  transactions: Transaction[];
+  /** Live asset record for this token (for current balance + price) */
+  asset: Asset | undefined;
+  /** Current USD price per token */
+  priceUsd: number;
+  /** Native PLS price (to convert gas fees) */
+  plsPriceUsd: number;
+  /** Token logo URL (optional) */
+  logoUrl?: string;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function fmtUsd(n: number, decimals = 2): string {
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000) return `$${(abs / 1_000_000).toFixed(2)}M`;
+  if (abs >= 10_000)    return `$${(abs / 1_000).toFixed(1)}K`;
+  return `$${abs.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+}
+function fmtTok(n: number): string {
+  const abs = Math.abs(n);
+  if (abs >= 1e9) return `${(abs / 1e9).toFixed(2)}B`;
+  if (abs >= 1e6) return `${(abs / 1e6).toFixed(2)}M`;
+  if (abs >= 1e3) return `${(abs / 1e3).toFixed(1)}K`;
+  return abs.toLocaleString(undefined, { maximumFractionDigits: 4 });
+}
+function formatSign(n: number): string { return n >= 0 ? '+' : '−'; }
+function getProfitLossColor(n: number, green = '#00FF9F', red = '#f43f5e'): string {
+  return n >= 0 ? green : red;
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+function StatRow({
+  label, value, valueColor, sub,
+}: {
+  label: string; value: string; valueColor?: string; sub?: string;
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.55px' }}>
+        {label}
+      </span>
+      <span style={{ fontSize: 14, fontWeight: 700, color: valueColor ?? 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.02em' }}>
+        {value}
+      </span>
+      {sub && <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{sub}</span>}
+    </div>
+  );
+}
+
+function Divider({ vertical }: { vertical?: boolean }) {
+  return (
+    <div style={vertical
+      ? { width: 1, alignSelf: 'stretch', background: 'rgba(255,255,255,0.07)', flexShrink: 0 }
+      : { height: 1, background: 'rgba(255,255,255,0.07)' }} />
+  );
+}
+
+function TokenLogo({ symbol, logoUrl, size = 36 }: { symbol: string; logoUrl?: string; size?: number }) {
+  const [imgErr, setImgErr] = useState(false);
+  const color = '#f739ff';
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%', flexShrink: 0,
+      background: `linear-gradient(135deg, rgba(247,57,255,0.18) 0%, rgba(99,70,255,0.12) 100%)`,
+      border: `1.5px solid rgba(247,57,255,0.28)`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      overflow: 'hidden', fontSize: Math.round(size * 0.38), fontWeight: 800, color,
+    }}>
+      {logoUrl && !imgErr ? (
+        <img src={logoUrl} alt={symbol}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+          onError={() => setImgErr(true)} />
+      ) : symbol[0].toUpperCase()}
+    </div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+export function TokenPnLCard({
+  symbol,
+  transactions,
+  asset,
+  priceUsd,
+  plsPriceUsd,
+  logoUrl,
+}: TokenPnLCardProps) {
+  const [expanded, setExpanded] = useState(true);
+
+  // ── Compute P&L ─────────────────────────────────────────────────────────────
+  const {
+    totalCost, totalProceeds, realizedPnl,
+    buyCount, sellCount, transferInCount, transferOutCount,
+    gasFeePls, gasFeeUsd,
+    swapCount,
+  } = useMemo(() => {
+    let totalCost = 0;
+    let totalProceeds = 0;
+    let buyCount = 0;
+    let sellCount = 0;
+    let transferInCount = 0;
+    let transferOutCount = 0;
+    let swapCount = 0;
+    let gasFeePls = 0;
+
+    transactions.forEach(tx => {
+      const usd = tx.valueUsd ?? 0;
+      gasFeePls += tx.fee ?? 0;
+
+      if (tx.type === 'swap') {
+        swapCount++;
+        if (tx.asset.toUpperCase() === symbol.toUpperCase()) {
+          // Received symbol (bought it) — usd is what we got
+          totalCost += usd;
+          buyCount++;
+        } else if ((tx.counterAsset ?? '').toUpperCase() === symbol.toUpperCase()) {
+          // Spent symbol (sold it) — usd is what we received back
+          totalProceeds += usd;
+          sellCount++;
+        }
+      } else if (tx.type === 'transfer_in') {
+        // Received symbol for free / via bridge
+        totalCost += usd; // at market value at time of receipt
+        transferInCount++;
+      } else if (tx.type === 'transfer_out') {
+        // Sent symbol away — treat as proceeds at the time
+        totalProceeds += usd;
+        transferOutCount++;
+      }
+    });
+
+    const realizedPnl = totalProceeds - totalCost;
+    const gasFeeUsd   = gasFeePls * plsPriceUsd;
+
+    return {
+      totalCost, totalProceeds, realizedPnl,
+      buyCount, sellCount, transferInCount, transferOutCount,
+      gasFeePls, gasFeeUsd, swapCount,
+    };
+  }, [transactions, symbol, plsPriceUsd]);
+
+  // ── Current holdings ─────────────────────────────────────────────────────────
+  const currentBalance = asset?.balance ?? 0;
+  const currentValue   = currentBalance * priceUsd;
+
+  // Total P&L = realized + current unrealized
+  const totalPnl = realizedPnl + currentValue;
+
+  const txCount = transactions.length;
+
+  // Build a summary of swap activity for the breakdown label
+  const activityParts: string[] = [];
+  if (swapCount > 0) activityParts.push(`${swapCount} swap${swapCount > 1 ? 's' : ''}`);
+  if (transferInCount > 0) activityParts.push(`${transferInCount} received`);
+  if (transferOutCount > 0) activityParts.push(`${transferOutCount} sent`);
+  const activityLabel = activityParts.length > 0
+    ? activityParts.join(' · ')
+    : `${txCount} transactions`;
+
+  const totalPnlColor = getProfitLossColor(totalPnl);
+  const realPnlColor  = getProfitLossColor(realizedPnl);
+
+  // Pct return (realized only, vs cost)
+  const realPct = totalCost > 0 ? (realizedPnl / totalCost) * 100 : null;
+
+  return (
+    <div style={{
+      background: 'linear-gradient(160deg, rgba(247,57,255,0.07) 0%, rgba(99,70,255,0.04) 50%, rgba(255,255,255,0.02) 100%)',
+      border: '1px solid rgba(247,57,255,0.18)',
+      borderRadius: 16,
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
+      {/* Top purple accent line */}
+      <div style={{
+        position: 'absolute', top: 0, left: '10%', right: '10%', height: 1,
+        background: 'linear-gradient(90deg, transparent, rgba(247,57,255,0.55), transparent)',
+        pointerEvents: 'none',
+      }} />
+
+      {/* ── Header ── */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '14px 18px',
+        borderBottom: expanded ? '1px solid rgba(247,57,255,0.10)' : 'none',
+        cursor: 'pointer',
+        background: 'linear-gradient(90deg, rgba(247,57,255,0.04) 0%, transparent 60%)',
+      }} onClick={() => setExpanded(v => !v)}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <TokenLogo symbol={symbol} logoUrl={logoUrl} size={38} />
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--fg)', letterSpacing: '-0.015em' }}>
+                {symbol}
+              </span>
+              <span style={{
+                fontSize: 10, fontWeight: 700, color: '#f739ff',
+                background: 'rgba(247,57,255,0.10)', border: '1px solid rgba(247,57,255,0.22)',
+                padding: '1px 7px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '.5px',
+              }}>
+                P&amp;L Analysis
+              </span>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 2 }}>
+              {activityLabel}
+              {txCount > 0 && (
+                <span style={{ color: 'var(--fg-subtle)', marginLeft: 4 }}>
+                  · {txCount} total
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Total P&L hero number */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.55px', marginBottom: 3 }}>
+              Total P&amp;L
+            </div>
+            <div style={{
+              fontSize: 22, fontWeight: 800, color: totalPnlColor,
+              fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.04em',
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}>
+              {totalPnl >= 0
+                ? <TrendingUp size={16} style={{ color: totalPnlColor, flexShrink: 0 }} />
+                : <TrendingDown size={16} style={{ color: totalPnlColor, flexShrink: 0 }} />}
+              {formatSign(totalPnl)}{fmtUsd(totalPnl)}
+            </div>
+            {realPct !== null && (
+              <div style={{ fontSize: 11, color: totalPnlColor, fontFamily: 'JetBrains Mono, monospace', textAlign: 'right', marginTop: 1 }}>
+                {formatSign(realPct)}{Math.abs(realPct).toFixed(1)}% on cost
+              </div>
+            )}
+          </div>
+          <button
+            onClick={e => { e.stopPropagation(); setExpanded(v => !v); }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', padding: 4, flexShrink: 0, display: 'flex' }}>
+            {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+          </button>
+        </div>
+      </div>
+
+      {/* ── Body (collapsible) ── */}
+      {expanded && (
+        <div style={{ padding: '16px 18px 14px' }}>
+
+          {/* Two-column breakdown */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 0 }} className="max-sm:grid-cols-1">
+
+            {/* ── LEFT: Realized ── */}
+            <div style={{
+              display: 'flex', flexDirection: 'column', gap: 12,
+              padding: '14px 16px',
+              background: 'rgba(255,255,255,0.02)',
+              borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)',
+            }}>
+              {/* Column header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
+                <div style={{
+                  width: 22, height: 22, borderRadius: 6,
+                  background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.22)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <BarChart2 size={11} style={{ color: '#8b5cf6' }} />
+                </div>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.6px' }}>
+                  Realized
+                </span>
+              </div>
+
+              <StatRow
+                label="Total Cost"
+                value={totalCost > 0 ? `−${fmtUsd(totalCost)}` : '—'}
+                valueColor={totalCost > 0 ? '#f43f5e' : 'var(--fg-subtle)'}
+                sub={buyCount > 0
+                  ? `${buyCount} buy${buyCount > 1 ? 's' : ''}${transferInCount > 0 ? ` · ${transferInCount} received` : ''}`
+                  : transferInCount > 0 ? `${transferInCount} received` : undefined}
+              />
+              <Divider />
+              <StatRow
+                label="Total Proceeds"
+                value={totalProceeds > 0 ? `+${fmtUsd(totalProceeds)}` : '—'}
+                valueColor={totalProceeds > 0 ? '#00FF9F' : 'var(--fg-subtle)'}
+                sub={sellCount > 0
+                  ? `${sellCount} sell${sellCount > 1 ? 's' : ''}${transferOutCount > 0 ? ` · ${transferOutCount} sent` : ''}`
+                  : transferOutCount > 0 ? `${transferOutCount} sent` : undefined}
+              />
+              <Divider />
+
+              {/* Net Realized P&L — prominent */}
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '10px 12px', borderRadius: 10,
+                background: realizedPnl >= 0 ? 'rgba(0,255,159,0.05)' : 'rgba(244,63,94,0.05)',
+                border: `1px solid ${realizedPnl >= 0 ? 'rgba(0,255,159,0.14)' : 'rgba(244,63,94,0.14)'}`,
+              }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.55px' }}>
+                  Net Realized
+                </span>
+                <span style={{
+                  fontSize: 15, fontWeight: 800, color: realPnlColor,
+                  fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.03em',
+                }}>
+                  {formatSign(realizedPnl)}{fmtUsd(Math.abs(realizedPnl))}
+                </span>
+              </div>
+            </div>
+
+            {/* Vertical divider (hidden on mobile) */}
+            <div className="max-sm:hidden" style={{ width: 12 }} />
+
+            {/* ── RIGHT: Holdings ── */}
+            <div style={{
+              display: 'flex', flexDirection: 'column', gap: 12,
+              padding: '14px 16px',
+              background: 'rgba(255,255,255,0.02)',
+              borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)',
+            }}>
+              {/* Column header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
+                <div style={{
+                  width: 22, height: 22, borderRadius: 6,
+                  background: 'rgba(247,57,255,0.10)', border: '1px solid rgba(247,57,255,0.22)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Wallet size={11} style={{ color: '#f739ff' }} />
+                </div>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.6px' }}>
+                  Holdings
+                </span>
+              </div>
+
+              <StatRow
+                label="Current Balance"
+                value={currentBalance > 0 ? fmtTok(currentBalance) + ' ' + symbol : '—'}
+                sub={currentBalance > 0 ? 'Live on-chain' : 'Nothing held currently'}
+              />
+              <Divider />
+              <StatRow
+                label="Current Value"
+                value={currentValue > 0 ? fmtUsd(currentValue) : '—'}
+                valueColor={currentValue > 0 ? 'var(--fg)' : 'var(--fg-subtle)'}
+                sub={priceUsd > 0
+                  ? `@ ${priceUsd < 0.001
+                    ? priceUsd.toExponential(3)
+                    : priceUsd < 1
+                    ? `$${priceUsd.toFixed(6)}`
+                    : fmtUsd(priceUsd, 4)} per ${symbol}`
+                  : undefined}
+              />
+              <Divider />
+
+              {/* Unrealized P&L — current value as "unrealized" */}
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '10px 12px', borderRadius: 10,
+                background: currentValue >= 0 ? 'rgba(247,57,255,0.04)' : 'rgba(244,63,94,0.04)',
+                border: '1px solid rgba(247,57,255,0.12)',
+              }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.55px' }}>
+                  Unrealized
+                </span>
+                <span style={{
+                  fontSize: 15, fontWeight: 800, color: currentValue > 0 ? '#f739ff' : 'var(--fg-subtle)',
+                  fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.03em',
+                }}>
+                  {currentValue > 0 ? `+${fmtUsd(currentValue)}` : '—'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Bottom bar: gas + links ── */}
+          {(gasFeePls > 0 || true) && (
+            <div style={{
+              marginTop: 12, display: 'flex', alignItems: 'center',
+              justifyContent: 'space-between', flexWrap: 'wrap', gap: 8,
+              padding: '9px 12px', borderRadius: 10,
+              background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                {gasFeePls > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px' }}>
+                      Gas:
+                    </span>
+                    <span style={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: 'var(--fg-muted)', fontWeight: 600 }}>
+                      {fmtTok(gasFeePls)} PLS
+                    </span>
+                    {plsPriceUsd > 0 && (
+                      <span style={{ fontSize: 12, color: 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace' }}>
+                        ({fmtUsd(gasFeePls * plsPriceUsd, 4)})
+                      </span>
+                    )}
+                  </div>
+                )}
+                {gasFeePls === 0 && (
+                  <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>
+                    Gas data not available for these transactions
+                  </span>
+                )}
+              </div>
+              <a
+                href={`https://scan.pulsechain.com/search?q=${symbol}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  fontSize: 11, fontWeight: 600, color: 'var(--fg-subtle)',
+                  textDecoration: 'none', transition: 'color .12s',
+                }}
+                onMouseOver={e => ((e.currentTarget as HTMLElement).style.color = '#f739ff')}
+                onMouseOut={e => ((e.currentTarget as HTMLElement).style.color = 'var(--fg-subtle)')}
+              >
+                Explorer <ExternalLink size={10} />
+              </a>
+            </div>
+          )}
+
+          {/* ── Disclaimer note ── */}
+          <div style={{ marginTop: 8, fontSize: 10, color: 'var(--fg-subtle)', lineHeight: 1.5, textAlign: 'center' }}>
+            P&amp;L is estimated from on-chain transaction values at time of execution.
+            Cost = USD value of acquisitions · Proceeds = USD value of disposals.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
