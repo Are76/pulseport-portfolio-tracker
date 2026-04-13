@@ -377,8 +377,11 @@ export default function App() {
   };
 
   const [wallets, setWallets] = useState<Wallet[]>(() => {
-    const saved = localStorage.getItem('pulseport_wallets');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      return JSON.parse(localStorage.getItem('pulseport_wallets') ?? '[]');
+    } catch {
+      return [];
+    }
   });
   const [realAssets, setRealAssets] = useState<Asset[]>([]);
   const [realStakes, setRealStakes] = useState<HexStake[]>([]);
@@ -585,7 +588,9 @@ export default function App() {
   }, [wallets]);
 
   useEffect(() => {
-    localStorage.setItem('pulseport_wallets', JSON.stringify(wallets));
+    try {
+      localStorage.setItem('pulseport_wallets', JSON.stringify(wallets));
+    } catch {}
   }, [wallets]);
 
   useEffect(() => {
@@ -1505,6 +1510,22 @@ export default function App() {
       const pricedIds = Object.values(assetMap).filter(a => a.price > 0).map(a => a.id);
       if (pricedIds.length > 0) {
         setSpamTokenIds(prev => prev.filter(id => !pricedIds.includes(id)));
+      }
+
+      // Merge WPLS balance/value into the PLS entry (same economic asset on PulseChain).
+      // The inline merge during balance fetching handles the common case; this pass catches
+      // any residual standalone WPLS entry that might appear if the inline path was skipped.
+      const wplsEntry = assetMap['pulsechain-WPLS'];
+      if (wplsEntry) {
+        const plsEntry = assetMap['pulsechain-PLS'];
+        if (plsEntry) {
+          plsEntry.balance += wplsEntry.balance;
+          plsEntry.value   += wplsEntry.value;
+        } else {
+          // No native PLS entry at all — promote WPLS to a PLS row
+          assetMap['pulsechain-PLS'] = { ...wplsEntry, id: 'pulsechain-PLS', symbol: 'PLS' };
+        }
+        delete assetMap['pulsechain-WPLS'];
       }
 
       setRealAssets(Object.values(assetMap).sort((a, b) => b.value - a.value));
@@ -2726,8 +2747,8 @@ export default function App() {
           </div>
         </header>
 
-        {/* ── Wallet Selector Bar ── */}
-        {wallets.length > 0 && (
+        {/* ── Wallet Selector Bar (wallets tab only) ── */}
+        {activeTab === 'wallets' && wallets.length > 0 && (
           <div style={{ padding: '8px 20px', borderBottom: '1px solid var(--border)' }}>
             <WalletSelector
               wallets={wallets.map(w => w.address)}
