@@ -137,9 +137,9 @@ function StakingLadder({ stakes }: { stakes: HexStake[] }) {
     const bucketIdx = Math.floor(days / bucketSize);
     if (!buckets[bucketIdx]) {
       const start = bucketIdx * bucketSize;
-      buckets[bucketIdx] = { totalShares: 0.001, stakeCount: 0, bucketRange: `${start}–${start + bucketSize - 1}d` };
+      buckets[bucketIdx] = { totalShares: 0, stakeCount: 0, bucketRange: `${start}–${start + bucketSize - 1}d` };
     }
-    buckets[bucketIdx].totalShares = (buckets[bucketIdx].totalShares === 0.001 ? 0 : buckets[bucketIdx].totalShares) + (stake.tShares ?? 0);
+    buckets[bucketIdx].totalShares += (stake.tShares ?? 0);
     buckets[bucketIdx].stakeCount += 1;
   });
 
@@ -252,7 +252,7 @@ export function StakesSection({
   }
 
   function fmtDays(d: number): string {
-    return d >= 365 ? `${(d / 365).toFixed(1)}y` : `${d.toLocaleString('en-US')}d`;
+    return d >= 365 ? `${(d / 365).toFixed(1)}y` : `${d.toLocaleString(undefined, { maximumFractionDigits: 0 })}d`;
   }
 
   // ── Empty state ─────────────────────────────────────────────────────────────
