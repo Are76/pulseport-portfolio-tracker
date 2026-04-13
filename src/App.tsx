@@ -63,6 +63,7 @@ import type { Asset, Wallet, Chain, HexStake, LpPosition, FarmPosition, Portfoli
 import { LiquidityOverviewStrip, LiquiditySection } from './components/LiquiditySection';
 import { TokenPnLCard } from './components/TokenPnLCard';
 import { PnLModal } from './components/PnLModal';
+import { StakesSection } from './components/StakesSection';
 
 const ERC20_ABI = [
   {
@@ -3887,6 +3888,19 @@ export default function App() {
             )}
 
             {activeTab === 'stakes' && (
+              <motion.div key="stakes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <StakesSection
+                  stakes={currentStakes}
+                  hexUsdPrice={prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0}
+                  phexUsdPrice={prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0}
+                  ehexUsdPrice={prices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['hex']?.usd || 0}
+                  walletAddresses={wallets.map(w => w.address)}
+                  walletLabels={Object.fromEntries(wallets.filter(w => w.name).map(w => [w.address, w.name!]))}
+                />
+              </motion.div>
+            )}
+
+            {activeTab === 'stakes_DISABLED_OLD' && (
               <motion.div key="stakes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
 
                 {/* Daily Yield Banner */}

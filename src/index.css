@@ -1687,3 +1687,135 @@ button, a {
     grid-template-columns: 1fr;
   }
 }
+
+/* ── STAKES SECTION ─────────────────────────────────────────────────── */
+.stakes-hero-card {
+  background: linear-gradient(135deg, rgba(99,70,255,0.12) 0%, rgba(99,70,255,0.04) 100%);
+  border: 2px solid var(--accent-purple-border);
+  border-radius: 18px;
+  padding: 28px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+[data-theme="light"] .stakes-hero-card {
+  background: linear-gradient(135deg, rgba(99,70,255,0.07) 0%, rgba(99,70,255,0.02) 100%);
+  border-color: rgba(99,70,255,0.22);
+}
+
+.stakes-metric-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.stakes-metric-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+}
+[data-theme="light"] .stakes-metric-card {
+  background: #ffffff;
+  border-color: rgba(0,0,0,0.09);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+[data-theme="light"] .stakes-metric-card:hover {
+  border-color: rgba(0,122,77,0.25);
+  box-shadow: 0 4px 16px rgba(0,122,77,0.09);
+}
+
+.stakes-maturity-highlight {
+  border-color: rgba(0,255,159,0.30) !important;
+  box-shadow: 0 0 18px rgba(0,255,159,0.08);
+}
+[data-theme="light"] .stakes-maturity-highlight {
+  border-color: rgba(0,122,77,0.30) !important;
+  box-shadow: 0 0 12px rgba(0,122,77,0.07);
+}
+
+.stakes-filter-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.stakes-filter-tabs::-webkit-scrollbar { display: none; }
+
+.stake-filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--fg-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.14s;
+  flex-shrink: 0;
+}
+.stake-filter-pill:hover { color: var(--fg); border-color: var(--border-strong); }
+.stake-filter-pill.active {
+  background: rgba(99,70,255,0.12);
+  border-color: rgba(99,70,255,0.35);
+  color: #a78bfa;
+}
+[data-theme="light"] .stake-filter-pill { background: #f5f5fa; border-color: rgba(0,0,0,0.10); color: var(--fg-muted); }
+[data-theme="light"] .stake-filter-pill.active {
+  background: rgba(99,70,255,0.08);
+  border-color: rgba(99,70,255,0.25);
+  color: #6246d6;
+}
+
+.stakes-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.stakes-table th {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--fg-subtle);
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.stakes-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-inset);
+  color: var(--fg-muted);
+  vertical-align: middle;
+}
+.stakes-table tr:last-child td { border-bottom: none; }
+.stakes-table tr:hover td { background: var(--bg-elevated); }
+[data-theme="light"] .stakes-table tr:hover td { background: rgba(0,0,0,0.025); }
+
+.stake-progress-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  overflow: hidden;
+  min-width: 60px;
+}
+.stake-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .stakes-hero-card { flex-direction: column; align-items: flex-start; padding: 20px; }
+  .stakes-hero-mini-stats { display: grid !important; grid-template-columns: 1fr 1fr 1fr; width: 100%; }
+  .stakes-table .col-hide-mobile { display: none; }
+  .stakes-charts-grid { grid-template-columns: 1fr !important; }
+  .stakes-totals-grid { grid-template-columns: 1fr 1fr !important; }
+  .stakes-metrics-grid { grid-template-columns: 1fr 1fr !important; }
+}
