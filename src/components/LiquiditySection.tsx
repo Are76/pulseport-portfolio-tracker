@@ -1,0 +1,759 @@
+import React, { useEffect, useRef } from 'react';
+import {
+  Droplets,
+  RefreshCcw,
+  ChevronRight,
+  ExternalLink,
+  AlertTriangle,
+  Zap,
+  TrendingUp,
+  Award,
+} from 'lucide-react';
+import { useLiquidityPositions } from '../hooks/useLiquidityPositions';
+import { LiquidityPositionCard } from './LiquidityPositionCard';
+import type { LpPositionEnriched } from '../types';
+
+// ─── Formatting helpers ───────────────────────────────────────────────────────
+function fmtUsd(n: number, maxFrac = 2): string {
+  if (n >= 1e6) return `$${(n / 1e6).toFixed(2)}M`;
+  if (n >= 1e3) return `$${(n / 1e3).toFixed(1)}K`;
+  return `$${n.toLocaleString(undefined, { maximumFractionDigits: maxFrac })}`;
+}
+function fmtTok(n: number): string {
+  if (n >= 1e9) return `${(n / 1e9).toFixed(2)}B`;
+  if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M`;
+  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
+  return n.toLocaleString(undefined, { maximumFractionDigits: 4 });
+}
+
+// ─── Skeleton row ─────────────────────────────────────────────────────────────
+function SkeletonRow() {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 12,
+      padding: '11px 14px', borderRadius: 12,
+      background: 'rgba(255,255,255,0.02)',
+      border: '1px solid rgba(255,255,255,0.05)',
+    }}>
+      <div style={{ display: 'flex', width: 38, flexShrink: 0 }}>
+        <div className="skeleton" style={{ width: 26, height: 26, borderRadius: '50%' }} />
+        <div className="skeleton" style={{ width: 26, height: 26, borderRadius: '50%', marginLeft: -10 }} />
+      </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <div className="skeleton" style={{ height: 13, width: 100, borderRadius: 6 }} />
+        <div className="skeleton" style={{ height: 11, width: 160, borderRadius: 5 }} />
+      </div>
+      <div className="skeleton" style={{ width: 56, height: 28, borderRadius: 6 }} />
+      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+        <div className="skeleton" style={{ height: 14, width: 64, borderRadius: 5 }} />
+        <div className="skeleton" style={{ height: 10, width: 40, borderRadius: 4, marginTop: 4 }} />
+      </div>
+      <div style={{ width: 14, height: 14, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
+    </div>
+  );
+}
+
+// ─── Skeleton full card ───────────────────────────────────────────────────────
+function SkeletonCard() {
+  return (
+    <div style={{
+      background: 'linear-gradient(160deg, rgba(247,57,255,0.04) 0%, rgba(255,255,255,0.02) 100%)',
+      border: '1px solid rgba(247,57,255,0.10)',
+      borderRadius: 18, padding: 20, display: 'flex', flexDirection: 'column', gap: 16,
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+          <div style={{ display: 'flex' }}>
+            <div className="skeleton" style={{ width: 40, height: 40, borderRadius: '50%' }} />
+            <div className="skeleton" style={{ width: 40, height: 40, borderRadius: '50%', marginLeft: -15 }} />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div className="skeleton" style={{ height: 17, width: 120, borderRadius: 6 }} />
+            <div className="skeleton" style={{ height: 11, width: 80, borderRadius: 4 }} />
+          </div>
+        </div>
+        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div className="skeleton" style={{ height: 22, width: 100, borderRadius: 6 }} />
+          <div className="skeleton" style={{ height: 11, width: 60, borderRadius: 4 }} />
+        </div>
+      </div>
+      <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        {[0, 1].map(i => (
+          <div key={i} style={{
+            background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)',
+            borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 8,
+          }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <div className="skeleton" style={{ width: 24, height: 24, borderRadius: '50%' }} />
+              <div className="skeleton" style={{ height: 13, width: 50, borderRadius: 4 }} />
+            </div>
+            <div className="skeleton" style={{ height: 3, borderRadius: 2 }} />
+            <div className="skeleton" style={{ height: 14, width: 80, borderRadius: 4 }} />
+          </div>
+        ))}
+      </div>
+      <div className="skeleton" style={{ height: 48, borderRadius: 10 }} />
+    </div>
+  );
+}
+
+// ─── INC Token Logo ───────────────────────────────────────────────────────────
+function IncLogo({ size = 28 }: { size?: number }) {
+  const [err, setErr] = React.useState(false);
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%',
+      overflow: 'hidden', flexShrink: 0,
+      background: 'linear-gradient(135deg, rgba(247,57,255,0.2) 0%, rgba(99,70,255,0.2) 100%)',
+      border: '1.5px solid rgba(247,57,255,0.3)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: Math.round(size * 0.38), fontWeight: 800, color: '#f739ff',
+    }}>
+      {!err ? (
+        <img
+          src="https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png"
+          alt="INC"
+          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+          onError={() => setErr(true)}
+        />
+      ) : 'I'}
+    </div>
+  );
+}
+
+// ─── Farming Rewards Banner ───────────────────────────────────────────────────
+interface FarmingRewardsBannerProps {
+  stakedPositions: LpPositionEnriched[];
+  incPrice: number;
+}
+
+function FarmingRewardsBanner({ stakedPositions, incPrice }: FarmingRewardsBannerProps) {
+  if (stakedPositions.length === 0) return null;
+
+  const totalPendingUsd = stakedPositions.reduce((s, p) => s + (p.pendingIncUsd ?? 0), 0);
+  const totalLpUsd      = stakedPositions.reduce((s, p) => s + p.totalUsd, 0);
+  const totalPendingInc = incPrice > 0 ? totalPendingUsd / incPrice : 0;
+
+  return (
+    <div style={{
+      background: 'linear-gradient(135deg, rgba(247,57,255,0.08) 0%, rgba(99,70,255,0.06) 50%, rgba(247,57,255,0.04) 100%)',
+      border: '1px solid rgba(247,57,255,0.20)',
+      borderRadius: 16, padding: '18px 22px',
+      position: 'relative', overflow: 'hidden',
+    }}>
+      {/* Top accent */}
+      <div style={{
+        position: 'absolute', top: 0, left: '15%', right: '15%', height: 1,
+        background: 'linear-gradient(90deg, transparent, rgba(247,57,255,0.5), transparent)',
+        pointerEvents: 'none',
+      }} />
+
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20 }}>
+        {/* Left: header + summary */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: 9,
+              background: 'rgba(247,57,255,0.15)', border: '1px solid rgba(247,57,255,0.28)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Zap size={16} style={{ color: '#f739ff' }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--fg)', letterSpacing: '-0.01em' }}>
+                INC Farming Rewards
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 1 }}>
+                {stakedPositions.length} active pool{stakedPositions.length > 1 ? 's' : ''} · PulseX MasterChef
+              </div>
+            </div>
+          </div>
+
+          {/* Stat grid */}
+          <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>
+                Staked LP Value
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.04em' }}>
+                {fmtUsd(totalLpUsd)}
+              </div>
+            </div>
+            <div style={{ width: 1, background: 'rgba(255,255,255,0.08)', alignSelf: 'stretch' }} />
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>
+                Pending INC
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#f739ff', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.04em' }}>
+                  {fmtTok(totalPendingInc)}
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--fg-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                  INC
+                </div>
+              </div>
+            </div>
+            <div style={{ width: 1, background: 'rgba(255,255,255,0.08)', alignSelf: 'stretch' }} />
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>
+                Reward Value
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: '#00FF9F', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.04em' }}>
+                {fmtUsd(totalPendingUsd)}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Claim button + INC logo */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: -4 }}>
+            {stakedPositions.slice(0, 3).map((_, i) => (
+              <div key={i} style={{
+                width: 32, height: 32, borderRadius: '50%',
+                background: 'rgba(247,57,255,0.12)', border: '2px solid rgba(0,0,0,0.4)',
+                marginLeft: i > 0 ? -8 : 0, zIndex: 3 - i,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <IncLogo size={28} />
+              </div>
+            ))}
+          </div>
+          <a
+            href="https://pulsex.com/#/farm"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '9px 16px', borderRadius: 10,
+              background: 'rgba(247,57,255,0.12)', border: '1px solid rgba(247,57,255,0.28)',
+              color: '#f739ff', fontSize: 12, fontWeight: 700, textDecoration: 'none',
+              transition: 'all .15s', whiteSpace: 'nowrap',
+            }}
+            onMouseOver={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(247,57,255,0.22)')}
+            onMouseOut={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(247,57,255,0.12)')}
+          >
+            <Award size={12} /> Claim on PulseX <ExternalLink size={10} />
+          </a>
+        </div>
+      </div>
+
+      {/* Per-pool breakdown */}
+      {stakedPositions.length > 0 && (
+        <div style={{
+          marginTop: 16, paddingTop: 14,
+          borderTop: '1px solid rgba(247,57,255,0.12)',
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 10 }}>
+            Active Pools
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {stakedPositions.map(pos => {
+              const pendingInc = incPrice > 0 ? (pos.pendingIncUsd ?? 0) / incPrice : 0;
+              return (
+                <div key={pos.pairAddress} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '8px 12px', borderRadius: 10,
+                  background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(247,57,255,0.08)',
+                  flexWrap: 'wrap', gap: 8,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {/* Pool ID badge */}
+                    {pos.poolId !== undefined && (
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)',
+                        background: 'rgba(255,255,255,0.06)', padding: '2px 7px', borderRadius: 100,
+                        fontFamily: 'JetBrains Mono, monospace',
+                      }}>
+                        Pool #{pos.poolId}
+                      </span>
+                    )}
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>
+                      {pos.pairName}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>Staked LP</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace' }}>
+                        {fmtUsd(pos.totalUsd)}
+                      </div>
+                    </div>
+                    <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.08)' }} />
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>Pending INC</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#f739ff', fontFamily: 'JetBrains Mono, monospace' }}>
+                        {fmtTok(pendingInc)} INC
+                      </div>
+                    </div>
+                    <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.08)' }} />
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>Value</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#00FF9F', fontFamily: 'JetBrains Mono, monospace' }}>
+                        {fmtUsd(pos.pendingIncUsd ?? 0)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── LP Summary Stats ─────────────────────────────────────────────────────────
+function LpSummaryStats({ positions }: { positions: LpPositionEnriched[] }) {
+  if (positions.length === 0) return null;
+
+  const totalUsd      = positions.reduce((s, p) => s + p.totalUsd, 0);
+  const totalFees24h  = positions.reduce((s, p) => s + (p.fees24hUsd ?? 0), 0);
+  const avgOwnership  = positions.reduce((s, p) => s + p.ownershipPct, 0) / positions.length;
+  const stakedCount   = positions.filter(p => p.isStaked).length;
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }} className="max-sm:grid-cols-2">
+      {[
+        {
+          label: 'Total LP Value',
+          value: fmtUsd(totalUsd),
+          color: 'var(--fg)',
+          icon: <TrendingUp size={14} style={{ color: '#f739ff' }} />,
+          bg: 'rgba(247,57,255,0.06)', border: 'rgba(247,57,255,0.14)',
+        },
+        {
+          label: 'Fees Earned 24h',
+          value: totalFees24h > 0 ? `+${fmtUsd(totalFees24h)}` : '—',
+          color: totalFees24h > 0 ? '#00FF9F' : 'var(--fg-subtle)',
+          icon: <Zap size={14} style={{ color: '#00FF9F' }} />,
+          bg: totalFees24h > 0 ? 'rgba(0,255,159,0.06)' : 'rgba(255,255,255,0.03)',
+          border: totalFees24h > 0 ? 'rgba(0,255,159,0.14)' : 'rgba(255,255,255,0.07)',
+        },
+        {
+          label: 'Active Positions',
+          value: `${positions.length}`,
+          color: 'var(--fg)',
+          icon: <Droplets size={14} style={{ color: '#f739ff' }} />,
+          bg: 'rgba(255,255,255,0.03)', border: 'rgba(255,255,255,0.07)',
+        },
+        {
+          label: 'Farming',
+          value: stakedCount > 0 ? `${stakedCount} pool${stakedCount > 1 ? 's' : ''}` : 'None',
+          color: stakedCount > 0 ? '#f739ff' : 'var(--fg-subtle)',
+          icon: <Award size={14} style={{ color: stakedCount > 0 ? '#f739ff' : 'var(--fg-subtle)' }} />,
+          bg: stakedCount > 0 ? 'rgba(247,57,255,0.06)' : 'rgba(255,255,255,0.03)',
+          border: stakedCount > 0 ? 'rgba(247,57,255,0.14)' : 'rgba(255,255,255,0.07)',
+        },
+      ].map(s => (
+        <div key={s.label} style={{
+          display: 'flex', flexDirection: 'column', gap: 8,
+          padding: '12px 14px', borderRadius: 12,
+          background: s.bg, border: `1px solid ${s.border}`,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {s.icon}
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px' }}>
+              {s.label}
+            </span>
+          </div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: s.color, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.03em' }}>
+            {s.value}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Section header ───────────────────────────────────────────────────────────
+interface SectionHeaderProps {
+  positions: LpPositionEnriched[];
+  loading: boolean;
+  onRefetch: () => void;
+  onViewAll?: () => void;
+}
+
+function SectionHeader({ positions, loading, onRefetch, onViewAll }: SectionHeaderProps) {
+  const totalUsd = positions.reduce((s, p) => s + p.totalUsd, 0);
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      flexWrap: 'wrap', gap: 10,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{
+          width: 32, height: 32, borderRadius: 9,
+          background: 'rgba(247,57,255,0.12)', border: '1px solid rgba(247,57,255,0.25)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        }}>
+          <Droplets size={15} style={{ color: '#f739ff' }} />
+        </div>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)', letterSpacing: '-0.01em' }}>
+              Liquidity Positions
+            </span>
+            {positions.length > 0 && (
+              <span style={{
+                fontSize: 11, fontWeight: 700, color: '#f739ff',
+                background: 'rgba(247,57,255,0.10)', border: '1px solid rgba(247,57,255,0.22)',
+                padding: '1px 8px', borderRadius: 100,
+              }}>
+                {positions.length}
+              </span>
+            )}
+          </div>
+          {positions.length > 0 && (
+            <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 2, fontFamily: 'JetBrains Mono, monospace' }}>
+              {fmtUsd(totalUsd)} total value
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <button
+          onClick={onRefetch}
+          disabled={loading}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 5, padding: '6px 11px',
+            borderRadius: 8, border: 'none', cursor: 'pointer',
+            background: 'rgba(255,255,255,0.05)', color: 'var(--fg-muted)',
+            fontSize: 12, fontWeight: 600, transition: 'all .15s',
+          }}
+          onMouseOver={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.09)')}
+          onMouseOut={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)')}
+          aria-label="Refresh liquidity positions"
+        >
+          <RefreshCcw size={12} className={loading ? 'animate-spin' : ''} />
+          <span className="hidden sm:inline">Refresh</span>
+        </button>
+
+        {onViewAll && (
+          <button
+            onClick={onViewAll}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px',
+              borderRadius: 8, border: '1px solid rgba(247,57,255,0.22)',
+              cursor: 'pointer', background: 'rgba(247,57,255,0.08)',
+              color: '#f739ff', fontSize: 12, fontWeight: 700, transition: 'all .15s',
+            }}
+            onMouseOver={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(247,57,255,0.16)')}
+            onMouseOut={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(247,57,255,0.08)')}
+          >
+            View all <ChevronRight size={12} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Hook auto-fetch helper ───────────────────────────────────────────────────
+function useAutoFetch(walletAddresses: string[], refetch: () => void) {
+  const hasFetchedRef = useRef(false);
+  const prevWalletsRef = useRef<string[]>([]);
+
+  useEffect(() => {
+    if (walletAddresses.length > 0 && !hasFetchedRef.current) {
+      hasFetchedRef.current = true;
+      refetch();
+    }
+  }, [walletAddresses, refetch]);
+
+  useEffect(() => {
+    const prev = prevWalletsRef.current;
+    const curr = walletAddresses;
+    if (prev.length !== curr.length || prev.some((a, i) => a !== curr[i])) {
+      prevWalletsRef.current = [...curr];
+      if (curr.length > 0 && hasFetchedRef.current) refetch();
+    }
+  }, [walletAddresses, refetch]);
+}
+
+// ─── OVERVIEW STRIP ───────────────────────────────────────────────────────────
+export interface LiquidityOverviewStripProps {
+  walletAddresses: string[];
+  tokenPrices: Record<string, number>;
+  onViewAll: () => void;
+}
+
+export function LiquidityOverviewStrip({
+  walletAddresses,
+  tokenPrices,
+  onViewAll,
+}: LiquidityOverviewStripProps) {
+  const { positions, loading, error, refetch } = useLiquidityPositions(walletAddresses, tokenPrices);
+  useAutoFetch(walletAddresses, refetch);
+
+  // Render null only when definitively empty (not loading)
+  if (!loading && positions.length === 0 && !error) return null;
+
+  const displayPositions = positions.slice(0, 4);
+  const remaining        = positions.length - 4;
+
+  return (
+    <div style={{
+      background: 'var(--bg-surface)',
+      border: '1px solid rgba(247,57,255,0.10)',
+      borderRadius: 16, overflow: 'hidden',
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: '14px 18px',
+        borderBottom: '1px solid rgba(247,57,255,0.08)',
+        background: 'linear-gradient(90deg, rgba(247,57,255,0.04) 0%, transparent 60%)',
+      }}>
+        <SectionHeader
+          positions={positions}
+          loading={loading}
+          onRefetch={refetch}
+          onViewAll={positions.length > 0 ? onViewAll : undefined}
+        />
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div style={{
+          margin: '12px 18px', padding: '10px 14px', borderRadius: 10,
+          background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.18)',
+          display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#f43f5e',
+        }}>
+          <AlertTriangle size={14} /><span>{error}</span>
+        </div>
+      )}
+
+      {/* Content */}
+      <div style={{ padding: '12px 18px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {loading && positions.length === 0 ? (
+          <><SkeletonRow /><SkeletonRow /><SkeletonRow /></>
+        ) : (
+          <>
+            {displayPositions.map(pos => (
+              <LiquidityPositionCard
+                key={pos.pairAddress} pos={pos} compact onClick={onViewAll}
+              />
+            ))}
+            {remaining > 0 && (
+              <button
+                onClick={onViewAll}
+                style={{
+                  marginTop: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  padding: '9px 14px', borderRadius: 10,
+                  background: 'rgba(247,57,255,0.06)', border: '1px solid rgba(247,57,255,0.14)',
+                  cursor: 'pointer', color: '#f739ff', fontSize: 12, fontWeight: 700, transition: 'all .15s',
+                }}
+                onMouseOver={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(247,57,255,0.12)')}
+                onMouseOut={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(247,57,255,0.06)')}
+              >
+                +{remaining} more position{remaining > 1 ? 's' : ''} <ChevronRight size={12} />
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── FULL DEFI PAGE ────────────────────────────────────────────────────────────
+export interface LiquiditySectionProps {
+  walletAddresses: string[];
+  tokenPrices: Record<string, number>;
+}
+
+export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySectionProps) {
+  const { positions, loading, error, refetch } = useLiquidityPositions(walletAddresses, tokenPrices);
+  useAutoFetch(walletAddresses, refetch);
+
+  const stakedPositions  = positions.filter(p => p.isStaked);
+  const regularPositions = positions.filter(p => !p.isStaked);
+  const incPrice         = tokenPrices['INC'] ?? 0;
+
+  return (
+    <div className="space-y-5">
+      {/* ── Page header ── */}
+      <div className="page-header">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{
+              width: 42, height: 42, borderRadius: 12,
+              background: 'linear-gradient(135deg, rgba(247,57,255,0.16) 0%, rgba(99,70,255,0.12) 100%)',
+              border: '1px solid rgba(247,57,255,0.28)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 0 20px rgba(247,57,255,0.12)',
+            }}>
+              <Droplets size={20} style={{ color: '#f739ff' }} />
+            </div>
+            <div>
+              <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--fg)', letterSpacing: '-0.025em', margin: 0 }}>
+                DeFi Positions
+              </h1>
+              <p style={{ margin: 0, marginTop: 3 }}>PulseX V2 liquidity · INC farming · PulseChain</p>
+            </div>
+          </div>
+
+          <button
+            onClick={refetch}
+            disabled={loading}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px',
+              borderRadius: 10, border: '1px solid rgba(247,57,255,0.18)',
+              cursor: 'pointer', background: 'rgba(247,57,255,0.07)', color: '#f739ff',
+              fontSize: 12, fontWeight: 700, transition: 'all .15s',
+            }}
+            onMouseOver={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(247,57,255,0.14)')}
+            onMouseOut={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(247,57,255,0.07)')}
+          >
+            <RefreshCcw size={13} className={loading ? 'animate-spin' : ''} />
+            {loading ? 'Loading…' : 'Refresh'}
+          </button>
+        </div>
+      </div>
+
+      {/* ── Error ── */}
+      {error && (
+        <div style={{
+          padding: '12px 16px', borderRadius: 12,
+          background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.18)',
+          display: 'flex', alignItems: 'center', gap: 10,
+          fontSize: 13, color: '#f43f5e',
+        }}>
+          <AlertTriangle size={16} />
+          <span>Failed to load positions: {error}</span>
+        </div>
+      )}
+
+      {/* ── Summary stats (when data is available) ── */}
+      {!loading && positions.length > 0 && (
+        <LpSummaryStats positions={positions} />
+      )}
+
+      {/* ── Farming Rewards Banner ── */}
+      {stakedPositions.length > 0 && (
+        <FarmingRewardsBanner stakedPositions={stakedPositions} incPrice={incPrice} />
+      )}
+
+      {/* ── Loading skeletons ── */}
+      {loading && positions.length === 0 && (
+        <div className="asset-grid-3col">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+      )}
+
+      {/* ── Farming positions (staked) ── */}
+      {stakedPositions.length > 0 && (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ height: 1, flex: 1, background: 'rgba(247,57,255,0.12)' }} />
+            <span style={{
+              fontSize: 11, fontWeight: 700, color: '#f739ff',
+              textTransform: 'uppercase', letterSpacing: '.7px',
+              background: 'rgba(247,57,255,0.08)', border: '1px solid rgba(247,57,255,0.18)',
+              padding: '3px 10px', borderRadius: 100,
+            }}>
+              Farming ({stakedPositions.length})
+            </span>
+            <div style={{ height: 1, flex: 1, background: 'rgba(247,57,255,0.12)' }} />
+          </div>
+          <div className="asset-grid-3col">
+            {stakedPositions.map(pos => (
+              <LiquidityPositionCard key={pos.pairAddress} pos={pos} />
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* ── Regular LP positions ── */}
+      {regularPositions.length > 0 && (
+        <>
+          {stakedPositions.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ height: 1, flex: 1, background: 'rgba(255,255,255,0.07)' }} />
+              <span style={{
+                fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)',
+                textTransform: 'uppercase', letterSpacing: '.7px',
+                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                padding: '3px 10px', borderRadius: 100,
+              }}>
+                LP Positions ({regularPositions.length})
+              </span>
+              <div style={{ height: 1, flex: 1, background: 'rgba(255,255,255,0.07)' }} />
+            </div>
+          )}
+          <div className="asset-grid-3col">
+            {regularPositions.map(pos => (
+              <LiquidityPositionCard key={pos.pairAddress} pos={pos} />
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* ── Empty state ── */}
+      {!loading && positions.length === 0 && !error && (
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          padding: '64px 32px', textAlign: 'center',
+          background: 'var(--bg-surface)', border: '1px solid var(--border)',
+          borderRadius: 18, gap: 16,
+        }}>
+          <div style={{
+            width: 68, height: 68, borderRadius: 20,
+            background: 'rgba(247,57,255,0.08)', border: '1px solid rgba(247,57,255,0.16)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 0 32px rgba(247,57,255,0.08)',
+          }}>
+            <Droplets size={30} style={{ color: '#f739ff', opacity: 0.7 }} />
+          </div>
+          <div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--fg)', marginBottom: 7 }}>
+              No LP positions found
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--fg-muted)', maxWidth: 340, margin: '0 auto', lineHeight: 1.6 }}>
+              Provide liquidity on PulseX to earn trading fees and INC farming rewards. Your positions will appear here automatically.
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+            <a
+              href="https://pulsex.com/#/add/v2"
+              target="_blank" rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '11px 22px', borderRadius: 10,
+                background: 'rgba(247,57,255,0.12)', border: '1px solid rgba(247,57,255,0.28)',
+                color: '#f739ff', fontSize: 13, fontWeight: 700, textDecoration: 'none',
+                transition: 'all .15s',
+              }}
+              onMouseOver={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(247,57,255,0.2)')}
+              onMouseOut={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(247,57,255,0.12)')}
+            >
+              Add Liquidity <ExternalLink size={12} />
+            </a>
+            <a
+              href="https://pulsex.com/#/farm"
+              target="_blank" rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '11px 22px', borderRadius: 10,
+                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.10)',
+                color: 'var(--fg-muted)', fontSize: 13, fontWeight: 700, textDecoration: 'none',
+                transition: 'all .15s',
+              }}
+              onMouseOver={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.08)')}
+              onMouseOut={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)')}
+            >
+              <Zap size={12} /> Explore Farms
+            </a>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

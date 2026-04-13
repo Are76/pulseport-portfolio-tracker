@@ -775,6 +775,72 @@ button, a {
 .asset-card-premium .sparkline-container { opacity: 0.65; transition: opacity 0.2s var(--ease-spring); }
 .asset-card-premium:hover .sparkline-container { opacity: 1; }
 
+/* ── LP / LIQUIDITY CARDS ────────────────────────────────────────────── */
+.lp-card {
+  background: linear-gradient(160deg, rgba(247,57,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(247,57,255,0.12);
+  border-radius: 18px;
+  padding: 20px;
+  cursor: pointer;
+  transition: border-color 0.22s var(--ease-spring), box-shadow 0.28s var(--ease-spring), transform 0.22s var(--ease-spring);
+  position: relative;
+  overflow: hidden;
+  will-change: transform;
+}
+.lp-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 10%, rgba(247,57,255,0.35) 50%, transparent 90%);
+  opacity: 0.6;
+  pointer-events: none;
+}
+.lp-card:hover {
+  border-color: rgba(247,57,255,0.28);
+  box-shadow: 0 0 0 1px rgba(247,57,255,0.08), 0 4px 20px rgba(247,57,255,0.12), 0 16px 48px rgba(0,0,0,0.45);
+  transform: translateY(-3px);
+}
+.lp-card:active { transform: translateY(-1px) scale(0.99); }
+
+.lp-card-compact {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  cursor: pointer;
+  transition: background 0.15s var(--ease-spring), border-color 0.15s var(--ease-spring);
+  user-select: none;
+}
+.lp-card-compact:hover {
+  background: rgba(247,57,255,0.06);
+  border-color: rgba(247,57,255,0.18);
+}
+.lp-card-compact:active { transform: scale(0.99); }
+
+[data-theme="light"] .lp-card {
+  background: #ffffff;
+  border: 1px solid rgba(180,0,200,0.12);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+[data-theme="light"] .lp-card:hover {
+  border-color: rgba(180,0,200,0.28);
+  box-shadow: 0 4px 20px rgba(180,0,200,0.10), 0 1px 4px rgba(0,0,0,0.06);
+}
+[data-theme="light"] .lp-card-compact {
+  background: #f8f8fc;
+  border: 1px solid rgba(0,0,0,0.08);
+}
+[data-theme="light"] .lp-card-compact:hover {
+  background: rgba(180,0,200,0.05);
+  border-color: rgba(180,0,200,0.18);
+}
+
 /* ── ASSET GRID 3-COLUMN RESPONSIVE ──────────────────────────────────── */
 .asset-grid-3col {
   display: grid;

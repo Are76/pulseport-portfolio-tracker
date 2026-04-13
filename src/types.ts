@@ -82,6 +82,22 @@ export interface FarmPosition {
   pendingIncUsd: number;
 }
 
+export interface LpPositionEnriched extends LpPosition {
+  totalSupply: number;
+  ownershipPct: number;
+  reserve0: number;
+  reserve1: number;
+  token0PriceUsd: number;
+  token1PriceUsd: number;
+  ilEstimate: number | null;      // result of IL formula × 100 for %, null if no entry
+  fees24hUsd: number | null;
+  volume24hUsd: number | null;
+  isStaked: boolean;
+  poolId?: number;
+  pendingIncUsd?: number;
+  sparkline: { t: number; v: number }[];  // 7 points, approximate — totalUsd ± small variance
+}
+
 export interface PortfolioSummary {
   totalValue: number;
   pnl24h: number;
