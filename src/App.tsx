@@ -359,6 +359,7 @@ export default function App() {
   const [walletAssets, setWalletAssets] = useState<Record<string, Asset[]>>({});
   const [walletChainFilter, setWalletChainFilter] = useState<'all' | 'pulsechain' | 'ethereum' | 'base'>('all');
   const [overviewChainFilter, setOverviewChainFilter] = useState<'all' | 'pulsechain' | 'ethereum' | 'base'>('all');
+  const [overviewTokenSearch, setOverviewTokenSearch] = useState<string>('');
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
   const [historyRange, setHistoryRange] = useState<'1D' | '1W' | '1M'>('1M');
   const [txTypeFilter, setTxTypeFilter] = useState<string>('all');
@@ -2896,7 +2897,12 @@ export default function App() {
                   const chainFilteredAssets = overviewChainFilter === 'all'
                     ? baseAssets
                     : baseAssets.filter(a => a.chain === overviewChainFilter);
-                  const displayAssets = [...chainFilteredAssets].sort((a, b) => b.value - a.value).slice(0, 9);
+                  const tokenSearchFiltered = overviewTokenSearch
+                    ? chainFilteredAssets.filter(a =>
+                        a.symbol.toUpperCase().includes(overviewTokenSearch.toUpperCase()) ||
+                        ((a as any).name || '').toUpperCase().includes(overviewTokenSearch.toUpperCase()))
+                    : chainFilteredAssets;
+                  const displayAssets = [...tokenSearchFiltered].sort((a, b) => b.value - a.value).slice(0, 9);
                   if (displayAssets.length === 0 && currentAssets.length === 0) return null;
                   const totalShown = displayAssets.reduce((s, a) => s + a.value, 0);
                   const fmtValue = (v: number) => v >= 1e6 ? `$${(v/1e6).toFixed(2)}M` : v >= 1e3 ? `$${(v/1e3).toFixed(0)}K` : `$${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
@@ -2943,6 +2949,45 @@ export default function App() {
                               <span className="chip-x">✕</span>
                             </button>
                           )}
+                          {/* Active token search chip */}
+                          {overviewTokenSearch && (
+                            <button className="filter-chip" onClick={() => setOverviewTokenSearch('')}>
+                              {overviewTokenSearch}
+                              <span className="chip-x">✕</span>
+                            </button>
+                          )}
+                        </div>
+                        {/* Token search input row */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+                          <div style={{ position: 'relative', flex: 1, maxWidth: 260 }}>
+                            <Search size={12} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--fg-subtle)', pointerEvents: 'none' }} />
+                            <input
+                              type="text"
+                              placeholder="Filter by token…"
+                              value={overviewTokenSearch}
+                              onChange={e => setOverviewTokenSearch(e.target.value)}
+                              style={{
+                                width: '100%', boxSizing: 'border-box',
+                                paddingLeft: 30, paddingRight: overviewTokenSearch ? 28 : 10, paddingTop: 6, paddingBottom: 6,
+                                borderRadius: 8, border: '1px solid var(--border)',
+                                background: 'var(--bg-elevated)', color: 'var(--fg)',
+                                fontSize: 12, outline: 'none', transition: 'border-color .15s',
+                              }}
+                              onFocus={e => (e.target.style.borderColor = 'rgba(139,92,246,0.45)')}
+                              onBlur={e => (e.target.style.borderColor = 'var(--border)')}
+                            />
+                            {overviewTokenSearch && (
+                              <button onClick={() => setOverviewTokenSearch('')}
+                                style={{ position: 'absolute', right: 7, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', padding: 0, display: 'flex' }}>
+                                <X size={12} />
+                              </button>
+                            )}
+                          </div>
+                          {tokenSearchFiltered.length !== baseAssets.length && (
+                            <span style={{ fontSize: 11, color: 'var(--fg-subtle)', whiteSpace: 'nowrap' }}>
+                              {tokenSearchFiltered.length} of {baseAssets.length}
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div style={{ padding: '20px' }}>
@@ -2951,7 +2996,7 @@ export default function App() {
                             const pct = asset.priceChange24h ?? asset.pnl24h ?? 0;
                             const share = ((asset.value / (summary.totalValue || 1)) * 100);
                             const accentColor = ASSET_COLORS[asset.symbol] || '#8b5cf6';
-                            const sparkColor = pct >= 0 ? accentColor : '#f43f5e';
+                            const sparkColor = pct >= 0 ? '#00FF9F' : '#f43f5e';
                             const logo = (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()];
                             const sparkData = Array.from({ length: 12 }, (_, i) => ({
                               v: asset.value * (SPARKLINE_VARIANCE_SCALE + Math.sin(i * 0.8 + asset.value % 3) * SPARKLINE_SIN_AMPLITUDE + i * SPARKLINE_TREND_STEP),
@@ -3903,11 +3948,11 @@ export default function App() {
                               onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
                               onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                               <td style={{ padding: '9px 14px', fontSize: 13, fontWeight: 600 }}>{lp.pairName}</td>
-                              <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13 }}>
+                              <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13 }}>
                                 <div style={{ color: 'var(--fg)' }}>{lp.token0Amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {lp.token0Symbol}</div>
                                 <div style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>${lp.token0Usd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
                               </td>
-                              <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13 }}>
+                              <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13 }}>
                                 <div style={{ color: 'var(--fg)' }}>{lp.token1Amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {lp.token1Symbol}</div>
                                 <div style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>${lp.token1Usd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
                               </td>
@@ -3955,8 +4000,8 @@ export default function App() {
                               onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
                               onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                               <td style={{ padding: '9px 14px', fontSize: 13, fontWeight: 600 }}>{farm.pairName}</td>
-                              <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, color: 'var(--fg)' }}>{farm.stakedLp.toLocaleString(undefined, { maximumFractionDigits: 4 })}</td>
-                              <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, color: '#fb923c', fontWeight: 600 }}>{farm.pendingInc.toLocaleString(undefined, { maximumFractionDigits: 4 })} INC</td>
+                              <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: 'var(--fg)' }}>{farm.stakedLp.toLocaleString(undefined, { maximumFractionDigits: 4 })}</td>
+                              <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: '#fb923c', fontWeight: 600 }}>{farm.pendingInc.toLocaleString(undefined, { maximumFractionDigits: 4 })} INC</td>
                               <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 14, fontWeight: 700, color: '#00FF9F' }}>
                                 ${farm.pendingIncUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                               </td>
@@ -4022,8 +4067,8 @@ export default function App() {
                             <thead>
                               <tr style={{ borderBottom: '1px solid var(--border)' }}>
                                 {['', 'Stake ID', 'Chain', 'HEX Now', 'USD Now', 'HEX @ Maturity', 'USD @ Maturity', 'Progress', 'Days Left'].map((h, i) => (
-                                  <th key={i} style={{ padding: '9px 14px', fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)',
-                                    textTransform: 'uppercase', letterSpacing: '.5px', textAlign: i <= 2 ? 'left' : 'right',
+                                  <th key={i} style={{ padding: '12px 16px', fontSize: 12, fontWeight: 700, color: 'var(--fg-muted)',
+                                    textTransform: 'uppercase', letterSpacing: '.6px', textAlign: i <= 2 ? 'left' : 'right',
                                     whiteSpace: 'nowrap', background: 'var(--bg-surface)' }}>
                                     {h}
                                   </th>
@@ -4057,29 +4102,29 @@ export default function App() {
                                       onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
                                       onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                                       {/* expand toggle */}
-                                      <td style={{ padding: '9px 8px 9px 14px', width: 24 }}>
+                                      <td style={{ padding: '12px 8px 12px 16px', width: 24 }}>
                                         <span style={{ fontSize: 14, color: 'var(--fg-subtle)', userSelect: 'none' }}>
                                           {isExpanded ? '▾' : '☰'}
                                         </span>
                                       </td>
-                                      <td style={{ padding: '9px 14px', fontSize: 13, color: 'var(--fg)', fontWeight: 600 }}>#{stake.stakeId}</td>
-                                      <td style={{ padding: '9px 14px' }}>
+                                      <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--fg)', fontWeight: 600 }}>#{stake.stakeId}</td>
+                                      <td style={{ padding: '12px 16px' }}>
                                         <span style={{ fontSize: 13, padding: '2px 7px', borderRadius: 4, fontWeight: 600,
                                           background: stake.chain === 'pulsechain' ? 'rgba(247,57,255,.1)' : 'rgba(98,126,234,.1)',
                                           color: stake.chain === 'pulsechain' ? '#f739ff' : '#627EEA' }}>
                                           {stake.chain === 'pulsechain' ? 'PLS' : 'ETH'}
                                         </span>
                                       </td>
-                                      <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>
+                                      <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>
                                         {hexNow.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                       </td>
-                                      <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#fb923c' }}>
+                                      <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#fb923c' }}>
                                         ${usdNow.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                       </td>
-                                      <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, fontWeight: 600, color: '#00FF9F' }}>
+                                      <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, fontWeight: 600, color: '#00FF9F' }}>
                                         {hexAtMaturity.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                       </td>
-                                      <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#00FF9F' }}>
+                                      <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#00FF9F' }}>
                                         ${usdAtMaturity.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                       </td>
                                       <td style={{ padding: '9px 14px', textAlign: 'right', minWidth: 100 }}>
@@ -4380,14 +4425,49 @@ export default function App() {
                 (tx.counterAsset ?? '').toUpperCase() === txAssetFilter.toUpperCase()
               );
               return (
-                <TokenPnLCard
-                  symbol={txAssetFilter}
-                  transactions={allTokenTxs}
-                  asset={filteredAsset}
-                  priceUsd={tokenPrice}
-                  plsPriceUsd={plsPrice}
-                  logoUrl={logoUrl}
-                />
+                <>
+                  {/* "Filtering by X" banner — PLSFolio style */}
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '10px 16px', borderRadius: 10,
+                    background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.22)',
+                  }}>
+                    {logoUrl && (
+                      <img src={logoUrl} alt={txAssetFilter}
+                        style={{ width: 22, height: 22, borderRadius: '50%', flexShrink: 0 }}
+                        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    )}
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>
+                      Filtering by <span style={{ color: '#a78bfa' }}>{txAssetFilter}</span>
+                    </span>
+                    {filteredAsset && (
+                      <span style={{ fontSize: 12, color: 'var(--fg-subtle)', marginLeft: 4 }}>
+                        · {filteredAsset.chain === 'pulsechain' ? 'PulseChain' : filteredAsset.chain === 'ethereum' ? 'Ethereum' : 'Base'}
+                        · ${tokenPrice < 0.001 ? tokenPrice.toExponential(2) : tokenPrice < 1 ? tokenPrice.toFixed(6) : tokenPrice.toFixed(2)} per token
+                      </span>
+                    )}
+                    <button
+                      onClick={() => setTxAssetFilter('all')}
+                      style={{
+                        marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5,
+                        padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                        background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.28)',
+                        color: '#a78bfa', transition: 'all .12s',
+                      }}
+                      onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(139,92,246,0.22)'; }}
+                      onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(139,92,246,0.12)'; }}>
+                      Clear filter <X size={11} />
+                    </button>
+                  </div>
+                  <TokenPnLCard
+                    symbol={txAssetFilter}
+                    transactions={allTokenTxs}
+                    asset={filteredAsset}
+                    priceUsd={tokenPrice}
+                    plsPriceUsd={plsPrice}
+                    logoUrl={logoUrl}
+                  />
+                </>
               );
             })()}
 
@@ -4807,25 +4887,73 @@ export default function App() {
           return (
             <motion.div key="wallets" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
 
-              {/* ── View filter: wallet pills + chain filter ── */}
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              {/* ── Visual Wallet Selector ── */}
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'stretch' }}>
+                {/* All Wallets card */}
                 <button
                   onClick={() => setSelectedWalletAddr('all')}
-                  style={{ padding: '6px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: '1px solid', transition: 'all .12s',
-                    background: isAll ? '#fff' : 'transparent',
-                    color: isAll ? '#000' : '#aaa',
-                    borderColor: isAll ? 'var(--fg)' : 'var(--border)', minHeight: 36 }}>
-                  All Wallets
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '10px 16px', borderRadius: 12, cursor: 'pointer', border: '1px solid',
+                    transition: 'all .15s', textAlign: 'left', minWidth: 120,
+                    background: isAll ? 'rgba(0,255,159,0.10)' : 'var(--bg-elevated)',
+                    borderColor: isAll ? 'rgba(0,255,159,0.35)' : 'var(--border)',
+                    boxShadow: isAll ? '0 0 0 1px rgba(0,255,159,0.15)' : 'none',
+                  }}>
+                  <div style={{
+                    width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+                    background: isAll ? 'rgba(0,255,159,0.15)' : 'var(--bg-surface)',
+                    border: `1.5px solid ${isAll ? 'rgba(0,255,159,0.4)' : 'var(--border)'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
+                  }}>🗂️</div>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: isAll ? '#00FF9F' : 'var(--fg)', letterSpacing: '-0.01em' }}>All Wallets</div>
+                    <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 1 }}>
+                      {wallets.length} wallet{wallets.length !== 1 ? 's' : ''}
+                    </div>
+                  </div>
                 </button>
-                {wallets.map(w => {
+
+                {/* Per-wallet cards */}
+                {wallets.map((w, wIdx) => {
                   const isActive = selectedWalletAddr === w.address.toLowerCase();
+                  const walletDotColors = ['#00FF9F','#f739ff','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
+                  const dotColor = walletDotColors[wIdx % walletDotColors.length];
+                  const shortAddr = `${w.address.slice(0,6)}…${w.address.slice(-4)}`;
+                  const wAssets = walletAssets[w.address.toLowerCase()] || [];
+                  const wVal = wAssets.reduce((s: number, a: any) => s + (a.value || 0), 0);
                   return (
                     <button key={w.address} onClick={() => setSelectedWalletAddr(w.address.toLowerCase())}
-                      style={{ padding: '6px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: '1px solid', transition: 'all .12s',
-                        background: isActive ? '#fff' : 'transparent',
-                        color: isActive ? '#000' : '#aaa',
-                        borderColor: isActive ? 'var(--fg)' : 'var(--border)', minHeight: 36 }}>
-                      {w.name}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '10px 16px', borderRadius: 12, cursor: 'pointer', border: '1px solid',
+                        transition: 'all .15s', textAlign: 'left', minWidth: 140,
+                        background: isActive ? `${dotColor}18` : 'var(--bg-elevated)',
+                        borderColor: isActive ? `${dotColor}55` : 'var(--border)',
+                        boxShadow: isActive ? `0 0 0 1px ${dotColor}22` : 'none',
+                      }}
+                      onMouseOver={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'var(--bg-surface)'; }}
+                      onMouseOut={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)'; }}>
+                      {/* Avatar */}
+                      <div style={{
+                        width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+                        background: `${dotColor}20`, border: `1.5px solid ${dotColor}55`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 14, fontWeight: 800, color: dotColor,
+                      }}>
+                        {w.name ? w.name[0].toUpperCase() : shortAddr[2].toUpperCase()}
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 800, color: isActive ? dotColor : 'var(--fg)', letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120 }}>
+                          {w.name || shortAddr}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 1, fontFamily: 'monospace' }}>
+                          {wVal > 0 ? `$${wVal >= 1000 ? `${(wVal/1000).toFixed(1)}K` : wVal.toFixed(0)}` : shortAddr}
+                        </div>
+                      </div>
+                      {isActive && (
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: dotColor, flexShrink: 0, marginLeft: 'auto', boxShadow: `0 0 6px ${dotColor}` }} />
+                      )}
                     </button>
                   );
                 })}
