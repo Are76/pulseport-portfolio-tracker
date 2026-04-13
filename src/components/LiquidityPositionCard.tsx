@@ -110,19 +110,21 @@ function Sparkline({ data, w, h, id }: {
   id: string;
 }) {
   const gradId = `lp-grad-${id}`;
+  const isPositive = data.length < 2 || data[data.length - 1].v >= data[0].v;
+  const color = isPositive ? '#00FF9F' : '#f43f5e';
   return (
     <div style={{ width: w ?? '100%', height: h, flexShrink: 0 }}>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 2, right: 0, bottom: 2, left: 0 }}>
           <defs>
             <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#00FF9F" stopOpacity={0.45} />
-              <stop offset="100%" stopColor="#00FF9F" stopOpacity={0} />
+              <stop offset="0%" stopColor={color} stopOpacity={0.45} />
+              <stop offset="100%" stopColor={color} stopOpacity={0} />
             </linearGradient>
           </defs>
           <Area
             type="monotone" dataKey="v"
-            stroke="#00FF9F" strokeWidth={1.5}
+            stroke={color} strokeWidth={1.5}
             fill={`url(#${gradId})`}
             dot={false} isAnimationActive={false}
           />
@@ -164,7 +166,7 @@ function TokenBox({ address, symbol, amount, usd, weightPct, priceUsd }: TokenBo
       }}>
         <div style={{
           width: `${Math.min(weightPct, 100)}%`, height: '100%',
-          background: 'linear-gradient(90deg, #00FF9F, rgba(0,204,204,0.8))',
+          background: 'var(--accent)',
           borderRadius: 2, transition: 'width 0.4s var(--ease-spring)',
         }} />
       </div>
@@ -279,7 +281,7 @@ function LiquidityPositionCardFull({ pos }: { pos: LpPositionEnriched }) {
       </div>
 
       {/* ── Divider ── */}
-      <div style={{ height: 1, background: 'var(--border-inset)' }} />
+      <div style={{ height: 1, background: 'var(--border)' }} />
 
       {/* ── Token Amount Row ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>

@@ -1435,3 +1435,166 @@ button, a {
   background: rgba(249,115,22,0.08);
   border-color: rgba(249,115,22,0.22);
 }
+
+/* ── LIGHT MODE: LP card fixes ──────────────────────────────────────── */
+[data-theme="light"] .lp-card {
+  background: #ffffff;
+  border-color: rgba(0,0,0,0.10);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+}
+[data-theme="light"] .lp-card:hover {
+  border-color: rgba(180,0,200,0.22);
+  box-shadow: 0 4px 20px rgba(180,0,200,0.08), 0 1px 4px rgba(0,0,0,0.07);
+}
+[data-theme="light"] .lp-card-compact {
+  background: rgba(0,0,0,0.03);
+  border-color: rgba(0,0,0,0.08);
+}
+[data-theme="light"] .lp-card-compact:hover {
+  background: rgba(180,0,200,0.04);
+  border-color: rgba(180,0,200,0.18);
+}
+
+/* ── WALLET SELECTOR ─────────────────────────────────────────────────── */
+.wallet-selector-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+[data-theme="light"] .wallet-selector-bar {
+  background: #ffffff;
+  border-color: rgba(0,0,0,0.12);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.wallet-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--fg-muted);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+  transition: all 0.14s var(--ease-spring);
+  white-space: nowrap;
+  user-select: none;
+}
+.wallet-pill:hover {
+  background: var(--bg-elevated);
+  color: var(--fg);
+  border-color: var(--border-strong);
+}
+.wallet-pill.active {
+  background: var(--accent-dim);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+[data-theme="light"] .wallet-pill {
+  background: #f5f5fa;
+  border-color: rgba(0,0,0,0.10);
+  color: var(--fg-muted);
+}
+[data-theme="light"] .wallet-pill:hover {
+  background: #ebebf2;
+  color: var(--fg);
+}
+[data-theme="light"] .wallet-pill.active {
+  background: rgba(0,122,77,0.08);
+  border-color: rgba(0,122,77,0.28);
+  color: #007a4d;
+}
+.wallet-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.wallet-dot-pulse { background: var(--chain-pulse); box-shadow: 0 0 4px var(--chain-pulse); }
+.wallet-dot-eth   { background: var(--chain-eth);   box-shadow: 0 0 4px var(--chain-eth); }
+.wallet-dot-base  { background: var(--chain-base);  box-shadow: 0 0 4px var(--chain-base); }
+.wallet-dot-multi { background: var(--accent);      box-shadow: 0 0 4px var(--accent); }
+
+/* ── STAKES PAGE ─────────────────────────────────────────────────────── */
+.stake-yield-hero {
+  font-size: 18px;
+  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: -0.03em;
+  color: var(--positive);
+  line-height: 1.1;
+}
+[data-theme="light"] .stake-yield-hero { color: var(--positive-text); }
+
+.stake-maturity-value {
+  font-size: 17px;
+  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: -0.03em;
+  color: var(--accent);
+  line-height: 1.1;
+}
+
+/* Days-left healthy state (> 180 days remaining) */
+.days-left-healthy {
+  color: var(--positive-text);
+  background: rgba(0,255,159,0.08);
+  border-color: rgba(0,255,159,0.22);
+}
+[data-theme="light"] .days-left-healthy {
+  background: rgba(0,122,77,0.07);
+  border-color: rgba(0,122,77,0.20);
+}
+
+/* ── DEFI EMPTY STATE ────────────────────────────────────────────────── */
+.defi-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 32px 52px;
+  text-align: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  gap: 22px;
+}
+[data-theme="light"] .defi-empty-state {
+  background: #ffffff;
+  border-color: rgba(0,0,0,0.10);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+.defi-empty-info-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+[data-theme="light"] .defi-empty-info-card {
+  background: #f5f5fa;
+  border-color: rgba(0,0,0,0.09);
+}
+
+/* ── OVERVIEW GRID spacing ───────────────────────────────────────────── */
+.overview-9grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+@media (max-width: 900px) {
+  .overview-9grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+}
+@media (max-width: 540px) {
+  .overview-9grid { grid-template-columns: 1fr; gap: 12px; }
+}
