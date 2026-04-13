@@ -122,7 +122,8 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
   const totalBought = filteredBuys.reduce((s, tx) => s + tx.amount, 0);
   const totalSold   = filteredSells.reduce((s, tx) => s + (tx.counterAmount ?? 0), 0);
 
-  // Use sum of tx.valueUsd for cost — consistent with how proceedsUsd is computed
+  // Sum tx.valueUsd for cost so both cost and proceeds use the same valuation basis
+  // (both are priced at most-recent data refresh — historical prices are unavailable)
   const costUsd         = filteredBuys.reduce((s, tx) => s + (tx.valueUsd ?? 0), 0);
   const proceedsUsd     = filteredSells.reduce((s, tx) => s + (tx.valueUsd ?? 0), 0);
   const soldFraction    = totalBought > 0 ? Math.min(totalSold / totalBought, 1) : 0;
@@ -568,7 +569,7 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
 
           {/* Disclaimer */}
           <div style={{ padding: '0 20px 16px', fontSize: 10, color: 'var(--fg-subtle)', textAlign: 'center', lineHeight: 1.5 }}>
-            P&amp;L is estimated from on-chain transaction values at time of data refresh.
+            P&amp;L is estimated using current token prices applied to on-chain amounts — historical prices are not stored.
             Cost = USD value of acquisitions · Proceeds = USD value of disposals.
           </div>
         </div>
