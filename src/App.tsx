@@ -431,6 +431,8 @@ export default function App() {
   const [txChainFilter, setTxChainFilter] = useState<string>('all');
   const [txYearFilter, setTxYearFilter] = useState<string>('all');
   const [txCoinCategory, setTxCoinCategory] = useState<string>('all');
+  const [viewAsYou, setViewAsYou] = useState(false);
+  const [txCompact, setTxCompact] = useState(false);
   const [receivedCoinFilter, setReceivedCoinFilter] = useState<string>('all');
   const [receivedChainFilter, setReceivedChainFilter] = useState<string>('all');
   const [timeSinceLastUpdate, setTimeSinceLastUpdate] = useState<number>(0);
@@ -470,11 +472,12 @@ export default function App() {
   const [expandedAssetIds, setExpandedAssetIds] = useState<Set<string>>(new Set());
   const [priceDisplayCurrency, setPriceDisplayCurrency] = useState<'usd' | 'pls'>('usd');
   const [pnlAsset, setPnlAsset] = useState<Asset | null>(null);
-  const [perfPeriod, setPerfPeriod] = useState<'1d' | '1w' | '1y' | 'all'>('all');
+  const [perfPeriod, setPerfPeriod] = useState<'1w' | '1m' | '1y' | 'all'>('all');
   const fmtLabel = (ts: number) => {
-    if (perfPeriod === '1d') return format(ts, 'HH:mm');
     if (perfPeriod === '1w') return format(ts, 'EEE d');
-    return format(ts, 'MMM d');
+    if (perfPeriod === '1m') return format(ts, 'MMM d');
+    if (perfPeriod === '1y') return format(ts, 'MMM yy');
+    return format(ts, 'MMM yy');
   };
   const [hiddenTxIds, setHiddenTxIds] = useState<string[]>(() => {
     const saved = localStorage.getItem('pulseport_hidden_txs');
@@ -2855,16 +2858,18 @@ export default function App() {
                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }} className="max-sm:grid-cols-1">
                              {[
                                { label: 'Total Invested', val: `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Amount put into portfolio', color: t.text,
-                                 icon: <TrendingUp size={14} color={t.textMuted} />, iconBg: t.cardHigh },
+                                 icon: <TrendingUp size={14} color={t.textMuted} />, iconBg: t.cardHigh, link: true },
                                { label: 'Total P&L', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${summary.unifiedPnl >= 0 ? '+' : ''}${summary.totalValue > 0 ? ((summary.unifiedPnl / Math.max(summary.netInvestment, 1)) * 100).toFixed(1) : '0.0'}% vs invested`, color: summary.unifiedPnl >= 0 ? t.green : t.red,
-                                 icon: <ArrowUpRight size={14} color={summary.unifiedPnl >= 0 ? t.green : t.red} />, iconBg: summary.unifiedPnl >= 0 ? 'rgba(0,255,159,0.1)' : 'rgba(244,63,94,0.1)' },
-                             ].map(({ label, val, sub, color, icon, iconBg }) => (
-                               <div key={label} className="stat-card">
+                                 icon: <ArrowUpRight size={14} color={summary.unifiedPnl >= 0 ? t.green : t.red} />, iconBg: summary.unifiedPnl >= 0 ? 'rgba(0,255,159,0.1)' : 'rgba(244,63,94,0.1)', link: false },
+                             ].map(({ label, val, sub, color, icon, iconBg, link }) => (
+                               <div key={label} className="stat-card" onClick={link ? () => setActiveTab('history') : undefined}
+                                 style={link ? { cursor: 'pointer' } : undefined}>
                                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
                                    <div style={{ width: 26, height: 26, borderRadius: 8, background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                      {icon}
                                    </div>
                                    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.8px' }}>{label}</div>
+                                   {link && <ExternalLink size={10} style={{ marginLeft: 'auto', color: 'var(--fg-subtle)', flexShrink: 0 }} />}
                                  </div>
                                  <div style={{ fontSize: 20, fontWeight: 800, color, fontVariantNumeric: 'tabular-nums', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.02em' }}>{val}</div>
                                  <div style={{ fontSize: 12, color: 'var(--fg-subtle)', marginTop: 3 }}>{sub}</div>
@@ -3250,8 +3255,8 @@ export default function App() {
                 {(() => {
                   const now = Date.now();
                   const cutoffs: Record<string, number> = {
-                    '1d': now - 24 * 3600 * 1000,
                     '1w': now - 7 * 24 * 3600 * 1000,
+                    '1m': now - 30 * 24 * 3600 * 1000,
                     '1y': now - 365 * 24 * 3600 * 1000,
                     'all': 0,
                   };
@@ -3261,12 +3266,10 @@ export default function App() {
                   const mockLast = MOCK_HISTORY[MOCK_HISTORY.length - 1]?.value || 1;
                   const scale = currentVal / mockLast;
 
-                  // Format label based on period
-
                   // Deduplicate by period-appropriate bucket, keeping latest value + timestamp per bucket
                   const byBucket = new Map<string, { value: number; ts: number }>();
                   realHistory.forEach(p => {
-                    const key = perfPeriod === '1d' ? format(p.timestamp, 'yyyy-MM-dd HH') : format(p.timestamp, 'yyyy-MM-dd');
+                    const key = perfPeriod === '1w' ? format(p.timestamp, 'yyyy-MM-dd HH') : format(p.timestamp, 'yyyy-MM-dd');
                     byBucket.set(key, { value: p.value, ts: p.timestamp });
                   });
                   const uniquePts = [...byBucket.entries()]
@@ -3280,9 +3283,9 @@ export default function App() {
                     chartPoints = uniquePts;
                   } else {
                     isSimulated = true;
-                    const mockCount = perfPeriod === '1d' ? 24 : perfPeriod === '1w' ? 7 : perfPeriod === '1y' ? 52 : 30;
+                    const mockCount = perfPeriod === '1w' ? 28 : perfPeriod === '1m' ? 30 : perfPeriod === '1y' ? 52 : 60;
                     chartPoints = MOCK_HISTORY.slice(-mockCount).map(p => ({
-                      day: format(p.timestamp, perfPeriod === '1d' ? 'HH:mm' : 'MMM d'),
+                      day: fmtLabel(p.timestamp),
                       value: p.value * scale
                     }));
                     if (chartPoints.length > 0) chartPoints[chartPoints.length - 1].value = currentVal;
@@ -3292,6 +3295,15 @@ export default function App() {
                     ? ((chartPoints[chartPoints.length - 1].value - chartPoints[0].value) / Math.max(1, chartPoints[0].value)) * 100
                     : 0;
 
+                  const periodLabel: Record<string, string> = { '1w': 'Week', '1m': 'Month', '1y': 'Year', 'all': 'All' };
+                  const xTickCount = perfPeriod === '1w' ? 7 : perfPeriod === '1m' ? 6 : 8;
+                  const xInterval = Math.max(0, Math.floor(chartPoints.length / xTickCount) - 1);
+
+                  const yMin = Math.min(...chartPoints.map(p => p.value));
+                  const yMax = Math.max(...chartPoints.map(p => p.value));
+                  const yPad = (yMax - yMin) * 0.1 || yMax * 0.1;
+                  const fmtYAxis = (v: number) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v.toFixed(0)}`;
+
                   return (
                     <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, overflow: 'hidden' }}>
                       <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, borderBottom: isCollapsed('perf-chart') ? 'none' : `1px solid ${t.borderLight}` }}>
@@ -3300,19 +3312,19 @@ export default function App() {
                           <div style={{ fontSize: 13, fontWeight: 700, color: periodChange >= 0 ? t.green : t.red }}>
                             {periodChange >= 0 ? '+' : ''}{periodChange.toFixed(2)}%
                           </div>
-
+                          {isSimulated && <div style={{ fontSize: 10, color: t.textMuted, fontStyle: 'italic' }}>simulated</div>}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           {/* Period tabs */}
                           {!isCollapsed('perf-chart') && (
                             <div style={{ display: 'flex', gap: 2, background: t.cardHigh, border: `1px solid ${t.border}`, borderRadius: 8, padding: 3 }}>
-                              {(['1d','1w','1y','all'] as const).map(p => (
+                              {(['1w','1m','1y','all'] as const).map(p => (
                                 <button key={p} onClick={() => setPerfPeriod(p)}
                                   style={{ padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none', transition: 'all .12s',
                                     background: perfPeriod === p ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
                                     color: perfPeriod === p ? '#000' : 'var(--fg-muted)',
                                     boxShadow: perfPeriod === p ? '0 0 10px rgba(0,255,159,0.25)' : 'none' }}>
-                                  {p === '1d' ? '24H' : p === '1w' ? '7D' : p === '1y' ? '1Y' : 'ALL'}
+                                  {periodLabel[p]}
                                 </button>
                               ))}
                             </div>
@@ -3327,24 +3339,25 @@ export default function App() {
                         </div>
                       </div>
                       {!isCollapsed('perf-chart') && (
-                        <div style={{ padding: '10px 18px 10px' }}>
-                          <div style={{ height: 260 }}>
+                        <div style={{ padding: '10px 4px 10px 0' }}>
+                          <div style={{ height: 270 }}>
                             <ResponsiveContainer width="100%" height="100%" debounce={50}>
-                              <AreaChart data={chartPoints}>
+                              <AreaChart data={chartPoints} margin={{ top: 4, right: 18, left: 0, bottom: 0 }}>
                                 <defs>
                                   <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#00FF9F" stopOpacity={0.25}/>
+                                    <stop offset="5%" stopColor="#00FF9F" stopOpacity={0.22}/>
                                     <stop offset="95%" stopColor="#00FF9F" stopOpacity={0}/>
                                   </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#1a1a1a' : '#e8e8e8'} vertical={false} />
-                                <XAxis dataKey="day" stroke={theme === 'dark' ? '#333' : '#ccc'} fontSize={11} tickLine={false} axisLine={false} tick={{ fill: t.textSecondary }} interval={Math.max(0, Math.floor(chartPoints.length / 7) - 1)} />
-                                <YAxis hide />
+                                <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#1e1e1e' : '#e8e8e8'} vertical={false} />
+                                <XAxis dataKey="day" stroke={theme === 'dark' ? '#333' : '#ccc'} fontSize={11} tickLine={false} axisLine={false} tick={{ fill: t.textSecondary }} interval={xInterval} />
+                                <YAxis width={54} fontSize={11} tickLine={false} axisLine={false} tick={{ fill: t.textSecondary }} tickFormatter={fmtYAxis} domain={[yMin - yPad, yMax + yPad]} />
                                 <RechartsTooltip
                                   contentStyle={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 13, color: t.text }}
-                                  formatter={(v: any) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Value']}
+                                  formatter={(v: any) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Portfolio Value']}
+                                  labelStyle={{ color: t.textSecondary, marginBottom: 4 }}
                                 />
-                                <Area type="monotone" dataKey="value" stroke="#00FF9F" fillOpacity={1} fill="url(#colorValue)" strokeWidth={2} dot={false} />
+                                <Area type="monotone" dataKey="value" stroke="#00FF9F" fillOpacity={1} fill="url(#colorValue)" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: '#00FF9F', strokeWidth: 0 }} />
                               </AreaChart>
                             </ResponsiveContainer>
                           </div>
@@ -3528,8 +3541,8 @@ export default function App() {
                               : (asset.priceChange24h ?? asset.pnl24h ?? 0);
                             const share = ((asset.value / (summary.totalValue || 1)) * 100);
                             const addr = (asset as any).address;
-                            const logo = (asset as any).logoUrl
-                              || tokenLogos[(asset as any).address?.toLowerCase?.()]
+                            const logo = tokenLogos[(asset as any).address?.toLowerCase?.()]
+                              || (asset as any).logoUrl
                               || getTokenLogoUrl(asset);
                             const explUrl = explorerUrl(asset.chain, addr);
                             const dsUrl = dexScreenerUrl(asset.chain, addr);
@@ -4092,10 +4105,10 @@ export default function App() {
                               Value at Maturity
                             </div>
                           </div>
-                          <div style={{ fontSize: 26, fontWeight: 800, color: t.green, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.03em', lineHeight: 1, marginBottom: 6 }}>
-                            ${(fMaturityHex * phexHp).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                          <div style={{ fontSize: 26, fontWeight: 800, color: t.green, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.03em', lineHeight: 1, marginBottom: 4 }}>
+                            {fMaturityHex.toLocaleString(undefined, { maximumFractionDigits: 0 })} <span style={{ fontSize: 14, fontWeight: 600, opacity: 0.75 }}>HEX</span>
                           </div>
-                          <div style={{ fontSize: 12, color: t.green, opacity: 0.75 }}>{fMaturityHex.toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX est.</div>
+                          <div style={{ fontSize: 13, color: t.green, opacity: 0.75, fontFamily: 'JetBrains Mono, monospace' }}>${(fMaturityHex * phexHp).toLocaleString(undefined, { maximumFractionDigits: 0 })} est.</div>
                         </div>
                         {/* T-Shares */}
                         <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, padding: 20 }}>
@@ -4428,10 +4441,81 @@ export default function App() {
 
             {/* Page header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 0 }}>
-              <div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)', marginBottom: 2 }}>Portfolio History</div>
-                <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Performance tracking &amp; transaction history</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+                <div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)', marginBottom: 2 }}>Transactions</div>
+                  <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Performance tracking &amp; transaction history</div>
+                </div>
+                {/* View as You toggle */}
+                <button onClick={() => setViewAsYou(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}>
+                  <div style={{ width: 36, height: 20, borderRadius: 10, background: viewAsYou ? '#00FF9F' : 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.1)', transition: 'background .15s', position: 'relative', flexShrink: 0 }}>
+                    <div style={{ position: 'absolute', top: 2, left: viewAsYou ? 18 : 2, width: 14, height: 14, borderRadius: '50%', background: 'white', transition: 'left .15s', boxShadow: '0 1px 3px rgba(0,0,0,0.4)' }} />
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg-muted)', whiteSpace: 'nowrap' }}>
+                    View as <span style={{ color: '#00FF9F' }}>You</span>
+                  </span>
+                </button>
+                {/* Compact toggle */}
+                <button onClick={() => setTxCompact(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}>
+                  <div style={{ width: 36, height: 20, borderRadius: 10, background: txCompact ? '#00FF9F' : 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.1)', transition: 'background .15s', position: 'relative', flexShrink: 0 }}>
+                    <div style={{ position: 'absolute', top: 2, left: txCompact ? 18 : 2, width: 14, height: 14, borderRadius: '50%', background: 'white', transition: 'left .15s', boxShadow: '0 1px 3px rgba(0,0,0,0.4)' }} />
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg-muted)', whiteSpace: 'nowrap' }}>Compact</span>
+                </button>
               </div>
+            </div>
+
+            {/* Type filter pills + active filter chips */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              {([
+                { value: 'all', label: 'All' },
+                { value: 'transfer_in', label: 'Received' },
+                { value: 'transfer_out', label: 'Sent' },
+                { value: 'swap', label: 'Swaps' },
+              ] as { value: string; label: string }[]).map(({ value, label }) => (
+                <button key={value}
+                  onClick={() => setTxTypeFilter(value)}
+                  style={{
+                    padding: '5px 16px', borderRadius: 999, fontSize: 12, fontWeight: 700,
+                    cursor: 'pointer', transition: 'all .12s',
+                    background: txTypeFilter === value ? 'var(--fg)' : 'transparent',
+                    color: txTypeFilter === value ? 'var(--bg)' : 'var(--fg-muted)',
+                    border: `1px solid ${txTypeFilter === value ? 'var(--fg)' : 'var(--border)'}`,
+                  }}>
+                  {label}
+                </button>
+              ))}
+              {/* Active filter chips for chain / asset / year / category */}
+              {(txAssetFilter !== 'all' || txChainFilter !== 'all' || txYearFilter !== 'all' || txCoinCategory !== 'all') && (
+                <>
+                  <div style={{ width: 1, height: 18, background: 'var(--border)', flexShrink: 0 }} />
+                  {txAssetFilter !== 'all' && (
+                    <button className="filter-chip" onClick={() => setTxAssetFilter('all')}>
+                      {txAssetFilter}<span className="chip-x">✕</span>
+                    </button>
+                  )}
+                  {txChainFilter !== 'all' && (
+                    <button className="filter-chip" onClick={() => setTxChainFilter('all')}>
+                      {txChainFilter === 'pulsechain' ? 'PulseChain' : txChainFilter === 'ethereum' ? 'Ethereum' : 'Base'}<span className="chip-x">✕</span>
+                    </button>
+                  )}
+                  {txYearFilter !== 'all' && (
+                    <button className="filter-chip" onClick={() => setTxYearFilter('all')}>
+                      {txYearFilter}<span className="chip-x">✕</span>
+                    </button>
+                  )}
+                  {txCoinCategory !== 'all' && (
+                    <button className="filter-chip" onClick={() => setTxCoinCategory('all')}>
+                      {txCoinCategory === 'stablecoins' ? 'Stablecoins' : txCoinCategory === 'eth_weth' ? 'ETH/WETH' : txCoinCategory === 'hex' ? 'HEX/eHEX' : txCoinCategory === 'pls_wpls' ? 'PLS/WPLS' : 'Bridged'}<span className="chip-x">✕</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { setTxTypeFilter('all'); setTxAssetFilter('all'); setTxChainFilter('all'); setTxYearFilter('all'); setTxCoinCategory('all'); }}
+                    style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', background: 'none', border: 'none', cursor: 'pointer', padding: '3px 6px', textDecoration: 'underline' }}>
+                    Clear all
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Stats grid */}
@@ -4455,7 +4539,7 @@ export default function App() {
               {/* Portfolio Performance */}
               {(() => {
                 const now = Date.now();
-                const cutoffs: Record<string, number> = { '1d': now - 24*3600*1000, '1w': now - 7*24*3600*1000, '1y': now - 365*24*3600*1000, 'all': 0 };
+                const cutoffs: Record<string, number> = { '1w': now - 7*24*3600*1000, '1m': now - 30*24*3600*1000, '1y': now - 365*24*3600*1000, 'all': 0 };
                 const cutoff = cutoffs[perfPeriod];
                 const realHistory = (wallets.length > 0 ? history : []).filter(p => p.timestamp >= cutoff);
                 const currentVal = summary.totalValue || 1;
@@ -4463,7 +4547,7 @@ export default function App() {
                 const scale = currentVal / mockLast;
                 const byBucket = new Map<string, { value: number; ts: number }>();
                 realHistory.forEach(p => {
-                  const key = perfPeriod === '1d' ? format(p.timestamp, 'yyyy-MM-dd HH') : format(p.timestamp, 'yyyy-MM-dd');
+                  const key = perfPeriod === '1w' ? format(p.timestamp, 'yyyy-MM-dd HH') : format(p.timestamp, 'yyyy-MM-dd');
                   byBucket.set(key, { value: p.value, ts: p.timestamp });
                 });
                 const uniquePts = [...byBucket.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, { value, ts }]) => ({ day: fmtLabel(ts), value }));
@@ -4471,39 +4555,45 @@ export default function App() {
                 if (uniquePts.length >= 3) {
                   histChartPoints = uniquePts;
                 } else {
-                  const mockCount = perfPeriod === '1d' ? 24 : perfPeriod === '1w' ? 7 : perfPeriod === '1y' ? 52 : 30;
-                  histChartPoints = MOCK_HISTORY.slice(-mockCount).map(p => ({ day: format(p.timestamp, perfPeriod === '1d' ? 'HH:mm' : 'MMM d'), value: p.value * scale }));
+                  const mockCount = perfPeriod === '1w' ? 28 : perfPeriod === '1m' ? 30 : perfPeriod === '1y' ? 52 : 60;
+                  histChartPoints = MOCK_HISTORY.slice(-mockCount).map(p => ({ day: fmtLabel(p.timestamp), value: p.value * scale }));
                   if (histChartPoints.length > 0) histChartPoints[histChartPoints.length - 1].value = currentVal;
                 }
+                const histPeriodLabel: Record<string, string> = { '1w': 'Week', '1m': 'Month', '1y': 'Year', 'all': 'All' };
+                const histYMin = Math.min(...histChartPoints.map(p => p.value));
+                const histYMax = Math.max(...histChartPoints.map(p => p.value));
+                const histYPad = (histYMax - histYMin) * 0.1 || histYMax * 0.1;
+                const fmtHistY = (v: number) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v.toFixed(0)}`;
                 return (
-                  <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 18px 10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                  <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 4px 10px 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, paddingLeft: 18, paddingRight: 18 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.6px' }}>Portfolio Performance</div>
                       <div style={{ display: 'flex', gap: 2, background: 'var(--bg-elevated)', border: '1px solid #252525', borderRadius: 8, padding: 3 }}>
-                        {(['1d','1w','1y','all'] as const).map(p => (
+                        {(['1w','1m','1y','all'] as const).map(p => (
                           <button key={p} onClick={() => setPerfPeriod(p)}
-                            style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
+                            style={{ padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
                               background: perfPeriod === p ? '#00FF9F' : 'transparent',
                               color: perfPeriod === p ? '#000' : '#555' }}>
-                            {p.toUpperCase()}
+                            {histPeriodLabel[p]}
                           </button>
                         ))}
                       </div>
                     </div>
-                    <ResponsiveContainer width="100%" height={220}>
-                      <AreaChart data={histChartPoints}>
+                    <ResponsiveContainer width="100%" height={230}>
+                      <AreaChart data={histChartPoints} margin={{ top: 4, right: 18, left: 0, bottom: 0 }}>
                         <defs>
                           <linearGradient id="histColorValue" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="5%" stopColor="#00FF9F" stopOpacity={0.2}/>
                             <stop offset="95%" stopColor="#00FF9F" stopOpacity={0}/>
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                        <XAxis dataKey="day" tick={{ fill: '#7c8798', fontSize: 11 }} axisLine={{ stroke: '#222' }} tickLine={false} interval={Math.max(0, Math.floor(histChartPoints.length / 6) - 1)} />
-                        <YAxis hide />
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                        <XAxis dataKey="day" tick={{ fill: '#7c8798', fontSize: 11 }} axisLine={{ stroke: '#222' }} tickLine={false} interval={Math.max(0, Math.floor(histChartPoints.length / 7) - 1)} />
+                        <YAxis width={54} fontSize={11} tickLine={false} axisLine={false} tick={{ fill: '#7c8798' }} tickFormatter={fmtHistY} domain={[histYMin - histYPad, histYMax + histYPad]} />
                         <RechartsTooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13 }}
-                          formatter={(v: any) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Value']} />
-                        <Area type="monotone" dataKey="value" stroke="#00FF9F" fillOpacity={1} fill="url(#histColorValue)" strokeWidth={2} dot={false} />
+                          formatter={(v: any) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Portfolio Value']}
+                          labelStyle={{ color: '#7c8798', marginBottom: 4 }} />
+                        <Area type="monotone" dataKey="value" stroke="#00FF9F" fillOpacity={1} fill="url(#histColorValue)" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: '#00FF9F', strokeWidth: 0 }} />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
@@ -4695,7 +4785,6 @@ export default function App() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   {!isCollapsed('history-txs') && (<>
                     {[
-                      { value: txTypeFilter, onChange: setTxTypeFilter, options: [['all','All Types'],['transfer_in','Received'],['transfer_out','Sent'],['swap','Swaps']] as [string,string][] },
                       { value: txChainFilter, onChange: setTxChainFilter, options: [['all','All Chains'],['pulsechain','PulseChain'],['ethereum','Ethereum'],['base','Base']] as [string,string][] },
                       { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Assets'], ...Array.from(new Set(currentTransactions.map(tx => tx.asset))).sort().map(a => [a,a])] as [string,string][] },
                       { value: txYearFilter, onChange: setTxYearFilter, options: [['all','All Years'],['2026','2026'],['2025','2025'],['2024','2024'],['2023','2023'],['2022','2022'],['2021','2021']] as [string,string][] },
@@ -4752,16 +4841,10 @@ export default function App() {
                   </div>
                 </div>
               )}
-              {/* ── Active Filter Chips ── */}
-              {(txTypeFilter !== 'all' || txAssetFilter !== 'all' || txChainFilter !== 'all' || txYearFilter !== 'all' || txCoinCategory !== 'all') && (
+              {/* ── Active Filter Chips (secondary filters only — type handled by top pills) ── */}
+              {(txAssetFilter !== 'all' || txChainFilter !== 'all' || txYearFilter !== 'all' || txCoinCategory !== 'all') && (
                 <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, padding: '8px 18px', borderBottom: '1px solid var(--border)' }}>
                   <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginRight: 4 }}>Filtering by:</span>
-                  {txTypeFilter !== 'all' && (
-                    <button className="filter-chip" onClick={() => setTxTypeFilter('all')}>
-                      {txTypeFilter === 'transfer_in' ? 'Received' : txTypeFilter === 'transfer_out' ? 'Sent' : 'Swaps'}
-                      <span className="chip-x">✕</span>
-                    </button>
-                  )}
                   {txAssetFilter !== 'all' && (
                     <button className="filter-chip" onClick={() => setTxAssetFilter('all')}>
                       {txAssetFilter}
@@ -4802,42 +4885,52 @@ export default function App() {
                   const coinAsset = currentAssets.find(a => a.symbol.toUpperCase() === tx.asset.toUpperCase() && a.chain === tx.chain);
                   const coinLogo = coinAsset ? getTokenLogoUrl(coinAsset) : '';
                   const chainDotColor: Record<string, string> = { pulsechain: '#f739ff', ethereum: '#627EEA', base: '#0052FF' };
+                  const explorerBase = tx.chain === 'pulsechain' ? 'https://scan.pulsechain.com' : tx.chain === 'ethereum' ? 'https://etherscan.io' : 'https://basescan.org';
+                  // View as You helper
+                  const isOwn = (addr: string | undefined) => viewAsYou && addr && wallets.some(w => w.address.toLowerCase() === addr.toLowerCase());
+                  const displayAddr = (addr: string | undefined) => isOwn(addr) ? 'You' : addr ? `${addr.slice(0,6)}…${addr.slice(-4)}` : '?';
                   return (
                     <div key={tx.id} style={{ borderBottom: `1px solid ${t.borderLight}`, opacity: isHidden ? 0.35 : 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', transition: 'background .1s', cursor: 'pointer' }}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: txCompact ? '6px 18px' : '10px 18px', transition: 'background .1s', cursor: 'pointer' }}
                         onClick={() => setExpandedTxIds(prev => { const s = new Set(prev); s.has(tx.id) ? s.delete(tx.id) : s.add(tx.id); return s; })}
                         onMouseOver={e => (e.currentTarget.style.background = t.hoverBg)}
                         onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
-                        {/* LEFT — icon + text (mirrors PLS Movement layout) */}
+                        {/* LEFT — icon + text */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
-                            color: tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444', flexShrink: 0 }}>
-                            {tx.type === 'transfer_in' ? <ArrowDownLeft size={13} /> : tx.type === 'swap' ? <RefreshCcw size={13} /> : <ArrowUpRight size={13} />}
-                          </div>
+                          {!txCompact && (
+                            <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
+                              color: tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444', flexShrink: 0 }}>
+                              {tx.type === 'transfer_in' ? <ArrowDownLeft size={13} /> : tx.type === 'swap' ? <RefreshCcw size={13} /> : <ArrowUpRight size={13} />}
+                            </div>
+                          )}
                           <div>
                             {/* Row 1: type badge + chain dot + date */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 1 }}>
-                              <span style={{ fontSize: 12, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: txCompact ? 0 : 1 }}>
+                              <span style={{ fontSize: txCompact ? 11 : 12, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
                                 background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
                                 color: tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444' }}>
-                                {tx.type === 'swap' ? 'Swap' : tx.type === 'transfer_in' ? 'Received' : 'Sent'}
+                                {tx.type === 'swap'
+                                  ? (viewAsYou ? `Swap · ${displayAddr(tx.from)} → ${displayAddr(tx.to)}` : 'Swap')
+                                  : tx.type === 'transfer_in' ? 'Received' : 'Sent'}
                               </span>
                               <span style={{ width: 6, height: 6, borderRadius: '50%', background: chainDotColor[tx.chain] || t.textMuted, flexShrink: 0, display: 'inline-block' }} title={tx.chain} />
-                              <span style={{ fontSize: 13, color: t.textSecondary }}>{format(tx.timestamp, 'MMM d, yyyy')}</span>
+                              <span style={{ fontSize: txCompact ? 11 : 13, color: t.textSecondary }}>{format(tx.timestamp, 'MMM d, yyyy')}</span>
                             </div>
-                            {/* Row 2: amount + USD (green/red like PLS Movement) */}
-                            <div style={{ fontSize: 13, fontWeight: 700, color: tx.type === 'transfer_in' ? t.green : tx.type === 'swap' ? t.text : t.red, fontFamily: 'JetBrains Mono, monospace' }}>
-                              {tx.type === 'transfer_in' ? '+' : tx.type === 'transfer_out' ? '-' : ''}
-                              {tx.type === 'swap' && tx.counterAsset
-                                ? `${tx.counterAmount?.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.counterAsset} → ${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`
-                                : `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`}
-                              {tx.valueUsd ? (
-                                <span style={{ fontSize: 12, color: t.textTertiary, fontWeight: 500, marginLeft: 6 }}>
-                                  ≈ ${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                </span>
-                              ) : null}
-                            </div>
+                            {/* Row 2: amount (hide in compact for transfers) */}
+                            {(!txCompact || tx.type === 'swap') && (
+                              <div style={{ fontSize: txCompact ? 12 : 13, fontWeight: 700, color: tx.type === 'transfer_in' ? t.green : tx.type === 'swap' ? t.text : t.red, fontFamily: 'JetBrains Mono, monospace' }}>
+                                {tx.type === 'transfer_in' ? '+' : tx.type === 'transfer_out' ? '-' : ''}
+                                {tx.type === 'swap' && tx.counterAsset
+                                  ? `${tx.counterAmount?.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.counterAsset} → ${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`
+                                  : `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`}
+                                {!txCompact && tx.valueUsd ? (
+                                  <span style={{ fontSize: 12, color: t.textTertiary, fontWeight: 500, marginLeft: 6 }}>
+                                    ≈ ${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                  </span>
+                                ) : null}
+                              </div>
+                            )}
                           </div>
                         </div>
                         {/* RIGHT — coin filter + hide + chevron */}
@@ -4861,38 +4954,204 @@ export default function App() {
                           </span>
                         </div>
                       </div>
-                      {/* Expanded detail — same grid card style as PLS Movement */}
+                      {/* Expanded detail */}
                       {isTxExpanded && (
                         <div style={{ padding: '0 18px 14px', background: t.expandedBg }}>
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, paddingTop: 10, borderTop: `1px solid ${t.borderLight}` }}>
-                            {[
-                              { label: 'Amount', val: `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${tx.asset}`, sub: 'Token amount' },
-                              { label: 'USD Value', val: tx.valueUsd ? `$${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—', sub: 'At time of tx' },
-                              { label: 'Current Price', val: coinAsset?.price ? `$${coinAsset.price < 0.001 ? coinAsset.price.toFixed(8) : coinAsset.price.toLocaleString(undefined, { maximumFractionDigits: 4 })}` : '—', sub: coinAsset ? `${tx.asset} now` : 'Unknown' },
-                              { label: 'Current Value', val: coinAsset ? `$${(tx.amount * coinAsset.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—', sub: 'If held to now', color: coinAsset && tx.valueUsd ? ((tx.amount * coinAsset.price) >= tx.valueUsd ? t.green : t.red) : undefined },
-                              ...(tx.valueUsd && coinAsset ? [{
-                                label: 'Profit / Loss',
-                                val: `${(tx.amount * coinAsset.price - tx.valueUsd) >= 0 ? '+' : ''}$${Math.abs(tx.amount * coinAsset.price - tx.valueUsd).toLocaleString(undefined, { maximumFractionDigits: 2 })}`,
-                                sub: `${(((tx.amount * coinAsset.price) / tx.valueUsd - 1) * 100).toFixed(1)}% change`,
-                                color: (tx.amount * coinAsset.price - tx.valueUsd) >= 0 ? t.green : t.red
-                              }] : []),
-                              { label: 'Chain', val: tx.chain === 'pulsechain' ? 'PulseChain' : tx.chain === 'ethereum' ? 'Ethereum' : 'Base', sub: tx.type === 'transfer_in' ? `From ${tx.from.slice(0,6)}…${tx.from.slice(-4)}` : tx.type === 'transfer_out' ? `To ${tx.to.slice(0,6)}…${tx.to.slice(-4)}` : 'Swap' },
-                              { label: 'Date', val: format(tx.timestamp, 'MMM d, yyyy'), sub: format(tx.timestamp, 'HH:mm:ss') },
-                            ].map(({ label, val, sub, color }) => (
-                              <div key={label} style={{ background: t.cardHigh, borderRadius: 8, padding: '10px 12px' }}>
-                                <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>{label}</div>
-                                <div style={{ fontSize: 14, fontWeight: 700, color: color || t.text }}>{val}</div>
-                                <div style={{ fontSize: 12, color: t.textTertiary, marginTop: 1 }}>{sub}</div>
+                          {tx.type === 'swap' ? (() => {
+                            // ── Enhanced swap expanded row ──
+                            const counterAsset = tx.counterAsset
+                              ? currentAssets.find(a => a.symbol.toUpperCase() === tx.counterAsset!.toUpperCase() && a.chain === tx.chain)
+                              : undefined;
+                            const counterLogo = counterAsset ? getTokenLogoUrl(counterAsset) : '';
+                            const nowPriceReceived = coinAsset?.price ?? 0;
+                            const nowPriceSpent = counterAsset?.price ?? 0;
+                            const thenPriceReceived = tx.valueUsd && tx.amount > 0 ? tx.valueUsd / tx.amount : 0;
+                            const thenPriceSpent = tx.valueUsd && tx.counterAmount && tx.counterAmount > 0 ? tx.valueUsd / tx.counterAmount : 0;
+                            // Dollar P/L: received asset current value vs what was paid
+                            const dollarPnl = tx.valueUsd != null && nowPriceReceived > 0
+                              ? (tx.amount * nowPriceReceived) - tx.valueUsd
+                              : null;
+                            // Trade P/L: current value of received vs current value of spent
+                            const tradePnl = nowPriceReceived > 0 && nowPriceSpent > 0 && tx.counterAmount
+                              ? (tx.amount * nowPriceReceived) - (tx.counterAmount * nowPriceSpent)
+                              : null;
+                            const fmtPnl = (n: number) => {
+                              const abs = Math.abs(n);
+                              const dp = abs < 0.001 ? 6 : abs < 0.1 ? 4 : 2;
+                              return `${n >= 0 ? '+' : ''}$${Math.abs(n).toFixed(dp)}`;
+                            };
+                            const fmtPrice = (p: number) => p <= 0 ? '—' : p < 0.001 ? `$${p.toFixed(8)}` : p < 1 ? `$${p.toFixed(6)}` : `$${p.toFixed(4)}`;
+                            return (
+                              <div style={{ paddingTop: 10, borderTop: `1px solid ${t.borderLight}` }}>
+                                {/* "from / to" context */}
+                                <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 10, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                                  <span>
+                                    Swap from{' '}
+                                    <strong style={{ color: isOwn(tx.from) ? '#00FF9F' : 'var(--fg)' }}>{displayAddr(tx.from)}</strong>
+                                    {' '}to{' '}
+                                    <strong style={{ color: isOwn(tx.to) ? '#00FF9F' : 'var(--fg)' }}>{displayAddr(tx.to)}</strong>
+                                  </span>
+                                  {tx.fee != null && tx.fee > 0 && (
+                                    <span style={{ color: 'var(--fg-subtle)', fontSize: 11 }}>
+                                      ⛽ {tx.fee.toLocaleString(undefined, { maximumFractionDigits: 4 })} {tx.chain === 'ethereum' ? 'ETH' : 'PLS'}
+                                    </span>
+                                  )}
+                                  <span style={{ marginLeft: 'auto', color: 'var(--fg-subtle)', fontSize: 11 }}>{format(tx.timestamp, 'MMM d, yyyy HH:mm')}</span>
+                                </div>
+
+                                {/* P/L summary cards */}
+                                {(tradePnl !== null || dollarPnl !== null) && (
+                                  <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                                    {tradePnl !== null && (
+                                      <div style={{
+                                        flex: 1, padding: '10px 14px', borderRadius: 10,
+                                        background: tradePnl >= 0 ? 'rgba(0,255,159,0.06)' : 'rgba(244,63,94,0.06)',
+                                        border: `1px solid ${tradePnl >= 0 ? 'rgba(0,255,159,0.18)' : 'rgba(244,63,94,0.18)'}`,
+                                        display: 'flex', flexDirection: 'column', gap: 3,
+                                      }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                                          {tradePnl >= 0
+                                            ? <TrendingUp size={11} style={{ color: t.green }} />
+                                            : <TrendingDown size={11} style={{ color: t.red }} />}
+                                          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Trade P/L</span>
+                                        </div>
+                                        <div style={{ fontSize: 14, fontWeight: 800, color: tradePnl >= 0 ? t.green : t.red, fontFamily: 'JetBrains Mono, monospace' }}>
+                                          {fmtPnl(tradePnl)}
+                                        </div>
+                                        <div style={{ fontSize: 10, color: 'var(--fg-subtle)' }}>At current prices</div>
+                                      </div>
+                                    )}
+                                    {dollarPnl !== null && (
+                                      <div style={{
+                                        flex: 1, padding: '10px 14px', borderRadius: 10,
+                                        background: dollarPnl >= 0 ? 'rgba(0,255,159,0.06)' : 'rgba(244,63,94,0.06)',
+                                        border: `1px solid ${dollarPnl >= 0 ? 'rgba(0,255,159,0.18)' : 'rgba(244,63,94,0.18)'}`,
+                                        display: 'flex', flexDirection: 'column', gap: 3,
+                                      }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                                          {dollarPnl >= 0
+                                            ? <TrendingUp size={11} style={{ color: t.green }} />
+                                            : <TrendingDown size={11} style={{ color: t.red }} />}
+                                          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Dollar P/L</span>
+                                        </div>
+                                        <div style={{ fontSize: 14, fontWeight: 800, color: dollarPnl >= 0 ? t.green : t.red, fontFamily: 'JetBrains Mono, monospace' }}>
+                                          {fmtPnl(dollarPnl)}
+                                        </div>
+                                        <div style={{ fontSize: 10, color: 'var(--fg-subtle)' }}>Position change</div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Received leg */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--bg-inset)', borderRadius: 8, marginBottom: 6 }}>
+                                  {coinLogo
+                                    ? <img src={coinLogo} alt={tx.asset} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                    : <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,255,159,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: t.green, flexShrink: 0 }}>{tx.asset[0]}</div>
+                                  }
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontSize: 13, fontWeight: 700, color: t.green, fontFamily: 'JetBrains Mono, monospace' }}>
+                                      + {tx.amount.toLocaleString(undefined, { maximumFractionDigits: 6 })} {tx.asset}
+                                    </div>
+                                    {thenPriceReceived > 0 && (
+                                      <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 1 }}>
+                                        Then: <span style={{ color: 'var(--fg-muted)' }}>{fmtPrice(thenPriceReceived)}</span>
+                                        {nowPriceReceived > 0 && <> · Now: <span style={{ color: nowPriceReceived >= thenPriceReceived ? t.green : t.red }}>{fmtPrice(nowPriceReceived)}</span></>}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <a href={`${explorerBase}/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer"
+                                    onClick={e => e.stopPropagation()}
+                                    style={{ color: 'var(--fg-subtle)', transition: 'color .12s', flexShrink: 0 }}
+                                    onMouseOver={e => ((e.currentTarget as HTMLAnchorElement).style.color = t.green)}
+                                    onMouseOut={e => ((e.currentTarget as HTMLAnchorElement).style.color = 'var(--fg-subtle)')}>
+                                    <ExternalLink size={12} />
+                                  </a>
+                                  <button onClick={e => { e.stopPropagation(); setTxAssetFilter(tx.asset); }}
+                                    title={`Filter by ${tx.asset}`}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', padding: 2, transition: 'color .12s', flexShrink: 0 }}
+                                    onMouseOver={e => (e.currentTarget.style.color = '#a78bfa')}
+                                    onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
+                                    <Filter size={12} />
+                                  </button>
+                                </div>
+
+                                {/* Spent leg */}
+                                {tx.counterAsset && tx.counterAmount != null && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--bg-inset)', borderRadius: 8 }}>
+                                    {counterLogo
+                                      ? <img src={counterLogo} alt={tx.counterAsset} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                      : <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(244,63,94,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: t.red, flexShrink: 0 }}>{tx.counterAsset[0]}</div>
+                                    }
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      <div style={{ fontSize: 13, fontWeight: 700, color: t.red, fontFamily: 'JetBrains Mono, monospace' }}>
+                                        − {tx.counterAmount.toLocaleString(undefined, { maximumFractionDigits: 6 })} {tx.counterAsset}
+                                      </div>
+                                      {thenPriceSpent > 0 && (
+                                        <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 1 }}>
+                                          Then: <span style={{ color: 'var(--fg-muted)' }}>{fmtPrice(thenPriceSpent)}</span>
+                                          {nowPriceSpent > 0 && <> · Now: <span style={{ color: nowPriceSpent >= thenPriceSpent ? t.green : t.red }}>{fmtPrice(nowPriceSpent)}</span></>}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <a href={`${explorerBase}/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer"
+                                      onClick={e => e.stopPropagation()}
+                                      style={{ color: 'var(--fg-subtle)', transition: 'color .12s', flexShrink: 0 }}
+                                      onMouseOver={e => ((e.currentTarget as HTMLAnchorElement).style.color = t.green)}
+                                      onMouseOut={e => ((e.currentTarget as HTMLAnchorElement).style.color = 'var(--fg-subtle)')}>
+                                      <ExternalLink size={12} />
+                                    </a>
+                                    <button onClick={e => { e.stopPropagation(); setTxAssetFilter(tx.counterAsset!); }}
+                                      title={`Filter by ${tx.counterAsset}`}
+                                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', padding: 2, transition: 'color .12s', flexShrink: 0 }}
+                                      onMouseOver={e => (e.currentTarget.style.color = '#a78bfa')}
+                                      onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
+                                      <Filter size={12} />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
-                            ))}
-                          </div>
-                          <div style={{ marginTop: 8 }}>
-                            <a href={`${tx.chain === 'pulsechain' ? 'https://scan.pulsechain.com' : tx.chain === 'ethereum' ? 'https://etherscan.io' : 'https://basescan.org'}/tx/${tx.hash}`}
-                              target="_blank" rel="noopener noreferrer"
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: t.green, textDecoration: 'none' }}>
-                              <ExternalLink size={11} /> View on Explorer
-                            </a>
-                          </div>
+                            );
+                          })() : (
+                            // ── Non-swap: classic card grid ──
+                            <div style={{ paddingTop: 10, borderTop: `1px solid ${t.borderLight}` }}>
+                              {/* Context line */}
+                              <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 10 }}>
+                                {tx.type === 'transfer_in'
+                                  ? <>Received from <strong style={{ color: isOwn(tx.from) ? '#00FF9F' : 'var(--fg)' }}>{displayAddr(tx.from)}</strong></>
+                                  : <>Sent to <strong style={{ color: isOwn(tx.to) ? '#00FF9F' : 'var(--fg)' }}>{displayAddr(tx.to)}</strong></>}
+                                <span style={{ color: 'var(--fg-subtle)', fontSize: 11, marginLeft: 10 }}>{format(tx.timestamp, 'MMM d, yyyy HH:mm')}</span>
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
+                                {[
+                                  { label: 'Amount', val: `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${tx.asset}`, sub: 'Token amount' },
+                                  { label: 'USD Value', val: tx.valueUsd ? `$${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—', sub: 'At time of tx' },
+                                  { label: 'Current Price', val: coinAsset?.price ? `$${coinAsset.price < 0.001 ? coinAsset.price.toFixed(8) : coinAsset.price.toLocaleString(undefined, { maximumFractionDigits: 4 })}` : '—', sub: coinAsset ? `${tx.asset} now` : 'Unknown' },
+                                  { label: 'Current Value', val: coinAsset ? `$${(tx.amount * coinAsset.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—', sub: 'If held to now', color: coinAsset && tx.valueUsd ? ((tx.amount * coinAsset.price) >= tx.valueUsd ? t.green : t.red) : undefined },
+                                  ...(tx.valueUsd && coinAsset ? [{
+                                    label: 'Profit / Loss',
+                                    val: `${(tx.amount * coinAsset.price - tx.valueUsd) >= 0 ? '+' : ''}$${Math.abs(tx.amount * coinAsset.price - tx.valueUsd).toLocaleString(undefined, { maximumFractionDigits: 2 })}`,
+                                    sub: `${(((tx.amount * coinAsset.price) / tx.valueUsd - 1) * 100).toFixed(1)}% change`,
+                                    color: (tx.amount * coinAsset.price - tx.valueUsd) >= 0 ? t.green : t.red
+                                  }] : []),
+                                  { label: 'Chain', val: tx.chain === 'pulsechain' ? 'PulseChain' : tx.chain === 'ethereum' ? 'Ethereum' : 'Base', sub: tx.type === 'transfer_in' ? `From ${displayAddr(tx.from)}` : `To ${displayAddr(tx.to)}` },
+                                  { label: 'Date', val: format(tx.timestamp, 'MMM d, yyyy'), sub: format(tx.timestamp, 'HH:mm:ss') },
+                                ].map(({ label, val, sub, color }) => (
+                                  <div key={label} style={{ background: t.cardHigh, borderRadius: 8, padding: '10px 12px' }}>
+                                    <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>{label}</div>
+                                    <div style={{ fontSize: 14, fontWeight: 700, color: (color as string | undefined) || t.text }}>{val}</div>
+                                    <div style={{ fontSize: 12, color: t.textTertiary, marginTop: 1 }}>{sub}</div>
+                                  </div>
+                                ))}
+                              </div>
+                              <div style={{ marginTop: 8 }}>
+                                <a href={`${explorerBase}/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer"
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: t.green, textDecoration: 'none' }}>
+                                  <ExternalLink size={11} /> View on Explorer
+                                </a>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
