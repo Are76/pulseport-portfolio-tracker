@@ -33,7 +33,7 @@ function TokenLogo({ address, symbol, size, zIndex = 1, style }: TokenLogoProps)
         : 'transparent',
       border: '2px solid rgba(247,57,255,0.22)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: Math.round(size * 0.36), fontWeight: 800, color: '#f739ff',
+      fontSize: Math.round(size * 0.36), fontWeight: 800, color: 'var(--chain-pulse)',
       overflow: 'hidden', flexShrink: 0, position: 'relative', zIndex,
       boxShadow: '0 0 0 1.5px rgba(0,0,0,0.4)',
       ...style,
@@ -77,9 +77,9 @@ function ILBadge({ il }: { il: number | null }) {
       <span style={{
         display: 'inline-flex', alignItems: 'center', gap: 4,
         fontSize: 11, fontWeight: 700, fontFamily: 'JetBrains Mono, monospace',
-        color: 'var(--fg-subtle)', background: 'rgba(255,255,255,0.05)',
+        color: 'var(--fg-subtle)', background: 'var(--bg-inset)',
         padding: '3px 9px', borderRadius: 100,
-        border: '1px solid rgba(255,255,255,0.08)',
+        border: '1px solid var(--border-inset)',
         letterSpacing: '.01em',
       }}>
         IL: N/A
@@ -91,7 +91,7 @@ function ILBadge({ il }: { il: number | null }) {
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 3,
       fontSize: 11, fontWeight: 700, fontFamily: 'JetBrains Mono, monospace',
-      color: isPos ? '#00FF9F' : '#f43f5e',
+      color: isPos ? 'var(--positive)' : 'var(--negative)',
       background: isPos ? 'rgba(0,255,159,0.08)' : 'rgba(244,63,94,0.08)',
       padding: '3px 9px', borderRadius: 100,
       border: `1px solid ${isPos ? 'rgba(0,255,159,0.22)' : 'rgba(244,63,94,0.22)'}`,
@@ -145,8 +145,8 @@ interface TokenBoxProps {
 function TokenBox({ address, symbol, amount, usd, weightPct, priceUsd }: TokenBoxProps) {
   return (
     <div style={{
-      background: 'rgba(255,255,255,0.03)',
-      border: '1px solid rgba(255,255,255,0.06)',
+      background: 'var(--bg-inset)',
+      border: '1px solid var(--border-inset)',
       borderRadius: 12, padding: '12px 14px',
       display: 'flex', flexDirection: 'column', gap: 8,
     }}>
@@ -160,7 +160,7 @@ function TokenBox({ address, symbol, amount, usd, weightPct, priceUsd }: TokenBo
       </div>
       {/* Weight bar */}
       <div style={{
-        height: 3, background: 'rgba(255,255,255,0.07)', borderRadius: 2, overflow: 'hidden',
+        height: 3, background: 'var(--border-inset)', borderRadius: 2, overflow: 'hidden',
       }}>
         <div style={{
           width: `${Math.min(weightPct, 100)}%`, height: '100%',
@@ -246,7 +246,7 @@ function LiquidityPositionCardFull({ pos }: { pos: LpPositionEnriched }) {
               {pos.isStaked && (
                 <span style={{
                   fontSize: 9, fontWeight: 800, letterSpacing: '.6px',
-                  textTransform: 'uppercase', color: '#f739ff',
+                  textTransform: 'uppercase', color: 'var(--chain-pulse)',
                   background: 'rgba(247,57,255,0.12)',
                   border: '1px solid rgba(247,57,255,0.28)',
                   padding: '2px 8px', borderRadius: 100,
@@ -279,7 +279,7 @@ function LiquidityPositionCardFull({ pos }: { pos: LpPositionEnriched }) {
       </div>
 
       {/* ── Divider ── */}
-      <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
+      <div style={{ height: 1, background: 'var(--border-inset)' }} />
 
       {/* ── Token Amount Row ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -301,12 +301,12 @@ function LiquidityPositionCardFull({ pos }: { pos: LpPositionEnriched }) {
         <div style={{
           display: 'flex', flexDirection: 'column', gap: 2,
           background: pos.ilEstimate === null
-            ? 'rgba(255,255,255,0.03)'
+            ? 'var(--bg-inset)'
             : pos.ilEstimate >= 0
               ? 'rgba(0,255,159,0.06)' : 'rgba(244,63,94,0.06)',
           border: `1px solid ${
             pos.ilEstimate === null
-              ? 'rgba(255,255,255,0.07)'
+              ? 'var(--border-inset)'
               : pos.ilEstimate >= 0
                 ? 'rgba(0,255,159,0.18)' : 'rgba(244,63,94,0.18)'}`,
           borderRadius: 10, padding: '8px 12px', flex: 1, minWidth: 80,
@@ -319,7 +319,7 @@ function LiquidityPositionCardFull({ pos }: { pos: LpPositionEnriched }) {
             fontFamily: 'JetBrains Mono, monospace',
             color: pos.ilEstimate === null
               ? 'var(--fg-subtle)'
-              : pos.ilEstimate >= 0 ? '#00FF9F' : '#f43f5e',
+              : pos.ilEstimate >= 0 ? 'var(--positive)' : 'var(--negative)',
           }}>
             {pos.ilEstimate === null ? 'N/A' : `${pos.ilEstimate >= 0 ? '+' : ''}${pos.ilEstimate.toFixed(2)}%`}
           </span>
@@ -328,9 +328,9 @@ function LiquidityPositionCardFull({ pos }: { pos: LpPositionEnriched }) {
         <StatPill
           label="Fees 24h"
           value={pos.fees24hUsd != null && pos.fees24hUsd > 0 ? `+${fmtUsd(pos.fees24hUsd)}` : '—'}
-          color={pos.fees24hUsd != null && pos.fees24hUsd > 0 ? '#00FF9F' : 'var(--fg-subtle)'}
-          bg={pos.fees24hUsd != null && pos.fees24hUsd > 0 ? 'rgba(0,255,159,0.06)' : 'rgba(255,255,255,0.03)'}
-          border={pos.fees24hUsd != null && pos.fees24hUsd > 0 ? 'rgba(0,255,159,0.18)' : 'rgba(255,255,255,0.07)'}
+          color={pos.fees24hUsd != null && pos.fees24hUsd > 0 ? 'var(--positive)' : 'var(--fg-subtle)'}
+          bg={pos.fees24hUsd != null && pos.fees24hUsd > 0 ? 'rgba(0,255,159,0.06)' : 'var(--bg-inset)'}
+          border={pos.fees24hUsd != null && pos.fees24hUsd > 0 ? 'rgba(0,255,159,0.18)' : 'var(--border-inset)'}
         />
 
         {pos.volume24hUsd != null && (
@@ -338,8 +338,8 @@ function LiquidityPositionCardFull({ pos }: { pos: LpPositionEnriched }) {
             label="Vol 24h"
             value={fmtUsd(pos.volume24hUsd, 0)}
             color="var(--fg)"
-            bg="rgba(255,255,255,0.03)"
-            border="rgba(255,255,255,0.07)"
+            bg="var(--bg-inset)"
+            border="var(--border-inset)"
           />
         )}
 
@@ -347,7 +347,7 @@ function LiquidityPositionCardFull({ pos }: { pos: LpPositionEnriched }) {
           <StatPill
             label="Pending INC"
             value={`+${fmtUsd(pos.pendingIncUsd!)}`}
-            color="#f739ff"
+            color="var(--chain-pulse)"
             bg="rgba(247,57,255,0.06)"
             border="rgba(247,57,255,0.18)"
           />
@@ -362,7 +362,7 @@ function LiquidityPositionCardFull({ pos }: { pos: LpPositionEnriched }) {
       {/* ── Footer: LP balance + action buttons ── */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.06)', flexWrap: 'wrap', gap: 8,
+        paddingTop: 8, borderTop: '1px solid var(--border)', flexWrap: 'wrap', gap: 8,
       }}>
         <span style={{
           fontSize: 11, color: 'var(--fg-subtle)',
@@ -380,7 +380,7 @@ function LiquidityPositionCardFull({ pos }: { pos: LpPositionEnriched }) {
             onClick={e => e.stopPropagation()}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 4,
-              fontSize: 11, fontWeight: 700, color: '#f43f5e',
+              fontSize: 11, fontWeight: 700, color: 'var(--negative)',
               background: 'rgba(244,63,94,0.07)', border: '1px solid rgba(244,63,94,0.18)',
               padding: '5px 11px', borderRadius: 8, textDecoration: 'none',
               transition: 'background 0.15s',
@@ -398,7 +398,7 @@ function LiquidityPositionCardFull({ pos }: { pos: LpPositionEnriched }) {
             onClick={e => e.stopPropagation()}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 4,
-              fontSize: 11, fontWeight: 700, color: '#f739ff',
+              fontSize: 11, fontWeight: 700, color: 'var(--chain-pulse)',
               background: 'rgba(247,57,255,0.08)', border: '1px solid rgba(247,57,255,0.22)',
               padding: '5px 11px', borderRadius: 8, textDecoration: 'none',
               transition: 'background 0.15s',
@@ -459,7 +459,7 @@ function LiquidityPositionCardCompact({ pos, onClick }: {
             {pos.pairName}
           </span>
           {pos.isStaked && (
-            <span style={{ fontSize: 9, fontWeight: 800, color: '#f739ff', flexShrink: 0 }}>
+            <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--chain-pulse)', flexShrink: 0 }}>
               FARMING
             </span>
           )}
@@ -491,7 +491,7 @@ function LiquidityPositionCardCompact({ pos, onClick }: {
           <div style={{
             fontSize: 10, fontWeight: 700, marginTop: 2,
             fontFamily: 'JetBrains Mono, monospace',
-            color: pos.ilEstimate >= 0 ? '#00FF9F' : '#f43f5e',
+            color: pos.ilEstimate >= 0 ? 'var(--positive)' : 'var(--negative)',
           }}>
             IL {pos.ilEstimate >= 0 ? '+' : ''}{pos.ilEstimate.toFixed(2)}%
           </div>

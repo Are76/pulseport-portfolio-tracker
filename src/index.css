@@ -72,6 +72,10 @@
   /* Purple secondary accent */
   --accent-purple: rgba(99,70,255,0.15);
   --accent-purple-border: rgba(99,70,255,0.25);
+
+  /* Inset panel backgrounds — used by LP/DeFi inner panels */
+  --bg-inset: rgba(255,255,255,0.03);
+  --border-inset: rgba(255,255,255,0.07);
 }
 
 /* ── LIGHT THEME ──────────────────────────────────────────────────────── */
@@ -103,6 +107,10 @@
   --accent-glow: rgba(0,122,77,0.15);
   --accent-dim: rgba(0,122,77,0.08);
   --accent-border: rgba(0,122,77,0.22);
+  /* Inset panel backgrounds — invert alpha on light bg */
+  --bg-inset: rgba(0,0,0,0.04);
+  --border-inset: rgba(0,0,0,0.09);
+
   /* Overlay for modals */
   --overlay: rgba(0,0,0,0.45);
   /* Semantic colors — softer green for readable positive text on light bg */

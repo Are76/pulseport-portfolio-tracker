@@ -20,8 +20,8 @@ function SkeletonRow() {
     <div style={{
       display: 'flex', alignItems: 'center', gap: 12,
       padding: '11px 14px', borderRadius: 12,
-      background: 'rgba(255,255,255,0.02)',
-      border: '1px solid rgba(255,255,255,0.05)',
+      background: 'var(--bg-inset)',
+      border: '1px solid var(--border-inset)',
     }}>
       <div style={{ display: 'flex', width: 38, flexShrink: 0 }}>
         <div className="skeleton" style={{ width: 26, height: 26, borderRadius: '50%' }} />
@@ -36,7 +36,7 @@ function SkeletonRow() {
         <div className="skeleton" style={{ height: 14, width: 64, borderRadius: 5 }} />
         <div className="skeleton" style={{ height: 10, width: 40, borderRadius: 4, marginTop: 4 }} />
       </div>
-      <div style={{ width: 14, height: 14, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
+      <div style={{ width: 14, height: 14, borderRadius: '50%', background: 'var(--border-inset)' }} />
     </div>
   );
 }
@@ -45,7 +45,7 @@ function SkeletonRow() {
 function SkeletonCard() {
   return (
     <div style={{
-      background: 'linear-gradient(160deg, rgba(247,57,255,0.04) 0%, rgba(255,255,255,0.02) 100%)',
+      background: 'linear-gradient(160deg, rgba(247,57,255,0.04) 0%, var(--bg-inset) 100%)',
       border: '1px solid rgba(247,57,255,0.10)',
       borderRadius: 18, padding: 20, display: 'flex', flexDirection: 'column', gap: 16,
     }}>
@@ -65,11 +65,11 @@ function SkeletonCard() {
           <div className="skeleton" style={{ height: 11, width: 60, borderRadius: 4 }} />
         </div>
       </div>
-      <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
+      <div style={{ height: 1, background: 'var(--border-inset)' }} />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         {[0, 1].map(i => (
           <div key={i} style={{
-            background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)',
+            background: 'var(--bg-inset)', border: '1px solid var(--border-inset)',
             borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 8,
           }}>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -96,7 +96,7 @@ function IncLogo({ size = 28 }: { size?: number }) {
       background: 'linear-gradient(135deg, rgba(247,57,255,0.2) 0%, rgba(99,70,255,0.2) 100%)',
       border: '1.5px solid rgba(247,57,255,0.3)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: Math.round(size * 0.38), fontWeight: 800, color: '#f739ff',
+      fontSize: Math.round(size * 0.38), fontWeight: 800, color: 'var(--chain-pulse)',
     }}>
       {!err ? (
         <img
@@ -146,7 +146,7 @@ function FarmingRewardsBanner({ stakedPositions, incPrice }: FarmingRewardsBanne
               background: 'rgba(247,57,255,0.15)', border: '1px solid rgba(247,57,255,0.28)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <Zap size={16} style={{ color: '#f739ff' }} />
+              <Zap size={16} style={{ color: 'var(--chain-pulse)' }} />
             </div>
             <div>
               <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--fg)', letterSpacing: '-0.01em' }}>
@@ -168,13 +168,13 @@ function FarmingRewardsBanner({ stakedPositions, incPrice }: FarmingRewardsBanne
                 {fmtUsd(totalLpUsd)}
               </div>
             </div>
-            <div style={{ width: 1, background: 'rgba(255,255,255,0.08)', alignSelf: 'stretch' }} />
+            <div style={{ width: 1, background: 'var(--border)', alignSelf: 'stretch' }} />
             <div>
               <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>
                 Pending INC
               </div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#f739ff', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.04em' }}>
+                <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--chain-pulse)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.04em' }}>
                   {fmtTok(totalPendingInc)}
                 </div>
                 <div style={{ fontSize: 13, color: 'var(--fg-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
@@ -182,12 +182,12 @@ function FarmingRewardsBanner({ stakedPositions, incPrice }: FarmingRewardsBanne
                 </div>
               </div>
             </div>
-            <div style={{ width: 1, background: 'rgba(255,255,255,0.08)', alignSelf: 'stretch' }} />
+            <div style={{ width: 1, background: 'var(--border)', alignSelf: 'stretch' }} />
             <div>
               <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>
                 Reward Value
               </div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: '#00FF9F', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.04em' }}>
+              <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--positive)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.04em' }}>
                 {fmtUsd(totalPendingUsd)}
               </div>
             </div>
@@ -216,7 +216,7 @@ function FarmingRewardsBanner({ stakedPositions, incPrice }: FarmingRewardsBanne
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: '9px 16px', borderRadius: 10,
               background: 'rgba(247,57,255,0.12)', border: '1px solid rgba(247,57,255,0.28)',
-              color: '#f739ff', fontSize: 12, fontWeight: 700, textDecoration: 'none',
+              color: 'var(--chain-pulse)', fontSize: 12, fontWeight: 700, textDecoration: 'none',
               transition: 'all .15s', whiteSpace: 'nowrap',
             }}
             onMouseOver={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(247,57,255,0.22)')}
@@ -242,7 +242,7 @@ function FarmingRewardsBanner({ stakedPositions, incPrice }: FarmingRewardsBanne
               <div key={pos.pairAddress} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '8px 12px', borderRadius: 10,
-                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(247,57,255,0.08)',
+                background: 'var(--bg-inset)', border: '1px solid rgba(247,57,255,0.08)',
                 flexWrap: 'wrap', gap: 8,
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -250,7 +250,7 @@ function FarmingRewardsBanner({ stakedPositions, incPrice }: FarmingRewardsBanne
                   {pos.poolId !== undefined && (
                     <span style={{
                       fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)',
-                      background: 'rgba(255,255,255,0.06)', padding: '2px 7px', borderRadius: 100,
+                      background: 'var(--bg-inset)', padding: '2px 7px', borderRadius: 100,
                       fontFamily: 'JetBrains Mono, monospace',
                     }}>
                       Pool #{pos.poolId}
@@ -268,17 +268,17 @@ function FarmingRewardsBanner({ stakedPositions, incPrice }: FarmingRewardsBanne
                       {fmtUsd(pos.totalUsd)}
                     </div>
                   </div>
-                  <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.08)' }} />
+                  <div style={{ width: 1, height: 28, background: 'var(--border)' }} />
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>Pending INC</div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#f739ff', fontFamily: 'JetBrains Mono, monospace' }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--chain-pulse)', fontFamily: 'JetBrains Mono, monospace' }}>
                       {fmtTok(pendingInc)} INC
                     </div>
                   </div>
-                  <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.08)' }} />
+                  <div style={{ width: 1, height: 28, background: 'var(--border)' }} />
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>Value</div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#00FF9F', fontFamily: 'JetBrains Mono, monospace' }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--positive)', fontFamily: 'JetBrains Mono, monospace' }}>
                       {fmtUsd(pos.pendingIncUsd ?? 0)}
                     </div>
                   </div>
@@ -308,31 +308,31 @@ function LpSummaryStats({ positions }: { positions: LpPositionEnriched[] }) {
           label: 'Total LP Value',
           value: fmtUsd(totalUsd),
           color: 'var(--fg)',
-          icon: <TrendingUp size={14} style={{ color: '#f739ff' }} />,
+          icon: <TrendingUp size={14} style={{ color: 'var(--chain-pulse)' }} />,
           bg: 'rgba(247,57,255,0.06)', border: 'rgba(247,57,255,0.14)',
         },
         {
           label: 'Fees Earned 24h',
           value: totalFees24h > 0 ? `+${fmtUsd(totalFees24h)}` : '—',
-          color: totalFees24h > 0 ? '#00FF9F' : 'var(--fg-subtle)',
-          icon: <Zap size={14} style={{ color: '#00FF9F' }} />,
-          bg: totalFees24h > 0 ? 'rgba(0,255,159,0.06)' : 'rgba(255,255,255,0.03)',
-          border: totalFees24h > 0 ? 'rgba(0,255,159,0.14)' : 'rgba(255,255,255,0.07)',
+          color: totalFees24h > 0 ? 'var(--positive)' : 'var(--fg-subtle)',
+          icon: <Zap size={14} style={{ color: 'var(--positive)' }} />,
+          bg: totalFees24h > 0 ? 'rgba(0,255,159,0.06)' : 'var(--bg-inset)',
+          border: totalFees24h > 0 ? 'rgba(0,255,159,0.14)' : 'var(--border-inset)',
         },
         {
           label: 'Active Positions',
           value: `${positions.length}`,
           color: 'var(--fg)',
-          icon: <Droplets size={14} style={{ color: '#f739ff' }} />,
-          bg: 'rgba(255,255,255,0.03)', border: 'rgba(255,255,255,0.07)',
+          icon: <Droplets size={14} style={{ color: 'var(--chain-pulse)' }} />,
+          bg: 'var(--bg-inset)', border: 'var(--border-inset)',
         },
         {
           label: 'Farming',
           value: stakedCount > 0 ? `${stakedCount} pool${stakedCount > 1 ? 's' : ''}` : 'None',
-          color: stakedCount > 0 ? '#f739ff' : 'var(--fg-subtle)',
-          icon: <Award size={14} style={{ color: stakedCount > 0 ? '#f739ff' : 'var(--fg-subtle)' }} />,
-          bg: stakedCount > 0 ? 'rgba(247,57,255,0.06)' : 'rgba(255,255,255,0.03)',
-          border: stakedCount > 0 ? 'rgba(247,57,255,0.14)' : 'rgba(255,255,255,0.07)',
+          color: stakedCount > 0 ? 'var(--chain-pulse)' : 'var(--fg-subtle)',
+          icon: <Award size={14} style={{ color: stakedCount > 0 ? 'var(--chain-pulse)' : 'var(--fg-subtle)' }} />,
+          bg: stakedCount > 0 ? 'rgba(247,57,255,0.06)' : 'var(--bg-inset)',
+          border: stakedCount > 0 ? 'rgba(247,57,255,0.14)' : 'var(--border-inset)',
         },
       ].map(s => (
         <div key={s.label} style={{
@@ -377,7 +377,7 @@ function SectionHeader({ positions, loading, onRefetch, onViewAll }: SectionHead
           background: 'rgba(247,57,255,0.12)', border: '1px solid rgba(247,57,255,0.25)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
         }}>
-          <Droplets size={15} style={{ color: '#f739ff' }} />
+          <Droplets size={15} style={{ color: 'var(--chain-pulse)' }} />
         </div>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -386,7 +386,7 @@ function SectionHeader({ positions, loading, onRefetch, onViewAll }: SectionHead
             </span>
             {positions.length > 0 && (
               <span style={{
-                fontSize: 11, fontWeight: 700, color: '#f739ff',
+                fontSize: 11, fontWeight: 700, color: 'var(--chain-pulse)',
                 background: 'rgba(247,57,255,0.10)', border: '1px solid rgba(247,57,255,0.22)',
                 padding: '1px 8px', borderRadius: 100,
               }}>
@@ -409,11 +409,11 @@ function SectionHeader({ positions, loading, onRefetch, onViewAll }: SectionHead
           style={{
             display: 'flex', alignItems: 'center', gap: 5, padding: '6px 11px',
             borderRadius: 8, border: 'none', cursor: 'pointer',
-            background: 'rgba(255,255,255,0.05)', color: 'var(--fg-muted)',
+            background: 'var(--bg-inset)', color: 'var(--fg-muted)',
             fontSize: 12, fontWeight: 600, transition: 'all .15s',
           }}
-          onMouseOver={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.09)')}
-          onMouseOut={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)')}
+          onMouseOver={e => ((e.currentTarget as HTMLElement).style.background = 'var(--border)')}
+          onMouseOut={e => ((e.currentTarget as HTMLElement).style.background = 'var(--bg-inset)')}
           aria-label="Refresh liquidity positions"
         >
           <RefreshCcw size={12} className={loading ? 'animate-spin' : ''} />
@@ -427,7 +427,7 @@ function SectionHeader({ positions, loading, onRefetch, onViewAll }: SectionHead
               display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px',
               borderRadius: 8, border: '1px solid rgba(247,57,255,0.22)',
               cursor: 'pointer', background: 'rgba(247,57,255,0.08)',
-              color: '#f739ff', fontSize: 12, fontWeight: 700, transition: 'all .15s',
+              color: 'var(--chain-pulse)', fontSize: 12, fontWeight: 700, transition: 'all .15s',
             }}
             onMouseOver={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(247,57,255,0.16)')}
             onMouseOut={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(247,57,255,0.08)')}
@@ -501,7 +501,7 @@ export function LiquidityOverviewStrip({
         <div style={{
           margin: '12px 18px', padding: '10px 14px', borderRadius: 10,
           background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.18)',
-          display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#f43f5e',
+          display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--negative)',
         }}>
           <AlertTriangle size={14} /><span>{error}</span>
         </div>
@@ -525,7 +525,7 @@ export function LiquidityOverviewStrip({
                   marginTop: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                   padding: '9px 14px', borderRadius: 10,
                   background: 'rgba(247,57,255,0.06)', border: '1px solid rgba(247,57,255,0.14)',
-                  cursor: 'pointer', color: '#f739ff', fontSize: 12, fontWeight: 700, transition: 'all .15s',
+                  cursor: 'pointer', color: 'var(--chain-pulse)', fontSize: 12, fontWeight: 700, transition: 'all .15s',
                 }}
                 onMouseOver={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(247,57,255,0.12)')}
                 onMouseOut={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(247,57,255,0.06)')}
@@ -567,7 +567,7 @@ export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySect
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               boxShadow: '0 0 20px rgba(247,57,255,0.12)',
             }}>
-              <Droplets size={20} style={{ color: '#f739ff' }} />
+              <Droplets size={20} style={{ color: 'var(--chain-pulse)' }} />
             </div>
             <div>
               <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--fg)', letterSpacing: '-0.025em', margin: 0 }}>
@@ -583,7 +583,7 @@ export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySect
             style={{
               display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px',
               borderRadius: 10, border: '1px solid rgba(247,57,255,0.18)',
-              cursor: 'pointer', background: 'rgba(247,57,255,0.07)', color: '#f739ff',
+              cursor: 'pointer', background: 'rgba(247,57,255,0.07)', color: 'var(--chain-pulse)',
               fontSize: 12, fontWeight: 700, transition: 'all .15s',
             }}
             onMouseOver={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(247,57,255,0.14)')}
@@ -601,7 +601,7 @@ export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySect
           padding: '12px 16px', borderRadius: 12,
           background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.18)',
           display: 'flex', alignItems: 'center', gap: 10,
-          fontSize: 13, color: '#f43f5e',
+          fontSize: 13, color: 'var(--negative)',
         }}>
           <AlertTriangle size={16} />
           <span>Failed to load positions: {error}</span>
@@ -633,7 +633,7 @@ export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySect
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ height: 1, flex: 1, background: 'rgba(247,57,255,0.12)' }} />
             <span style={{
-              fontSize: 11, fontWeight: 700, color: '#f739ff',
+              fontSize: 11, fontWeight: 700, color: 'var(--chain-pulse)',
               textTransform: 'uppercase', letterSpacing: '.7px',
               background: 'rgba(247,57,255,0.08)', border: '1px solid rgba(247,57,255,0.18)',
               padding: '3px 10px', borderRadius: 100,
