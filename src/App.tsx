@@ -37,7 +37,8 @@ import {
   Check,
   KeyRound,
   Zap,
-  BarChart2
+  BarChart2,
+  Droplets
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -59,6 +60,8 @@ import { createPublicClient, http, fallback, formatUnits, getAddress } from 'vie
 import { cn } from './lib/utils';
 import { CHAINS, HEX_ABI, TOKENS, PULSEX_V2_PAIR_ABI, PULSEX_LP_PAIRS } from './constants';
 import type { Asset, Wallet, Chain, HexStake, LpPosition, FarmPosition, PortfolioSummary, HistoryPoint, Transaction } from './types';
+import { LiquidityOverviewStrip, LiquiditySection } from './components/LiquiditySection';
+import { TokenPnLCard } from './components/TokenPnLCard';
 
 const ERC20_ABI = [
   {
@@ -337,7 +340,7 @@ export default function App() {
   const [sidebarWalletsOpen, setSidebarWalletsOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const isFetchingRef = useRef(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'assets' | 'stakes' | 'history' | 'tracker' | 'wallets'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'assets' | 'stakes' | 'history' | 'tracker' | 'wallets' | 'defi'>('overview');
   const [selectedWalletAddr, setSelectedWalletAddr] = useState<string>('all');
   const [walletAssets, setWalletAssets] = useState<Record<string, Asset[]>>({});
   const [walletChainFilter, setWalletChainFilter] = useState<'all' | 'pulsechain' | 'ethereum' | 'base'>('all');
@@ -2306,6 +2309,24 @@ export default function App() {
     fetchMarketData();
   }, [expandedAssetIds]); // intentionally omits tokenMarketData (cache check) and currentAssets (stable ref) to avoid re-fetching on unrelated renders
 
+  // ── tokenPrices: symbol → USD price map for LP hook ─────────────────────
+  const tokenPrices = useMemo<Record<string, number>>(() => {
+    const p = prices;
+    const wplsUsd = p['pulsechain']?.usd ?? p['pulsechain:native']?.usd ?? 0;
+    return {
+      'WPLS':  wplsUsd,
+      'PLS':   wplsUsd,
+      'PLSX':  p['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd ?? p['pulsex']?.usd ?? 0,
+      'INC':   p['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd ?? p['incentive']?.usd ?? 0,
+      'pHEX':  p['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd ?? p['pulsechain:hex']?.usd ?? 0,
+      'pWETH': p['pulsechain:0x02dcdd04e3f455d838cd1249292c58f3b79e3c3c']?.usd ?? p['ethereum']?.usd ?? 0,
+      'pWBTC': p['pulsechain:0xb17d901469b9208b17d916112988a3fed19b5ca1']?.usd ?? p['wrapped-bitcoin']?.usd ?? 0,
+      'pDAI':  p['pulsechain:0xefd766ccb38eaf1dfd701853bfce31359239f305']?.usd ?? 0,
+      'pUSDC': p['pulsechain:0x15d38573d2feeb82e7ad5187ab8c1d52810b1f07']?.usd ?? 0,
+      'pUSDT': p['pulsechain:0x0cb6f5a34ad42ec934882a05265a7d5f59b51a2f']?.usd ?? 0,
+    };
+  }, [prices]);
+
   const CHAIN_COLORS: Record<string, string> = {
     pulsechain: '#f739ff',
     ethereum: '#627EEA',
@@ -2396,29 +2417,37 @@ export default function App() {
             { id: 'overview', label: 'Overview', icon: LayoutDashboard },
             { id: 'assets',   label: 'Assets',   icon: Coins },
             { id: 'stakes',   label: 'Stakes',   icon: Lock },
+            { id: 'defi',     label: 'DeFi',     icon: Droplets },
             { id: 'history',  label: 'History',  icon: History },
             { id: 'tracker',  label: 'PLS Flow', icon: ArrowLeftRight },
             { id: 'wallets',  label: 'Wallets',  icon: WalletIcon },
-          ] as const).map(({ id, label, icon: Icon }) => (
-            <button key={id} onClick={() => setActiveTab(id)}
-              className={activeTab === id ? 'nav-item-active' : ''}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '9px 12px', borderRadius: 8,
-                background: activeTab === id ? 'var(--accent-dim)' : 'transparent',
-                color: activeTab === id ? 'var(--accent)' : 'var(--fg-muted)',
-                fontWeight: activeTab === id ? 600 : 500,
-                fontSize: 13, border: 'none', cursor: 'pointer',
-                transition: 'all .15s', width: '100%', textAlign: 'left',
-                borderLeft: activeTab === id ? '2px solid var(--accent)' : '2px solid transparent',
-              }}
-              onMouseOver={e => { if (activeTab !== id) { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLElement).style.color = 'var(--fg)'; } }}
-              onMouseOut={e => { if (activeTab !== id) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--fg-muted)'; } }}
-            >
-              <Icon size={16} />
-              {label}
-            </button>
-          ))}
+          ] as const).map(({ id, label, icon: Icon }) => {
+            const isDefi = id === 'defi';
+            const isActive = activeTab === id;
+            const defiColor = 'rgba(247,57,255,0.9)';
+            const defiDim   = 'rgba(247,57,255,0.10)';
+            const defiLine  = '#f739ff';
+            return (
+              <button key={id} onClick={() => setActiveTab(id)}
+                className={isActive ? 'nav-item-active' : ''}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '9px 12px', borderRadius: 8,
+                  background: isActive ? (isDefi ? defiDim : 'var(--accent-dim)') : 'transparent',
+                  color: isActive ? (isDefi ? defiColor : 'var(--accent)') : 'var(--fg-muted)',
+                  fontWeight: isActive ? 600 : 500,
+                  fontSize: 13, border: 'none', cursor: 'pointer',
+                  transition: 'all .15s', width: '100%', textAlign: 'left',
+                  borderLeft: isActive ? `2px solid ${isDefi ? defiLine : 'var(--accent)'}` : '2px solid transparent',
+                }}
+                onMouseOver={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLElement).style.color = 'var(--fg)'; } }}
+                onMouseOut={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--fg-muted)'; } }}
+              >
+                <Icon size={16} />
+                {label}
+              </button>
+            );
+          })}
         </nav>
 
         {/* Wallets section */}
@@ -2926,6 +2955,17 @@ export default function App() {
                   );
                 })()}
 
+                {/* ── LIQUIDITY POSITIONS STRIP (overview) ── */}
+                {wallets.length > 0 && (
+                  <div style={{ marginTop: 24 }}>
+                    <LiquidityOverviewStrip
+                      walletAddresses={wallets.map(w => w.address)}
+                      tokenPrices={tokenPrices}
+                      onViewAll={() => setActiveTab('defi')}
+                    />
+                  </div>
+                )}
+
                 {/* ── HEX TOTALS + ETH BOXES ── */}
                 {(() => {
                   const HEX_ADDR = '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39';
@@ -3094,6 +3134,15 @@ export default function App() {
                     </div>
                   );
                 })()}
+              </motion.div>
+            )}
+
+            {activeTab === 'defi' && (
+              <motion.div key="defi" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <LiquiditySection
+                  walletAddresses={wallets.map(w => w.address)}
+                  tokenPrices={tokenPrices}
+                />
               </motion.div>
             )}
 
@@ -3899,9 +3948,9 @@ export default function App() {
                       {/* Summary stats */}
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }} className="max-sm:grid-cols-2">
                         {[
-                          { label: (stakeChainFilter === 'ethereum' ? 'eHEX' : stakeChainFilter === 'pulsechain' ? 'pHEX' : 'HEX') + ' Staked', val: `${fStakedHex.toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX`, sub: `+${fInterestHex.toLocaleString(undefined, { maximumFractionDigits: 0 })} interest` },
-                          { label: 'Value Now', val: `$${fValueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${(fStakedHex + fInterestHex).toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX`, color: 'var(--fg)' },
-                          { label: 'Value at Maturity', val: `$${(fMaturityHex * phexHp).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${fMaturityHex.toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX`, color: '#00FF9F' },
+                          { label: `Total ${stakeChainFilter === 'ethereum' ? 'eHEX' : stakeChainFilter === 'pulsechain' ? 'pHEX' : 'HEX'} Staked`, val: `${fStakedHex.toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX`, sub: `+${fInterestHex.toLocaleString(undefined, { maximumFractionDigits: 0 })} interest` },
+                          { label: 'Current Value', val: `$${fValueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${(fStakedHex + fInterestHex).toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX`, color: 'var(--fg)' },
+                          { label: 'Value at Maturity (Est.)', val: `$${(fMaturityHex * phexHp).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${fMaturityHex.toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX`, color: '#00FF9F' },
                           { label: 'Active T-Shares', val: fTShares.toLocaleString(undefined, { maximumFractionDigits: 2 }), sub: `≈ ${(fTShares * 6.2).toLocaleString(undefined, { maximumFractionDigits: 0 })} HEX/day` },
                         ].map(({ label, val, sub, color }) => (
                           <div key={label} style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, padding: 18 }}>
@@ -4410,6 +4459,32 @@ export default function App() {
               </div>
               </>)}
             </div>
+
+            {/* ── TOKEN P&L SUMMARY CARD — shown when a specific asset filter is active ── */}
+            {txAssetFilter !== 'all' && (() => {
+              const filteredAsset = currentAssets.find(a =>
+                a.symbol.toUpperCase() === txAssetFilter.toUpperCase()
+              );
+              const tokenPrice = filteredAsset?.price ?? 0;
+              const plsPrice   = prices['pulsechain']?.usd ?? 0;
+              const logoUrl    = filteredAsset ? getTokenLogoUrl(filteredAsset) : undefined;
+              // Collect ALL transactions for this symbol across type filters so the card
+              // always shows the full picture regardless of txTypeFilter
+              const allTokenTxs = currentTransactions.filter(tx =>
+                tx.asset.toUpperCase() === txAssetFilter.toUpperCase() ||
+                (tx.counterAsset ?? '').toUpperCase() === txAssetFilter.toUpperCase()
+              );
+              return (
+                <TokenPnLCard
+                  symbol={txAssetFilter}
+                  transactions={allTokenTxs}
+                  asset={filteredAsset}
+                  priceUsd={tokenPrice}
+                  plsPriceUsd={plsPrice}
+                  logoUrl={logoUrl}
+                />
+              );
+            })()}
 
             {/* Recent Activity */}
             <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, overflow: 'hidden' }} className="md-elevation-1">
@@ -5432,6 +5507,7 @@ export default function App() {
           { id: 'overview', label: 'Overview', icon: LayoutDashboard },
           { id: 'assets',   label: 'Assets',   icon: WalletIcon },
           { id: 'stakes',   label: 'Stakes',   icon: Layers },
+          { id: 'defi',     label: 'DeFi',     icon: Droplets },
           { id: 'history',  label: 'History',  icon: History },
           { id: 'tracker',  label: 'PLS Flow', icon: TrendingUp },
           { id: 'wallets',  label: 'Wallets',  icon: User },
@@ -5444,7 +5520,9 @@ export default function App() {
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: activeTab === id ? 'var(--accent)' : 'var(--fg-muted)',
+              color: activeTab === id
+                ? (id === 'defi' ? '#f739ff' : 'var(--accent)')
+                : 'var(--fg-muted)',
               transition: 'color .15s',
             }}>
             <div className={activeTab === id ? 'bottom-nav-dot' : ''}>
