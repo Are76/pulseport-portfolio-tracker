@@ -4241,6 +4241,7 @@ export default function App() {
                                 const isExpanded = expandedStakeIds.has(stake.id);
                                 const tShares = stake.tShares ?? (Number(stake.stakeShares) / 1e12);
                                 const walletShort = stake.walletAddress ? `${stake.walletAddress.slice(0,6)}…${stake.walletAddress.slice(-4)}` : '';
+                                const dailyHexYield = (stake.stakeHexYield ?? 0) / Math.max(1, stake.stakedDays);
 
                                 return (
                                   <React.Fragment key={stake.id}>
@@ -4279,7 +4280,7 @@ export default function App() {
                                         <span className="stake-maturity-value">
                                           ${usdAtMaturity.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                         </span>
-                                        <div style={{ fontSize: 10, color: 'var(--fg-subtle)', marginTop: 2, fontFamily: 'JetBrains Mono, monospace' }}>at maturity</div>
+                                        <div style={{ fontSize: 10, color: 'var(--fg-subtle)', marginTop: 2, fontFamily: 'JetBrains Mono, monospace' }}>At maturity</div>
                                       </td>
                                       <td style={{ padding: '9px 14px', textAlign: 'right', minWidth: 100 }}>
                                         <div style={{ fontSize: 13, color: '#fb923c', marginBottom: 3, textAlign: 'right' }}>{stake.progress}%</div>
@@ -4328,7 +4329,7 @@ export default function App() {
                                             <div>
                                               <div style={{ fontSize: 13, color: 'var(--fg-subtle)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Daily Yield</div>
                                               <span className="stake-yield-hero">
-                                                +{((stake.stakeHexYield ?? 0) / Math.max(1, stake.stakedDays)).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                                +{dailyHexYield.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                               </span>
                                               <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 2, fontFamily: 'JetBrains Mono, monospace' }}>HEX/day</div>
                                             </div>
