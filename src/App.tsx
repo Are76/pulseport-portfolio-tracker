@@ -860,8 +860,9 @@ export default function App() {
                 usd_24h_change: fetchedPrices['hex']?.usd_24h_change,
               };
             }
-            // Mirror to the ethereum chain key so eHEX held on Ethereum mainnet never shows $0
-            // when CoinGecko 'hex' is rate-limited.  CoinGecko price is preferred when available.
+            // Also set the ethereum chain key so eHEX held on Ethereum mainnet never shows $0.
+            // Uses CoinGecko 'hex' price when available; falls back to on-chain pHEX LP price
+            // — the same fallback strategy used for eHEX on PulseChain above.
             if (!fetchedPrices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd) {
               fetchedPrices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39'] = {
                 usd: fetchedPrices['hex']?.usd || pHexUSD,
@@ -4507,7 +4508,7 @@ export default function App() {
                   <div style={{ padding: '48px 20px', textAlign: 'center', color: 'var(--fg-muted)', fontSize: 13 }}>
                     {wallets.length === 0
                       ? 'Add wallets to see received assets history.'
-                      : (receivedChainFilter === 'ethereum' || receivedChainFilter === 'base') && !etherscanApiKey
+                      : ['ethereum', 'base'].includes(receivedChainFilter) && !etherscanApiKey
                       ? <span>
                           No Ethereum/Base transactions loaded.{' '}
                           <button
