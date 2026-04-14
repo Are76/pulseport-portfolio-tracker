@@ -278,48 +278,50 @@ export function StakesSection({
       {/* ── 1. Hero: Daily HEX Yield ─────────────────────────────────────── */}
       <div className="stakes-hero-card">
         {/* Left: icon + title + big number */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 18, flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20, flex: 1, minWidth: 0 }}>
           <div style={{
-            width: 48, height: 48, borderRadius: 14, flexShrink: 0,
-            background: 'rgba(99,70,255,0.18)', border: '1px solid var(--accent-purple-border)',
+            width: 56, height: 56, borderRadius: 16, flexShrink: 0,
+            background: 'rgba(99,70,255,0.22)', border: '1.5px solid var(--accent-purple-border)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 0 24px rgba(99,70,255,0.25)',
           }}>
-            <Zap size={22} style={{ color: '#a78bfa' }} />
+            <Zap size={26} style={{ color: '#c4b5fd' }} />
           </div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 4 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '.10em', marginBottom: 6 }}>
               Daily HEX Yield
             </div>
             <div className="tabular-nums" style={{
-              fontSize: 44, fontWeight: 800, lineHeight: 1,
+              fontSize: 52, fontWeight: 900, lineHeight: 1,
               fontFamily: "'JetBrains Mono', monospace",
-              color: 'var(--positive)', letterSpacing: '-0.03em',
+              color: 'var(--positive)', letterSpacing: '-0.04em',
+              textShadow: '0 0 32px rgba(0,255,159,0.25)',
             }}>
               {fmtHex(dailyYieldHex)}
             </div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)', marginTop: 6 }}>
-              <span style={{ color: 'var(--positive)' }}>{fmtUsd(dailyYieldUsd)}</span>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg-muted)', marginTop: 7 }}>
+              <span style={{ color: 'var(--positive)', fontWeight: 700 }}>{fmtUsd(dailyYieldUsd)}</span>
               {' · '}estimated across all active stakes
             </div>
           </div>
         </div>
 
         {/* Right: Weekly / Monthly / Annual mini-stats */}
-        <div className="stakes-hero-mini-stats" style={{ display: 'flex', gap: 16, flexShrink: 0 }}>
+        <div className="stakes-hero-mini-stats" style={{ display: 'flex', gap: 14, flexShrink: 0 }}>
           {[
             { label: 'Weekly', hex: dailyYieldHex * 7, usd: dailyYieldUsd * 7 },
             { label: 'Monthly', hex: dailyYieldHex * 30, usd: dailyYieldUsd * 30 },
             { label: 'Annual', hex: dailyYieldHex * 365, usd: dailyYieldUsd * 365 },
           ].map(({ label, hex, usd }) => (
             <div key={label} style={{
-              background: 'rgba(99,70,255,0.08)', border: '1px solid var(--accent-purple-border)',
-              borderRadius: 12, padding: '12px 16px', minWidth: 90,
+              background: 'rgba(99,70,255,0.10)', border: '1px solid var(--accent-purple-border)',
+              borderRadius: 14, padding: '14px 18px', minWidth: 96,
             }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>{label}</div>
-              <div className="tabular-nums" style={{ fontSize: 16, fontWeight: 800, color: 'var(--positive)', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-0.02em' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>{label}</div>
+              <div className="tabular-nums" style={{ fontSize: 17, fontWeight: 800, color: 'var(--positive)', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-0.02em' }}>
                 {fmtHex(hex)}
               </div>
-              <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 2 }}>{fmtUsd(usd)}</div>
+              <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 3 }}>{fmtUsd(usd)}</div>
             </div>
           ))}
         </div>
@@ -397,37 +399,40 @@ export function StakesSection({
       </div>
 
       {/* Row B: Value at Maturity — full-width highlight card */}
-      <div className="stakes-metric-card stakes-maturity-highlight" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+      <div className="stakes-metric-card stakes-maturity-highlight" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20, padding: '28px 32px' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
-            <TrendingUp size={14} style={{ color: 'var(--positive)' }} />
-            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--positive)', textTransform: 'uppercase', letterSpacing: '.07em' }}>Value at Maturity</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <TrendingUp size={16} style={{ color: 'var(--positive)' }} />
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--positive)', textTransform: 'uppercase', letterSpacing: '.10em' }}>Value at Maturity</div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, flexWrap: 'wrap' }}>
-            <div className="tabular-nums" style={{ fontSize: 32, fontWeight: 800, color: 'var(--positive)', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-0.03em', lineHeight: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, flexWrap: 'wrap' }}>
+            <div className="tabular-nums" style={{
+              fontSize: 40, fontWeight: 900, color: 'var(--positive)',
+              fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-0.04em', lineHeight: 1,
+              textShadow: '0 0 24px rgba(0,255,159,0.20)',
+            }}>
               {fmtUsd(totalMaturityValueUsd)}
             </div>
-            {/* Guard: totalCurrentValueUsd > 0 is checked in the outer condition, so division is safe */}
             {totalCurrentValueUsd > 0 && totalMaturityValueUsd > totalCurrentValueUsd && (
-              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--positive)', fontFamily: "'JetBrains Mono', monospace" }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--positive)', fontFamily: "'JetBrains Mono', monospace" }}>
                 +{fmtUsd(totalMaturityValueUsd - totalCurrentValueUsd)}
                 {' '}
-                <span style={{ fontSize: 12, fontWeight: 600, opacity: 0.8 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, opacity: 0.75 }}>
                   ({((totalMaturityValueUsd / totalCurrentValueUsd - 1) * 100).toFixed(1)}% yield)
                 </span>
               </div>
             )}
           </div>
-          <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 6 }}>projected at full maturity · current value: {fmtUsd(totalCurrentValueUsd)}</div>
+          <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 8 }}>projected at full maturity · current value: {fmtUsd(totalCurrentValueUsd)}</div>
         </div>
-        <div style={{ display: 'flex', gap: 16 }}>
+        <div style={{ display: 'flex', gap: 14 }}>
           {[
             { label: 'Total HEX + Yield', val: fmtHex(stakes.reduce((s, st) => s + (st.stakedHex ?? 0) + (st.stakeHexYield ?? 0), 0)), color: '#fb923c' },
             { label: 'Total Yield HEX', val: `+${fmtHex(stakes.reduce((s, st) => s + (st.stakeHexYield ?? 0), 0))}`, color: 'var(--positive)' },
           ].map(({ label, val, color }) => (
-            <div key={label} style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 10, padding: '10px 16px', minWidth: 110 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 4 }}>{label}</div>
-              <div className="tabular-nums" style={{ fontSize: 15, fontWeight: 800, color, fontFamily: "'JetBrains Mono', monospace" }}>{val}</div>
+            <div key={label} style={{ background: 'rgba(0,255,159,0.06)', border: '1px solid rgba(0,255,159,0.20)', borderRadius: 12, padding: '12px 18px', minWidth: 120 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>{label}</div>
+              <div className="tabular-nums" style={{ fontSize: 16, fontWeight: 800, color, fontFamily: "'JetBrains Mono', monospace" }}>{val}</div>
             </div>
           ))}
         </div>

@@ -346,6 +346,9 @@ button, a {
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
 
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.14); }
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.22); }
+
 /* ── GLASS EFFECTS ───────────────────────────────────────────────────── */
 .glass {
   backdrop-filter: blur(16px);
@@ -931,11 +934,16 @@ button, a {
 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+[data-theme="light"] .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); }
+[data-theme="light"] .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.20); }
 
 /* ── MD ELEVATION COMPAT ─────────────────────────────────────────────── */
 .md-elevation-1 { box-shadow: 0 1px 3px 1px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.5); }
 .md-elevation-2 { box-shadow: 0 2px 6px 2px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.5); }
 .md-elevation-3 { box-shadow: 0 4px 8px 3px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.5); }
+[data-theme="light"] .md-elevation-1 { box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05); }
+[data-theme="light"] .md-elevation-2 { box-shadow: 0 2px 8px rgba(0,0,0,0.10), 0 1px 3px rgba(0,0,0,0.06); }
+[data-theme="light"] .md-elevation-3 { box-shadow: 0 4px 14px rgba(0,0,0,0.12), 0 2px 5px rgba(0,0,0,0.07); }
 
 /* ── REDUCED MOTION ──────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
@@ -1028,7 +1036,7 @@ button, a {
   cursor: pointer;
   will-change: transform;
   box-shadow: 0 4px 14px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.06);
-  min-height: 185px;
+  min-height: 200px;
 }
 /* Ambient inner glow — bottom */
 .asset-card-premium::after {
@@ -1137,13 +1145,14 @@ button, a {
 .asset-grid-3col {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 28px;
+  gap: 20px;
 }
 @media (max-width: 900px) {
-  .asset-grid-3col { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .asset-grid-3col { grid-template-columns: repeat(2, 1fr); gap: 16px; }
 }
-@media (max-width: 540px) {
-  .asset-grid-3col { grid-template-columns: 1fr; gap: 16px; }
+/* At 540px, keep 2 cols — the @media (max-width: 639px) override above uses 1fr 1fr */
+@media (max-width: 380px) {
+  .asset-grid-3col { grid-template-columns: 1fr !important; gap: 12px !important; }
 }
 
 /* ── CHART TOOLTIP ───────────────────────────────────────────────────── */
@@ -1307,8 +1316,8 @@ button, a {
 .ticker-item {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 4px 14px;
+  gap: 8px;
+  padding: 5px 18px;
   white-space: nowrap;
 }
 .ticker-pct-pos {
@@ -1346,11 +1355,11 @@ button, a {
 }
 .ticker-sep {
   width: 1px;
-  height: 16px;
+  height: 18px;
   background: var(--border);
   flex-shrink: 0;
-  margin: 0 4px;
-  opacity: 0.6;
+  margin: 0 2px;
+  opacity: 0.5;
 }
 [data-theme="light"] .ticker-sep {
   background: rgba(0,0,0,0.15);
@@ -1447,21 +1456,43 @@ button, a {
   border-color: rgba(180,0,200,0.18);
 }
 
+/* ── WALLET SELECTOR SUB-HEADER ──────────────────────────────────────── */
+.wallet-selector-subheader {
+  padding: 6px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-header);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  position: sticky;
+  top: 56px;
+  z-index: 40;
+}
+[data-theme="light"] .wallet-selector-subheader {
+  background: rgba(244,244,248,0.96);
+  border-bottom-color: rgba(0,0,0,0.10);
+}
+
 /* ── WALLET SELECTOR ─────────────────────────────────────────────────── */
 .wallet-selector-bar {
   display: flex;
   align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  padding: 6px 10px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  gap: 5px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding: 3px 0;
+  background: transparent;
+  border: none;
+  /* hide scrollbar on all platforms for a clean look */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.wallet-selector-bar::-webkit-scrollbar {
+  display: none;
 }
 [data-theme="light"] .wallet-selector-bar {
-  background: #ffffff;
-  border-color: rgba(0,0,0,0.14);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 .wallet-pill {
   display: inline-flex;
@@ -1470,7 +1501,7 @@ button, a {
   padding: 5px 12px 5px 9px;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: var(--bg-surface);
+  background: var(--bg-elevated);
   color: var(--fg-muted);
   font-size: 12px;
   font-weight: 600;
@@ -1481,7 +1512,7 @@ button, a {
   user-select: none;
 }
 .wallet-pill:hover {
-  background: var(--bg-elevated);
+  background: var(--bg-surface);
   color: var(--fg);
   border-color: var(--border-strong);
 }
@@ -1490,14 +1521,15 @@ button, a {
   border-color: var(--accent-border);
   color: var(--accent);
   font-weight: 700;
+  box-shadow: 0 0 0 2px var(--accent-border);
 }
 [data-theme="light"] .wallet-pill {
-  background: #f5f5fa;
+  background: #f0f0f6;
   border-color: rgba(0,0,0,0.12);
   color: var(--fg-muted);
 }
 [data-theme="light"] .wallet-pill:hover {
-  background: #ebebf2;
+  background: #e6e6f0;
   color: var(--fg);
   border-color: rgba(0,0,0,0.20);
 }
@@ -1506,6 +1538,7 @@ button, a {
   border-color: rgba(0,122,77,0.30);
   color: #007a4d;
   font-weight: 700;
+  box-shadow: 0 0 0 2px rgba(0,122,77,0.15);
 }
 .wallet-dot {
   width: 8px;
@@ -1675,18 +1708,20 @@ button, a {
 
 /* ── STAKES SECTION ─────────────────────────────────────────────────── */
 .stakes-hero-card {
-  background: linear-gradient(135deg, rgba(99,70,255,0.12) 0%, rgba(99,70,255,0.04) 100%);
+  background: linear-gradient(135deg, rgba(99,70,255,0.15) 0%, rgba(99,70,255,0.05) 60%, rgba(0,255,159,0.04) 100%);
   border: 2px solid var(--accent-purple-border);
-  border-radius: 18px;
-  padding: 28px 32px;
+  border-radius: 20px;
+  padding: 32px 36px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 28px;
+  box-shadow: 0 0 40px rgba(99,70,255,0.08), 0 4px 24px rgba(0,0,0,0.20);
 }
 [data-theme="light"] .stakes-hero-card {
   background: linear-gradient(135deg, rgba(99,70,255,0.07) 0%, rgba(99,70,255,0.02) 100%);
   border-color: rgba(99,70,255,0.22);
+  box-shadow: 0 2px 16px rgba(99,70,255,0.06), 0 1px 4px rgba(0,0,0,0.06);
 }
 
 .stakes-metric-card {
@@ -1711,12 +1746,15 @@ button, a {
 }
 
 .stakes-maturity-highlight {
-  border-color: rgba(0,255,159,0.30) !important;
-  box-shadow: 0 0 18px rgba(0,255,159,0.08);
+  background: linear-gradient(135deg, rgba(0,255,159,0.09) 0%, rgba(0,255,159,0.03) 100%) !important;
+  border-color: rgba(0,255,159,0.35) !important;
+  border-width: 2px !important;
+  box-shadow: 0 0 32px rgba(0,255,159,0.10), 0 4px 20px rgba(0,0,0,0.18);
 }
 [data-theme="light"] .stakes-maturity-highlight {
-  border-color: rgba(0,122,77,0.30) !important;
-  box-shadow: 0 0 12px rgba(0,122,77,0.07);
+  background: linear-gradient(135deg, rgba(0,122,77,0.07) 0%, rgba(0,122,77,0.02) 100%) !important;
+  border-color: rgba(0,122,77,0.32) !important;
+  box-shadow: 0 0 20px rgba(0,122,77,0.07), 0 2px 12px rgba(0,0,0,0.06);
 }
 
 .stakes-filter-tabs {
@@ -1896,9 +1934,10 @@ button, a {
     font-size: 12px;
   }
 
-  /* Asset grid – 1 column on mobile */
+  /* Asset grid – 2 column on small mobile, keep more content visible */
   .asset-grid-3col {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
   }
 
   /* Page padding */
@@ -1931,5 +1970,20 @@ button, a {
   /* LP compact card – allow wrapping so sparkline/value don't get clipped */
   .lp-card-compact {
     flex-wrap: wrap;
+  }
+
+  /* Stakes hero number scale-down on mobile */
+  .stakes-hero-card .tabular-nums[style*="font-size: 52px"] {
+    font-size: 34px !important;
+  }
+
+  /* Value at maturity scale-down on mobile */
+  .stakes-maturity-highlight .tabular-nums[style*="font-size: 40px"] {
+    font-size: 28px !important;
+  }
+
+  /* Wallet selector sub-header compacted on mobile */
+  .wallet-selector-subheader {
+    padding: 5px 12px;
   }
 }
