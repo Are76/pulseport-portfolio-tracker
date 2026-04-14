@@ -470,8 +470,8 @@ export function MarketWatchModal({ theme, onClose }: Props) {
               <div style={{ fontSize: 11, color: red, marginTop: 6, lineHeight: 1.5, whiteSpace: 'pre-line' }}>{importError}</div>
             )}
             <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 8, lineHeight: 1.6 }}>
-              <span style={{ fontWeight: 700, color: 'var(--fg-muted)' }}>Share-link:</span> DexScreener → Watchlist → Share icon → <strong style={{ color: 'var(--fg-muted)' }}>Copy link</strong> (URL starting with <code style={{ fontSize: 10, background: 'rgba(255,255,255,0.07)', padding: '1px 4px', borderRadius: 3 }}>/watchlist/</code>)<br />
-              <span style={{ fontWeight: 700, color: 'var(--fg-muted)' }}>Export-link:</span> DexScreener → Watchlist → Export → <strong style={{ color: 'var(--fg-muted)' }}>Copy pairs link</strong> (URL contains <code style={{ fontSize: 10, background: 'rgba(255,255,255,0.07)', padding: '1px 4px', borderRadius: 3 }}>?watchlist=</code>)
+              <span style={{ fontWeight: 700, color: 'var(--fg-muted)' }}>Share-link:</span> DexScreener → Watchlist → Share icon → <strong style={{ color: 'var(--fg-muted)' }}>Copy link</strong> (URL starting with <code className="mwm-code">/watchlist/</code>)<br />
+              <span style={{ fontWeight: 700, color: 'var(--fg-muted)' }}>Export-link:</span> DexScreener → Watchlist → Export → <strong style={{ color: 'var(--fg-muted)' }}>Copy pairs link</strong> (URL contains <code className="mwm-code">?watchlist=</code>)
             </div>
           </div>
         )}
@@ -561,12 +561,7 @@ export function MarketWatchModal({ theme, onClose }: Props) {
                       <td className="mwm-rank">{i + 1}</td>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div style={{
-                            width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-                            background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.12)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            overflow: 'hidden', fontSize: 12, fontWeight: 800, color: 'var(--fg-muted)',
-                          }}>
+                          <div className="mwm-token-icon">
                             {p.imageUrl ? (
                               <img src={p.imageUrl} alt={p.baseToken.symbol}
                                 style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}

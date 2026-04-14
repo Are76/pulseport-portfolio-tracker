@@ -1653,13 +1653,12 @@ button, a {
   }
 }
 
-/* ── Mobile bottom nav: scrollable so all items are always reachable ────────── */
+/* ── Mobile bottom nav: all 7 tabs spread evenly; scroll on tiny screens ──────── */
 .mobile-bottom-nav-inner {
   display: flex;
   align-items: stretch;
   overflow-x: auto;
   overflow-y: hidden;
-  scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   width: 100%;
@@ -1668,14 +1667,9 @@ button, a {
   display: none;
 }
 .mobile-bottom-nav-inner > * {
-  flex: 0 0 auto;
-  min-width: 64px;
-  scroll-snap-align: start;
-}
-@media (max-width: 360px) {
-  .mobile-bottom-nav-inner > * {
-    min-width: 52px;
-  }
+  flex: 1 1 0;
+  min-width: 46px;
+  max-width: 80px;
 }
 
 /* ── PnLModal: bottom-sheet on small screens ────────────────────────────────── */
@@ -2114,7 +2108,7 @@ button, a {
 }
 .tcm-body::-webkit-scrollbar { width: 4px; }
 .tcm-body::-webkit-scrollbar-track { background: transparent; }
-.tcm-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+.tcm-body::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.25); border-radius: 2px; }
 
 .tcm-section {
   padding: 16px 20px;
@@ -2457,7 +2451,7 @@ button, a {
 }
 .mwm-body::-webkit-scrollbar { width: 4px; }
 .mwm-body::-webkit-scrollbar-track { background: transparent; }
-.mwm-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+.mwm-body::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.25); border-radius: 2px; }
 
 .mwm-state-center {
   display: flex;
@@ -2511,7 +2505,7 @@ button, a {
 .mwm-th-right { text-align: right !important; }
 
 .mwm-row {
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid var(--border);
   transition: background .12s;
   cursor: default;
 }
@@ -2603,6 +2597,32 @@ button, a {
   border-color: rgba(255,255,255,0.25);
 }
 
+/* ── Token icon circle — theme-aware ── */
+.mwm-token-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--bg-elevated);
+  border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--fg-muted);
+}
+
+/* ── Import code snippet — theme-aware ── */
+.mwm-code {
+  font-size: 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
 /* Light mode */
 [data-theme="light"] .mwm-panel {
   background: #ffffff;
@@ -2611,6 +2631,8 @@ button, a {
 }
 [data-theme="light"] .mwm-row:hover { background: rgba(0,0,0,0.02); }
 [data-theme="light"] .mwm-sort-btn.active { color: #fff; }
+[data-theme="light"] .mwm-icon-btn:hover { border-color: rgba(0,0,0,0.22); }
+[data-theme="light"] .mwm-close-btn:hover { border-color: rgba(0,0,0,0.22); background: var(--bg-elevated); }
 
 /* Mobile bottom sheet */
 @media (max-width: 639px) {
@@ -2762,15 +2784,14 @@ button, a {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: 0 0 auto;
-  min-width: 56px;
+  flex: 1 1 0;
+  min-width: 46px;
   min-height: 56px;
-  padding: 6px 4px;
+  padding: 6px 2px;
   background: none;
   border: none;
   cursor: pointer;
   transition: color .15s;
-  scroll-snap-align: start;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -2787,11 +2808,12 @@ button, a {
 }
 .data-table-scroll::-webkit-scrollbar { height: 3px; }
 .data-table-scroll::-webkit-scrollbar-track { background: transparent; }
-.data-table-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+.data-table-scroll::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.25); border-radius: 2px; }
+[data-theme="light"] .data-table-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); }
 
 /* ─── Mobile: hide non-essential columns (nth-child) ─────────────────────
    Desktop table layout: 1=Token, 2=Price, 3=Change%, 4=Amount, 5=Value, 6=Share, 7=Actions
-   On mobile keep: Token (1), Change% (3), Value (5), Actions (7)
+   On ≤639px keep: Token (1), Change% (3), Value (5), Actions (7)
    Hide: Price (2), Amount (4), Share (6)
    ─────────────────────────────────────────────────────────────────────── */
 @media (max-width: 639px) {
@@ -2850,7 +2872,7 @@ button, a {
     scroll-snap-type: x proximity;
   }
   .stakes-table-wrapper::-webkit-scrollbar { height: 3px; }
-  .stakes-table-wrapper::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+  .stakes-table-wrapper::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.25); border-radius: 2px; }
 
   /* Larger touch targets on visible cells */
   .stakes-table td {
