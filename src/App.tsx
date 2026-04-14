@@ -494,7 +494,7 @@ export default function App() {
   const STATIC_LOGOS: Record<string, string> = {
     '0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d': 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png', // INC
     '0xf6f8db0aba00007681f8faf16a0fda1c9b030b11': 'https://cdn.dexscreener.com/cms/images/ODHYYN7yppDHnd6u?width=64&height=64&fit=crop&quality=95&format=auto', // PRVX
-    '0xefd766ccb38eaf1dfd701853bfce31359239f305': 'https://cdn.dexscreener.com/cms/images/f5d7803513d354423216d2e075a923570577681f0a877bde8e7e3a0f56d0ca1d?width=64&height=64&fit=crop&quality=95&format=auto', // pDAI
+    '0xefd766ccb38eaf1dfd701853bfce31359239f305': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png', // pDAI — Ethereum DAI logo (stable trustwallet CDN)
   };
   const [tokenLogos, setTokenLogos] = useState<Record<string, string>>(STATIC_LOGOS);
   const [stakeChainFilter, setStakeChainFilter] = useState<'all' | 'pulsechain' | 'ethereum'>('all');
@@ -2514,13 +2514,25 @@ export default function App() {
           setTokenMarketData(prev => ({
             ...prev,
             [id]: {
-              liquidity: sorted.reduce((s: number, p: any) => s + (p.liquidity?.usd || 0), 0),
-              volume24h: sorted.reduce((s: number, p: any) => s + (p.volume?.h24 || 0), 0),
-              pools: pairs.length,
-              txns24h: sorted.reduce((s: number, p: any) => s + (p.txns?.h24?.buys || 0) + (p.txns?.h24?.sells || 0), 0),
+              liquidity:      sorted.reduce((s: number, p: any) => s + (p.liquidity?.usd || 0), 0),
+              volume24h:      sorted.reduce((s: number, p: any) => s + (p.volume?.h24  || 0), 0),
+              marketCap:      top?.marketCap || null,
+              fdv:            top?.fdv || null,
+              pools:          pairs.length,
+              txns24h:        sorted.reduce((s: number, p: any) => s + (p.txns?.h24?.buys || 0) + (p.txns?.h24?.sells || 0), 0),
               nativePriceUsd: top?.priceNative || null,
+              priceChange1h:  top?.priceChange?.h1  ?? null,
+              priceChange6h:  top?.priceChange?.h6  ?? null,
+              priceChange24h: top?.priceChange?.h24 ?? null,
+              priceChange7d:  top?.priceChange?.d7  ?? null,
+              description:    top?.info?.description || null,
+              websites:       top?.info?.websites    || [],
+              socials:        top?.info?.socials     || [],
             }
           }));
+          // Also cache the DexScreener image into tokenLogos so overview cards pick it up
+          const dsImg = top?.info?.imageUrl;
+          if (dsImg) setTokenLogos(prev => ({ ...prev, [addr.toLowerCase()]: dsImg }));
         } catch { /* ignore */ }
       }
     };
@@ -2528,10 +2540,15 @@ export default function App() {
   }, [expandedAssetIds]); // intentionally omits tokenMarketData (cache check) and currentAssets (stable ref) to avoid re-fetching on unrelated renders
 
   // ── Fetch market data when token card modal opens ────────────────────────
+  // For native PLS, use the WPLS contract address since DexScreener tracks WPLS pairs.
+  const WPLS_ADDR = '0xa1077a294dde1b09bb078844df40758a5d0f9a27';
   useEffect(() => {
     if (!tokenCardModal) return;
     const id   = tokenCardModal.id;
-    const addr = (tokenCardModal as any).address as string | undefined;
+    const rawAddr = (tokenCardModal as any).address as string | undefined;
+    // PLS is native — fall back to WPLS so we can show DexScreener market data
+    const isNativePls = (!rawAddr || rawAddr === 'native') && tokenCardModal.chain === 'pulsechain';
+    const addr = isNativePls ? WPLS_ADDR : rawAddr;
     if (!addr || addr === 'native') return;
     if (tokenMarketData[id]) { setTokenCardModalLoading(false); return; }
     setTokenCardModalLoading(true);
@@ -2554,15 +2571,18 @@ export default function App() {
             pools:          pairs.length,
             txns24h:        sorted.reduce((s: number, p: any) => s + (p.txns?.h24?.buys || 0) + (p.txns?.h24?.sells || 0), 0),
             nativePriceUsd: top?.priceNative || null,
-            priceChange1h:  top?.priceChange?.h1 ?? null,
-            priceChange6h:  top?.priceChange?.h6 ?? null,
+            priceChange1h:  top?.priceChange?.h1  ?? null,
+            priceChange6h:  top?.priceChange?.h6  ?? null,
             priceChange24h: top?.priceChange?.h24 ?? null,
-            priceChange7d:  top?.priceChange?.d7 ?? null,
+            priceChange7d:  top?.priceChange?.d7  ?? null,
             description:    top?.info?.description || null,
-            websites:       top?.info?.websites   || [],
-            socials:        top?.info?.socials    || [],
+            websites:       top?.info?.websites    || [],
+            socials:        top?.info?.socials     || [],
           },
         }));
+        // Cache DexScreener image into tokenLogos (helps overview cards that still use STATIC_LOGOS)
+        const dsImg = top?.info?.imageUrl;
+        if (dsImg && !isNativePls) setTokenLogos(prev => ({ ...prev, [addr.toLowerCase()]: dsImg }));
       } catch { /* ignore */ }
       finally { setTokenCardModalLoading(false); }
     })();
@@ -2609,6 +2629,9 @@ export default function App() {
             socials:        top?.info?.socials     || [],
           },
         }));
+        // Cache DexScreener image into tokenLogos — overrides STATIC_LOGOS fallback with live CDN URL
+        const dsImg = top?.info?.imageUrl;
+        if (dsImg) setTokenLogos(prev => ({ ...prev, [addr.toLowerCase()]: dsImg }));
       } catch { /* ignore */ }
     }));
   }, [activeTab, currentAssets.length]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -4374,7 +4397,7 @@ export default function App() {
 
             {/* Received Assets History */}
             <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
-              <div style={{ padding: '14px 18px', borderBottom: isCollapsed('received-assets') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+              <div style={{ padding: '14px 18px', borderBottom: isCollapsed('received-assets') ? 'none' : '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <ArrowDownLeft size={16} style={{ color: '#627EEA' }} />
                   <span style={{ fontSize: 14, fontWeight: 600 }}>Received Assets History</span>
@@ -4414,7 +4437,7 @@ export default function App() {
               {receivedAssetsData.list.length > 0 && (
                 <div style={{ display: 'flex', gap: 1, borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)' }}>
                   {(Object.entries(receivedAssetsData.byAsset) as [string, { amount: number; valueUsd: number }][]).map(([sym, data]) => (
-                    <div key={sym} style={{ flex: 1, padding: '10px 16px', borderRight: '1px solid #242424' }}>
+                    <div key={sym} style={{ flex: 1, padding: '10px 16px', borderRight: '1px solid var(--border)' }}>
                       <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 4, fontWeight: 700, letterSpacing: '.5px' }}>{sym}</div>
                       <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>
                         {sym === 'ETH' ? data.amount.toLocaleString(undefined, { maximumFractionDigits: 4 }) : data.amount.toLocaleString(undefined, { maximumFractionDigits: 0 })} {sym}
@@ -5615,7 +5638,7 @@ export default function App() {
                 if (baseTxs.length === 0) return null;
                 return (
                   <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
-                    <div style={{ padding: '14px 18px', borderBottom: isCollapsed('wallet-txs') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                    <div style={{ padding: '14px 18px', borderBottom: isCollapsed('wallet-txs') ? 'none' : '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: 14, fontWeight: 600 }}>Recent Activity</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent-border)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
