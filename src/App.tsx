@@ -59,7 +59,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
 import { createPublicClient, http, fallback, formatUnits, getAddress } from 'viem';
 import { cn } from './lib/utils';
-import { CHAINS, HEX_ABI, TOKENS, PULSEX_V2_PAIR_ABI, PULSEX_LP_PAIRS, HEX_YIELD_RATE, HEX_YIELD_RATE_BI_NUM, HEX_YIELD_RATE_BI_DEN } from './constants';
+import { CHAINS, HEX_ABI, TOKENS, PULSEX_V2_PAIR_ABI, PULSEX_LP_PAIRS, PHEX_YIELD_PER_TSHARE, EHEX_YIELD_PER_TSHARE, PHEX_YIELD_BI_NUM, PHEX_YIELD_BI_DEN, EHEX_YIELD_BI_NUM, EHEX_YIELD_BI_DEN } from './constants';
 import type { Asset, Wallet, Chain, HexStake, LpPosition, FarmPosition, PortfolioSummary, HistoryPoint, Transaction } from './types';
 import { LiquidityOverviewStrip, LiquiditySection } from './components/LiquiditySection';
 import { TokenPnLCard } from './components/TokenPnLCard';
@@ -1541,12 +1541,14 @@ export default function App() {
                   const daysStakedN  = Math.max(0, currentDayN - lockedDayN);
                   const daysRemaining = Math.max(0, (lockedDayN + stakedDaysN) - currentDayN);
 
-                  // Yield rate: 6.2 HEX per T-Share per day.
-                  // BigInt formula: (shares × days × 62) / 100_000
-                  //   — for 1 T-Share (1e12 raw shares), 1 day:
-                  //     1e12 × 1 × 62 / 100_000 = 6.2×10^8 hearts = 6.2 HEX ✓
-                  const interestHearts  = (sharesBI * BigInt(daysStakedN) * HEX_YIELD_RATE_BI_NUM) / HEX_YIELD_RATE_BI_DEN;
-                  const fullYieldHearts = (sharesBI * BigInt(stakedDaysN) * HEX_YIELD_RATE_BI_NUM) / HEX_YIELD_RATE_BI_DEN;
+                  // Yield rate: chain-specific HEX per T-Share per day.
+                  // BigInt formula: hearts = shares × days × BI_NUM / BI_DEN
+                  //   pHEX: 1e12 × 1 × 158 / 1_000_000 = 1.58×10^8 hearts = 1.58 HEX ✓
+                  //   eHEX: 1e12 × 1 × 170 / 1_000_000 = 1.70×10^8 hearts = 1.70 HEX ✓
+                  const yieldBiNum = chainKey === 'pulsechain' ? PHEX_YIELD_BI_NUM : EHEX_YIELD_BI_NUM;
+                  const yieldBiDen = chainKey === 'pulsechain' ? PHEX_YIELD_BI_DEN : EHEX_YIELD_BI_DEN;
+                  const interestHearts  = (sharesBI * BigInt(daysStakedN) * yieldBiNum) / yieldBiDen;
+                  const fullYieldHearts = (sharesBI * BigInt(stakedDaysN) * yieldBiNum) / yieldBiDen;
 
                   const tShares    = Number(sharesBI) / 1e12;
                   const stakedHex  = Number(heartsBI) / 1e8;
@@ -2115,8 +2117,8 @@ export default function App() {
     const liquidValue = assets.reduce((acc, curr) => acc + curr.value, 0);
 
     // Add HEX staking value so the grand total reflects everything the user owns.
-    // Recalculate accrued yield from tShares × daysStaked × 6.2 so stale cached
-    // interestHearts (written with the old rate-6 formula) never corrupt the total.
+    // Recalculate accrued yield from tShares × daysStaked × chain-specific rate so
+    // stale cached interestHearts never corrupt the total.
     const stakingValueUsd = currentStakes.reduce((acc, s) => {
       const hexPriceKey = `${s.chain}:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39`;
       const chainHexFallback = s.chain === 'pulsechain' ? prices['pulsechain:hex']?.usd : prices['hex']?.usd;
@@ -2124,7 +2126,8 @@ export default function App() {
       const stakedHex  = Number(s.stakedHearts ?? 0n) / 1e8;
       const tShares    = Number(s.stakeShares  ?? 0n) / 1e12;
       const daysStaked = Math.max(0, (s.stakedDays ?? 0) - (s.daysRemaining ?? 0));
-      const interestHex = tShares * daysStaked * HEX_YIELD_RATE;
+      const rate = s.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
+      const interestHex = tShares * daysStaked * rate;
       return acc + (stakedHex + interestHex) * hexPrice;
     }, 0);
 
@@ -2306,11 +2309,11 @@ export default function App() {
     stakes.forEach(s => {
       const stakedHex  = Number(s.stakedHearts ?? 0n) / 1e8;
       const tShares    = Number(s.stakeShares  ?? 0n) / 1e12;
-      // Recalculate accrued yield from first principles (6.2 rate) so stale
-      // cached interestHearts — written with the old rate-6 formula — never
-      // corrupt the totals shown on the Stakes page and Overview.
+      // Recalculate accrued yield from first principles using chain-specific rate
+      // so stale cached interestHearts never corrupt the totals.
       const daysStaked  = Math.max(0, (s.stakedDays ?? 0) - (s.daysRemaining ?? 0));
-      const interestHex = tShares * daysStaked * HEX_YIELD_RATE;
+      const rate = s.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
+      const interestHex = tShares * daysStaked * rate;
 
       // Use chain-specific HEX price; fall back to 0 (not 0.004) so we show
       // $0 instead of a wrong value while prices are still loading.
@@ -2325,7 +2328,12 @@ export default function App() {
     });
 
     const phexPrice = prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0;
-    const estimatedDailyPayoutHex = totalTShares * HEX_YIELD_RATE;
+    // Daily payout uses chain-specific rates; sum pHEX and eHEX T-Share contributions separately
+    const estimatedDailyPayoutHex = stakes.reduce((sum, s) => {
+      const tS = Number(s.stakeShares ?? 0n) / 1e12;
+      const rate = s.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
+      return sum + tS * rate;
+    }, 0);
     const estimatedDailyPayoutUsd = estimatedDailyPayoutHex * phexPrice;
 
     return {
@@ -3523,12 +3531,12 @@ export default function App() {
                   const HEX_ADDR_LC = '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39';
                   // pHEX liquid: native HEX on PulseChain (symbol HEX, same address as eHEX contract but on PLS chain)
                   const pHexLiquid = currentAssets.filter(a => a.chain === 'pulsechain' && (a as any).address?.toLowerCase() === HEX_ADDR_LC).reduce((s, a) => s + a.balance, 0);
-                  // Staked = principal + accrued yield (recalculated at 6.2 rate, never from stale cache)
+                  // Staked = principal + accrued yield (recalculated at chain-specific rate, never from stale cache)
                   const pHexStaked = currentStakes.filter(s => s.chain === 'pulsechain').reduce((s, st) => {
                     const principal  = st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8;
                     const tSharesVal = st.tShares    ?? Number(st.stakeShares  ?? 0n) / 1e12;
                     const daysStaked = Math.max(0, (st.stakedDays ?? 0) - (st.daysRemaining ?? 0));
-                    const interest   = tSharesVal * daysStaked * HEX_YIELD_RATE;
+                    const interest   = tSharesVal * daysStaked * PHEX_YIELD_PER_TSHARE;
                     return s + principal + interest;
                   }, 0);
                   // eHEX liquid: HEX on Ethereum + bridged eHEX on PulseChain
@@ -3539,7 +3547,7 @@ export default function App() {
                     const principal  = st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8;
                     const tSharesVal = st.tShares    ?? Number(st.stakeShares  ?? 0n) / 1e12;
                     const daysStaked = Math.max(0, (st.stakedDays ?? 0) - (st.daysRemaining ?? 0));
-                    const interest   = tSharesVal * daysStaked * HEX_YIELD_RATE;
+                    const interest   = tSharesVal * daysStaked * EHEX_YIELD_PER_TSHARE;
                     return s + principal + interest;
                   }, 0);
                   const pHexTotal = pHexLiquid + pHexStaked;

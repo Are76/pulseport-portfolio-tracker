@@ -1,12 +1,23 @@
 /**
  * HEX Contract ABI (Minimal for querying stakes)
  */
-// Approximate HEX yield rate used for all stake calculations.
-// 6.2 HEX per T-Share per day (BigInt formula: shares × days × 62 / 100_000).
-// Update this single constant if the network average rate changes.
-export const HEX_YIELD_RATE = 6.2;
-export const HEX_YIELD_RATE_BI_NUM = 62n;      // BigInt numerator
-export const HEX_YIELD_RATE_BI_DEN = 100000n;  // BigInt denominator
+// Real-world HEX payout rates (April 2026).
+// PulseChain pHEX and Ethereum eHEX have diverged due to different staking
+// participation levels on each chain.  Use the chain-specific constant
+// everywhere — never mix them into a single "average" rate.
+//
+// BigInt formula: hearts = shares × days × BI_NUM / BI_DEN
+//   Derivation: 1 T-Share = 1e12 raw shares, 1 HEX = 1e8 hearts
+//   → hearts per raw share per day = rate(HEX) × 1e8 / 1e12 = rate × 1e-4
+//   → BI_NUM / BI_DEN = rate / 10_000
+//   pHEX: 1.58 / 10_000 = 158 / 1_000_000  → 1e12 × 1 × 158 / 1_000_000 = 1.58×10^8 hearts = 1.58 HEX ✓
+//   eHEX: 1.70 / 10_000 = 170 / 1_000_000  → 1e12 × 1 × 170 / 1_000_000 = 1.70×10^8 hearts = 1.70 HEX ✓
+export const PHEX_YIELD_PER_TSHARE  = 1.58;          // pHEX (PulseChain) HEX per T-Share per day
+export const EHEX_YIELD_PER_TSHARE  = 1.70;          // eHEX (Ethereum)   HEX per T-Share per day
+export const PHEX_YIELD_BI_NUM = 158n;
+export const PHEX_YIELD_BI_DEN = 1_000_000n;
+export const EHEX_YIELD_BI_NUM = 170n;
+export const EHEX_YIELD_BI_DEN = 1_000_000n;
 
 export const HEX_ABI = [
   {
