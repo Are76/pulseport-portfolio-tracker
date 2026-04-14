@@ -2762,12 +2762,12 @@ export default function App() {
                 ] as { sym: string; dot: string; price: number; change?: number | null }[]).flatMap(c => [c, { ...c }]).map((coin, i) => (
                   <React.Fragment key={i}>
                     <div className="ticker-item">
-                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: coin.dot, flexShrink: 0, boxShadow: `0 0 6px ${coin.dot}cc` }} />
-                      <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.06em' }}>{coin.sym}</span>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: coin.dot, flexShrink: 0, boxShadow: `0 0 8px ${coin.dot}dd, 0 0 3px ${coin.dot}` }} />
+                      <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.07em' }}>{coin.sym}</span>
                       <span className="tabular-nums" style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg)', letterSpacing: '-0.01em' }}>{fmtPrice(coin.price)}</span>
                       {coin.change != null && (
                         <span className={coin.change >= 0 ? 'ticker-pct-pos' : 'ticker-pct-neg'}>
-                          {coin.change >= 0 ? '+' : ''}{coin.change.toFixed(1)}%
+                          {coin.change >= 0 ? '+' : ''}{coin.change.toFixed(2)}%
                         </span>
                       )}
                     </div>
@@ -3195,7 +3195,7 @@ export default function App() {
                           )}
                         </div>
                       </div>
-                      <div style={{ padding: '24px' }}>
+                      <div style={{ padding: '20px 20px 24px' }}>
                         <div className="asset-grid-3col">
                           {displayAssets.map((asset) => {
                             const pct = asset.priceChange24h ?? asset.pnl24h ?? 0;
@@ -3208,7 +3208,7 @@ export default function App() {
                             }));
                             return (
                               <div key={asset.id} className="asset-card-premium" onClick={() => setActiveTab('assets')}>
-                                <div style={{ padding: '24px 24px 0' }}>
+                                <div style={{ padding: '20px 20px 0' }}>
                                   {/* Row 1: Logo + symbol + 24h % */}
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 }}>
                                     <div style={{
@@ -3232,11 +3232,11 @@ export default function App() {
                                     </span>
                                   </div>
                                   {/* Row 2: Large balance amount */}
-                                  <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 5 }}>
+                                  <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 6 }}>
                                     {asset.balance >= 1e9 ? `${(asset.balance/1e9).toFixed(2)}B` : asset.balance >= 1e6 ? `${(asset.balance/1e6).toFixed(2)}M` : asset.balance >= 1e3 ? `${(asset.balance/1e3).toFixed(1)}K` : asset.balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                   </div>
                                   {/* Row 3: USD value + portfolio % */}
-                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4, marginBottom: 8 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4, marginBottom: 10 }}>
                                     <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
                                       {fmtValue(asset.value)}
                                     </span>
@@ -3246,7 +3246,7 @@ export default function App() {
                                   </div>
                                 </div>
                                 {/* Row 4: Sparkline at bottom */}
-                                <div className="sparkline-container" style={{ height: 44 }}>
+                                <div className="sparkline-container" style={{ height: 50 }}>
                                   <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={sparkData} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
                                       <defs>

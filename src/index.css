@@ -1036,7 +1036,7 @@ button, a {
   cursor: pointer;
   will-change: transform;
   box-shadow: 0 4px 14px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.06);
-  min-height: 185px;
+  min-height: 200px;
 }
 /* Ambient inner glow — bottom */
 .asset-card-premium::after {
@@ -1145,13 +1145,13 @@ button, a {
 .asset-grid-3col {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 28px;
+  gap: 20px;
 }
 @media (max-width: 900px) {
-  .asset-grid-3col { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .asset-grid-3col { grid-template-columns: repeat(2, 1fr); gap: 16px; }
 }
 @media (max-width: 540px) {
-  .asset-grid-3col { grid-template-columns: 1fr; gap: 16px; }
+  .asset-grid-3col { grid-template-columns: 1fr; gap: 14px; }
 }
 
 /* ── CHART TOOLTIP ───────────────────────────────────────────────────── */
@@ -1315,8 +1315,8 @@ button, a {
 .ticker-item {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 4px 14px;
+  gap: 8px;
+  padding: 5px 18px;
   white-space: nowrap;
 }
 .ticker-pct-pos {
@@ -1354,11 +1354,11 @@ button, a {
 }
 .ticker-sep {
   width: 1px;
-  height: 16px;
+  height: 18px;
   background: var(--border);
   flex-shrink: 0;
-  margin: 0 4px;
-  opacity: 0.6;
+  margin: 0 2px;
+  opacity: 0.5;
 }
 [data-theme="light"] .ticker-sep {
   background: rgba(0,0,0,0.15);
@@ -1690,18 +1690,20 @@ button, a {
 
 /* ── STAKES SECTION ─────────────────────────────────────────────────── */
 .stakes-hero-card {
-  background: linear-gradient(135deg, rgba(99,70,255,0.12) 0%, rgba(99,70,255,0.04) 100%);
+  background: linear-gradient(135deg, rgba(99,70,255,0.15) 0%, rgba(99,70,255,0.05) 60%, rgba(0,255,159,0.04) 100%);
   border: 2px solid var(--accent-purple-border);
-  border-radius: 18px;
-  padding: 28px 32px;
+  border-radius: 20px;
+  padding: 32px 36px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 28px;
+  box-shadow: 0 0 40px rgba(99,70,255,0.08), 0 4px 24px rgba(0,0,0,0.20);
 }
 [data-theme="light"] .stakes-hero-card {
   background: linear-gradient(135deg, rgba(99,70,255,0.07) 0%, rgba(99,70,255,0.02) 100%);
   border-color: rgba(99,70,255,0.22);
+  box-shadow: 0 2px 16px rgba(99,70,255,0.06), 0 1px 4px rgba(0,0,0,0.06);
 }
 
 .stakes-metric-card {
@@ -1726,12 +1728,15 @@ button, a {
 }
 
 .stakes-maturity-highlight {
-  border-color: rgba(0,255,159,0.30) !important;
-  box-shadow: 0 0 18px rgba(0,255,159,0.08);
+  background: linear-gradient(135deg, rgba(0,255,159,0.09) 0%, rgba(0,255,159,0.03) 100%) !important;
+  border-color: rgba(0,255,159,0.35) !important;
+  border-width: 2px !important;
+  box-shadow: 0 0 32px rgba(0,255,159,0.10), 0 4px 20px rgba(0,0,0,0.18);
 }
 [data-theme="light"] .stakes-maturity-highlight {
-  border-color: rgba(0,122,77,0.30) !important;
-  box-shadow: 0 0 12px rgba(0,122,77,0.07);
+  background: linear-gradient(135deg, rgba(0,122,77,0.07) 0%, rgba(0,122,77,0.02) 100%) !important;
+  border-color: rgba(0,122,77,0.32) !important;
+  box-shadow: 0 0 20px rgba(0,122,77,0.07), 0 2px 12px rgba(0,0,0,0.06);
 }
 
 .stakes-filter-tabs {
