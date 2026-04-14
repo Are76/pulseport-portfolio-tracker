@@ -38,7 +38,8 @@ import {
   KeyRound,
   Zap,
   BarChart2,
-  Droplets
+  Droplets,
+  Menu
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -425,6 +426,7 @@ export default function App() {
     setCustomCoins(customCoins.filter(c => c.id !== id));
   };
   const [sidebarWalletsOpen, setSidebarWalletsOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activeWallet, setActiveWallet] = useState<string | null>(null);
   const isFetchingRef = useRef(false);
@@ -2516,13 +2518,15 @@ export default function App() {
 
   return (
     <div className="min-h-screen font-sans flex" style={{ fontSize: 14, background: 'var(--bg-void)', color: 'var(--fg)' }}>
+      {/* ── SIDEBAR BACKDROP (mobile) ── */}
+      <div className={`sidebar-backdrop${sidebarOpen ? ' open' : ''}`} onClick={() => setSidebarOpen(false)} />
       {/* ── SIDEBAR ── */}
       <aside style={{
           width: 220, minWidth: 220,
           background: 'var(--bg-sidebar)',
           borderRight: '1px solid var(--border)',
         }}
-        className="hidden md:flex flex-col sticky top-0 h-screen overflow-y-auto custom-scrollbar">
+        className={`app-sidebar hidden md:flex flex-col sticky top-0 h-screen overflow-y-auto custom-scrollbar${sidebarOpen ? ' open' : ''}`}>
         {/* Logo */}
         <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--border)' }} className="flex items-center gap-2.5">
           <div style={{
@@ -2554,7 +2558,7 @@ export default function App() {
             const defiDim   = 'rgba(247,57,255,0.10)';
             const defiLine  = '#f739ff';
             return (
-              <button key={id} onClick={() => setActiveTab(id)}
+              <button key={id} onClick={() => { setActiveTab(id); setSidebarOpen(false); }}
                 className={isActive ? 'nav-item-active' : ''}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 10,
@@ -2664,7 +2668,7 @@ export default function App() {
       </aside>
 
       {/* ── MAIN ── */}
-      <main className="flex-1 min-w-0 flex flex-col">
+      <main className="app-main flex-1 min-w-0 flex flex-col">
         {/* Top Nav / Header */}
         <header
           className="glass flex items-center justify-between gap-4 shrink-0"
@@ -2674,8 +2678,11 @@ export default function App() {
             position: 'sticky', top: 0, zIndex: 50,
             padding: '0 20px',
           }}>
-          {/* Mobile logo */}
+          {/* Mobile logo + hamburger */}
           <div className="flex md:hidden items-center gap-2">
+            <button className="mobile-menu-btn" onClick={() => setSidebarOpen(v => !v)}>
+              <Menu size={18} />
+            </button>
             <div style={{
               width: 26, height: 26, background: 'var(--accent)', borderRadius: 7,
               boxShadow: '0 0 12px rgba(0,255,159,.3)',

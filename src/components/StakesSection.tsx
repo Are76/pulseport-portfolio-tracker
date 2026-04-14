@@ -482,8 +482,8 @@ export function StakesSection({
             No stakes match this filter
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table className="stakes-table">
+          <div className="stakes-table-wrapper">
+            <table className="stakes-table" style={{ minWidth: 520 }}>
               <thead>
                 <tr>
                   <th>Stake ID</th>

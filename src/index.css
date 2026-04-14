@@ -1610,12 +1610,13 @@ button, a {
 /* ── TokenPnLCard: two-column body ──────────────────────────────────────────── */
 .pnl-cols {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  grid-template-columns: 1fr;
+  gap: 12px;
 }
-@media (max-width: 560px) {
+@media (min-width: 640px) {
   .pnl-cols {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
   }
 }
 
@@ -1645,7 +1646,7 @@ button, a {
 }
 
 /* ── PnLModal: bottom-sheet on small screens ────────────────────────────────── */
-@media (max-width: 480px) {
+@media (max-width: 639px) {
   .pnl-modal-backdrop {
     align-items: flex-end !important;
     padding: 0 !important;
@@ -1662,13 +1663,13 @@ button, a {
 /* ── PnLModal: stats grid stacks on narrow screens ──────────────────────────── */
 .pnl-modal-stats-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 12px;
   padding: 16px 20px;
 }
-@media (max-width: 480px) {
+@media (min-width: 560px) {
   .pnl-modal-stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
 }
 
@@ -1802,4 +1803,133 @@ button, a {
   .stakes-charts-grid { grid-template-columns: 1fr !important; }
   .stakes-totals-grid { grid-template-columns: 1fr 1fr !important; }
   .stakes-metrics-grid { grid-template-columns: 1fr 1fr !important; }
+}
+
+/* ── Mobile responsive stat/metric grid ─────────────────────────────────── */
+.stat-grid-3, .overview-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+@media (min-width: 640px) {
+  .stat-grid-3, .overview-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+}
+
+/* ── Mobile sidebar overlay ─────────────────────────────────────────────── */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 299;
+  backdrop-filter: blur(2px);
+}
+.sidebar-backdrop.open { display: block; }
+
+/* ── Hamburger button ───────────────────────────────────────────────────── */
+.mobile-menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  cursor: pointer;
+  color: var(--fg-muted);
+}
+@media (min-width: 768px) {
+  .mobile-menu-btn { display: none; }
+  .sidebar-backdrop { display: none !important; }
+}
+
+/* ── Sidebar mobile behavior ────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .app-sidebar {
+    position: fixed !important;
+    left: -260px !important;
+    top: 0 !important;
+    height: 100vh !important;
+    z-index: 300 !important;
+    transition: left 0.28s cubic-bezier(0.16,1,0.3,1) !important;
+    overflow-y: auto;
+  }
+  .app-sidebar.open {
+    left: 0 !important;
+    box-shadow: 4px 0 40px rgba(0,0,0,0.6);
+  }
+  .app-main {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+}
+
+/* ── col-hide-mobile: ensure hidden at 639px with !important ────────────── */
+@media (max-width: 639px) {
+  .col-hide-mobile { display: none !important; }
+
+  /* Stakes table – scroll horizontally as fallback */
+  .stakes-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Stakes table font size */
+  .stakes-table td, .stakes-table th {
+    font-size: 11px;
+    padding: 8px 6px;
+  }
+
+  /* Larger touch targets */
+  button, a, [role="button"] {
+    min-height: 44px;
+  }
+
+  /* Filter pill buttons */
+  .filter-pill, .chain-filter-btn, .tab-btn {
+    min-height: 40px;
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+
+  /* Asset grid – 1 column on mobile */
+  .asset-grid-3col {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Page padding */
+  .page-content {
+    padding: 12px !important;
+  }
+
+  /* Section headers */
+  .page-header {
+    padding: 12px 14px !important;
+  }
+
+  /* Stat cards font scale-down */
+  .stakes-metric-card .tabular-nums {
+    font-size: 16px !important;
+  }
+
+  /* Stakes totals grid – 2-col on mobile */
+  .stakes-totals-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* Chain distribution bar – stack on mobile */
+  .chain-dist-bar {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* LP compact card – allow wrapping so sparkline/value don't get clipped */
+  .lp-card-compact {
+    flex-wrap: wrap;
+  }
 }
