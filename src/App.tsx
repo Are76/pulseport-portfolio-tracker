@@ -2620,9 +2620,18 @@ export default function App() {
     setTokenCardModalLoading(true);
     (async () => {
       try {
-        const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${addr}`);
-        if (!res.ok) return;
-        const data = await res.json();
+        const isElectron = /electron/i.test(navigator.userAgent);
+        const bsBase = isElectron ? 'https://api.scan.pulsechain.com/api/v2' : '/proxy/pulsechain/api/v2';
+        const [dsResult, holderResult] = await Promise.allSettled([
+          fetch(`https://api.dexscreener.com/latest/dex/tokens/${addr}`).then(r => r.ok ? r.json() : null),
+          tokenCardModal?.chain === 'pulsechain' && !isNativePls
+            ? fetch(`${bsBase}/tokens/${addr}`).then(r => r.ok ? r.json() : null)
+            : Promise.resolve(null),
+        ]);
+        const data = dsResult.status === 'fulfilled' ? dsResult.value : null;
+        const holderData = holderResult.status === 'fulfilled' ? holderResult.value : null;
+        const holders: number | null = holderData?.holders ? (parseInt(String(holderData.holders), 10) || null) : null;
+        if (!data) return;
         const pairs = data.pairs || [];
         if (pairs.length === 0) return;
         const sorted = [...pairs].sort((a: any, b: any) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0));
@@ -2644,6 +2653,7 @@ export default function App() {
             description:    top?.info?.description || FALLBACK_DESCRIPTIONS[addr ? addr.toLowerCase() : ''] || null,
             websites:       top?.info?.websites    || [],
             socials:        top?.info?.socials     || [],
+            ...(holders != null ? { holders } : {}),
           },
         }));
         // Cache DexScreener image into tokenLogos (helps overview cards)
@@ -2667,10 +2677,20 @@ export default function App() {
     if (toFetch.length === 0) return;
     Promise.all(toFetch.map(async (asset) => {
       const addr = (asset as any).address as string;
+      const isElectron = /electron/i.test(navigator.userAgent);
+      const bsBase = isElectron ? 'https://api.scan.pulsechain.com/api/v2' : '/proxy/pulsechain/api/v2';
       try {
-        const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${addr}`);
-        if (!res.ok) return;
-        const data = await res.json();
+        // Fetch DexScreener data + Blockscout holder count in parallel
+        const [dsResult, holderResult] = await Promise.allSettled([
+          fetch(`https://api.dexscreener.com/latest/dex/tokens/${addr}`).then(r => r.ok ? r.json() : null),
+          asset.chain === 'pulsechain'
+            ? fetch(`${bsBase}/tokens/${addr}`).then(r => r.ok ? r.json() : null)
+            : Promise.resolve(null),
+        ]);
+        const data = dsResult.status === 'fulfilled' ? dsResult.value : null;
+        const holderData = holderResult.status === 'fulfilled' ? holderResult.value : null;
+        const holders: number | null = holderData?.holders ? (parseInt(String(holderData.holders), 10) || null) : null;
+        if (!data) return;
         const pairs: any[] = data.pairs || [];
         if (pairs.length === 0) return;
         const sorted = [...pairs].sort((a: any, b: any) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0));
@@ -2693,6 +2713,7 @@ export default function App() {
             description:    top?.info?.description || FALLBACK_DESCRIPTIONS[addr ? addr.toLowerCase() : ''] || null,
             websites:       top?.info?.websites    || [],
             socials:        top?.info?.socials     || [],
+            ...(holders != null ? { holders } : {}),
           },
         }));
         // Cache DexScreener image into tokenLogos — but never overwrite STATIC_LOGOS entries
@@ -3297,9 +3318,6 @@ export default function App() {
 
                 {/* ── ASSET POSITIONS GRID (3×3) — standalone section below hero ── */}
                 {(() => {
-                  const SPARKLINE_VARIANCE_SCALE = 0.9;
-                  const SPARKLINE_SIN_AMPLITUDE = 0.10;
-                  const SPARKLINE_TREND_STEP = 0.01;
                   const ASSET_COLORS: Record<string, string> = {
                     PLS: '#00FF9F', WPLS: '#00FF9F', PLSX: '#f739ff', HEX: '#fb923c', pHEX: '#fb923c',
                     INC: '#22d3ee', eHEX: '#627EEA', PRVX: '#a855f7',
@@ -3425,16 +3443,46 @@ export default function App() {
                             const sparkColor = pct >= 0 ? t.green : t.red;
                             const changeColor = pct >= 0 ? t.green : t.red;
                             const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()] || (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()];
-                            const sparkData = Array.from({ length: 12 }, (_, i) => ({
-                              v: asset.value * (SPARKLINE_VARIANCE_SCALE + Math.sin(i * 0.8 + asset.value % 3) * SPARKLINE_SIN_AMPLITUDE + i * SPARKLINE_TREND_STEP),
-                            }));
                             const md = tokenMarketData[asset.id];
+                            // Real price sparkline: backward-extrapolate anchor prices from DexScreener
+                            // change percentages, then linearly interpolate 12 evenly-spaced points.
+                            const sparkData = (() => {
+                              const N = 12;
+                              const price = asset.price > 0 ? asset.price : 1;
+                              const ch24 = md?.priceChange24h ?? asset.priceChange24h ?? asset.pnl24h ?? null;
+                              const ch6  = md?.priceChange6h ?? null;
+                              const ch1  = md?.priceChange1h ?? asset.priceChange1h ?? null;
+                              const p24 = ch24 != null ? price / (1 + ch24 / 100) : null;
+                              const p6  = ch6  != null ? price / (1 + ch6  / 100) : null;
+                              const p1  = ch1  != null ? price / (1 + ch1  / 100) : null;
+                              type Anch = [number, number];
+                              const anch: Anch[] = [];
+                              if (p24 != null) anch.push([0, p24]);
+                              if (p6  != null) anch.push([Math.round(18 / 24 * (N - 1)), p6]);
+                              if (p1  != null) anch.push([Math.round(23 / 24 * (N - 1)), p1]);
+                              anch.push([N - 1, price]);
+                              if (anch.length < 2) return Array.from({ length: N }, () => ({ v: price }));
+                              const pts: number[] = [];
+                              for (let i = 0; i < N; i++) {
+                                let lo = anch[0], hi = anch[anch.length - 1];
+                                for (let j = 0; j < anch.length - 1; j++) {
+                                  if (i >= anch[j][0] && i <= anch[j + 1][0]) { lo = anch[j]; hi = anch[j + 1]; break; }
+                                }
+                                const span = hi[0] - lo[0];
+                                pts.push(span > 0 ? lo[1] + (hi[1] - lo[1]) * (i - lo[0]) / span : price);
+                              }
+                              return pts.map(v => ({ v }));
+                            })();
                             const fmtStatVal = (v: number | null | undefined) =>
                               !v ? '—' :
                               v >= 1e9 ? `$${(v/1e9).toFixed(1)}B` :
                               v >= 1e6 ? `$${(v/1e6).toFixed(1)}M` :
                               v >= 1e3 ? `$${(v/1e3).toFixed(0)}K` :
                               `$${v.toFixed(0)}`;
+                            const fmtHolders = (n: number) =>
+                              n >= 1e6 ? `${(n/1e6).toFixed(1)}M` :
+                              n >= 1e3 ? `${(n/1e3).toFixed(1)}K` :
+                              n.toLocaleString();
                             const mcap = md ? (md.marketCap || md.fdv || null) : null;
                             return (
                               <div key={asset.id} className="asset-card-premium asset-card-v2"
@@ -3548,8 +3596,8 @@ export default function App() {
                                   </ResponsiveContainer>
                                 </div>
 
-                                {/* Bottom stat footer: MCap | Liquidity | Vol 24H */}
-                                <div className="acv2-footer">
+                                {/* Bottom stat footer: 2×2 grid — MCap | Liquidity / Vol 24h | Holders */}
+                                <div className="acv2-footer acv2-footer-4">
                                   <div className="acv2-footer-cell">
                                     <div className="acv2-footer-label">Market Cap</div>
                                     <div className="acv2-footer-val">{mcap ? fmtStatVal(mcap) : '\u2014'}</div>
@@ -3561,6 +3609,10 @@ export default function App() {
                                   <div className="acv2-footer-cell">
                                     <div className="acv2-footer-label">Volume 24h</div>
                                     <div className="acv2-footer-val">{md ? fmtStatVal(md.volume24h) : '\u2014'}</div>
+                                  </div>
+                                  <div className="acv2-footer-cell">
+                                    <div className="acv2-footer-label">Holders</div>
+                                    <div className="acv2-footer-val">{md?.holders ? fmtHolders(md.holders) : '\u2014'}</div>
                                   </div>
                                 </div>
                               </div>
@@ -5235,7 +5287,18 @@ export default function App() {
           const filteredViewAssets = walletChainFilter === 'all' ? viewAssets : viewAssets.filter(a => a.chain === walletChainFilter);
 
           const walletUsdValue = viewAssets.reduce((s, a) => s + a.value, 0);
-          const stakingUsdValue = viewStakes.reduce((s, st) => s + (st.totalValueUsd || st.estimatedValueUsd), 0);
+          // Recalculate staking value from first principles using live prices + full maturity yield,
+          // so the total is never stale or wrong due to cached totalValueUsd.
+          const stakingUsdValue = viewStakes.reduce((s, st) => {
+            const hexPriceKey = `${st.chain}:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39`;
+            const chainHexFallback = st.chain === 'pulsechain' ? prices['pulsechain:hex']?.usd : prices['hex']?.usd;
+            const hexPrice = prices[hexPriceKey]?.usd || chainHexFallback || 0;
+            const stakedHex = st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8;
+            const tShares = st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12;
+            const rate = st.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
+            const maturityHex = stakedHex + tShares * (st.stakedDays ?? 0) * rate;
+            return s + maturityHex * hexPrice;
+          }, 0);
           const totalUsdValue = walletUsdValue + stakingUsdValue;
 
           // pHEX / eHEX totals (matching overview hero)

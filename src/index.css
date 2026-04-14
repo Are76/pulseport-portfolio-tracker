@@ -2050,6 +2050,29 @@ button, a {
   border-left-color: rgba(0,0,0,0.08);
 }
 
+/* 4-stat 2×2 variant */
+.acv2-footer-4 {
+  grid-template-columns: repeat(2, 1fr);
+}
+/* Reset the sequential left-border rule for this variant */
+.acv2-footer-4 .acv2-footer-cell + .acv2-footer-cell {
+  border-left: none;
+}
+/* Right column gets a left border */
+.acv2-footer-4 .acv2-footer-cell:nth-child(even) {
+  border-left: 1px solid rgba(255,255,255,0.07);
+}
+/* Second row gets a top border */
+.acv2-footer-4 .acv2-footer-cell:nth-child(n+3) {
+  border-top: 1px solid rgba(255,255,255,0.07);
+}
+[data-theme="light"] .acv2-footer-4 .acv2-footer-cell:nth-child(even) {
+  border-left-color: rgba(0,0,0,0.08);
+}
+[data-theme="light"] .acv2-footer-4 .acv2-footer-cell:nth-child(n+3) {
+  border-top-color: rgba(0,0,0,0.08);
+}
+
 /* ── TOKEN CARD MODAL ─────────────────────────────────────────────────────────
    Full token detail modal / bottom-sheet on mobile
    ────────────────────────────────────────────────────────────────────────── */
