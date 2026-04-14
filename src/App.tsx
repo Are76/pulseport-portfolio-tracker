@@ -3446,7 +3446,7 @@ export default function App() {
                                     border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden',
                                   }}>
                                     <div style={{ flex: 1, padding: '8px 10px' }}>
-                                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.5px', textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 3 }}>Holdings</div>
+                                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.5px', textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 3 }}>Held</div>
                                       <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg-muted)', fontFamily: 'JetBrains Mono, monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                         {asset.balance >= 1e9 ? `${(asset.balance/1e9).toFixed(2)}B` :
                                          asset.balance >= 1e6 ? `${(asset.balance/1e6).toFixed(2)}M` :
@@ -3483,7 +3483,7 @@ export default function App() {
                                 {/* Bottom stat footer: MCap | Liquidity | Vol 24H */}
                                 <div className="acv2-footer">
                                   <div className="acv2-footer-cell">
-                                    <div className="acv2-footer-label">Mkt Cap</div>
+                                    <div className="acv2-footer-label">Market Cap</div>
                                     <div className="acv2-footer-val">{mcap ? fmtStatVal(mcap) : '\u2014'}</div>
                                   </div>
                                   <div className="acv2-footer-cell">
@@ -3491,7 +3491,7 @@ export default function App() {
                                     <div className="acv2-footer-val" style={md?.liquidity ? { color: t.green } : undefined}>{md ? fmtStatVal(md.liquidity) : '\u2014'}</div>
                                   </div>
                                   <div className="acv2-footer-cell">
-                                    <div className="acv2-footer-label">Vol 24H</div>
+                                    <div className="acv2-footer-label">Volume 24h</div>
                                     <div className="acv2-footer-val">{md ? fmtStatVal(md.volume24h) : '\u2014'}</div>
                                   </div>
                                 </div>
@@ -3546,8 +3546,8 @@ export default function App() {
                   const eHexTotal = eHexLiquid + eHexStaked;
                   // Space-separated thousands: 148 000 000
                   const boxes = [
-                    { label: 'Total pHEX', sub: `${fmtBigNum(pHexLiquid)} liquid · ${fmtBigNum(pHexStaked)} staked + yield`, val: fmtBigNum(pHexTotal), usd: pHexTotal * pHexPrice, color: '#fb923c', dot: '#fb923c' },
-                    { label: 'Total eHEX', sub: `${fmtBigNum(eHexLiquid)} liquid · ${fmtBigNum(eHexStaked)} staked + yield`, val: fmtBigNum(eHexTotal), usd: eHexTotal * eHexPrice, color: '#627EEA', dot: '#627EEA' },
+                    { label: 'Total pHEX', sub: `${fmtBigNum(pHexLiquid)} liquid · ${fmtBigNum(pHexStaked)} staked`, val: fmtBigNum(pHexTotal), usd: pHexTotal * pHexPrice, color: '#fb923c', dot: '#fb923c' },
+                    { label: 'Total eHEX', sub: `${fmtBigNum(eHexLiquid)} liquid · ${fmtBigNum(eHexStaked)} staked`, val: fmtBigNum(eHexTotal), usd: eHexTotal * eHexPrice, color: '#627EEA', dot: '#627EEA' },
                   ];
                   return (
                     <div style={{ background: theme === 'dark' ? 'radial-gradient(ellipse at top left, #111118 0%, #0d0d0d 100%)' : t.card, border: `1px solid ${t.border}`, borderRadius: 12, overflow: 'hidden' }}>
@@ -3812,7 +3812,7 @@ export default function App() {
                             { label: priceChangePeriod.toUpperCase(), field: 'change', align: 'right' },
                             { label: 'Amount', field: null, align: 'right' },
                             { label: 'Value', field: 'value', align: 'right' },
-                            { label: 'Share', field: null, align: 'right' },
+                            { label: '% of Portfolio', field: null, align: 'right' },
                             { label: '', field: null, align: 'right' },
                           ].map(({ label, field, align }, i) => (
                             <th key={i} onClick={field ? () => {
@@ -4053,7 +4053,7 @@ export default function App() {
                                                   <span style={{ fontSize: 13, fontWeight: 700, color: t.green }}>{md ? fmtNum(md.liquidity) : <span style={{ color: 'var(--fg-subtle)' }}>—</span>}</span>
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                  <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>24H Volume</span>
+                                                  <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Volume 24h</span>
                                                   <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>{md ? fmtNum(md.volume24h) : <span style={{ color: 'var(--fg-subtle)' }}>—</span>}</span>
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -4061,7 +4061,7 @@ export default function App() {
                                                   <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-muted)' }}>{md ? md.pools : <span style={{ color: 'var(--fg-subtle)' }}>—</span>}</span>
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                  <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>24H Txns</span>
+                                                  <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Txns 24h</span>
                                                   <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-muted)' }}>{md?.txns24h != null ? md.txns24h.toLocaleString() : <span style={{ color: 'var(--fg-subtle)' }}>—</span>}</span>
                                                 </div>
                                               </>
@@ -4071,16 +4071,16 @@ export default function App() {
                                       </div>
                                       {/* Holdings breakdown */}
                                       <div style={{ background: t.cardHigh, borderRadius: 8, padding: '12px 14px' }}>
-                                        <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Holdings</div>
+                                        <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Your Holdings</div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Balance</span>
+                                            <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Held</span>
                                             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>
                                               {asset.balance >= 1e6 ? `${(asset.balance/1e6).toFixed(2)}M` : asset.balance >= 1e3 ? `${(asset.balance/1e3).toFixed(2)}K` : asset.balance.toLocaleString(undefined, { maximumFractionDigits: 4 })} {asset.symbol}
                                             </span>
                                           </div>
                                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Value USD</span>
+                                            <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Value</span>
                                             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>${asset.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                                           </div>
                                           {priceInPls > 0 && (
@@ -4092,7 +4092,7 @@ export default function App() {
                                             </div>
                                           )}
                                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Portfolio %</span>
+                                            <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>% of Portfolio</span>
                                             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)' }}>{share.toFixed(2)}%</span>
                                           </div>
                                         </div>
@@ -5291,7 +5291,7 @@ export default function App() {
                           { label: priceChangePeriod.toUpperCase(), field: 'change', align: 'right' },
                           { label: 'Amount', field: null, align: 'right' },
                           { label: 'Value', field: 'value', align: 'right' },
-                          { label: 'Share', field: null, align: 'right' },
+                          { label: '% of Portfolio', field: null, align: 'right' },
                           { label: '', field: null, align: 'right' },
                         ].map(({ label, field, align }, i) => (
                           <th key={i} onClick={field ? () => {
@@ -5459,7 +5459,7 @@ export default function App() {
                                       </div>
                                       {/* Holdings card */}
                                       <div style={{ background: 'var(--bg-elevated)', borderRadius: 8, padding: '12px 14px' }}>
-                                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Holdings</div>
+                                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Your Holdings</div>
                                         <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)' }}>
                                           {asset.balance >= 1e6 ? `${(asset.balance/1e6).toFixed(2)}M` : asset.balance >= 1e3 ? `${(asset.balance/1e3).toFixed(2)}K` : asset.balance.toLocaleString(undefined, { maximumFractionDigits: 4 })} {asset.symbol}
                                         </div>

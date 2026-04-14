@@ -144,7 +144,7 @@ export function TokenCardModal({
       className="tcm-backdrop"
       onClick={e => { if (e.target === e.currentTarget) handleClose(); }}
     >
-      <div className="tcm-panel" role="dialog" aria-modal="true" aria-label={`${asset.symbol} details`}>
+      <div className="tcm-panel" role="dialog" aria-modal="true" aria-label={`${asset.symbol} — Token Details`}>
 
         {/* ── HEADER ── */}
         <div className="tcm-header">
@@ -193,7 +193,7 @@ export function TokenCardModal({
               <button className="tcm-icon-btn" onClick={copyAddr} title="Copy contract address">
                 {copied
                   ? <span style={{ fontSize: 11, color: green, fontWeight: 700 }}>✓ Copied</span>
-                  : <><Copy size={13} /> <span style={{ fontSize: 11 }}>Copy CA</span></>}
+                  : <><Copy size={13} /> <span style={{ fontSize: 11 }}>Contract Address</span></>}
               </button>
               {explorerUrl && (
                 <a href={explorerUrl} target="_blank" rel="noopener noreferrer" className="tcm-icon-btn" title="View on explorer">
@@ -222,7 +222,7 @@ export function TokenCardModal({
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 4 }}>24H Change</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 4 }}>24h Change</div>
                 <div style={{
                   fontSize: 22, fontWeight: 800, color: changeColor,
                   fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.02em',
@@ -260,10 +260,10 @@ export function TokenCardModal({
 
           {/* ── YOUR HOLDINGS ── */}
           <div className="tcm-section">
-            <div className="tcm-section-title">Your Holdings</div>
+            <div className="tcm-section-title">Token Details</div>
             <div className="tcm-holdings-grid">
               <div className="tcm-stat-cell">
-                <div className="tcm-stat-label">Balance</div>
+                <div className="tcm-stat-label">Held</div>
                 <div className="tcm-stat-value" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
                   {fmtBalance(asset.balance)}
                   <span style={{ fontSize: 11, color: 'var(--fg-subtle)', marginLeft: 4 }}>{asset.symbol}</span>
@@ -274,11 +274,11 @@ export function TokenCardModal({
                 <div className="tcm-stat-value" style={{ color: green }}>{fmtUsd(asset.value)}</div>
               </div>
               <div className="tcm-stat-cell">
-                <div className="tcm-stat-label">Portfolio %</div>
+                <div className="tcm-stat-label">% of Portfolio</div>
                 <div className="tcm-stat-value">{share.toFixed(2)}%</div>
               </div>
               <div className="tcm-stat-cell">
-                <div className="tcm-stat-label">Price × Balance</div>
+                <div className="tcm-stat-label">Price × Qty</div>
                 <div className="tcm-stat-value" style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12 }}>
                   {fmtPrice(asset.price)} × {fmtBalance(asset.balance)}
                 </div>
@@ -306,11 +306,11 @@ export function TokenCardModal({
                 </div>
               </div>
               <div className="tcm-stat-cell">
-                <div className="tcm-stat-label">24H Volume</div>
+                <div className="tcm-stat-label">Volume 24h</div>
                 <div className="tcm-stat-value">{vol24h ? fmtUsd(vol24h) : '—'}</div>
               </div>
               <div className="tcm-stat-cell">
-                <div className="tcm-stat-label">24H Txns</div>
+                <div className="tcm-stat-label">Txns 24h</div>
                 <div className="tcm-stat-value">{txns24h != null ? txns24h.toLocaleString() : '—'}</div>
               </div>
               <div className="tcm-stat-cell">
@@ -323,7 +323,7 @@ export function TokenCardModal({
               </div>
               {marketData?.nativePriceUsd && (
                 <div className="tcm-stat-cell">
-                  <div className="tcm-stat-label">Price (PLS)</div>
+                  <div className="tcm-stat-label">Price in PLS</div>
                   <div className="tcm-stat-value" style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12 }}>
                     {parseFloat(marketData.nativePriceUsd).toLocaleString(undefined, { maximumSignificantDigits: 5 })} PLS
                   </div>

@@ -334,7 +334,7 @@ export function StakesSection({
         <div className="stakes-metric-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--chain-pulse)', boxShadow: '0 0 6px var(--chain-pulse)' }} />
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.07em' }}>Total pHEX Staked</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.07em' }}>pHEX Staked</span>
           </div>
           <div className="tabular-nums" style={{ fontSize: 28, fontWeight: 800, color: 'var(--chain-pulse)', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-0.02em', lineHeight: 1 }}>
             {fmtHex(totalPHex)}
@@ -348,7 +348,7 @@ export function StakesSection({
         <div className="stakes-metric-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--chain-eth)', boxShadow: '0 0 6px var(--chain-eth)' }} />
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.07em' }}>Total eHEX Staked</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.07em' }}>eHEX Staked</span>
           </div>
           <div className="tabular-nums" style={{ fontSize: 28, fontWeight: 800, color: 'var(--chain-eth)', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-0.02em', lineHeight: 1 }}>
             {fmtHex(totalEHex)}
@@ -390,7 +390,7 @@ export function StakesSection({
         <div className="stakes-metric-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
             <Filter size={14} style={{ color: 'var(--fg-subtle)' }} />
-            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.07em' }}>Active T-Shares</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.07em' }}>T-Shares</div>
           </div>
           <div className="tabular-nums" style={{ fontSize: 20, fontWeight: 800, color: '#a78bfa', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-0.02em', marginBottom: 4 }}>
             {totalTShares.toLocaleString(undefined, { maximumFractionDigits: 2 })}
@@ -428,8 +428,8 @@ export function StakesSection({
         </div>
         <div style={{ display: 'flex', gap: 14 }}>
           {[
-            { label: 'Total HEX + Yield', val: fmtHex(stakes.reduce((s, st) => s + (st.stakedHex ?? 0) + (st.stakeHexYield ?? 0), 0)), color: '#fb923c' },
-            { label: 'Total Yield HEX', val: `+${fmtHex(stakes.reduce((s, st) => s + (st.stakeHexYield ?? 0), 0))}`, color: 'var(--positive)' },
+            { label: 'HEX + Yield', val: fmtHex(stakes.reduce((s, st) => s + (st.stakedHex ?? 0) + (st.stakeHexYield ?? 0), 0)), color: '#fb923c' },
+            { label: 'Total Yield', val: `+${fmtHex(stakes.reduce((s, st) => s + (st.stakeHexYield ?? 0), 0))}`, color: 'var(--positive)' },
           ].map(({ label, val, color }) => (
             <div key={label} style={{ background: 'rgba(0,255,159,0.06)', border: '1px solid rgba(0,255,159,0.20)', borderRadius: 12, padding: '12px 18px', minWidth: 120 }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>{label}</div>
@@ -495,13 +495,13 @@ export function StakesSection({
                   <th>Stake ID</th>
                   <th>Chain</th>
                   <th className="col-hide-mobile">Wallet</th>
-                  <th>HEX Staked</th>
+                  <th>Staked</th>
                   <th className="col-hide-mobile">T-Shares</th>
                   <th className="col-hide-mobile">Progress</th>
                   <th>Days Left</th>
-                  <th className="col-hide-mobile">Yield</th>
+                  <th className="col-hide-mobile">Total Yield</th>
                   <th>Current Value</th>
-                  <th className="col-hide-mobile">Maturity Value</th>
+                  <th className="col-hide-mobile">Value at Maturity</th>
                 </tr>
               </thead>
               <tbody>
