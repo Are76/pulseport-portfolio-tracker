@@ -482,7 +482,7 @@ export function StakesSection({
             No stakes match this filter
           </div>
         ) : (
-          <div className="stakes-table-wrapper" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <div className="stakes-table-wrapper">
             <table className="stakes-table" style={{ minWidth: 520 }}>
               <thead>
                 <tr>
