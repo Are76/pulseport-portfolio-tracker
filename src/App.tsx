@@ -59,7 +59,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
 import { createPublicClient, http, fallback, formatUnits, getAddress } from 'viem';
 import { cn } from './lib/utils';
-import { CHAINS, HEX_ABI, TOKENS, PULSEX_V2_PAIR_ABI, PULSEX_LP_PAIRS } from './constants';
+import { CHAINS, HEX_ABI, TOKENS, PULSEX_V2_PAIR_ABI, PULSEX_LP_PAIRS, HEX_YIELD_RATE, HEX_YIELD_RATE_BI_NUM, HEX_YIELD_RATE_BI_DEN } from './constants';
 import type { Asset, Wallet, Chain, HexStake, LpPosition, FarmPosition, PortfolioSummary, HistoryPoint, Transaction } from './types';
 import { LiquidityOverviewStrip, LiquiditySection } from './components/LiquiditySection';
 import { TokenPnLCard } from './components/TokenPnLCard';
@@ -67,6 +67,7 @@ import { PnLModal } from './components/PnLModal';
 import { ProfitPlannerModal } from './components/ProfitPlannerModal';
 import { StakesSection } from './components/StakesSection';
 import { TokenCardModal } from './components/TokenCardModal';
+import { MarketWatchModal } from './components/MarketWatchModal';
 
 const ERC20_ABI = [
   {
@@ -536,6 +537,7 @@ export default function App() {
   const [tokenMarketData, setTokenMarketData] = useState<Record<string, any>>({});
   const [tokenCardModal, setTokenCardModal] = useState<Asset | null>(null);
   const [tokenCardModalLoading, setTokenCardModalLoading] = useState(false);
+  const [showMarketWatch, setShowMarketWatch] = useState(false);
   const [expandedWalletAssetIds, setExpandedWalletAssetIds] = useState<Set<string>>(new Set());
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     const saved = localStorage.getItem('pulseport_theme');
@@ -1472,100 +1474,116 @@ export default function App() {
 
           // 3. Fetch HEX Stakes if on PulseChain or Ethereum
           if ((chainKey === 'pulsechain' || chainKey === 'ethereum') && 'hexAddress' in chainConfig) {
+            // Each chain is fully isolated: a failure on Ethereum never blocks PulseChain.
+            let hexStakeCount = 0n;
+            let hexCurrentDay = 0n;
+
             try {
               const hexAddr = getAddress(chainConfig.hexAddress);
-              const [stakeCount, currentDay] = await withRetry(() => Promise.all([
-                client.readContract({
-                  address: hexAddr,
-                  abi: HEX_ABI,
-                  functionName: 'stakeCount',
-                  args: [address]
-                } as any),
-                client.readContract({
-                  address: hexAddr,
-                  abi: HEX_ABI,
-                  functionName: 'currentDay'
-                } as any)
-              ])) as [bigint, bigint];
 
-              if (Number(stakeCount) > 0) {
-                const stakes = await Promise.all(
-                  Array.from({ length: Number(stakeCount) }, (_, i) =>
+              // Fetch stakeCount and currentDay in separate try/catch so one bad RPC
+              // call cannot kill the other — they are independent contract reads.
+              try {
+                hexStakeCount = await withRetry(() => client.readContract({
+                  address: hexAddr, abi: HEX_ABI, functionName: 'stakeCount', args: [address],
+                } as any)) as bigint;
+              } catch (e: any) {
+                console.error(`[HEX stakes] stakeCount failed on ${chainKey} (${address.slice(0, 8)}…): ${e?.shortMessage ?? e?.message ?? String(e)}`);
+              }
+
+              try {
+                hexCurrentDay = await withRetry(() => client.readContract({
+                  address: hexAddr, abi: HEX_ABI, functionName: 'currentDay',
+                } as any)) as bigint;
+              } catch (e: any) {
+                console.error(`[HEX stakes] currentDay failed on ${chainKey}: ${e?.shortMessage ?? e?.message ?? String(e)}`);
+              }
+
+              if (Number(hexStakeCount) > 0) {
+                // Use Promise.allSettled so a single bad index never aborts the whole batch
+                const stakeResults = await Promise.allSettled(
+                  Array.from({ length: Number(hexStakeCount) }, (_, i) =>
                     withRetry(() => client.readContract({
-                      address: hexAddr,
-                      abi: HEX_ABI,
-                      functionName: 'stakeLists',
-                      args: [address, BigInt(i)]
+                      address: hexAddr, abi: HEX_ABI, functionName: 'stakeLists',
+                      args: [address, BigInt(i)],
                     } as any))
                   )
                 );
 
-                stakes.forEach((stakeResult: any, i) => {
+                stakeResults.forEach((settled, i) => {
+                  if (settled.status === 'rejected') {
+                    console.warn(`[HEX stakes] index ${i} rejected on ${chainKey}: ${settled.reason?.message ?? settled.reason}`);
+                    return;
+                  }
+                  const stakeResult: any = settled.value;
                   if (!stakeResult) return;
-                  let stakeId, stakedHearts, stakeShares, lockedDay, stakedDays, unlockedDay, isAutoStake;
+
+                  let stakeId: any, stakedHearts: any, stakeShares: any,
+                      lockedDay: any, stakedDays: any, unlockedDay: any, isAutoStake: any;
+
                   if (Array.isArray(stakeResult)) {
                     [stakeId, stakedHearts, stakeShares, lockedDay, stakedDays, unlockedDay, isAutoStake] = stakeResult;
                   } else {
-                    stakeId = stakeResult.stakeId;
-                    stakedHearts = stakeResult.stakedHearts;
-                    stakeShares = stakeResult.stakeShares;
-                    lockedDay = stakeResult.lockedDay;
-                    stakedDays = stakeResult.stakedDays;
-                    unlockedDay = stakeResult.unlockedDay;
-                    isAutoStake = stakeResult.isAutoStake;
+                    ({ stakeId, stakedHearts, stakeShares, lockedDay, stakedDays, unlockedDay, isAutoStake } = stakeResult);
                   }
 
                   if (stakeId === undefined) return;
-                  const progress = Math.min(100, Math.max(0, ((Number(currentDay) - Number(lockedDay)) / Number(stakedDays)) * 100));
 
-                  // Use chain-specific HEX price (pHEX vs eHEX differ significantly)
+                  // Always coerce to BigInt — the ABI returns uint72 which viem gives as bigint,
+                  // but defensive casting prevents precision loss if a non-bigint sneaks in.
+                  const sharesBI     = BigInt(stakeShares  ?? 0);
+                  const heartsBI     = BigInt(stakedHearts ?? 0);
+                  const lockedDayN   = Number(lockedDay  ?? 0);
+                  const stakedDaysN  = Number(stakedDays ?? 0);
+                  const currentDayN  = Number(hexCurrentDay);
+
+                  const progress     = Math.min(100, Math.max(0, ((currentDayN - lockedDayN) / Math.max(1, stakedDaysN)) * 100));
+                  const daysStakedN  = Math.max(0, currentDayN - lockedDayN);
+                  const daysRemaining = Math.max(0, (lockedDayN + stakedDaysN) - currentDayN);
+
+                  // Yield rate: 6.2 HEX per T-Share per day.
+                  // BigInt formula: (shares × days × 62) / 100_000
+                  //   — for 1 T-Share (1e12 raw shares), 1 day:
+                  //     1e12 × 1 × 62 / 100_000 = 6.2×10^8 hearts = 6.2 HEX ✓
+                  const interestHearts  = (sharesBI * BigInt(daysStakedN) * HEX_YIELD_RATE_BI_NUM) / HEX_YIELD_RATE_BI_DEN;
+                  const fullYieldHearts = (sharesBI * BigInt(stakedDaysN) * HEX_YIELD_RATE_BI_NUM) / HEX_YIELD_RATE_BI_DEN;
+
+                  const tShares    = Number(sharesBI) / 1e12;
+                  const stakedHex  = Number(heartsBI) / 1e8;
+                  const stakeHexYield = Number(fullYieldHearts) / 1e8;
+
                   const hexPriceChainKey = `${chainKey}:${hexAddr.toLowerCase()}`;
                   const hexChainFallback = chainKey === 'pulsechain' ? fetchedPrices['pulsechain:hex']?.usd : fetchedPrices['hex']?.usd;
-                  const hexPrice = fetchedPrices[hexPriceChainKey]?.usd || hexChainFallback || 0;
-                  const stakedHeartsNum = Number(stakedHearts) / 1e8;
-                  const valueUsd = stakedHeartsNum * hexPrice;
+                  const hexPrice   = fetchedPrices[hexPriceChainKey]?.usd || hexChainFallback || 0;
 
-                  // ~6 HEX per T-Share per day: (shares × days × 6) / 10000
-                  // interestHearts = accrued so far (daysStaked elapsed)
-                  // fullYieldHearts = total yield at maturity (stakedDays full duration)
-                  const shares = BigInt(stakeShares);
-                  const daysStaked = Math.max(0, Number(currentDay) - Number(lockedDay));
-                  const interestHearts = (shares * BigInt(daysStaked) * 6n) / 10000n;
-                  const totalHearts = BigInt(stakedHearts) + interestHearts;
-                  const totalValueUsd = (Number(totalHearts) / 1e8) * hexPrice;
-
-                  const daysRemaining = Math.max(0, (Number(lockedDay) + Number(stakedDays)) - Number(currentDay));
-                  const tShares = Number(shares) / 1e12;
-                  const stakedHex = Number(BigInt(stakedHearts)) / 1e8;
-                  // Full projected yield using the same rate over the complete stake duration
-                  const fullYieldHearts = (shares * BigInt(stakedDays) * 6n) / 10000n;
-                  const stakeHexYield = Number(fullYieldHearts) / 1e8;
+                  const valueUsd       = stakedHex * hexPrice;
+                  const totalValueUsd  = (Number(heartsBI + interestHearts) / 1e8) * hexPrice;
 
                   allStakes.push({
                     id: `${chainKey}-${address}-${stakeId}`,
-                    stakeId: Number(stakeId),
-                    stakedHearts: BigInt(stakedHearts),
-                    stakeShares: BigInt(stakeShares),
-                    lockedDay: Number(lockedDay),
-                    stakedDays: Number(stakedDays),
-                    unlockedDay: Number(unlockedDay),
-                    isAutoStake: Boolean(isAutoStake),
-                    progress: Math.round(progress),
+                    stakeId:           Number(stakeId),
+                    stakedHearts:      heartsBI,
+                    stakeShares:       sharesBI,
+                    lockedDay:         lockedDayN,
+                    stakedDays:        stakedDaysN,
+                    unlockedDay:       Number(unlockedDay ?? 0),
+                    isAutoStake:       Boolean(isAutoStake),
+                    progress:          Math.round(progress),
                     estimatedValueUsd: valueUsd,
-                    interestHearts: interestHearts,
-                    totalValueUsd: totalValueUsd,
-                    chain: chainKey,
-                    walletLabel: wallet.name,
-                    walletAddress: address.toLowerCase(),
+                    interestHearts,
+                    totalValueUsd,
+                    chain:             chainKey,
+                    walletLabel:       wallet.name,
+                    walletAddress:     address.toLowerCase(),
                     daysRemaining,
                     tShares,
                     stakedHex,
-                    stakeHexYield
+                    stakeHexYield,
                   });
                 });
               }
-            } catch (e) {
-              console.error(`Error fetching HEX stakes on ${chainKey}:`, e);
+            } catch (e: any) {
+              console.error(`[HEX stakes] Unexpected error on ${chainKey} for ${address.slice(0, 8)}…: ${e?.shortMessage ?? e?.message ?? String(e)}`);
             }
           }
         }));
@@ -2096,13 +2114,17 @@ export default function App() {
     const assets = currentAssets;
     const liquidValue = assets.reduce((acc, curr) => acc + curr.value, 0);
 
-    // Add HEX staking value so the grand total reflects everything the user owns
+    // Add HEX staking value so the grand total reflects everything the user owns.
+    // Recalculate accrued yield from tShares × daysStaked × 6.2 so stale cached
+    // interestHearts (written with the old rate-6 formula) never corrupt the total.
     const stakingValueUsd = currentStakes.reduce((acc, s) => {
       const hexPriceKey = `${s.chain}:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39`;
       const chainHexFallback = s.chain === 'pulsechain' ? prices['pulsechain:hex']?.usd : prices['hex']?.usd;
-      const hexPrice = prices[hexPriceKey]?.usd || chainHexFallback || 0.004;
-      const stakedHex = Number(s.stakedHearts) / 1e8;
-      const interestHex = Number(s.interestHearts || 0n) / 1e8;
+      const hexPrice = prices[hexPriceKey]?.usd || chainHexFallback || 0;
+      const stakedHex  = Number(s.stakedHearts ?? 0n) / 1e8;
+      const tShares    = Number(s.stakeShares  ?? 0n) / 1e12;
+      const daysStaked = Math.max(0, (s.stakedDays ?? 0) - (s.daysRemaining ?? 0));
+      const interestHex = tShares * daysStaked * HEX_YIELD_RATE;
       return acc + (stakedHex + interestHex) * hexPrice;
     }, 0);
 
@@ -2282,23 +2304,28 @@ export default function App() {
     let totalInterestHex = 0;
 
     stakes.forEach(s => {
-      const stakedHex = Number(s.stakedHearts) / 1e8;
-      const tShares = Number(s.stakeShares) / 1e12;
-      const interestHex = Number(s.interestHearts || 0n) / 1e8;
-      
-      // Use chain-specific HEX price
+      const stakedHex  = Number(s.stakedHearts ?? 0n) / 1e8;
+      const tShares    = Number(s.stakeShares  ?? 0n) / 1e12;
+      // Recalculate accrued yield from first principles (6.2 rate) so stale
+      // cached interestHearts — written with the old rate-6 formula — never
+      // corrupt the totals shown on the Stakes page and Overview.
+      const daysStaked  = Math.max(0, (s.stakedDays ?? 0) - (s.daysRemaining ?? 0));
+      const interestHex = tShares * daysStaked * HEX_YIELD_RATE;
+
+      // Use chain-specific HEX price; fall back to 0 (not 0.004) so we show
+      // $0 instead of a wrong value while prices are still loading.
       const hexPriceKey = `${s.chain}:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39`;
       const chainHexFallback = s.chain === 'pulsechain' ? prices['pulsechain:hex']?.usd : prices['hex']?.usd;
-      const hexPrice = prices[hexPriceKey]?.usd || chainHexFallback || 0.004;
+      const hexPrice = prices[hexPriceKey]?.usd || chainHexFallback || 0;
 
-      totalStakedHex += stakedHex;
-      totalTShares += tShares;
-      totalValueUsd += (stakedHex + interestHex) * hexPrice;
+      totalStakedHex  += stakedHex;
+      totalTShares    += tShares;
+      totalValueUsd   += (stakedHex + interestHex) * hexPrice;
       totalInterestHex += interestHex;
     });
 
-    const phexPrice = prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0.004;
-    const estimatedDailyPayoutHex = totalTShares * 6.2;
+    const phexPrice = prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0;
+    const estimatedDailyPayoutHex = totalTShares * HEX_YIELD_RATE;
     const estimatedDailyPayoutUsd = estimatedDailyPayoutHex * phexPrice;
 
     return {
@@ -2531,12 +2558,60 @@ export default function App() {
             priceChange6h:  top?.priceChange?.h6 ?? null,
             priceChange24h: top?.priceChange?.h24 ?? null,
             priceChange7d:  top?.priceChange?.d7 ?? null,
+            description:    top?.info?.description || null,
+            websites:       top?.info?.websites   || [],
+            socials:        top?.info?.socials    || [],
           },
         }));
       } catch { /* ignore */ }
       finally { setTokenCardModalLoading(false); }
     })();
   }, [tokenCardModal?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Auto-fetch market data for top 9 overview assets when Overview tab is active ──
+  // This ensures all cards show live market data (mcap, liquidity, vol) without requiring
+  // the user to click each card individually.
+  useEffect(() => {
+    if (activeTab !== 'overview' || currentAssets.length === 0) return;
+    const topAssets = [...currentAssets].sort((a, b) => b.value - a.value).slice(0, 9);
+    const toFetch = topAssets.filter(a => {
+      const addr = (a as any).address;
+      return addr && addr !== 'native' && !tokenMarketData[a.id];
+    });
+    if (toFetch.length === 0) return;
+    Promise.all(toFetch.map(async (asset) => {
+      const addr = (asset as any).address as string;
+      try {
+        const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${addr}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const pairs: any[] = data.pairs || [];
+        if (pairs.length === 0) return;
+        const sorted = [...pairs].sort((a: any, b: any) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0));
+        const top = sorted[0];
+        setTokenMarketData(prev => ({
+          ...prev,
+          [asset.id]: {
+            ...prev[asset.id],
+            liquidity:      sorted.reduce((s: number, p: any) => s + (p.liquidity?.usd || 0), 0),
+            volume24h:      sorted.reduce((s: number, p: any) => s + (p.volume?.h24  || 0), 0),
+            marketCap:      top?.marketCap || null,
+            fdv:            top?.fdv || null,
+            pools:          pairs.length,
+            txns24h:        sorted.reduce((s: number, p: any) => s + (p.txns?.h24?.buys || 0) + (p.txns?.h24?.sells || 0), 0),
+            nativePriceUsd: top?.priceNative || null,
+            priceChange1h:  top?.priceChange?.h1  ?? null,
+            priceChange6h:  top?.priceChange?.h6  ?? null,
+            priceChange24h: top?.priceChange?.h24 ?? null,
+            priceChange7d:  top?.priceChange?.d7  ?? null,
+            description:    top?.info?.description || null,
+            websites:       top?.info?.websites    || [],
+            socials:        top?.info?.socials     || [],
+          },
+        }));
+      } catch { /* ignore */ }
+    }));
+  }, [activeTab, currentAssets.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── tokenPrices: symbol → USD price map for LP hook ─────────────────────
   const tokenPrices = useMemo<Record<string, number>>(() => {
@@ -2602,6 +2677,9 @@ export default function App() {
         try { return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${chainName}/assets/${getAddress(tokenConfig.address)}/logo.png`; } catch { /* invalid address */ }
       }
     }
+    // 5. Fall back to tokenLogos map (covers STATIC_LOGOS entries, e.g. pDAI DexScreener CDN)
+    const addrKey = (asset as any).address?.toLowerCase?.() as string | undefined;
+    if (addrKey && tokenLogos[addrKey]) return tokenLogos[addrKey];
     return '';
   };
 
@@ -3172,6 +3250,11 @@ export default function App() {
                         </div>
                         {/* Row 2: Filter bar */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          {/* Market Watch button */}
+                          <button className="market-watch-btn" onClick={() => setShowMarketWatch(true)}>
+                            <span className="market-watch-dot" />
+                            Market Watch
+                          </button>
                           {/* Chain segmented toggle */}
                           <div className="chain-toggle-group">
                             {(['all', 'pulsechain', 'ethereum', 'base'] as const).map(c => {
@@ -3269,19 +3352,23 @@ export default function App() {
                                 onKeyDown={e => e.key === 'Enter' && setTokenCardModal(asset)}>
                                 {/* Colored top accent line */}
                                 <div style={{
-                                  position: 'absolute', top: 0, left: 0, right: 0, height: 2,
-                                  background: accentColor, opacity: 0.5, pointerEvents: 'none',
+                                  position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+                                  background: `linear-gradient(90deg, ${accentColor}00 0%, ${accentColor} 40%, ${accentColor} 60%, ${accentColor}00 100%)`,
+                                  opacity: 0.7, pointerEvents: 'none',
                                 }} />
 
-                                <div style={{ padding: '16px 16px 12px' }}>
+                                <div style={{ padding: '18px 16px 14px' }}>
                                   {/* Row 1: Logo + symbol/name + portfolio% badge */}
-                                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 11 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
+                                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 14 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                                      {/* Logo with glow ring */}
                                       <div style={{
-                                        width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
-                                        background: `${accentColor}18`, border: `1.5px solid ${accentColor}44`,
+                                        width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
+                                        background: `${accentColor}15`,
+                                        border: `2px solid ${accentColor}55`,
+                                        boxShadow: `0 0 12px ${accentColor}30`,
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        fontSize: 13, fontWeight: 800, color: accentColor, overflow: 'hidden',
+                                        fontSize: 14, fontWeight: 800, color: accentColor, overflow: 'hidden',
                                       }}>
                                         {logo ? (
                                           <img src={logo} alt={asset.symbol}
@@ -3290,48 +3377,64 @@ export default function App() {
                                         ) : asset.symbol[0]}
                                       </div>
                                       <div style={{ minWidth: 0 }}>
-                                        <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--fg)', letterSpacing: '-0.01em', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--fg)', letterSpacing: '-0.01em', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                           {asset.symbol}
                                         </div>
-                                        <div style={{ fontSize: 11, color: 'var(--fg-subtle)', lineHeight: 1.3, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 100 }}>
+                                        <div style={{ fontSize: 11, color: 'var(--fg-subtle)', lineHeight: 1.3, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 110 }}>
                                           {asset.name}
                                         </div>
                                       </div>
                                     </div>
+                                    {/* Portfolio % badge */}
                                     <span className="acv2-portfolio-badge" style={{
                                       color: accentColor,
                                       background: `${accentColor}18`,
-                                      border: `1px solid ${accentColor}33`,
+                                      border: `1px solid ${accentColor}40`,
                                       marginTop: 2,
                                     }}>
                                       {share.toFixed(1)}%
                                     </span>
                                   </div>
 
-                                  {/* Row 2: Current price + 24h change */}
-                                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 6, marginBottom: 10 }}>
-                                    <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.025em', lineHeight: 1, flexShrink: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {/* Row 2: Price (dominant) */}
+                                  <div style={{ marginBottom: 6 }}>
+                                    <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.6px', textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 3 }}>Price</div>
+                                    <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.03em', lineHeight: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                       {fmtPrice(asset.price)}
                                     </div>
-                                    <span className={`change-badge-${pct >= 0 ? 'pos' : 'neg'}`} style={{ fontSize: 11, fontFamily: 'JetBrains Mono, monospace', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                                      {pct >= 0 ? '\u25b2' : '\u25bc'} {Math.abs(pct).toFixed(2)}%
-                                    </span>
                                   </div>
 
-                                  {/* Row 3: Holdings */}
-                                  <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 6 }}>
-                                    <div style={{ minWidth: 0 }}>
-                                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.5px', textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 2 }}>Holdings</div>
+                                  {/* Row 3: 24h change (prominent) */}
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
+                                    <span style={{
+                                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                                      fontSize: 15, fontWeight: 800, fontFamily: 'JetBrains Mono, monospace',
+                                      color: changeColor, letterSpacing: '-0.01em',
+                                    }}>
+                                      {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%
+                                    </span>
+                                    <span style={{ fontSize: 10, color: 'var(--fg-subtle)', fontWeight: 600 }}>24h</span>
+                                  </div>
+
+                                  {/* Row 4: Holdings */}
+                                  <div style={{
+                                    display: 'flex', alignItems: 'stretch', justifyContent: 'space-between',
+                                    gap: 0, background: 'rgba(255,255,255,0.04)', borderRadius: 10,
+                                    border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden',
+                                  }}>
+                                    <div style={{ flex: 1, padding: '8px 10px' }}>
+                                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.5px', textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 3 }}>Holdings</div>
                                       <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg-muted)', fontFamily: 'JetBrains Mono, monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                         {asset.balance >= 1e9 ? `${(asset.balance/1e9).toFixed(2)}B` :
                                          asset.balance >= 1e6 ? `${(asset.balance/1e6).toFixed(2)}M` :
                                          asset.balance >= 1e3 ? `${(asset.balance/1e3).toFixed(1)}K` :
-                                         asset.balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}{" "}
-                                        <span style={{ fontSize: 10, color: 'var(--fg-subtle)' }}>{asset.symbol}</span>
+                                         asset.balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                        {' '}<span style={{ fontSize: 10, color: 'var(--fg-subtle)' }}>{asset.symbol}</span>
                                       </div>
                                     </div>
-                                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.5px', textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 2 }}>Value</div>
+                                    <div style={{ width: 1, background: 'rgba(255,255,255,0.07)', flexShrink: 0 }} />
+                                    <div style={{ flex: 1, padding: '8px 10px', textAlign: 'right' }}>
+                                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.5px', textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 3 }}>Value</div>
                                       <div style={{ fontSize: 14, fontWeight: 800, color: changeColor, fontFamily: 'JetBrains Mono, monospace' }}>
                                         {fmtValue(asset.value)}
                                       </div>
@@ -3340,7 +3443,7 @@ export default function App() {
                                 </div>
 
                                 {/* Sparkline */}
-                                <div className="sparkline-container" style={{ height: 36, margin: '4px 0 0' }}>
+                                <div className="sparkline-container" style={{ height: 42, margin: '2px 0 0' }}>
                                   <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={sparkData} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
                                       <defs>
@@ -3349,12 +3452,12 @@ export default function App() {
                                           <stop offset="100%" stopColor={sparkColor} stopOpacity={0} />
                                         </linearGradient>
                                       </defs>
-                                      <Area type="monotone" dataKey="v" stroke={sparkColor} strokeWidth={1.5} fill={`url(#spark-${asset.id})`} dot={false} isAnimationActive={false} />
+                                      <Area type="monotone" dataKey="v" stroke={sparkColor} strokeWidth={2} fill={`url(#spark-${asset.id})`} dot={false} isAnimationActive={false} />
                                     </AreaChart>
                                   </ResponsiveContainer>
                                 </div>
 
-                                {/* Bottom stat footer: MCap | Liquidity | Volume */}
+                                {/* Bottom stat footer: MCap | Liquidity | Vol 24H */}
                                 <div className="acv2-footer">
                                   <div className="acv2-footer-cell">
                                     <div className="acv2-footer-label">Mkt Cap</div>
@@ -3397,10 +3500,12 @@ export default function App() {
                   const HEX_ADDR_LC = '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39';
                   // pHEX liquid: native HEX on PulseChain (symbol HEX, same address as eHEX contract but on PLS chain)
                   const pHexLiquid = currentAssets.filter(a => a.chain === 'pulsechain' && (a as any).address?.toLowerCase() === HEX_ADDR_LC).reduce((s, a) => s + a.balance, 0);
-                  // Staked = principal + accrued yield so far (interestHearts already accrued)
+                  // Staked = principal + accrued yield (recalculated at 6.2 rate, never from stale cache)
                   const pHexStaked = currentStakes.filter(s => s.chain === 'pulsechain').reduce((s, st) => {
-                    const principal = st.stakedHex ?? 0;
-                    const interest = Number(st.interestHearts || 0n) / 1e8;
+                    const principal  = st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8;
+                    const tSharesVal = st.tShares    ?? Number(st.stakeShares  ?? 0n) / 1e12;
+                    const daysStaked = Math.max(0, (st.stakedDays ?? 0) - (st.daysRemaining ?? 0));
+                    const interest   = tSharesVal * daysStaked * HEX_YIELD_RATE;
                     return s + principal + interest;
                   }, 0);
                   // eHEX liquid: HEX on Ethereum + bridged eHEX on PulseChain
@@ -3408,8 +3513,10 @@ export default function App() {
                   const eHexLiquidPls = currentAssets.filter(a => a.chain === 'pulsechain' && a.symbol === 'eHEX').reduce((s, a) => s + a.balance, 0);
                   const eHexLiquid = eHexLiquidEth + eHexLiquidPls;
                   const eHexStaked = currentStakes.filter(s => s.chain === 'ethereum').reduce((s, st) => {
-                    const principal = st.stakedHex ?? 0;
-                    const interest = Number(st.interestHearts || 0n) / 1e8;
+                    const principal  = st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8;
+                    const tSharesVal = st.tShares    ?? Number(st.stakeShares  ?? 0n) / 1e12;
+                    const daysStaked = Math.max(0, (st.stakedDays ?? 0) - (st.daysRemaining ?? 0));
+                    const interest   = tSharesVal * daysStaked * HEX_YIELD_RATE;
                     return s + principal + interest;
                   }, 0);
                   const pHexTotal = pHexLiquid + pHexStaked;
@@ -3672,8 +3779,8 @@ export default function App() {
                     </button>
                   </div>
                   {!isCollapsed('assets-table') && (<>
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <div className="data-table-scroll">
+                    <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                       <thead>
                         <tr style={{ borderBottom: `1px solid ${t.border}` }}>
                           {[
@@ -5151,8 +5258,8 @@ export default function App() {
                   </div>
                 </div>
                 {!isCollapsed('wallet-holdings') && (<>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <div className="data-table-scroll">
+                  <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ borderBottom: '1px solid var(--border)' }}>
                         {[
@@ -5417,8 +5524,8 @@ export default function App() {
                                                </div>
                                              )}
                                            </div>
-                                           <div style={{ overflowX: 'auto' }}>
-                                             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 340 }}>
+                                           <div className="data-table-scroll">
+                                             <table className="data-table data-table-mini" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 340 }}>
                                                <thead>
                                                  <tr style={{ background: 'var(--bg-elevated)' }}>
                                                    {['Type', 'Amount', 'Value', 'Date'].map(h => (
@@ -5612,7 +5719,7 @@ export default function App() {
       </main>
 
       {/* ── MOBILE BOTTOM NAV ── */}
-      <nav className="mobile-bottom-nav bottom-nav-blur md:hidden fixed bottom-0 left-0 right-0 z-50 flex"
+      <nav className="mobile-bottom-nav bottom-nav-blur md:hidden fixed bottom-0 left-0 right-0 z-50"
         style={{
           background: 'var(--bg-header)',
           borderTop: '1px solid var(--border)',
@@ -5620,27 +5727,22 @@ export default function App() {
         <div className="mobile-bottom-nav-inner">
         {([
           { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-          { id: 'assets',   label: 'Assets',   icon: WalletIcon },
-          { id: 'stakes',   label: 'Stakes',   icon: Layers },
-          { id: 'wallets',  label: 'Wallets',  icon: User },
+          { id: 'assets',   label: 'Assets',   icon: Coins },
+          { id: 'stakes',   label: 'Stakes',   icon: Lock },
+          { id: 'defi',     label: 'DeFi',     icon: Droplets },
+          { id: 'history',  label: 'History',  icon: History },
+          { id: 'tracker',  label: 'PLS Flow', icon: ArrowLeftRight },
+          { id: 'wallets',  label: 'Wallets',  icon: WalletIcon },
         ] as const).map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setActiveTab(id)}
-            className="flex-1 flex flex-col items-center justify-center"
+            className="mobile-nav-tab-btn"
             style={{
-              minHeight: 56,
-              padding: '6px 4px',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: activeTab === id
-                ? 'var(--accent)'
-                : 'var(--fg-muted)',
-              transition: 'color .15s',
+              color: activeTab === id ? 'var(--accent)' : 'var(--fg-muted)',
             }}>
             <div className={activeTab === id ? 'bottom-nav-dot' : ''}>
-              <Icon size={20} />
+              <Icon size={19} />
             </div>
-            <span style={{ fontSize: 10, fontWeight: activeTab === id ? 700 : 500, lineHeight: 1, marginTop: 3 }}>{label}</span>
+            <span style={{ fontSize: 9, fontWeight: activeTab === id ? 700 : 500, lineHeight: 1, marginTop: 3 }}>{label}</span>
           </button>
         ))}
         </div>
@@ -5823,6 +5925,14 @@ export default function App() {
           onClose={() => setTokenCardModal(null)}
           dexScreenerUrl={dexScreenerUrl(tokenCardModal.chain, (tokenCardModal as any).address)}
           explorerUrl={explorerUrl(tokenCardModal.chain, (tokenCardModal as any).address)}
+        />
+      )}
+
+      {/* ── Market Watch Modal ── */}
+      {showMarketWatch && (
+        <MarketWatchModal
+          theme={theme}
+          onClose={() => setShowMarketWatch(false)}
         />
       )}
 

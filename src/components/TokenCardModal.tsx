@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback } from 'react';
-import { X, Copy, ExternalLink, TrendingUp, TrendingDown } from 'lucide-react';
+import { X, Copy, ExternalLink, TrendingUp, TrendingDown, Globe, Twitter, Send } from 'lucide-react';
 import type { Asset } from '../types';
 
 // ── helpers ─────────────────────────────────────────────────────────────────
@@ -69,6 +69,9 @@ interface Props {
     priceChange6h?: number | null;
     priceChange24h?: number | null;
     priceChange7d?: number | null;
+    description?: string | null;
+    websites?: { label: string; url: string }[];
+    socials?: { type: string; url: string }[];
   } | undefined;
   isLoadingMarketData?: boolean;
   theme: 'dark' | 'light';
@@ -236,9 +239,22 @@ export function TokenCardModal({
             <div className="tcm-section-title">Price Changes</div>
             <div className="tcm-changes-grid">
               <ChangeRow label="1H"  pct={asset.priceChange1h ?? marketData?.priceChange1h} theme={theme} />
-              <ChangeRow label="24H" pct={asset.priceChange24h ?? asset.pnl24h ?? marketData?.priceChange24h} theme={theme} />
-              <ChangeRow label="7D"  pct={asset.priceChange7d ?? marketData?.priceChange7d} theme={theme} />
               <ChangeRow label="6H"  pct={marketData?.priceChange6h} theme={theme} />
+              <ChangeRow label="1D"  pct={asset.priceChange24h ?? asset.pnl24h ?? marketData?.priceChange24h} theme={theme} />
+              <ChangeRow label="7D"  pct={asset.priceChange7d ?? marketData?.priceChange7d} theme={theme} />
+              <ChangeRow label="1M"  pct={null} theme={theme} />
+              <ChangeRow label="1Y"  pct={null} theme={theme} />
+            </div>
+            <div className="tcm-ath-atl-row">
+              <div className="tcm-ath-cell">
+                <span className="tcm-ath-label">ATH</span>
+                <span className="tcm-ath-val">—</span>
+              </div>
+              <div className="tcm-ath-divider" />
+              <div className="tcm-ath-cell">
+                <span className="tcm-ath-label">ATL</span>
+                <span className="tcm-ath-val">—</span>
+              </div>
             </div>
           </div>
 
@@ -301,6 +317,10 @@ export function TokenCardModal({
                 <div className="tcm-stat-label">Pools</div>
                 <div className="tcm-stat-value">{pools != null ? pools : '—'}</div>
               </div>
+              <div className="tcm-stat-cell">
+                <div className="tcm-stat-label">Holders</div>
+                <div className="tcm-stat-value">—</div>
+              </div>
               {marketData?.nativePriceUsd && (
                 <div className="tcm-stat-cell">
                   <div className="tcm-stat-label">Price (PLS)</div>
@@ -311,6 +331,39 @@ export function TokenCardModal({
               )}
             </div>
           </div>
+
+          {/* ── ABOUT ── */}
+          {(marketData?.description || (marketData?.websites?.length ?? 0) > 0 || (marketData?.socials?.length ?? 0) > 0) && (
+            <div className="tcm-section">
+              <div className="tcm-section-title">About</div>
+              {marketData?.description && (
+                <p style={{ fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.65, marginBottom: 12, marginTop: 0 }}>
+                  {marketData.description}
+                </p>
+              )}
+              {((marketData?.websites?.length ?? 0) > 0 || (marketData?.socials?.length ?? 0) > 0) && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {marketData?.websites?.map((w, i) => (
+                    <a key={`w-${i}`} href={w.url} target="_blank" rel="noopener noreferrer" className="tcm-social-link">
+                      <Globe size={11} />
+                      {w.label || 'Website'}
+                    </a>
+                  ))}
+                  {marketData?.socials?.map((s, i) => {
+                    const type = s.type?.toLowerCase() ?? '';
+                    const label = type === 'twitter' ? 'Twitter / X' : type === 'telegram' ? 'Telegram' : (s.type?.charAt(0).toUpperCase() ?? '') + (s.type?.slice(1) ?? '');
+                    const Icon = type === 'twitter' ? Twitter : type === 'telegram' ? Send : ExternalLink;
+                    return (
+                      <a key={`s-${i}`} href={s.url} target="_blank" rel="noopener noreferrer" className="tcm-social-link">
+                        <Icon size={11} />
+                        {label}
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
         </div>
         {/* ── footer ── */}

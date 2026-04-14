@@ -5,6 +5,7 @@ import {
 } from 'recharts';
 import { Zap, Lock, TrendingUp, Activity, Layers, Filter } from 'lucide-react';
 import type { HexStake } from '../types';
+import { HEX_YIELD_RATE } from '../constants';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -505,14 +506,19 @@ export function StakesSection({
               </thead>
               <tbody>
                 {filteredStakes.map(stake => {
-                  const stakedHex = stake.stakedHex ?? Number(stake.stakedHearts) / 1e8;
-                  const hexPrice = stake.chain === 'pulsechain' ? phexUsdPrice : ehexUsdPrice;
-                  const currentValueUsd = stake.estimatedValueUsd ?? (stakedHex * hexPrice);
-                  const maturityHex = stakedHex + (stake.stakeHexYield ?? 0);
-                  const maturityValueUsd = stake.totalValueUsd ?? (maturityHex * hexPrice);
-                  const tShares = stake.tShares ?? Number(stake.stakeShares) / 1e12;
-                  const daysLeft = stake.daysRemaining ?? 0;
-                  const yieldHex = stake.stakeHexYield ?? 0;
+                  const stakedHex  = stake.stakedHex ?? Number(stake.stakedHearts ?? 0n) / 1e8;
+                  const hexPrice   = stake.chain === 'pulsechain' ? phexUsdPrice : ehexUsdPrice;
+                  // Always derive from tShares at the 6.2 rate so stale cached fields
+                  // (stakeHexYield / interestHearts / estimatedValueUsd / totalValueUsd)
+                  // never show wrong numbers — even before the next wallet sync.
+                  const tShares       = stake.tShares ?? Number(stake.stakeShares ?? 0n) / 1e12;
+                  const daysLeft      = stake.daysRemaining ?? 0;
+                  const daysStakedSoFar = Math.max(0, (stake.stakedDays ?? 0) - daysLeft);
+                  const accruedHex    = tShares * daysStakedSoFar * HEX_YIELD_RATE;
+                  const yieldHex      = tShares * (stake.stakedDays ?? 0) * HEX_YIELD_RATE;   // full yield at maturity
+                  const currentValueUsd  = (stakedHex + accruedHex) * hexPrice;    // principal + accrued
+                  const maturityHex      = stakedHex + yieldHex;
+                  const maturityValueUsd = maturityHex * hexPrice;
                   const walletLabel = stake.walletLabel
                     ?? (stake.walletAddress ? (walletLabels[stake.walletAddress] ?? shortenAddr(stake.walletAddress)) : '—');
 
@@ -589,19 +595,34 @@ export function StakesSection({
                     Total ({filteredStakes.length})
                   </td>
                   <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: 'var(--fg)', fontFamily: "'JetBrains Mono', monospace" }}>
-                    {fmtHex(filteredStakes.reduce((s, st) => s + (st.stakedHex ?? 0), 0))}
+                    {fmtHex(filteredStakes.reduce((s, st) => s + (st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8), 0))}
                   </td>
                   <td className="col-hide-mobile" />
                   <td className="col-hide-mobile" />
                   <td />
                   <td className="col-hide-mobile" style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: 'var(--positive)', fontFamily: "'JetBrains Mono', monospace" }}>
-                    +{fmtHex(filteredStakes.reduce((s, st) => s + (st.stakeHexYield ?? 0), 0))}
+                    +{fmtHex(filteredStakes.reduce((s, st) => {
+                      const t = st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12;
+                      return s + t * (st.stakedDays ?? 0) * HEX_YIELD_RATE;
+                    }, 0))}
                   </td>
                   <td style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: 'var(--fg)', fontFamily: "'JetBrains Mono', monospace" }}>
-                    {fmtUsd(filteredStakes.reduce((s, st) => s + (st.estimatedValueUsd ?? 0), 0))}
+                    {fmtUsd(filteredStakes.reduce((s, st) => {
+                      const principal = st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8;
+                      const t = st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12;
+                      const accrued = t * Math.max(0, (st.stakedDays ?? 0) - (st.daysRemaining ?? 0)) * HEX_YIELD_RATE;
+                      const hp = st.chain === 'pulsechain' ? phexUsdPrice : ehexUsdPrice;
+                      return s + (principal + accrued) * hp;
+                    }, 0))}
                   </td>
                   <td className="col-hide-mobile" style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: 'var(--positive)', fontFamily: "'JetBrains Mono', monospace" }}>
-                    {fmtUsd(filteredStakes.reduce((s, st) => s + (st.totalValueUsd ?? st.estimatedValueUsd ?? 0), 0))}
+                    {fmtUsd(filteredStakes.reduce((s, st) => {
+                      const principal = st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8;
+                      const t = st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12;
+                      const fullYield = t * (st.stakedDays ?? 0) * HEX_YIELD_RATE;
+                      const hp = st.chain === 'pulsechain' ? phexUsdPrice : ehexUsdPrice;
+                      return s + (principal + fullYield) * hp;
+                    }, 0))}
                   </td>
                 </tr>
               </tfoot>
