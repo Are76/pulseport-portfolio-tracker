@@ -3750,8 +3750,8 @@ export default function App() {
                     </button>
                   </div>
                   {!isCollapsed('assets-table') && (<>
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <div className="data-table-scroll">
+                    <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                       <thead>
                         <tr style={{ borderBottom: `1px solid ${t.border}` }}>
                           {[
@@ -5229,8 +5229,8 @@ export default function App() {
                   </div>
                 </div>
                 {!isCollapsed('wallet-holdings') && (<>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <div className="data-table-scroll">
+                  <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ borderBottom: '1px solid var(--border)' }}>
                         {[
@@ -5495,8 +5495,8 @@ export default function App() {
                                                </div>
                                              )}
                                            </div>
-                                           <div style={{ overflowX: 'auto' }}>
-                                             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 340 }}>
+                                           <div className="data-table-scroll">
+                                             <table className="data-table data-table-mini" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 340 }}>
                                                <thead>
                                                  <tr style={{ background: 'var(--bg-elevated)' }}>
                                                    {['Type', 'Amount', 'Value', 'Date'].map(h => (

@@ -2703,3 +2703,130 @@ button, a {
   scroll-snap-align: start;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE TABLE SYSTEM  (.data-table / .data-table-scroll)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Scroll wrapper — applies to all data tables */
+.data-table-scroll {
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+}
+.data-table-scroll::-webkit-scrollbar { height: 3px; }
+.data-table-scroll::-webkit-scrollbar-track { background: transparent; }
+.data-table-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+
+/* ─── Mobile: hide non-essential columns (nth-child) ─────────────────────
+   Desktop table layout: 1=Token, 2=Price, 3=Change%, 4=Amount, 5=Value, 6=Share, 7=Actions
+   On mobile keep: Token (1), Change% (3), Value (5), Actions (7)
+   Hide: Price (2), Amount (4), Share (6)
+   ─────────────────────────────────────────────────────────────────────── */
+@media (max-width: 639px) {
+  /* Hide Price column */
+  .data-table th:nth-child(2),
+  .data-table td:nth-child(2) { display: none; }
+
+  /* Hide Amount column */
+  .data-table th:nth-child(4),
+  .data-table td:nth-child(4) { display: none; }
+
+  /* Hide Share column */
+  .data-table th:nth-child(6),
+  .data-table td:nth-child(6) { display: none; }
+
+  /* Larger, touch-friendly rows */
+  .data-table td,
+  .data-table th {
+    padding: 13px 10px !important;
+    font-size: 13px !important;
+  }
+
+  /* Token cell: slightly smaller secondary text */
+  .data-table td:nth-child(1) { padding-left: 14px !important; }
+  .data-table th:nth-child(1) { padding-left: 14px !important; }
+
+  /* Actions column: compact width */
+  .data-table td:nth-child(7),
+  .data-table th:nth-child(7) { padding: 8px 8px !important; }
+
+  /* Minimum touch target height on rows */
+  .data-table tbody tr { min-height: 54px; }
+
+  /* Mini (wallets inner) table: show all 4 columns */
+  .data-table-mini th,
+  .data-table-mini td {
+    padding: 8px 10px !important;
+    font-size: 11px !important;
+    white-space: nowrap;
+  }
+  /* No column hiding on mini table */
+  .data-table-mini th:nth-child(2),
+  .data-table-mini td:nth-child(2),
+  .data-table-mini th:nth-child(4),
+  .data-table-mini td:nth-child(4),
+  .data-table-mini th:nth-child(6),
+  .data-table-mini td:nth-child(6) { display: table-cell !important; }
+}
+
+/* ─── Stakes table mobile improvements ───────────────────────────────── */
+@media (max-width: 639px) {
+  /* Ensure wrapper scrolls smoothly */
+  .stakes-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+  }
+  .stakes-table-wrapper::-webkit-scrollbar { height: 3px; }
+  .stakes-table-wrapper::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+
+  /* Larger touch targets on visible cells */
+  .stakes-table td {
+    padding: 14px 10px !important;
+    font-size: 12px !important;
+    min-height: 52px;
+  }
+  .stakes-table th {
+    padding: 10px !important;
+    font-size: 10px !important;
+  }
+
+  /* Days-left pill: slightly larger */
+  .days-left-pill {
+    font-size: 12px !important;
+    padding: 5px 10px !important;
+  }
+
+  /* Summary hero mini stats — stack better */
+  .stakes-hero-mini-stats {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+/* ─── History tab rows (flex-based) ──────────────────────────────────── */
+@media (max-width: 639px) {
+  /* Bigger tap targets on transaction rows */
+  .history-tx-row {
+    min-height: 52px;
+    padding: 10px 14px !important;
+  }
+
+  /* Ensure amounts don't overflow */
+  .history-tx-amount {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* ─── General mobile table body content improvements ─────────────────── */
+@media (max-width: 639px) {
+  /* Expanded asset detail grid — single column on mobile */
+  .asset-detail-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+}
