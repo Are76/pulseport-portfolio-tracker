@@ -4303,7 +4303,7 @@ export default function App() {
 
             {/* Page header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                 <div>
                   <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)', marginBottom: 2 }}>Transaction History</div>
                   <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>On-chain activity &amp; performance tracking</div>
@@ -4466,19 +4466,21 @@ export default function App() {
 
             {/* Received Assets History */}
             <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
-              <div style={{ padding: '14px 18px', borderBottom: isCollapsed('received-assets') ? 'none' : '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                  <ArrowDownLeft size={16} style={{ color: '#627EEA' }} />
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>Received Token History</span>
+              <div style={{ padding: '14px 18px', borderBottom: isCollapsed('received-assets') ? 'none' : '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
+                  <ArrowDownLeft size={16} style={{ color: '#627EEA', flexShrink: 0 }} />
+                  <span style={{ fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}>Received Token History</span>
                   <select value={receivedChainFilter} onChange={e => setReceivedChainFilter(e.target.value)}
-                    style={{ background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 6, color: 'var(--fg)', fontSize: 13, padding: '4px 10px', cursor: 'pointer', outline: 'none' }}>
+                    className="history-filter-select"
+                    style={{ background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 6, color: 'var(--fg)', fontSize: 13, padding: '4px 8px', cursor: 'pointer', outline: 'none' }}>
                     <option value="all">All Chains</option>
                     <option value="ethereum">Ethereum</option>
                     <option value="base">Base</option>
                     <option value="pulsechain">PulseChain</option>
                   </select>
                   <select value={receivedCoinFilter} onChange={e => setReceivedCoinFilter(e.target.value)}
-                    style={{ background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 6, color: 'var(--fg)', fontSize: 13, padding: '4px 10px', cursor: 'pointer', outline: 'none' }}>
+                    className="history-filter-select"
+                    style={{ background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 6, color: 'var(--fg)', fontSize: 13, padding: '4px 8px', cursor: 'pointer', outline: 'none' }}>
                     <option value="all">All Coins</option>
                     <option value="ETH">ETH</option>
                     <option value="PLS">PLS</option>
@@ -4487,11 +4489,11 @@ export default function App() {
                     <option value="DAI">DAI</option>
                   </select>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 2, fontWeight: 600, letterSpacing: '.5px' }}>TOTAL RECEIVED</div>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--fg)' }}>${receivedAssetsData.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                    <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>{receivedAssetsData.list.length} transactions</div>
+                    <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginBottom: 2, fontWeight: 600, letterSpacing: '.5px', textTransform: 'uppercase' }}>Total Received</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)' }}>${receivedAssetsData.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                    <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{receivedAssetsData.list.length} tx</div>
                   </div>
                   <button onClick={() => toggleSection('received-assets')}
                     style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s', flexShrink: 0 }}
@@ -4656,7 +4658,7 @@ export default function App() {
                     Live
                   </span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <div className="history-filter-row" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   {!isCollapsed('history-txs') && (<>
                     {[
                       { value: txChainFilter, onChange: setTxChainFilter, options: [['all','All Chains'],['pulsechain','PulseChain'],['ethereum','Ethereum'],['base','Base']] as [string,string][] },
@@ -4665,6 +4667,7 @@ export default function App() {
                       { value: txCoinCategory, onChange: setTxCoinCategory, options: [['all','All Coins'],['stablecoins','Stablecoins'],['eth_weth','ETH/WETH'],['hex','HEX/eHEX'],['pls_wpls','PLS/WPLS'],['bridged','Bridged']] as [string,string][] },
                     ].map(({ value, onChange, options }, i) => (
                       <select key={i} value={value} onChange={e => onChange(e.target.value)}
+                        className="history-filter-select"
                         style={{ background: t.cardHigh, border: `1px solid ${t.border}`, borderRadius: 6, color: t.text, fontSize: 13, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
                         {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                       </select>
@@ -4687,6 +4690,7 @@ export default function App() {
                       exportCSV(`pulseport-history-${Date.now()}.csv`, hdrs, rows);
                     }}
                     title="Export CSV"
+                    className="history-csv-btn"
                     style={{ padding: '5px 10px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 6, cursor: 'pointer', color: 'var(--accent)', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
                     <Download size={12} /> CSV
                   </button>
@@ -4788,7 +4792,13 @@ export default function App() {
                                   ? (viewAsYou ? `Swap · ${displayAddr(tx.from)} → ${displayAddr(tx.to)}` : 'Swap')
                                   : tx.type === 'transfer_in' ? 'Received' : 'Sent'}
                               </span>
-                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: chainDotColor[tx.chain] || t.textMuted, flexShrink: 0, display: 'inline-block' }} title={tx.chain} />
+                              <span className="tx-chain-dot" style={{ width: 6, height: 6, borderRadius: '50%', background: chainDotColor[tx.chain] || t.textMuted, flexShrink: 0, display: 'inline-block' }} title={tx.chain} />
+                              <span className="tx-chain-label" style={{ display: 'none', fontSize: 10, fontWeight: 700, padding: '1px 5px', borderRadius: 3,
+                                background: tx.chain === 'pulsechain' ? 'rgba(247,57,255,.1)' : tx.chain === 'ethereum' ? 'rgba(99,102,241,.1)' : 'rgba(0,82,255,.1)',
+                                color: tx.chain === 'pulsechain' ? '#f739ff' : tx.chain === 'ethereum' ? '#818cf8' : '#60a5fa',
+                              }}>
+                                {tx.chain === 'pulsechain' ? 'PLS' : tx.chain === 'ethereum' ? 'ETH' : 'BASE'}
+                              </span>
                               <span style={{ fontSize: txCompact ? 11 : 13, color: t.textSecondary }}>{format(tx.timestamp, 'MMM d, yyyy')}</span>
                             </div>
                             {/* Row 2: amount (hide in compact for transfers) */}
@@ -5141,7 +5151,7 @@ export default function App() {
                       const isRowExpanded = trackerExpandedIds.has(tx.id + i);
                       return (
                         <div key={tx.id + i} style={{ borderBottom: `1px solid ${t.borderLight}` }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', cursor: 'pointer', transition: 'background .1s' }}
+                          <div className="pls-movement-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', cursor: 'pointer', transition: 'background .1s' }}
                             onClick={() => setTrackerExpandedIds(prev => { const s = new Set(prev); s.has(tx.id + i) ? s.delete(tx.id + i) : s.add(tx.id + i); return s; })}
                             onMouseOver={e => (e.currentTarget.style.background = t.hoverBg)}
                             onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
@@ -5174,7 +5184,7 @@ export default function App() {
                           </div>
                           {isRowExpanded && (
                             <div style={{ padding: '0 18px 14px', background: t.expandedBg }}>
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, paddingTop: 10, borderTop: `1px solid ${t.borderLight}` }}>
+                              <div className="pls-movement-detail-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, paddingTop: 10, borderTop: `1px solid ${t.borderLight}` }}>
                                 {[
                                   { label: 'PLS Received', val: plsReceived > 0 ? `+${plsReceived >= 1e6 ? (plsReceived/1e6).toFixed(2)+'M' : plsReceived.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—', sub: 'Inflow', color: t.green },
                                   { label: 'PLS Spent', val: plsSpent > 0 ? `-${plsSpent >= 1e6 ? (plsSpent/1e6).toFixed(2)+'M' : plsSpent.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—', sub: 'Outflow', color: t.red },
@@ -5227,6 +5237,18 @@ export default function App() {
           const walletUsdValue = viewAssets.reduce((s, a) => s + a.value, 0);
           const stakingUsdValue = viewStakes.reduce((s, st) => s + (st.totalValueUsd || st.estimatedValueUsd), 0);
           const totalUsdValue = walletUsdValue + stakingUsdValue;
+
+          // pHEX / eHEX totals (matching overview hero)
+          const HEX_A = '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39';
+          const walletPHex = viewAssets
+            .filter(a => a.chain === 'pulsechain' && (a as any).address?.toLowerCase() === HEX_A)
+            .reduce((s, a) => s + a.balance, 0)
+            + viewStakes.filter(s => s.chain === 'pulsechain').reduce((s, st) => s + (st.stakedHex ?? 0), 0);
+          const walletEHex = viewAssets
+            .filter(a => (a.chain === 'ethereum' && (a as any).address?.toLowerCase() === HEX_A) || (a.chain === 'pulsechain' && a.symbol === 'eHEX'))
+            .reduce((s, a) => s + a.balance, 0)
+            + viewStakes.filter(s => s.chain === 'ethereum').reduce((s, st) => s + (st.stakedHex ?? 0), 0);
+          const fmtHexCount = (n: number) => n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(0)}K` : Math.round(n).toLocaleString('en-US');
 
           return (
             <motion.div key="wallets" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
@@ -5312,7 +5334,7 @@ export default function App() {
                 <div style={{ fontSize: 36, fontWeight: 800, color: 'var(--fg)', marginBottom: 16 }}>
                   ${totalUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 </div>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
                   <span className="wallet-stat-pill-green">
                     Wallet ${walletUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </span>
@@ -5320,6 +5342,21 @@ export default function App() {
                     Staking ${stakingUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </span>
                 </div>
+                {/* pHEX / eHEX totals — matches Overview hero */}
+                {(walletPHex > 0 || walletEHex > 0) && (
+                  <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+                    {walletPHex > 0 && (
+                      <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>
+                        pHEX: <span style={{ color: '#fb923c', fontWeight: 700 }}>{fmtHexCount(walletPHex)}</span>
+                      </span>
+                    )}
+                    {walletEHex > 0 && (
+                      <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>
+                        eHEX: <span style={{ color: '#627EEA', fontWeight: 700 }}>{fmtHexCount(walletEHex)}</span>
+                      </span>
+                    )}
+                  </div>
+                )}
                 {/* Chain filter chips */}
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   {(['all', 'pulsechain', 'ethereum', 'base'] as const).map(c => (

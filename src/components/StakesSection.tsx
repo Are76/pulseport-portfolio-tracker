@@ -39,6 +39,12 @@ function shortenAddr(addr: string): string {
   return addr.slice(0, 6) + '…' + addr.slice(-4);
 }
 
+function stakeMaturityHex(st: HexStake): number {
+  const tS = st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12;
+  const rate = st.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
+  return (st.stakedHex ?? 0) + tS * (st.stakedDays ?? 0) * rate;
+}
+
 // ── StakingPie sub-component ──────────────────────────────────────────────────
 
 function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: number }) {
@@ -218,6 +224,7 @@ export function StakesSection({
   const totalHexStaked = stakes.reduce((s, st) => s + (st.stakedHex ?? 0), 0);
   const totalCurrentValueUsd = stakes.reduce((s, st) => s + (st.estimatedValueUsd ?? 0), 0);
   const totalMaturityValueUsd = stakes.reduce((s, st) => s + (st.totalValueUsd ?? st.estimatedValueUsd ?? 0), 0);
+  const totalMaturityHex = stakes.reduce((s, st) => s + stakeMaturityHex(st), 0);
   const totalTShares = stakes.reduce((s, st) => s + (st.tShares ?? 0), 0);
 
   // ── Filter stakes ───────────────────────────────────────────────────────────
@@ -422,32 +429,24 @@ export function StakesSection({
               fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-0.04em', lineHeight: 1,
               textShadow: '0 0 24px rgba(0,255,159,0.20)',
             }}>
-              {fmtUsd(totalMaturityValueUsd)}
+              {fmtHex(totalMaturityHex)} HEX
             </div>
-            {totalCurrentValueUsd > 0 && totalMaturityValueUsd > totalCurrentValueUsd && (
+            {totalHexStaked > 0 && totalMaturityHex > totalHexStaked && (
               <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--positive)', fontFamily: "'JetBrains Mono', monospace" }}>
-                +{fmtUsd(totalMaturityValueUsd - totalCurrentValueUsd)}
+                +{fmtHex(totalMaturityHex - totalHexStaked)}
                 {' '}
                 <span style={{ fontSize: 13, fontWeight: 600, opacity: 0.75 }}>
-                  ({((totalMaturityValueUsd / totalCurrentValueUsd - 1) * 100).toFixed(1)}% yield)
+                  ({((totalMaturityHex / totalHexStaked - 1) * 100).toFixed(1)}% yield)
                 </span>
               </div>
             )}
           </div>
-          <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 8 }}>projected at full maturity · current value: {fmtUsd(totalCurrentValueUsd)}</div>
+          <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 8 }}>projected at full maturity · current staked: {fmtHex(totalHexStaked)} HEX · {fmtUsd(totalCurrentValueUsd)}</div>
         </div>
         <div style={{ display: 'flex', gap: 14 }}>
           {[
-            { label: 'HEX + Yield', val: fmtHex(stakes.reduce((s, st) => {
-                const tS = st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12;
-                const rate = st.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
-                return s + (st.stakedHex ?? 0) + tS * (st.stakedDays ?? 0) * rate;
-              }, 0)), color: '#fb923c' },
-            { label: 'Total Yield', val: `+${fmtHex(stakes.reduce((s, st) => {
-                const tS = st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12;
-                const rate = st.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
-                return s + tS * (st.stakedDays ?? 0) * rate;
-              }, 0))}`, color: 'var(--positive)' },
+            { label: 'HEX + Yield', val: fmtHex(totalMaturityHex), color: '#fb923c' },
+            { label: 'Total Yield', val: `+${fmtHex(totalMaturityHex - totalHexStaked)}`, color: 'var(--positive)' },
           ].map(({ label, val, color }) => (
             <div key={label} style={{ background: 'rgba(0,255,159,0.06)', border: '1px solid rgba(0,255,159,0.20)', borderRadius: 12, padding: '12px 18px', minWidth: 120 }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>{label}</div>
@@ -602,7 +601,7 @@ export function StakesSection({
                         {fmtUsd(currentValueUsd)}
                       </td>
                       <td className="col-hide-mobile" style={{ textAlign: 'right', color: 'var(--positive)', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>
-                        {fmtUsd(maturityValueUsd)}
+                        {fmtHex(maturityHex)} HEX
                       </td>
                     </tr>
                   );
@@ -637,14 +636,7 @@ export function StakesSection({
                     }, 0))}
                   </td>
                   <td className="col-hide-mobile" style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: 'var(--positive)', fontFamily: "'JetBrains Mono', monospace" }}>
-                    {fmtUsd(filteredStakes.reduce((s, st) => {
-                      const principal = st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8;
-                      const t = st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12;
-                      const r = st.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
-                      const fullYield = t * (st.stakedDays ?? 0) * r;
-                      const hp = st.chain === 'pulsechain' ? phexUsdPrice : ehexUsdPrice;
-                      return s + (principal + fullYield) * hp;
-                    }, 0))}
+                    {fmtHex(filteredStakes.reduce((s, st) => s + stakeMaturityHex(st), 0))} HEX
                   </td>
                 </tr>
               </tfoot>
