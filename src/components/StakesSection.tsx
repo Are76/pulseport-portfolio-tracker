@@ -432,8 +432,16 @@ export function StakesSection({
         </div>
         <div style={{ display: 'flex', gap: 14 }}>
           {[
-            { label: 'HEX + Yield', val: fmtHex(stakes.reduce((s, st) => s + (st.stakedHex ?? 0) + (st.stakeHexYield ?? 0), 0)), color: '#fb923c' },
-            { label: 'Total Yield', val: `+${fmtHex(stakes.reduce((s, st) => s + (st.stakeHexYield ?? 0), 0))}`, color: 'var(--positive)' },
+            { label: 'HEX + Yield', val: fmtHex(stakes.reduce((s, st) => {
+                const tS = st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12;
+                const rate = st.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
+                return s + (st.stakedHex ?? 0) + tS * (st.stakedDays ?? 0) * rate;
+              }, 0)), color: '#fb923c' },
+            { label: 'Total Yield', val: `+${fmtHex(stakes.reduce((s, st) => {
+                const tS = st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12;
+                const rate = st.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
+                return s + tS * (st.stakedDays ?? 0) * rate;
+              }, 0))}`, color: 'var(--positive)' },
           ].map(({ label, val, color }) => (
             <div key={label} style={{ background: 'rgba(0,255,159,0.06)', border: '1px solid rgba(0,255,159,0.20)', borderRadius: 12, padding: '12px 18px', minWidth: 120 }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>{label}</div>
