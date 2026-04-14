@@ -396,6 +396,7 @@ const STATIC_LOGOS: Record<string, string> = {
   '0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d': 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png', // INC
   '0xf6f8db0aba00007681f8faf16a0fda1c9b030b11': 'https://cdn.dexscreener.com/cms/images/ODHYYN7yppDHnd6u?width=64&height=64&fit=crop&quality=95&format=auto', // PRVX
   '0xefd766ccb38eaf1dfd701853bfce31359239f305': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png', // pDAI (bridged DAI) — never use golden CoinGecko DAI coin here
+  '0x6b175474e89094c44da98b954eedeac495271d0f': 'https://tokens.app.pulsex.com/images/tokens/0x6B175474E89094C44Da98b954EedeAC495271d0F.png', // pDAI system copy (fork of Ethereum DAI) — prevents CoinGecko golden-coin from replacing this on reload
 };
 
 // Bridged HEX (eHEX) on PulseChain — no on-chain WPLS LP, falls back to CoinGecko 'hex'
@@ -859,6 +860,15 @@ export default function App() {
                 usd_24h_change: fetchedPrices['hex']?.usd_24h_change,
               };
             }
+            // Also set the ethereum chain key so eHEX held on Ethereum mainnet never shows $0.
+            // Uses CoinGecko 'hex' price when available; falls back to on-chain pHEX LP price
+            // — the same fallback strategy used for eHEX on PulseChain above.
+            if (!fetchedPrices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd) {
+              fetchedPrices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39'] = {
+                usd: fetchedPrices['hex']?.usd || pHexUSD,
+                usd_24h_change: fetchedPrices['hex']?.usd_24h_change,
+              };
+            }
           } else {
             // On-chain LP failed — fall back to CoinGecko for both HEX variants
             const cgHex = fetchedPrices['hex']?.usd;
@@ -866,6 +876,7 @@ export default function App() {
               fetchedPrices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39'] = { usd: cgHex, usd_24h_change: fetchedPrices['hex']?.usd_24h_change };
               fetchedPrices['pulsechain:hex'] = { usd: cgHex };
               fetchedPrices[`pulsechain:${EHEX_PULSECHAIN_ADDR}`] = { usd: cgHex, usd_24h_change: fetchedPrices['hex']?.usd_24h_change };
+              fetchedPrices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39'] = { usd: cgHex, usd_24h_change: fetchedPrices['hex']?.usd_24h_change };
             }
           }
 
@@ -3122,8 +3133,8 @@ export default function App() {
                              {[
                                { label: 'Total Invested', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? 'ETH + stablecoin inflows' : 'No ETH/stable inflows found', color: t.text,
                                  icon: <TrendingUp size={14} color={t.textMuted} />, iconBg: t.cardHigh, link: true },
-                               { label: 'Total P&L', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}${((summary.unifiedPnl / summary.netInvestment) * 100).toFixed(1)}% vs invested` : 'P&L % needs ETH/stable history', color: summary.unifiedPnl >= 0 ? t.green : t.red,
-                                 icon: <ArrowUpRight size={14} color={summary.unifiedPnl >= 0 ? t.green : t.red} />, iconBg: summary.unifiedPnl >= 0 ? 'rgba(0,255,159,0.1)' : 'rgba(244,63,94,0.1)', link: false },
+                               { label: 'Total P&L', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}${((summary.unifiedPnl / summary.netInvestment) * 100).toFixed(1)}% vs invested` : 'P&L % needs ETH/stable history', color: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? t.green : t.red) : t.text,
+                                 icon: <ArrowUpRight size={14} color={summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? t.green : t.red) : t.textMuted} />, iconBg: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? 'rgba(0,255,159,0.1)' : 'rgba(244,63,94,0.1)') : t.cardHigh, link: false },
                              ].map(({ label, val, sub, color, icon, iconBg, link }) => (
                                <div key={label} className="stat-card" onClick={link ? () => setActiveTab('history') : undefined}
                                  style={link ? { cursor: 'pointer' } : undefined}>
@@ -4360,7 +4371,7 @@ export default function App() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }} className="max-sm:grid-cols-2">
               {[
                 { label: 'Total Invested', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? 'ETH + stablecoin inflows' : 'No ETH/stable inflows found', color: 'var(--fg)' },
-                { label: 'Total P&L', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}${((summary.unifiedPnl / summary.netInvestment) * 100).toFixed(1)}% vs invested` : 'P&L % needs ETH/stable history', color: summary.unifiedPnl >= 0 ? t.green : t.red },
+                { label: 'Total P&L', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}${((summary.unifiedPnl / summary.netInvestment) * 100).toFixed(1)}% vs invested` : 'P&L % needs ETH/stable history', color: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? t.green : t.red) : 'var(--fg)' },
                 { label: 'Realized P&L', val: `${summary.realizedPnl >= 0 ? '+' : ''}$${Math.abs(summary.realizedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Closed trade profit', color: summary.realizedPnl >= 0 ? t.green : t.red },
                 { label: 'Unrealized P&L', val: `${summary.pnl24h >= 0 ? '+' : ''}$${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: "Today's portfolio change", color: summary.pnl24h >= 0 ? t.green : t.red },
               ].map(({ label, val, sub, color }) => (
@@ -4495,7 +4506,19 @@ export default function App() {
               <div style={{ maxHeight: 480, overflowY: 'auto' }} className="custom-scrollbar">
                 {receivedAssetsData.list.length === 0 ? (
                   <div style={{ padding: '48px 20px', textAlign: 'center', color: 'var(--fg-muted)', fontSize: 13 }}>
-                    {wallets.length === 0 ? 'Add wallets to see received assets history.' : 'No ETH or stablecoin inbound transfers found since 2021.'}
+                    {wallets.length === 0
+                      ? 'Add wallets to see received assets history.'
+                      : ['ethereum', 'base'].includes(receivedChainFilter) && !etherscanApiKey
+                      ? <span>
+                          No Ethereum/Base transactions loaded.{' '}
+                          <button
+                            onClick={() => { setApiKeyInput(''); setIsApiKeyModalOpen(true); }}
+                            style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontSize: 13, padding: 0 }}>
+                            Add an Etherscan API key
+                          </button>
+                          {' '}for reliable ETH/Base history.
+                        </span>
+                      : 'No ETH or stablecoin inbound transfers found since 2021.'}
                   </div>
                 ) : receivedAssetsData.list.map((tx) => {
                   const assetUp = tx.asset.toUpperCase();
