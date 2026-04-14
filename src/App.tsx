@@ -1297,7 +1297,10 @@ export default function App() {
                 
                 const assetName = symbol;
                 const isBridged = false;
-                const coinGeckoId = symbol.toLowerCase();
+                // Look up coinGeckoId from the hardcoded TOKENS list first (e.g. USDC → 'usd-coin',
+                // USDT → 'tether') instead of blindly lowercasing the symbol which gives wrong keys.
+                const knownEthToken = TOKENS['ethereum'].find((t: any) => t.address.toLowerCase() === contractAddr);
+                const coinGeckoId = knownEthToken?.coinGeckoId || symbol.toLowerCase();
 
                 const amount = Number(formatUnits(BigInt(tx.value), decimals));
                 const price = fetchedPrices[contractAddr]?.usd ||
@@ -2193,12 +2196,21 @@ export default function App() {
       }
     });
 
+    // Use the live prices state as a fallback for ETH valueUsd — this handles the case where
+    // transactions were fetched before CoinGecko prices loaded (valueUsd would be 0 at that point).
+    const ethPriceFallback = prices['ethereum']?.usd || 0;
+
     const netInvestment = qualifiedInflows.reduce((acc, tx) => {
       if (deduped.has(tx.id)) return acc; // skip bridge echoes
       const assetUpper = tx.asset.toUpperCase();
       const isEth = assetUpper === 'ETH';
       if (isStableAsset(tx.asset)) return acc + tx.amount;
-      if (isEth) return acc + (tx.valueUsd || 0);
+      if (isEth) {
+        // Prefer stored valueUsd (computed at fetch time); fall back to current price × amount
+        // when valueUsd is 0 (prices were not yet loaded when the tx was fetched).
+        const txValue = tx.valueUsd > 0 ? tx.valueUsd : tx.amount * ethPriceFallback;
+        return acc + txValue;
+      }
       return acc;
     }, 0);
 
