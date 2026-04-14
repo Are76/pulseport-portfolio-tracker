@@ -1522,12 +1522,12 @@ export default function App() {
                   const stakedHeartsNum = Number(stakedHearts) / 1e8;
                   const valueUsd = stakedHeartsNum * hexPrice;
 
-                  // ~6 HEX per T-Share per day: (shares × days × 6) / 10000
+                  // ~6.2 HEX per T-Share per day: (shares × days × 62) / 100000
                   // interestHearts = accrued so far (daysStaked elapsed)
                   // fullYieldHearts = total yield at maturity (stakedDays full duration)
                   const shares = BigInt(stakeShares);
                   const daysStaked = Math.max(0, Number(currentDay) - Number(lockedDay));
-                  const interestHearts = (shares * BigInt(daysStaked) * 6n) / 10000n;
+                  const interestHearts = (shares * BigInt(daysStaked) * 62n) / 100000n;
                   const totalHearts = BigInt(stakedHearts) + interestHearts;
                   const totalValueUsd = (Number(totalHearts) / 1e8) * hexPrice;
 
@@ -1535,7 +1535,7 @@ export default function App() {
                   const tShares = Number(shares) / 1e12;
                   const stakedHex = Number(BigInt(stakedHearts)) / 1e8;
                   // Full projected yield using the same rate over the complete stake duration
-                  const fullYieldHearts = (shares * BigInt(stakedDays) * 6n) / 10000n;
+                  const fullYieldHearts = (shares * BigInt(stakedDays) * 62n) / 100000n;
                   const stakeHexYield = Number(fullYieldHearts) / 1e8;
 
                   allStakes.push({

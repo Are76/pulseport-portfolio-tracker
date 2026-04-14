@@ -193,8 +193,15 @@ export function StakesSection({
 
   const activeStakes = stakes.filter(s => (s.daysRemaining ?? 0) > 0);
 
+  // Daily yield = T-Shares × HEX paid per T-Share per day (≈6.2 HEX).
+  // stakeHexYield is the *total* projected yield for the full stake duration,
+  // so dividing by daysRemaining (not stakedDays) is wrong and produces
+  // inflated/unstable numbers — especially with stale cached daysRemaining.
+  // Using tShares × rate is stable and cache-reload-safe.
+  const HEX_PER_TSHARE_PER_DAY = 6.2;
   const dailyYieldHex = activeStakes.reduce((sum, s) => {
-    return sum + (s.stakeHexYield ?? 0) / Math.max(1, s.daysRemaining ?? 1);
+    const tShares = s.tShares ?? (Number(s.stakeShares) / 1e12);
+    return sum + tShares * HEX_PER_TSHARE_PER_DAY;
   }, 0);
   const dailyYieldUsd = dailyYieldHex * hexUsdPrice;
 
