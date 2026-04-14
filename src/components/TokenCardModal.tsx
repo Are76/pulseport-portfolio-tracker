@@ -69,6 +69,9 @@ interface Props {
     priceChange6h?: number | null;
     priceChange24h?: number | null;
     priceChange7d?: number | null;
+    description?: string | null;
+    websites?: { label: string; url: string }[];
+    socials?: { type: string; url: string }[];
   } | undefined;
   isLoadingMarketData?: boolean;
   theme: 'dark' | 'light';
