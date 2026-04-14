@@ -5287,7 +5287,18 @@ export default function App() {
           const filteredViewAssets = walletChainFilter === 'all' ? viewAssets : viewAssets.filter(a => a.chain === walletChainFilter);
 
           const walletUsdValue = viewAssets.reduce((s, a) => s + a.value, 0);
-          const stakingUsdValue = viewStakes.reduce((s, st) => s + (st.totalValueUsd || st.estimatedValueUsd), 0);
+          // Recalculate staking value from first principles using live prices + full maturity yield,
+          // so the total is never stale or wrong due to cached totalValueUsd.
+          const stakingUsdValue = viewStakes.reduce((s, st) => {
+            const hexPriceKey = `${st.chain}:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39`;
+            const chainHexFallback = st.chain === 'pulsechain' ? prices['pulsechain:hex']?.usd : prices['hex']?.usd;
+            const hexPrice = prices[hexPriceKey]?.usd || chainHexFallback || 0;
+            const stakedHex = st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8;
+            const tShares = st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12;
+            const rate = st.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
+            const maturityHex = stakedHex + tShares * (st.stakedDays ?? 0) * rate;
+            return s + maturityHex * hexPrice;
+          }, 0);
           const totalUsdValue = walletUsdValue + stakingUsdValue;
 
           // pHEX / eHEX totals (matching overview hero)
