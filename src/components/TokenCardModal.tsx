@@ -236,9 +236,22 @@ export function TokenCardModal({
             <div className="tcm-section-title">Price Changes</div>
             <div className="tcm-changes-grid">
               <ChangeRow label="1H"  pct={asset.priceChange1h ?? marketData?.priceChange1h} theme={theme} />
-              <ChangeRow label="24H" pct={asset.priceChange24h ?? asset.pnl24h ?? marketData?.priceChange24h} theme={theme} />
-              <ChangeRow label="7D"  pct={asset.priceChange7d ?? marketData?.priceChange7d} theme={theme} />
               <ChangeRow label="6H"  pct={marketData?.priceChange6h} theme={theme} />
+              <ChangeRow label="1D"  pct={asset.priceChange24h ?? asset.pnl24h ?? marketData?.priceChange24h} theme={theme} />
+              <ChangeRow label="7D"  pct={asset.priceChange7d ?? marketData?.priceChange7d} theme={theme} />
+              <ChangeRow label="1M"  pct={null} theme={theme} />
+              <ChangeRow label="1Y"  pct={null} theme={theme} />
+            </div>
+            <div className="tcm-ath-atl-row">
+              <div className="tcm-ath-cell">
+                <span className="tcm-ath-label">ATH</span>
+                <span className="tcm-ath-val">—</span>
+              </div>
+              <div className="tcm-ath-divider" />
+              <div className="tcm-ath-cell">
+                <span className="tcm-ath-label">ATL</span>
+                <span className="tcm-ath-val">—</span>
+              </div>
             </div>
           </div>
 
@@ -300,6 +313,10 @@ export function TokenCardModal({
               <div className="tcm-stat-cell">
                 <div className="tcm-stat-label">Pools</div>
                 <div className="tcm-stat-value">{pools != null ? pools : '—'}</div>
+              </div>
+              <div className="tcm-stat-cell">
+                <div className="tcm-stat-label">Holders</div>
+                <div className="tcm-stat-value" style={{ color: 'var(--fg-subtle)' }}>—</div>
               </div>
               {marketData?.nativePriceUsd && (
                 <div className="tcm-stat-cell">

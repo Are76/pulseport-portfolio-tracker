@@ -3269,19 +3269,23 @@ export default function App() {
                                 onKeyDown={e => e.key === 'Enter' && setTokenCardModal(asset)}>
                                 {/* Colored top accent line */}
                                 <div style={{
-                                  position: 'absolute', top: 0, left: 0, right: 0, height: 2,
-                                  background: accentColor, opacity: 0.5, pointerEvents: 'none',
+                                  position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+                                  background: `linear-gradient(90deg, ${accentColor}00 0%, ${accentColor} 40%, ${accentColor} 60%, ${accentColor}00 100%)`,
+                                  opacity: 0.7, pointerEvents: 'none',
                                 }} />
 
-                                <div style={{ padding: '16px 16px 12px' }}>
+                                <div style={{ padding: '18px 16px 14px' }}>
                                   {/* Row 1: Logo + symbol/name + portfolio% badge */}
-                                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 11 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
+                                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 14 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                                      {/* Logo with glow ring */}
                                       <div style={{
-                                        width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
-                                        background: `${accentColor}18`, border: `1.5px solid ${accentColor}44`,
+                                        width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
+                                        background: `${accentColor}15`,
+                                        border: `2px solid ${accentColor}55`,
+                                        boxShadow: `0 0 12px ${accentColor}30`,
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        fontSize: 13, fontWeight: 800, color: accentColor, overflow: 'hidden',
+                                        fontSize: 14, fontWeight: 800, color: accentColor, overflow: 'hidden',
                                       }}>
                                         {logo ? (
                                           <img src={logo} alt={asset.symbol}
@@ -3290,49 +3294,65 @@ export default function App() {
                                         ) : asset.symbol[0]}
                                       </div>
                                       <div style={{ minWidth: 0 }}>
-                                        <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--fg)', letterSpacing: '-0.01em', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--fg)', letterSpacing: '-0.01em', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                           {asset.symbol}
                                         </div>
-                                        <div style={{ fontSize: 11, color: 'var(--fg-subtle)', lineHeight: 1.3, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 100 }}>
+                                        <div style={{ fontSize: 11, color: 'var(--fg-subtle)', lineHeight: 1.3, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 110 }}>
                                           {asset.name}
                                         </div>
                                       </div>
                                     </div>
+                                    {/* Portfolio % badge */}
                                     <span className="acv2-portfolio-badge" style={{
                                       color: accentColor,
                                       background: `${accentColor}18`,
-                                      border: `1px solid ${accentColor}33`,
+                                      border: `1px solid ${accentColor}40`,
                                       marginTop: 2,
                                     }}>
                                       {share.toFixed(1)}%
                                     </span>
                                   </div>
 
-                                  {/* Row 2: Current price + 24h change */}
-                                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 6, marginBottom: 10 }}>
-                                    <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.025em', lineHeight: 1, flexShrink: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {/* Row 2: Price (dominant) */}
+                                  <div style={{ marginBottom: 6 }}>
+                                    <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.6px', textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 3 }}>Price</div>
+                                    <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.03em', lineHeight: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                       {fmtPrice(asset.price)}
                                     </div>
-                                    <span className={`change-badge-${pct >= 0 ? 'pos' : 'neg'}`} style={{ fontSize: 11, fontFamily: 'JetBrains Mono, monospace', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                                      {pct >= 0 ? '\u25b2' : '\u25bc'} {Math.abs(pct).toFixed(2)}%
-                                    </span>
                                   </div>
 
-                                  {/* Row 3: Holdings */}
-                                  <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 6 }}>
-                                    <div style={{ minWidth: 0 }}>
-                                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.5px', textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 2 }}>Holdings</div>
+                                  {/* Row 3: 24h change (prominent) */}
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
+                                    <span style={{
+                                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                                      fontSize: 15, fontWeight: 800, fontFamily: 'JetBrains Mono, monospace',
+                                      color: changeColor, letterSpacing: '-0.01em',
+                                    }}>
+                                      {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%
+                                    </span>
+                                    <span style={{ fontSize: 10, color: 'var(--fg-subtle)', fontWeight: 600 }}>24h</span>
+                                  </div>
+
+                                  {/* Row 4: Holdings */}
+                                  <div style={{
+                                    display: 'flex', alignItems: 'stretch', justifyContent: 'space-between',
+                                    gap: 0, background: 'rgba(255,255,255,0.04)', borderRadius: 10,
+                                    border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden',
+                                  }}>
+                                    <div style={{ flex: 1, padding: '8px 10px' }}>
+                                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.5px', textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 3 }}>Holdings</div>
                                       <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg-muted)', fontFamily: 'JetBrains Mono, monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                         {asset.balance >= 1e9 ? `${(asset.balance/1e9).toFixed(2)}B` :
                                          asset.balance >= 1e6 ? `${(asset.balance/1e6).toFixed(2)}M` :
                                          asset.balance >= 1e3 ? `${(asset.balance/1e3).toFixed(1)}K` :
-                                         asset.balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}{" "}
-                                        <span style={{ fontSize: 10, color: 'var(--fg-subtle)' }}>{asset.symbol}</span>
+                                         asset.balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                        {' '}<span style={{ fontSize: 10, color: 'var(--fg-subtle)' }}>{asset.symbol}</span>
                                       </div>
                                     </div>
-                                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.5px', textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 2 }}>Value</div>
-                                      <div style={{ fontSize: 14, fontWeight: 800, color: changeColor, fontFamily: 'JetBrains Mono, monospace' }}>
+                                    <div style={{ width: 1, background: 'rgba(255,255,255,0.07)', flexShrink: 0 }} />
+                                    <div style={{ flex: 1, padding: '8px 10px', textAlign: 'right' }}>
+                                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.5px', textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 3 }}>Value</div>
+                                      <div style={{ fontSize: 14, fontWeight: 800, color: t.green, fontFamily: 'JetBrains Mono, monospace' }}>
                                         {fmtValue(asset.value)}
                                       </div>
                                     </div>
@@ -3340,7 +3360,7 @@ export default function App() {
                                 </div>
 
                                 {/* Sparkline */}
-                                <div className="sparkline-container" style={{ height: 36, margin: '4px 0 0' }}>
+                                <div className="sparkline-container" style={{ height: 42, margin: '2px 0 0' }}>
                                   <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={sparkData} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
                                       <defs>
@@ -3349,12 +3369,12 @@ export default function App() {
                                           <stop offset="100%" stopColor={sparkColor} stopOpacity={0} />
                                         </linearGradient>
                                       </defs>
-                                      <Area type="monotone" dataKey="v" stroke={sparkColor} strokeWidth={1.5} fill={`url(#spark-${asset.id})`} dot={false} isAnimationActive={false} />
+                                      <Area type="monotone" dataKey="v" stroke={sparkColor} strokeWidth={2} fill={`url(#spark-${asset.id})`} dot={false} isAnimationActive={false} />
                                     </AreaChart>
                                   </ResponsiveContainer>
                                 </div>
 
-                                {/* Bottom stat footer: MCap | Liquidity | Volume */}
+                                {/* Bottom stat footer: MCap | Liquidity | Vol 24H */}
                                 <div className="acv2-footer">
                                   <div className="acv2-footer-cell">
                                     <div className="acv2-footer-label">Mkt Cap</div>
