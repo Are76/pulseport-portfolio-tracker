@@ -165,6 +165,24 @@ const PriceDisplay = ({ price, className }: { price: number, className?: string 
   );
 };
 
+// ── localStorage cache helpers (BigInt-safe) ──────────────────────────────────
+const bigIntReplacer = (_key: string, value: unknown) =>
+  typeof value === 'bigint' ? `__bi__${value.toString()}` : value;
+const bigIntReviver = (_key: string, value: unknown) =>
+  typeof value === 'string' && value.startsWith('__bi__')
+    ? BigInt(value.slice(6))
+    : value;
+
+function tryReadCache<T>(key: string, withBigInt = false): T | null {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    return withBigInt ? JSON.parse(raw, bigIntReviver) : JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
 // ── StakingLadder ─────────────────────────────────────────────────────────────
 // Bar chart showing stake distribution by 30-day end-date buckets (from pulsechain-dashboard)
 function StakingLadder({ stakes }: { stakes: HexStake[] }) {
@@ -395,11 +413,11 @@ export default function App() {
       return [];
     }
   });
-  const [realAssets, setRealAssets] = useState<Asset[]>([]);
-  const [realStakes, setRealStakes] = useState<HexStake[]>([]);
-  const [lpPositions, setLpPositions] = useState<LpPosition[]>([]);
-  const [farmPositions, setFarmPositions] = useState<FarmPosition[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [realAssets, setRealAssets] = useState<Asset[]>(() => tryReadCache<Asset[]>('pulseport_cache_assets') ?? []);
+  const [realStakes, setRealStakes] = useState<HexStake[]>(() => tryReadCache<HexStake[]>('pulseport_cache_stakes', true) ?? []);
+  const [lpPositions, setLpPositions] = useState<LpPosition[]>(() => tryReadCache<LpPosition[]>('pulseport_cache_lp') ?? []);
+  const [farmPositions, setFarmPositions] = useState<FarmPosition[]>(() => tryReadCache<FarmPosition[]>('pulseport_cache_farms') ?? []);
+  const [transactions, setTransactions] = useState<Transaction[]>(() => tryReadCache<Transaction[]>('pulseport_cache_txs') ?? []);
   const [history, setHistory] = useState<HistoryPoint[]>(() => {
     const saved = localStorage.getItem('pulseport_history');
     return saved ? JSON.parse(saved) : [];
@@ -562,6 +580,34 @@ export default function App() {
 
   const toggleSection = (id: string) => setCollapsedSections(prev => ({ ...prev, [id]: !prev[id] }));
   const isCollapsed = (id: string) => !!collapsedSections[id];
+
+  // ── Portfolio cache persistence (prevents blank screen on reload) ──────────
+  useEffect(() => {
+    if (realAssets.length > 0) {
+      try { localStorage.setItem('pulseport_cache_assets', JSON.stringify(realAssets)); } catch {}
+    }
+  }, [realAssets]);
+
+  useEffect(() => {
+    if (realStakes.length > 0) {
+      try { localStorage.setItem('pulseport_cache_stakes', JSON.stringify(realStakes, bigIntReplacer)); } catch {}
+    }
+  }, [realStakes]);
+
+  useEffect(() => {
+    try { localStorage.setItem('pulseport_cache_lp', JSON.stringify(lpPositions)); } catch {}
+  }, [lpPositions]);
+
+  useEffect(() => {
+    try { localStorage.setItem('pulseport_cache_farms', JSON.stringify(farmPositions)); } catch {}
+  }, [farmPositions]);
+
+  useEffect(() => {
+    if (transactions.length > 0) {
+      // Limit to 200 most recent to avoid localStorage quota issues
+      try { localStorage.setItem('pulseport_cache_txs', JSON.stringify(transactions.slice(0, 200))); } catch {}
+    }
+  }, [transactions]);
 
   useEffect(() => {
     localStorage.setItem('pulseport_hide_dust', JSON.stringify(hideDust));
