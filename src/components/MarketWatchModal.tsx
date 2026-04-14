@@ -78,7 +78,7 @@ function parseWatchlistUrl(raw: string): ParsedWatchlistUrl | null {
     const url = new URL(raw.trim());
 
     // ── Format A: https://dexscreener.com/watchlist/{shareId}  (new share-link) ──
-    const pathMatch = url.pathname.match(/^\/watchlist\/([A-Za-z0-9_-]{4,})$/);
+    const pathMatch = url.pathname.match(/^\/watchlist\/([A-Za-z0-9_-]{4,100})$/);
     if (pathMatch) {
       return { type: 'shareId', shareId: pathMatch[1] };
     }

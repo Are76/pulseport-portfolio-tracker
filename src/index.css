@@ -3041,3 +3041,9 @@ button, a {
   border-bottom-color: rgba(0,122,77,0.18);
   color: var(--accent);
 }
+
+/* Scrollbar thumbs on light — ensure visibility */
+[data-theme="light"] .mwm-body::-webkit-scrollbar-thumb,
+[data-theme="light"] .tcm-body::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.18);
+}
