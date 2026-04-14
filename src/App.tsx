@@ -2791,10 +2791,10 @@ export default function App() {
         <nav style={{ padding: '10px 8px' }} className="flex flex-col gap-0.5">
           {([
             { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-            { id: 'assets',   label: 'Assets',   icon: Coins },
-            { id: 'stakes',   label: 'Stakes',   icon: Lock },
-            { id: 'defi',     label: 'DeFi',     icon: Droplets },
-            { id: 'history',  label: 'History',  icon: History },
+            { id: 'assets',   label: 'Holdings',           icon: Coins },
+            { id: 'stakes',   label: 'HEX Stakes',         icon: Lock },
+            { id: 'defi',     label: 'DeFi Positions',     icon: Droplets },
+            { id: 'history',  label: 'Transaction History', icon: History },
             { id: 'tracker',  label: 'PLS Flow', icon: ArrowLeftRight },
             { id: 'wallets',  label: 'Wallets',  icon: WalletIcon },
           ] as const).map(({ id, label, icon: Icon }) => {
@@ -3312,7 +3312,7 @@ export default function App() {
                             style={{ fontSize: 12, color: 'var(--accent)', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 8, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', transition: 'all .15s', flexShrink: 0 }}
                             onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent-border)'; }}
                             onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent-dim)'; }}>
-                            View all <ChevronRight size={12} />
+                            Holdings <ChevronRight size={12} />
                           </button>
                         </div>
                         {/* Row 2: Filter bar */}
@@ -3787,8 +3787,8 @@ export default function App() {
                 {/* Header row */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                   <div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: t.text, marginBottom: 2 }}>Token Positions</div>
-                    <div style={{ fontSize: 13, color: t.textSecondary }}>{chainAssets.length} assets · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} liquid</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: t.text, marginBottom: 2 }}>Holdings</div>
+                    <div style={{ fontSize: 13, color: t.textSecondary }}>{chainAssets.length} token{chainAssets.length !== 1 ? 's' : ''} · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} liquid</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', gap: 3, background: t.cardHigh, border: `1px solid ${t.border}`, borderRadius: 8, padding: 3 }}>
@@ -3854,7 +3854,7 @@ export default function App() {
                             { label: 'Token', field: null, align: 'left' },
                             { label: 'Price', field: null, align: 'right' },
                             { label: priceChangePeriod.toUpperCase(), field: 'change', align: 'right' },
-                            { label: 'Amount', field: null, align: 'right' },
+                            { label: 'Held', field: null, align: 'right' },
                             { label: 'Value', field: 'value', align: 'right' },
                             { label: '% of Portfolio', field: null, align: 'right' },
                             { label: '', field: null, align: 'right' },
@@ -3895,7 +3895,7 @@ export default function App() {
                         {currentAssets.length === 0 ? (
                           <tr>
                             <td colSpan={7} style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 13 }}>
-                              No assets found — add wallets to get started
+                              No holdings found — add wallets to get started
                             </td>
                           </tr>
                         ) : (
@@ -4281,8 +4281,8 @@ export default function App() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)', marginBottom: 2 }}>Transactions</div>
-                  <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Performance tracking &amp; transaction history</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)', marginBottom: 2 }}>Transaction History</div>
+                  <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>On-chain activity &amp; performance tracking</div>
                 </div>
                 {/* View as You toggle */}
                 <button onClick={() => setViewAsYou(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}>
@@ -4445,7 +4445,7 @@ export default function App() {
               <div style={{ padding: '14px 18px', borderBottom: isCollapsed('received-assets') ? 'none' : '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <ArrowDownLeft size={16} style={{ color: '#627EEA' }} />
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>Received Assets History</span>
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>Received Token History</span>
                   <select value={receivedChainFilter} onChange={e => setReceivedChainFilter(e.target.value)}
                     style={{ background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 6, color: 'var(--fg)', fontSize: 13, padding: '4px 10px', cursor: 'pointer', outline: 'none' }}>
                     <option value="all">All Chains</option>
@@ -4624,7 +4624,7 @@ export default function App() {
                   {!isCollapsed('history-txs') && (<>
                     {[
                       { value: txChainFilter, onChange: setTxChainFilter, options: [['all','All Chains'],['pulsechain','PulseChain'],['ethereum','Ethereum'],['base','Base']] as [string,string][] },
-                      { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Assets'], ...Array.from(new Set(currentTransactions.map(tx => tx.asset))).sort().map(a => [a,a])] as [string,string][] },
+                      { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Tokens'], ...Array.from(new Set(currentTransactions.map(tx => tx.asset))).sort().map(a => [a,a])] as [string,string][] },
                       { value: txYearFilter, onChange: setTxYearFilter, options: [['all','All Years'],['2026','2026'],['2025','2025'],['2024','2024'],['2023','2023'],['2022','2022'],['2021','2021']] as [string,string][] },
                       { value: txCoinCategory, onChange: setTxCoinCategory, options: [['all','All Coins'],['stablecoins','Stablecoins'],['eth_weth','ETH/WETH'],['hex','HEX/eHEX'],['pls_wpls','PLS/WPLS'],['bridged','Bridged']] as [string,string][] },
                     ].map(({ value, onChange, options }, i) => (
@@ -4716,7 +4716,7 @@ export default function App() {
               )}
               <div style={{ maxHeight: 600, overflowY: 'auto' }} className="custom-scrollbar">
                 {filteredTransactions.filter(tx => showHiddenTxs || !hiddenTxIds.includes(tx.id)).length === 0 ? (
-                  <div style={{ padding: '40px 20px', textAlign: 'center', color: t.textSecondary, fontSize: 13 }}>No transactions match your filters.</div>
+                  <div style={{ padding: '40px 20px', textAlign: 'center', color: t.textSecondary, fontSize: 13 }}>No transactions found for these filters.</div>
                 ) : filteredTransactions.filter(tx => showHiddenTxs || !hiddenTxIds.includes(tx.id)).map((tx) => {
                   const isHidden = hiddenTxIds.includes(tx.id);
                   const isTxExpanded = expandedTxIds.has(tx.id);
@@ -5302,7 +5302,7 @@ export default function App() {
               <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
                 <div style={{ padding: '14px 16px', borderBottom: isCollapsed('wallet-holdings') ? 'none' : `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                   <div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)' }}>Token Positions</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)' }}>Holdings</div>
                     <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginTop: 2 }}>{filteredViewAssets.length} tokens · ${walletUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -5357,7 +5357,7 @@ export default function App() {
                       {filteredViewAssets.length === 0 ? (
                         <tr>
                           <td colSpan={7} style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 13 }}>
-                            No assets found for this wallet
+                            No holdings found for this wallet
                           </td>
                         </tr>
                       ) : (
@@ -5634,7 +5634,7 @@ export default function App() {
                                                  +{tokenTxs.length - 8} more —{' '}
                                                  <button onClick={e => { e.stopPropagation(); setTxAssetFilter(asset.symbol); setActiveTab('history'); }}
                                                    style={{ fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
-                                                   view all in History
+                                                   view all in Transaction History
                                                  </button>
                                                </div>
                                              )}
@@ -5695,7 +5695,7 @@ export default function App() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {!isCollapsed('wallet-txs') && [
                           { value: txTypeFilter, onChange: setTxTypeFilter, options: [['all','All Types'],['transfer_in','Received'],['transfer_out','Sent'],['swap','Swaps']] as [string,string][] },
-                          { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Assets'], ...Array.from(new Set(baseTxs.map(tx => tx.asset))).sort().map(a => [a,a])] as [string,string][] },
+                          { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Tokens'], ...Array.from(new Set(baseTxs.map(tx => tx.asset))).sort().map(a => [a,a])] as [string,string][] },
                         ].map(({ value, onChange, options }, i) => (
                           <select key={i} value={value} onChange={e => onChange(e.target.value)}
                             style={{ background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 6, color: 'var(--fg)', fontSize: 13, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
@@ -5713,7 +5713,7 @@ export default function App() {
                     {!isCollapsed('wallet-txs') && (
                       <div style={{ maxHeight: 520, overflowY: 'auto' }} className="custom-scrollbar">
                         {filtered.length === 0 ? (
-                          <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--fg-muted)', fontSize: 13 }}>No transactions match your filters.</div>
+                          <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--fg-muted)', fontSize: 13 }}>No transactions found for these filters.</div>
                         ) : filtered.map((tx) => {
                           const isHidden = hiddenTxIds.includes(tx.id);
                           if (isHidden && !showHiddenTxs) return null;
@@ -5796,10 +5796,10 @@ export default function App() {
         <div className="mobile-bottom-nav-inner">
         {([
           { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-          { id: 'assets',   label: 'Assets',   icon: Coins },
-          { id: 'stakes',   label: 'Stakes',   icon: Lock },
-          { id: 'defi',     label: 'DeFi',     icon: Droplets },
-          { id: 'history',  label: 'History',  icon: History },
+          { id: 'assets',   label: 'Holdings',           icon: Coins },
+          { id: 'stakes',   label: 'HEX Stakes',         icon: Lock },
+          { id: 'defi',     label: 'DeFi Positions',     icon: Droplets },
+          { id: 'history',  label: 'Tx History',         icon: History },
           { id: 'tracker',  label: 'PLS Flow', icon: ArrowLeftRight },
           { id: 'wallets',  label: 'Wallets',  icon: WalletIcon },
         ] as const).map(({ id, label, icon: Icon }) => (
