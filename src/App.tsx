@@ -67,6 +67,7 @@ import { PnLModal } from './components/PnLModal';
 import { ProfitPlannerModal } from './components/ProfitPlannerModal';
 import { StakesSection } from './components/StakesSection';
 import { TokenCardModal } from './components/TokenCardModal';
+import { MarketWatchModal } from './components/MarketWatchModal';
 
 const ERC20_ABI = [
   {
@@ -536,6 +537,7 @@ export default function App() {
   const [tokenMarketData, setTokenMarketData] = useState<Record<string, any>>({});
   const [tokenCardModal, setTokenCardModal] = useState<Asset | null>(null);
   const [tokenCardModalLoading, setTokenCardModalLoading] = useState(false);
+  const [showMarketWatch, setShowMarketWatch] = useState(false);
   const [expandedWalletAssetIds, setExpandedWalletAssetIds] = useState<Set<string>>(new Set());
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     const saved = localStorage.getItem('pulseport_theme');
@@ -2531,12 +2533,60 @@ export default function App() {
             priceChange6h:  top?.priceChange?.h6 ?? null,
             priceChange24h: top?.priceChange?.h24 ?? null,
             priceChange7d:  top?.priceChange?.d7 ?? null,
+            description:    top?.info?.description || null,
+            websites:       top?.info?.websites   || [],
+            socials:        top?.info?.socials    || [],
           },
         }));
       } catch { /* ignore */ }
       finally { setTokenCardModalLoading(false); }
     })();
   }, [tokenCardModal?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Auto-fetch market data for top 9 overview assets when Overview tab is active ──
+  // This ensures all cards show live market data (mcap, liquidity, vol) without requiring
+  // the user to click each card individually.
+  useEffect(() => {
+    if (activeTab !== 'overview' || currentAssets.length === 0) return;
+    const topAssets = [...currentAssets].sort((a, b) => b.value - a.value).slice(0, 9);
+    const toFetch = topAssets.filter(a => {
+      const addr = (a as any).address;
+      return addr && addr !== 'native' && !tokenMarketData[a.id];
+    });
+    if (toFetch.length === 0) return;
+    Promise.all(toFetch.map(async (asset) => {
+      const addr = (asset as any).address as string;
+      try {
+        const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${addr}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const pairs: any[] = data.pairs || [];
+        if (pairs.length === 0) return;
+        const sorted = [...pairs].sort((a: any, b: any) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0));
+        const top = sorted[0];
+        setTokenMarketData(prev => ({
+          ...prev,
+          [asset.id]: {
+            ...prev[asset.id],
+            liquidity:      sorted.reduce((s: number, p: any) => s + (p.liquidity?.usd || 0), 0),
+            volume24h:      sorted.reduce((s: number, p: any) => s + (p.volume?.h24  || 0), 0),
+            marketCap:      top?.marketCap || null,
+            fdv:            top?.fdv || null,
+            pools:          pairs.length,
+            txns24h:        sorted.reduce((s: number, p: any) => s + (p.txns?.h24?.buys || 0) + (p.txns?.h24?.sells || 0), 0),
+            nativePriceUsd: top?.priceNative || null,
+            priceChange1h:  top?.priceChange?.h1  ?? null,
+            priceChange6h:  top?.priceChange?.h6  ?? null,
+            priceChange24h: top?.priceChange?.h24 ?? null,
+            priceChange7d:  top?.priceChange?.d7  ?? null,
+            description:    top?.info?.description || null,
+            websites:       top?.info?.websites    || [],
+            socials:        top?.info?.socials     || [],
+          },
+        }));
+      } catch { /* ignore */ }
+    }));
+  }, [activeTab, currentAssets.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── tokenPrices: symbol → USD price map for LP hook ─────────────────────
   const tokenPrices = useMemo<Record<string, number>>(() => {
@@ -2602,6 +2652,9 @@ export default function App() {
         try { return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${chainName}/assets/${getAddress(tokenConfig.address)}/logo.png`; } catch { /* invalid address */ }
       }
     }
+    // 5. Fall back to tokenLogos map (covers STATIC_LOGOS entries, e.g. pDAI DexScreener CDN)
+    const addrKey = (asset as any).address?.toLowerCase?.() as string | undefined;
+    if (addrKey && tokenLogos[addrKey]) return tokenLogos[addrKey];
     return '';
   };
 
@@ -3172,6 +3225,11 @@ export default function App() {
                         </div>
                         {/* Row 2: Filter bar */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          {/* Market Watch button */}
+                          <button className="market-watch-btn" onClick={() => setShowMarketWatch(true)}>
+                            <span className="market-watch-dot" />
+                            Market Watch
+                          </button>
                           {/* Chain segmented toggle */}
                           <div className="chain-toggle-group">
                             {(['all', 'pulsechain', 'ethereum', 'base'] as const).map(c => {
@@ -5632,7 +5690,7 @@ export default function App() {
       </main>
 
       {/* ── MOBILE BOTTOM NAV ── */}
-      <nav className="mobile-bottom-nav bottom-nav-blur md:hidden fixed bottom-0 left-0 right-0 z-50 flex"
+      <nav className="mobile-bottom-nav bottom-nav-blur md:hidden fixed bottom-0 left-0 right-0 z-50"
         style={{
           background: 'var(--bg-header)',
           borderTop: '1px solid var(--border)',
@@ -5640,27 +5698,22 @@ export default function App() {
         <div className="mobile-bottom-nav-inner">
         {([
           { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-          { id: 'assets',   label: 'Assets',   icon: WalletIcon },
-          { id: 'stakes',   label: 'Stakes',   icon: Layers },
-          { id: 'wallets',  label: 'Wallets',  icon: User },
+          { id: 'assets',   label: 'Assets',   icon: Coins },
+          { id: 'stakes',   label: 'Stakes',   icon: Lock },
+          { id: 'defi',     label: 'DeFi',     icon: Droplets },
+          { id: 'history',  label: 'History',  icon: History },
+          { id: 'tracker',  label: 'PLS Flow', icon: ArrowLeftRight },
+          { id: 'wallets',  label: 'Wallets',  icon: WalletIcon },
         ] as const).map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setActiveTab(id)}
-            className="flex-1 flex flex-col items-center justify-center"
+            className="mobile-nav-tab-btn"
             style={{
-              minHeight: 56,
-              padding: '6px 4px',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: activeTab === id
-                ? 'var(--accent)'
-                : 'var(--fg-muted)',
-              transition: 'color .15s',
+              color: activeTab === id ? 'var(--accent)' : 'var(--fg-muted)',
             }}>
             <div className={activeTab === id ? 'bottom-nav-dot' : ''}>
-              <Icon size={20} />
+              <Icon size={19} />
             </div>
-            <span style={{ fontSize: 10, fontWeight: activeTab === id ? 700 : 500, lineHeight: 1, marginTop: 3 }}>{label}</span>
+            <span style={{ fontSize: 9, fontWeight: activeTab === id ? 700 : 500, lineHeight: 1, marginTop: 3 }}>{label}</span>
           </button>
         ))}
         </div>
@@ -5843,6 +5896,14 @@ export default function App() {
           onClose={() => setTokenCardModal(null)}
           dexScreenerUrl={dexScreenerUrl(tokenCardModal.chain, (tokenCardModal as any).address)}
           explorerUrl={explorerUrl(tokenCardModal.chain, (tokenCardModal as any).address)}
+        />
+      )}
+
+      {/* ── Market Watch Modal ── */}
+      {showMarketWatch && (
+        <MarketWatchModal
+          theme={theme}
+          onClose={() => setShowMarketWatch(false)}
         />
       )}
 

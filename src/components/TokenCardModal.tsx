@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback } from 'react';
-import { X, Copy, ExternalLink, TrendingUp, TrendingDown } from 'lucide-react';
+import { X, Copy, ExternalLink, TrendingUp, TrendingDown, Globe, Twitter, Send } from 'lucide-react';
 import type { Asset } from '../types';
 
 // ── helpers ─────────────────────────────────────────────────────────────────
@@ -331,6 +331,39 @@ export function TokenCardModal({
               )}
             </div>
           </div>
+
+          {/* ── ABOUT ── */}
+          {(marketData?.description || (marketData?.websites?.length ?? 0) > 0 || (marketData?.socials?.length ?? 0) > 0) && (
+            <div className="tcm-section">
+              <div className="tcm-section-title">About</div>
+              {marketData?.description && (
+                <p style={{ fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.65, marginBottom: 12, marginTop: 0 }}>
+                  {marketData.description}
+                </p>
+              )}
+              {((marketData?.websites?.length ?? 0) > 0 || (marketData?.socials?.length ?? 0) > 0) && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {marketData?.websites?.map((w, i) => (
+                    <a key={`w-${i}`} href={w.url} target="_blank" rel="noopener noreferrer" className="tcm-social-link">
+                      <Globe size={11} />
+                      {w.label || 'Website'}
+                    </a>
+                  ))}
+                  {marketData?.socials?.map((s, i) => {
+                    const type = s.type?.toLowerCase() ?? '';
+                    const label = type === 'twitter' ? 'Twitter / X' : type === 'telegram' ? 'Telegram' : (s.type?.charAt(0).toUpperCase() ?? '') + (s.type?.slice(1) ?? '');
+                    const Icon = type === 'twitter' ? Twitter : type === 'telegram' ? Send : ExternalLink;
+                    return (
+                      <a key={`s-${i}`} href={s.url} target="_blank" rel="noopener noreferrer" className="tcm-social-link">
+                        <Icon size={11} />
+                        {label}
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
         </div>
         {/* ── footer ── */}
