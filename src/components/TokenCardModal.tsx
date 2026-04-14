@@ -316,7 +316,7 @@ export function TokenCardModal({
               </div>
               <div className="tcm-stat-cell">
                 <div className="tcm-stat-label">Holders</div>
-                <div className="tcm-stat-value" style={{ color: 'var(--fg-subtle)' }}>—</div>
+                <div className="tcm-stat-value">—</div>
               </div>
               {marketData?.nativePriceUsd && (
                 <div className="tcm-stat-cell">

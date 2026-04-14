@@ -3352,7 +3352,7 @@ export default function App() {
                                     <div style={{ width: 1, background: 'rgba(255,255,255,0.07)', flexShrink: 0 }} />
                                     <div style={{ flex: 1, padding: '8px 10px', textAlign: 'right' }}>
                                       <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.5px', textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 3 }}>Value</div>
-                                      <div style={{ fontSize: 14, fontWeight: 800, color: t.green, fontFamily: 'JetBrains Mono, monospace' }}>
+                                      <div style={{ fontSize: 14, fontWeight: 800, color: changeColor, fontFamily: 'JetBrains Mono, monospace' }}>
                                         {fmtValue(asset.value)}
                                       </div>
                                     </div>
