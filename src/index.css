@@ -3047,3 +3047,137 @@ button, a {
 [data-theme="light"] .tcm-body::-webkit-scrollbar-thumb {
   background: rgba(0,0,0,0.18);
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE TABLE IMPROVEMENTS — full readability on phones (≤ 639 px)
+   These rules are last in the file so same-specificity selectors here
+   win by cascade order without needing !important.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Assets / Wallets token list ─────────────────────────────────────────── */
+@media (max-width: 639px) {
+  .asset-row-token-cell {
+    min-width: 120px;
+  }
+  .asset-row-token-cell .asset-symbol {
+    font-size: 13px;
+  }
+  .asset-row-token-cell .asset-name {
+    font-size: 10px;
+  }
+  .asset-col-price   { display: none; }
+  .asset-col-balance { display: none; }
+  .asset-expanded-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    font-size: 11px;
+  }
+}
+
+/* ── Stakes table ─────────────────────────────────────────────────────────── */
+@media (max-width: 639px) {
+  .stakes-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .stakes-table th,
+  .stakes-table td {
+    white-space: nowrap;
+  }
+  .stakes-table td {
+    padding: 12px 8px;
+    font-size: 11px;
+  }
+  .stakes-table th {
+    padding: 8px;
+    font-size: 10px;
+  }
+  .stakes-metrics-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .stakes-pie-wrapper {
+    max-height: 220px;
+  }
+  .stakes-timeline-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ── History tab ──────────────────────────────────────────────────────────── */
+@media (max-width: 639px) {
+  .history-tx-row {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .history-tx-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 10px;
+  }
+  .history-tx-asset {
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .history-tx-meta {
+    font-size: 10px;
+  }
+  .history-tx-amount {
+    font-size: 12px;
+    max-width: 120px;
+    text-align: right;
+  }
+  .history-filter-row {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .history-filter-row select,
+  .history-filter-select {
+    font-size: 11px;
+    padding: 5px 6px;
+    max-width: 90px;
+  }
+  .history-csv-btn {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+}
+
+/* ── Wallets tab ──────────────────────────────────────────────────────────── */
+@media (max-width: 639px) {
+  /* Wallet selector pills: horizontal scroll on mobile, no wrapping */
+  .wallet-selector-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+  .wallet-selector-bar::-webkit-scrollbar { display: none; }
+  .wallets-stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .wallets-asset-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Light mode contrast & spacing tweaks ─────────────────────────────────── */
+[data-theme="light"] .stat-card {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.10);
+}
+[data-theme="light"] .mwm-import-row {
+  background: #f7f7fa;
+  border-bottom-color: rgba(0,0,0,0.10);
+}
+[data-theme="light"] .mwm-table thead th {
+  color: rgba(0,0,0,0.60);
+}
+[data-theme="light"] .mwm-table tbody tr:hover td {
+  background: rgba(0,0,0,0.03);
+}
+[data-theme="light"] .token-logo-ring {
+  border-color: rgba(0,0,0,0.10);
+}

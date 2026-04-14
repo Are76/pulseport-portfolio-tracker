@@ -389,6 +389,22 @@ function WalletSelector({ wallets, activeWallet, onSelect, onAdd, walletLabels =
   );
 }
 
+// ── Module-level logo overrides — these always win over CoinGecko / DexScreener ─
+// Keyed by lowercase contract address on PulseChain.
+// Nothing may ever overwrite these entries in tokenLogos or asset.logoUrl.
+const STATIC_LOGOS: Record<string, string> = {
+  '0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d': 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png', // INC
+  '0xf6f8db0aba00007681f8faf16a0fda1c9b030b11': 'https://cdn.dexscreener.com/cms/images/ODHYYN7yppDHnd6u?width=64&height=64&fit=crop&quality=95&format=auto', // PRVX
+  '0xefd766ccb38eaf1dfd701853bfce31359239f305': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png', // pDAI (bridged DAI) — never use golden CoinGecko DAI coin here
+};
+
+// Bridged HEX (eHEX) on PulseChain — no on-chain WPLS LP, falls back to CoinGecko 'hex'
+const EHEX_PULSECHAIN_ADDR = '0x57fde0a71132198bbec939b98976993d8d89d225';
+
+// Below this threshold (USD) we consider netInvestment effectively zero and hide the P&L %.
+// PulseChain-only wallets have no ETH/stable inflows so netInvestment stays near 0.
+const MIN_INVESTMENT_THRESHOLD = 100;
+
 export default function App() {
   // ── Formatting helpers (defined once here, used throughout) ────────────────
   const fmtBigNum = (n: number) => Math.round(n).toLocaleString('en-US').replace(/,/g, ' ');
@@ -490,12 +506,8 @@ export default function App() {
   const [priceChangePeriod, setPriceChangePeriod] = useState<'1h' | '6h' | '24h' | '7d'>('24h');
   const [assetSortField, setAssetSortField] = useState<'value' | 'change'>('value');
   const [assetSortDir, setAssetSortDir] = useState<'desc' | 'asc'>('desc');
-  // Hardcoded fallback logos for tokens not listed on CoinGecko
-  const STATIC_LOGOS: Record<string, string> = {
-    '0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d': 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png', // INC
-    '0xf6f8db0aba00007681f8faf16a0fda1c9b030b11': 'https://cdn.dexscreener.com/cms/images/ODHYYN7yppDHnd6u?width=64&height=64&fit=crop&quality=95&format=auto', // PRVX
-    '0xefd766ccb38eaf1dfd701853bfce31359239f305': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png', // pDAI — Ethereum DAI logo (stable trustwallet CDN)
-  };
+  // tokenLogos is seeded from the module-level STATIC_LOGOS map so overrides are
+  // available before any remote fetch completes.
   const [tokenLogos, setTokenLogos] = useState<Record<string, string>>(STATIC_LOGOS);
   const [stakeChainFilter, setStakeChainFilter] = useState<'all' | 'pulsechain' | 'ethereum'>('all');
   const [yieldUnit, setYieldUnit] = useState<'hex' | 'usd'>(() => {
@@ -837,6 +849,24 @@ export default function App() {
             const pHexUSD = ((hexR1 / 1e18) / (hexR0 / 1e8)) * wplsUSD;
             setTokenPrice('0x2b591e99afe9f32eaa6214f7b7629768c40eeb39', pHexUSD, 'hex');
             fetchedPrices['pulsechain:hex'] = { usd: pHexUSD };
+            // eHEX (bridged HEX, 0x57fde0a7...) has no on-chain WPLS LP; use CoinGecko 'hex'
+            // price when available, otherwise fall back to pHEX on-chain price so holdings
+            // are never shown as $0 when CoinGecko is rate-limited.
+            if (!fetchedPrices[`pulsechain:${EHEX_PULSECHAIN_ADDR}`]?.usd) {
+              const ehexUsd = fetchedPrices['hex']?.usd || pHexUSD;
+              fetchedPrices[`pulsechain:${EHEX_PULSECHAIN_ADDR}`] = {
+                usd: ehexUsd,
+                usd_24h_change: fetchedPrices['hex']?.usd_24h_change,
+              };
+            }
+          } else {
+            // On-chain LP failed — fall back to CoinGecko for both HEX variants
+            const cgHex = fetchedPrices['hex']?.usd;
+            if (cgHex) {
+              fetchedPrices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39'] = { usd: cgHex, usd_24h_change: fetchedPrices['hex']?.usd_24h_change };
+              fetchedPrices['pulsechain:hex'] = { usd: cgHex };
+              fetchedPrices[`pulsechain:${EHEX_PULSECHAIN_ADDR}`] = { usd: cgHex, usd_24h_change: fetchedPrices['hex']?.usd_24h_change };
+            }
           }
 
           // pWETH/WPLS — token0=pWETH(18), token1=WPLS(18)
@@ -1418,21 +1448,25 @@ export default function App() {
                 assetMap[assetKey].value += balanceNum * price;
                 if (isWplsMerge) (assetMap[assetKey] as any).wrappedBalance = ((assetMap[assetKey] as any).wrappedBalance || 0) + balanceNum;
               } else {
-                // Logo: CoinGecko image → Trust Wallet (ETH/Base) → PulseX CDN (PulseChain)
+                // Logo priority: STATIC_LOGOS (highest) → CoinGecko/chain-CDN → PulseX CDN
                 // All CDN paths require EIP-55 checksummed addresses — use getAddress() to ensure that.
                 // For WPLS merge: use the PLS/WPLS logo (same icon on PulseX CDN).
                 const effectiveAddress = isWplsMerge ? 'native' : token.address;
-                const cgLogo = priceData?.image || fetchedPrices[token.coinGeckoId]?.image;
+                const addrLower = effectiveAddress === 'native' ? null : effectiveAddress.toLowerCase();
+                // STATIC_LOGOS always wins — prevents CoinGecko golden-coin from replacing hand-curated logos
+                const staticLogoOverride = addrLower ? STATIC_LOGOS[addrLower] : null;
+                // Only fetch CoinGecko image if there's no static override (don't let coinGeckoId image pollute bridged tokens)
+                const cgLogo = staticLogoOverride ? null : (priceData?.image ?? null);
                 const twChain = chainKey === 'ethereum' ? 'ethereum' : chainKey === 'base' ? 'base' : null;
                 let twLogo: string | null = null;
-                if (twChain && effectiveAddress !== 'native') {
+                if (!staticLogoOverride && twChain && effectiveAddress !== 'native') {
                   try { twLogo = `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${twChain}/assets/${getAddress(effectiveAddress)}/logo.png`; } catch { /* invalid address */ }
                 }
                 let pulsexLogo: string | null = null;
-                if (chainKey === 'pulsechain' && token.address !== 'native') {
+                if (!staticLogoOverride && chainKey === 'pulsechain' && token.address !== 'native') {
                   try { pulsexLogo = `https://tokens.app.pulsex.com/images/tokens/${getAddress(token.address)}.png`; } catch { /* invalid address */ }
                 }
-                const logoUrl = cgLogo || twLogo || pulsexLogo || null;
+                const logoUrl = staticLogoOverride || cgLogo || twLogo || pulsexLogo || null;
 
                 assetMap[assetKey] = {
                   id: assetKey,
@@ -2540,7 +2574,7 @@ export default function App() {
           }));
           // Also cache the DexScreener image into tokenLogos so overview cards pick it up
           const dsImg = top?.info?.imageUrl;
-          if (dsImg) setTokenLogos(prev => ({ ...prev, [addr.toLowerCase()]: dsImg }));
+          if (dsImg && !STATIC_LOGOS[addr.toLowerCase()]) setTokenLogos(prev => ({ ...prev, [addr.toLowerCase()]: dsImg }));
         } catch { /* ignore */ }
       }
     };
@@ -2588,9 +2622,9 @@ export default function App() {
             socials:        top?.info?.socials     || [],
           },
         }));
-        // Cache DexScreener image into tokenLogos (helps overview cards that still use STATIC_LOGOS)
+        // Cache DexScreener image into tokenLogos (helps overview cards)
         const dsImg = top?.info?.imageUrl;
-        if (dsImg && !isNativePls) setTokenLogos(prev => ({ ...prev, [addr.toLowerCase()]: dsImg }));
+        if (dsImg && !isNativePls && !STATIC_LOGOS[addr.toLowerCase()]) setTokenLogos(prev => ({ ...prev, [addr.toLowerCase()]: dsImg }));
       } catch { /* ignore */ }
       finally { setTokenCardModalLoading(false); }
     })();
@@ -2637,9 +2671,9 @@ export default function App() {
             socials:        top?.info?.socials     || [],
           },
         }));
-        // Cache DexScreener image into tokenLogos — overrides STATIC_LOGOS fallback with live CDN URL
+        // Cache DexScreener image into tokenLogos — but never overwrite STATIC_LOGOS entries
         const dsImg = top?.info?.imageUrl;
-        if (dsImg) setTokenLogos(prev => ({ ...prev, [addr.toLowerCase()]: dsImg }));
+        if (dsImg && !STATIC_LOGOS[addr.toLowerCase()]) setTokenLogos(prev => ({ ...prev, [addr.toLowerCase()]: dsImg }));
       } catch { /* ignore */ }
     }));
   }, [activeTab, currentAssets.length]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -2683,6 +2717,9 @@ export default function App() {
   };
 
   const getTokenLogoUrl = (asset: Asset): string => {
+    // 0. STATIC_LOGOS always wins — curated logos that must never be overwritten by any remote source
+    const addrKey0 = (asset as any).address?.toLowerCase?.() as string | undefined;
+    if (addrKey0 && STATIC_LOGOS[addrKey0]) return STATIC_LOGOS[addrKey0];
     // 1. Use any logo already fetched and stored on the asset (CoinGecko / DeFi Llama)
     if (asset.logoUrl) return asset.logoUrl;
     // 2. Well-known native / base tokens
@@ -2708,9 +2745,8 @@ export default function App() {
         try { return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${chainName}/assets/${getAddress(tokenConfig.address)}/logo.png`; } catch { /* invalid address */ }
       }
     }
-    // 5. Fall back to tokenLogos map (covers STATIC_LOGOS entries, e.g. pDAI DexScreener CDN)
-    const addrKey = (asset as any).address?.toLowerCase?.() as string | undefined;
-    if (addrKey && tokenLogos[addrKey]) return tokenLogos[addrKey];
+    // 5. Fall back to tokenLogos map (covers DexScreener CDN images cached during market-data fetch)
+    if (addrKey0 && tokenLogos[addrKey0]) return tokenLogos[addrKey0];
     return '';
   };
 
@@ -3084,9 +3120,9 @@ export default function App() {
                            <div style={{ height: 1, background: 'var(--border)', margin: '16px 0 14px' }} />
                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }} className="max-sm:grid-cols-1">
                              {[
-                               { label: 'Total Invested', val: `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Amount put into portfolio', color: t.text,
+                               { label: 'Total Invested', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? 'ETH + stablecoin inflows' : 'No ETH/stable inflows found', color: t.text,
                                  icon: <TrendingUp size={14} color={t.textMuted} />, iconBg: t.cardHigh, link: true },
-                               { label: 'Total P&L', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${summary.unifiedPnl >= 0 ? '+' : ''}${summary.totalValue > 0 ? ((summary.unifiedPnl / Math.max(summary.netInvestment, 1)) * 100).toFixed(1) : '0.0'}% vs invested`, color: summary.unifiedPnl >= 0 ? t.green : t.red,
+                               { label: 'Total P&L', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}${((summary.unifiedPnl / summary.netInvestment) * 100).toFixed(1)}% vs invested` : 'P&L % needs ETH/stable history', color: summary.unifiedPnl >= 0 ? t.green : t.red,
                                  icon: <ArrowUpRight size={14} color={summary.unifiedPnl >= 0 ? t.green : t.red} />, iconBg: summary.unifiedPnl >= 0 ? 'rgba(0,255,159,0.1)' : 'rgba(244,63,94,0.1)', link: false },
                              ].map(({ label, val, sub, color, icon, iconBg, link }) => (
                                <div key={label} className="stat-card" onClick={link ? () => setActiveTab('history') : undefined}
@@ -3325,7 +3361,7 @@ export default function App() {
                               tokenSearchFiltered.find(a => a.symbol.toUpperCase() === overviewTokenSearch.toUpperCase()) ||
                               (tokenSearchFiltered.length === 1 ? tokenSearchFiltered[0] : null);
                             const chipLogo = chipAsset
-                              ? ((chipAsset as any).logoUrl || tokenLogos[(chipAsset as any).address?.toLowerCase?.()])
+                              ? (STATIC_LOGOS[(chipAsset as any).address?.toLowerCase?.()] || (chipAsset as any).logoUrl || tokenLogos[(chipAsset as any).address?.toLowerCase?.()])
                               : null;
                             return (
                               <button className="overview-token-chip" onClick={() => setOverviewTokenSearch('')}>
@@ -3364,7 +3400,7 @@ export default function App() {
                             const accentColor = ASSET_COLORS[asset.symbol] || '#8b5cf6';
                             const sparkColor = pct >= 0 ? t.green : t.red;
                             const changeColor = pct >= 0 ? t.green : t.red;
-                            const logo = (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()];
+                            const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()] || (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()];
                             const sparkData = Array.from({ length: 12 }, (_, i) => ({
                               v: asset.value * (SPARKLINE_VARIANCE_SCALE + Math.sin(i * 0.8 + asset.value % 3) * SPARKLINE_SIN_AMPLITUDE + i * SPARKLINE_TREND_STEP),
                             }));
@@ -3878,7 +3914,8 @@ export default function App() {
                               : (asset.priceChange24h ?? asset.pnl24h ?? 0);
                             const share = ((asset.value / (summary.totalValue || 1)) * 100);
                             const addr = (asset as any).address;
-                            const logo = tokenLogos[(asset as any).address?.toLowerCase?.()]
+                            const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()]
+                              || tokenLogos[(asset as any).address?.toLowerCase?.()]
                               || (asset as any).logoUrl
                               || getTokenLogoUrl(asset);
                             const explUrl = explorerUrl(asset.chain, addr);
@@ -4322,8 +4359,8 @@ export default function App() {
             {/* Stats grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }} className="max-sm:grid-cols-2">
               {[
-                { label: 'Total Invested', val: `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'All-time capital invested', color: 'var(--fg)' },
-                { label: 'Total P&L', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'All-time P&L', color: summary.unifiedPnl >= 0 ? t.green : t.red },
+                { label: 'Total Invested', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? 'ETH + stablecoin inflows' : 'No ETH/stable inflows found', color: 'var(--fg)' },
+                { label: 'Total P&L', val: `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}${((summary.unifiedPnl / summary.netInvestment) * 100).toFixed(1)}% vs invested` : 'P&L % needs ETH/stable history', color: summary.unifiedPnl >= 0 ? t.green : t.red },
                 { label: 'Realized P&L', val: `${summary.realizedPnl >= 0 ? '+' : ''}$${Math.abs(summary.realizedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Closed trade profit', color: summary.realizedPnl >= 0 ? t.green : t.red },
                 { label: 'Unrealized P&L', val: `${summary.pnl24h >= 0 ? '+' : ''}$${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: "Today's portfolio change", color: summary.pnl24h >= 0 ? t.green : t.red },
               ].map(({ label, val, sub, color }) => (
@@ -5339,7 +5376,8 @@ export default function App() {
                             : (asset.priceChange24h ?? asset.pnl24h ?? 0);
                           const share = ((asset.value / (walletUsdValue || 1)) * 100);
                           const addr = (asset as any).address;
-                          const logo = (asset as any).logoUrl
+                          const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()]
+                            || (asset as any).logoUrl
                             || tokenLogos[(asset as any).address?.toLowerCase?.()]
                             || getTokenLogoUrl(asset);
                           const explUrl = explorerUrl(asset.chain, addr);
@@ -5938,7 +5976,7 @@ export default function App() {
           asset={pnlAsset}
           transactions={currentTransactions}
           prices={prices}
-          logoUrl={(pnlAsset as any).logoUrl || tokenLogos[(pnlAsset as any).address?.toLowerCase?.()] || getTokenLogoUrl(pnlAsset)}
+          logoUrl={STATIC_LOGOS[(pnlAsset as any).address?.toLowerCase?.()] || (pnlAsset as any).logoUrl || tokenLogos[(pnlAsset as any).address?.toLowerCase?.()] || getTokenLogoUrl(pnlAsset)}
           onClose={() => setPnlAsset(null)}
           walletAddress={selectedWalletAddr !== 'all' ? selectedWalletAddr : undefined}
         />
@@ -5949,7 +5987,7 @@ export default function App() {
         <TokenCardModal
           asset={tokenCardModal}
           portfolioTotal={summary.totalValue}
-          logoUrl={(tokenCardModal as any).logoUrl || tokenLogos[(tokenCardModal as any).address?.toLowerCase?.()] || getTokenLogoUrl(tokenCardModal)}
+          logoUrl={STATIC_LOGOS[(tokenCardModal as any).address?.toLowerCase?.()] || (tokenCardModal as any).logoUrl || tokenLogos[(tokenCardModal as any).address?.toLowerCase?.()] || getTokenLogoUrl(tokenCardModal)}
           marketData={tokenMarketData[tokenCardModal.id]}
           isLoadingMarketData={tokenCardModalLoading}
           theme={theme}

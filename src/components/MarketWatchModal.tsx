@@ -114,10 +114,16 @@ function parseWatchlistUrl(raw: string): ParsedWatchlistUrl | null {
 }
 
 // ── Resolve a DexScreener share-link ID → pair addresses ──────────────────────
-// DexScreener serves shared watchlist data through their internal real-time API.
-// We try multiple versioned endpoints and handle all known response shapes.
+// DexScreener's internal API (io.dexscreener.com) is CORS-blocked in browsers.
+// We try the public api.dexscreener.com endpoints first, then fall back.
+// On total failure we throw DS_SHARE_UNAVAILABLE so the caller can show a clean
+// "Open in DexScreener" button instead of a confusing error.
 async function fetchByShareId(shareId: string): Promise<{ chainId: string; pairAddr: string }[]> {
   const ENDPOINTS = [
+    // Public API — same domain as other DexScreener API calls, likely CORS-allowed
+    `https://api.dexscreener.com/watchlist/v1/share/${shareId}`,
+    `https://api.dexscreener.com/watchlist/v2/share/${shareId}`,
+    // Internal endpoints — may work in some environments (Vercel server-side, etc.)
     `https://io.dexscreener.com/dex/watchlist/v1/share/${shareId}`,
     `https://io.dexscreener.com/dex/watchlist/v2/share/${shareId}`,
     `https://io.dexscreener.com/dex/watchlist/share/${shareId}`,
@@ -129,27 +135,41 @@ async function fetchByShareId(shareId: string): Promise<{ chainId: string; pairA
       if (!res.ok) continue;
       const data = await res.json();
 
-      // Normalise various response shapes DexScreener might return
-      const rawItems: any[] =
+      // Normalise every known response shape DexScreener might return
+      let rawItems: any[] =
+        (Array.isArray(data)                    ? data                    : null) ??
         (Array.isArray(data.pairs)              ? data.pairs              : null) ??
         (Array.isArray(data.items)              ? data.items              : null) ??
+        (Array.isArray(data.watchlist)          ? data.watchlist          : null) ??
         (Array.isArray(data.data?.pairs)        ? data.data.pairs         : null) ??
         (Array.isArray(data.watchlist?.pairs)   ? data.watchlist.pairs    : null) ??
         (Array.isArray(data.watchlist?.items)   ? data.watchlist.items    : null) ??
         [];
 
-      const entries = rawItems
-        .map((item: any) => ({
-          chainId:  ((item.chainId ?? item.chain ?? 'pulsechain') as string).toLowerCase(),
-          pairAddr: ((item.pairAddress ?? item.address ?? '') as string).toLowerCase(),
-        }))
-        .filter(e => e.pairAddr.length > 4);
+      const entries: { chainId: string; pairAddr: string }[] = [];
+
+      for (const item of rawItems) {
+        if (typeof item === 'string') {
+          // "chainId_0xpairAddr" string format
+          const under = item.indexOf('_');
+          if (under > 0) {
+            entries.push({ chainId: item.slice(0, under).toLowerCase(), pairAddr: item.slice(under + 1).toLowerCase() });
+          }
+        } else if (typeof item === 'object' && item !== null) {
+          const chain = (item.chainId ?? item.chain ?? 'pulsechain').toString().toLowerCase();
+          // Some responses contain tokenAddress instead of pairAddress
+          const addr = (item.pairAddress ?? item.address ?? item.tokenAddress ?? '').toString().toLowerCase();
+          if (addr.length > 10) {
+            entries.push({ chainId: chain, pairAddr: addr });
+          }
+        }
+      }
 
       if (entries.length > 0) return entries;
     } catch { /* try next endpoint */ }
   }
 
-  // All endpoints exhausted — throw a typed sentinel so callers can show a helpful hint
+  // All endpoints exhausted
   throw Object.assign(new Error('ds-share-unavailable'), { code: 'DS_SHARE_UNAVAILABLE' });
 }
 
@@ -166,6 +186,7 @@ export function MarketWatchModal({ theme, onClose }: Props) {
   const [importUrl, setImportUrl]           = useState('');
   const [importLoading, setImportLoading]   = useState(false);
   const [importError, setImportError]       = useState<string | null>(null);
+  const [importShareId, setImportShareId]   = useState<string | null>(null); // original share ID for "Open in DexScreener"
   const [watchlistPairs, setWatchlistPairs] = useState<WatchPair[] | null>(null);
 
   const green = theme === 'dark' ? '#00FF9F' : '#059669';
@@ -267,35 +288,30 @@ export function MarketWatchModal({ theme, onClose }: Props) {
     };
   }
 
-  async function importWatchlist() {
-    const parsed = parseWatchlistUrl(importUrl);
+  // Core import logic — accepts the URL string directly so it can be called
+  // both by the button click handler and by the onPaste auto-submit.
+  const runImport = useCallback(async (urlStr: string) => {
+    const parsed = parseWatchlistUrl(urlStr);
     if (!parsed) {
-      setImportError(
-        'Unrecognised link. Paste a full DexScreener URL — either a share link ' +
-        '(dexscreener.com/watchlist/…) or a copy-pairs link (?watchlist=pulsechain_0x…).'
-      );
+      setImportError('Unrecognised link. Paste a full DexScreener URL like dexscreener.com/watchlist/…');
       return;
     }
 
     setImportLoading(true);
     setImportError(null);
+    setImportShareId(null);
 
     try {
       let entries: { chainId: string; pairAddr: string }[];
 
       // ── Resolve share-link ID to pair addresses ──────────────────────────
       if (parsed.type === 'shareId') {
+        setImportShareId(parsed.shareId);
         try {
           entries = await fetchByShareId(parsed.shareId);
         } catch (err: any) {
           if (err?.code === 'DS_SHARE_UNAVAILABLE') {
-            setImportError(
-              'Could not load this watchlist from DexScreener\'s server — their share-link ' +
-              'endpoint is not publicly accessible from the browser. ' +
-              '\n\nAlternative: on DexScreener open your watchlist → click the share icon → ' +
-              '"Copy link" (not "Share to social") — that generates a URL with all pair ' +
-              'addresses embedded that Pulseport can load directly.'
-            );
+            setImportError('DS_SHARE_UNAVAILABLE');
           } else {
             setImportError('Network error loading the watchlist. Please check your connection and try again.');
           }
@@ -311,19 +327,37 @@ export function MarketWatchModal({ theme, onClose }: Props) {
         if (!byChain.has(chainId)) byChain.set(chainId, []);
         byChain.get(chainId)!.push(pairAddr);
       }
-
       const raw: any[] = [];
       const failedChains: string[] = [];
       await Promise.all(
         Array.from(byChain.entries()).map(async ([chainId, addrs]) => {
           for (let i = 0; i < addrs.length; i += 30) {
-            const slice = addrs.slice(i, i + 30).join(',');
+            const sliceAddrs = addrs.slice(i, i + 30);
+            const sliceStr = sliceAddrs.join(',');
             try {
-              const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/${chainId}/${slice}`);
-              if (!res.ok) { failedChains.push(chainId); continue; }
-              const d = await res.json();
-              if (Array.isArray(d.pairs)) raw.push(...d.pairs);
-              else if (d.pair)            raw.push(d.pair);
+              // Per-slice heuristic: if every address in this slice is a 42-char 0x address
+              // it could be either a pair or token address. Try pairs API first; if it returns
+              // no results, fall back to the tokens API so token-address watchlists also work.
+              const looksLike0x = sliceAddrs.every(a => a.length === 42 && a.startsWith('0x'));
+              const pairsRes = await fetch(`https://api.dexscreener.com/latest/dex/pairs/${chainId}/${sliceStr}`);
+              if (pairsRes.ok) {
+                const d = await pairsRes.json();
+                const got = Array.isArray(d.pairs) ? d.pairs : (d.pair ? [d.pair] : []);
+                if (got.length > 0) { raw.push(...got); continue; }
+              }
+              // No pairs found — try token-address endpoint as fallback
+              if (looksLike0x) {
+                const tokRes = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${sliceStr}`);
+                if (tokRes.ok) {
+                  const d = await tokRes.json();
+                  if (Array.isArray(d.pairs)) raw.push(...d.pairs);
+                  else if (d.pair)            raw.push(d.pair);
+                } else {
+                  failedChains.push(chainId);
+                }
+              } else {
+                failedChains.push(chainId);
+              }
             } catch {
               failedChains.push(chainId);
             }
@@ -341,7 +375,7 @@ export function MarketWatchModal({ theme, onClose }: Props) {
       if (failedChains.length > 0) {
         const unique = [...new Set(failedChains)].join(', ');
         setImportError(`Loaded ${raw.length} pair${raw.length !== 1 ? 's' : ''} — some chains failed: ${unique}`);
-        setShowImport(true); // keep panel visible for partial-failure message
+        setShowImport(true);
       } else {
         setShowImport(false);
         setImportUrl('');
@@ -351,7 +385,10 @@ export function MarketWatchModal({ theme, onClose }: Props) {
     } finally {
       setImportLoading(false);
     }
-  }
+  }, []);  // no deps — uses only setters and module-level helpers
+
+  // Thin wrapper so the Load button can call without passing a URL argument
+  function importWatchlist() { runImport(importUrl.trim()); }
 
   function clearWatchlist() {
     setWatchlistPairs(null);
@@ -451,9 +488,25 @@ export function MarketWatchModal({ theme, onClose }: Props) {
             <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
               <input
                 className="mwm-import-input"
-                placeholder="https://dexscreener.com/watchlist/… or ?watchlist=pulsechain_0x…"
+                placeholder="https://dexscreener.com/watchlist/…"
                 value={importUrl}
-                onChange={e => { setImportUrl(e.target.value); setImportError(null); }}
+                onChange={e => {
+                  setImportUrl(e.target.value);
+                  setImportError(null);
+                  setImportShareId(null);
+                }}
+                onPaste={e => {
+                  const pasted = e.clipboardData.getData('text').trim();
+                  if (pasted.startsWith('http')) {
+                    // Set URL state and immediately run import with the pasted value
+                    // (can't rely on importUrl state since it hasn't updated yet)
+                    setImportUrl(pasted);
+                    setImportError(null);
+                    setImportShareId(null);
+                    e.preventDefault();
+                    runImport(pasted);
+                  }
+                }}
                 onKeyDown={e => { if (e.key === 'Enter') importWatchlist(); }}
                 autoFocus
               />
@@ -466,13 +519,33 @@ export function MarketWatchModal({ theme, onClose }: Props) {
                 {importLoading ? <span className="mwm-spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> : 'Load'}
               </button>
             </div>
-            {importError && (
-              <div style={{ fontSize: 11, color: red, marginTop: 6, lineHeight: 1.5, whiteSpace: 'pre-line' }}>{importError}</div>
+            {/* Error state */}
+            {importError && importError !== 'DS_SHARE_UNAVAILABLE' && (
+              <div style={{ fontSize: 11, color: red, marginTop: 6, lineHeight: 1.5 }}>{importError}</div>
             )}
-            <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 8, lineHeight: 1.6 }}>
-              <span style={{ fontWeight: 700, color: 'var(--fg-muted)' }}>Share-link:</span> DexScreener → Watchlist → Share icon → <strong style={{ color: 'var(--fg-muted)' }}>Copy link</strong> (URL starting with <code className="mwm-code">/watchlist/</code>)<br />
-              <span style={{ fontWeight: 700, color: 'var(--fg-muted)' }}>Export-link:</span> DexScreener → Watchlist → Export → <strong style={{ color: 'var(--fg-muted)' }}>Copy pairs link</strong> (URL contains <code className="mwm-code">?watchlist=</code>)
-            </div>
+            {importError === 'DS_SHARE_UNAVAILABLE' && (
+              <div style={{ marginTop: 8, padding: '10px 12px', background: 'rgba(244,63,94,0.08)', border: `1px solid rgba(244,63,94,0.2)`, borderRadius: 8 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: red, marginBottom: 6 }}>
+                  Can't load watchlist in the browser
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--fg-muted)', lineHeight: 1.6, marginBottom: 8 }}>
+                  DexScreener's share-link API is blocked from browsers (CORS). Open the watchlist directly on DexScreener instead.
+                </div>
+                <a
+                  href={`https://dexscreener.com/watchlist/${importShareId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: 'var(--accent)', textDecoration: 'none' }}
+                >
+                  <ExternalLink size={12} /> Open watchlist on DexScreener
+                </a>
+              </div>
+            )}
+            {!importError && (
+              <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 6, lineHeight: 1.5 }}>
+                Supports <code className="mwm-code">/watchlist/{'{'}id{'}'}</code> share links and <code className="mwm-code">?watchlist=</code> export links
+              </div>
+            )}
           </div>
         )}
 
