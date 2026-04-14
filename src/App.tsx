@@ -1343,7 +1343,10 @@ export default function App() {
                 
                 const assetName = symbol;
                 const isBridged = false;
-                const coinGeckoId = symbol.toLowerCase();
+                // Look up coinGeckoId from the hardcoded TOKENS list first (e.g. USDC → 'usd-coin',
+                // USDT → 'tether') instead of blindly lowercasing the symbol which gives wrong keys.
+                const knownEthToken = TOKENS['ethereum'].find((t: any) => t.address.toLowerCase() === contractAddr);
+                const coinGeckoId = knownEthToken?.coinGeckoId || symbol.toLowerCase();
 
                 const amount = Number(formatUnits(BigInt(tx.value), decimals));
                 const price = fetchedPrices[contractAddr]?.usd ||
@@ -2237,6 +2240,16 @@ export default function App() {
       return true;
     }).sort((a, b) => a.timestamp - b.timestamp); // oldest first
 
+    // Use the live prices state as a fallback for ETH valueUsd — this handles the case where
+    // transactions were fetched before CoinGecko prices loaded (valueUsd would be 0 at that point).
+    const ethPriceFallback = prices['ethereum']?.usd || 0;
+    // Helper: derive a consistent USD value for a tx (handles stale-zero valueUsd for ETH)
+    const txUsdValue = (tx: { asset: string; valueUsd: number; amount: number }) => {
+      if (tx.valueUsd > 0) return tx.valueUsd;
+      if (tx.asset.toUpperCase() === 'ETH') return tx.amount * ethPriceFallback;
+      return tx.amount; // stablecoins: amount ≈ USD
+    };
+
     // Bridge-echo deduplication:
     // If the same asset+amount (within 1%) is received on a different chain within 12h,
     // treat the later one as a bridge echo and exclude it from netInvestment.
@@ -2247,7 +2260,7 @@ export default function App() {
     qualifiedInflows.forEach((tx, i) => {
       if (deduped.has(tx.id)) return; // already marked as echo
       const cat = assetCategory(tx.asset);
-      const usd = tx.valueUsd || tx.amount;
+      const usd = txUsdValue(tx);
       for (let j = i + 1; j < qualifiedInflows.length; j++) {
         const other = qualifiedInflows[j];
         if (deduped.has(other.id)) continue;
@@ -2255,7 +2268,7 @@ export default function App() {
         if (other.timestamp - tx.timestamp > BRIDGE_WINDOW_MS) break; // time window exceeded
         const otherCat = assetCategory(other.asset);
         if (otherCat !== cat) continue;
-        const otherUsd = other.valueUsd || other.amount;
+        const otherUsd = txUsdValue(other);
         const maxVal = Math.max(usd, otherUsd, 1);
         if (Math.abs(usd - otherUsd) / maxVal <= BRIDGE_AMOUNT_TOLERANCE) {
           deduped.add(other.id); // mark later occurrence as bridge echo
@@ -2268,7 +2281,7 @@ export default function App() {
       const assetUpper = tx.asset.toUpperCase();
       const isEth = assetUpper === 'ETH';
       if (isStableAsset(tx.asset)) return acc + tx.amount;
-      if (isEth) return acc + (tx.valueUsd || 0);
+      if (isEth) return acc + txUsdValue(tx);
       return acc;
     }, 0);
 

@@ -201,7 +201,13 @@ export function StakesSection({
     const rate = s.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
     return sum + tS * rate;
   }, 0);
-  const dailyYieldUsd = dailyYieldHex * hexUsdPrice;
+  // USD yield uses per-chain prices — pHEX and eHEX trade at different prices
+  const dailyYieldUsd = activeStakes.reduce((sum, s) => {
+    const tS = s.tShares ?? Number(s.stakeShares ?? 0n) / 1e12;
+    const rate = s.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
+    const price = s.chain === 'pulsechain' ? phexUsdPrice : ehexUsdPrice;
+    return sum + tS * rate * price;
+  }, 0);
 
   const pHexStakes = stakes.filter(s => s.chain === 'pulsechain');
   const eHexStakes = stakes.filter(s => s.chain === 'ethereum');
