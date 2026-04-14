@@ -1653,13 +1653,12 @@ button, a {
   }
 }
 
-/* ── Mobile bottom nav: scrollable so all items are always reachable ────────── */
+/* ── Mobile bottom nav: all 7 tabs spread evenly; scroll on tiny screens ──────── */
 .mobile-bottom-nav-inner {
   display: flex;
   align-items: stretch;
   overflow-x: auto;
   overflow-y: hidden;
-  scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   width: 100%;
@@ -1668,14 +1667,9 @@ button, a {
   display: none;
 }
 .mobile-bottom-nav-inner > * {
-  flex: 0 0 auto;
-  min-width: 64px;
-  scroll-snap-align: start;
-}
-@media (max-width: 360px) {
-  .mobile-bottom-nav-inner > * {
-    min-width: 52px;
-  }
+  flex: 1 1 0;
+  min-width: 46px;
+  max-width: 80px;
 }
 
 /* ── PnLModal: bottom-sheet on small screens ────────────────────────────────── */
@@ -2114,7 +2108,7 @@ button, a {
 }
 .tcm-body::-webkit-scrollbar { width: 4px; }
 .tcm-body::-webkit-scrollbar-track { background: transparent; }
-.tcm-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+.tcm-body::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.25); border-radius: 2px; }
 
 .tcm-section {
   padding: 16px 20px;
@@ -2457,7 +2451,7 @@ button, a {
 }
 .mwm-body::-webkit-scrollbar { width: 4px; }
 .mwm-body::-webkit-scrollbar-track { background: transparent; }
-.mwm-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+.mwm-body::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.25); border-radius: 2px; }
 
 .mwm-state-center {
   display: flex;
@@ -2511,7 +2505,7 @@ button, a {
 .mwm-th-right { text-align: right !important; }
 
 .mwm-row {
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid var(--border);
   transition: background .12s;
   cursor: default;
 }
@@ -2603,6 +2597,32 @@ button, a {
   border-color: rgba(255,255,255,0.25);
 }
 
+/* ── Token icon circle — theme-aware ── */
+.mwm-token-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--bg-elevated);
+  border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--fg-muted);
+}
+
+/* ── Import code snippet — theme-aware ── */
+.mwm-code {
+  font-size: 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
 /* Light mode */
 [data-theme="light"] .mwm-panel {
   background: #ffffff;
@@ -2611,12 +2631,84 @@ button, a {
 }
 [data-theme="light"] .mwm-row:hover { background: rgba(0,0,0,0.02); }
 [data-theme="light"] .mwm-sort-btn.active { color: #fff; }
+[data-theme="light"] .mwm-icon-btn:hover { border-color: rgba(0,0,0,0.22); }
+[data-theme="light"] .mwm-close-btn:hover { border-color: rgba(0,0,0,0.22); background: var(--bg-elevated); }
 
 /* Mobile bottom sheet */
 @media (max-width: 639px) {
   .mwm-backdrop { align-items: flex-end; padding: 0; }
   .mwm-panel { max-width: 100%; border-radius: 22px 22px 0 0; max-height: 92dvh; }
   .mwm-toolbar { gap: 8px; }
+  .mwm-col-hide-xs { display: none !important; }
+}
+
+@media (max-width: 480px) {
+  .mwm-col-hide-sm { display: none !important; }
+}
+
+/* ── Import row ── */
+.mwm-import-row {
+  padding: 12px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+  flex-shrink: 0;
+  animation: modalFadeIn 0.15s ease;
+}
+
+.mwm-import-input {
+  flex: 1 1 0;
+  height: 36px;
+  padding: 0 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--fg);
+  font-size: 12px;
+  outline: none;
+  transition: border-color .14s;
+  min-width: 0;
+}
+.mwm-import-input::placeholder { color: var(--fg-subtle); }
+.mwm-import-input:focus { border-color: rgba(0,255,159,0.45); }
+
+/* ── Active icon button state ── */
+.mwm-icon-btn-active {
+  color: var(--accent) !important;
+  border-color: var(--accent-border) !important;
+  background: var(--accent-dim) !important;
+}
+
+/* ── Imported watchlist banner ── */
+.mwm-watchlist-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: rgba(0,255,159,0.07);
+  border-bottom: 1px solid rgba(0,255,159,0.18);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.mwm-banner-clear {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-border);
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .14s;
+}
+.mwm-banner-clear:hover {
+  background: rgba(0,255,159,0.18);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -2692,15 +2784,14 @@ button, a {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: 0 0 auto;
-  min-width: 56px;
+  flex: 1 1 0;
+  min-width: 46px;
   min-height: 56px;
-  padding: 6px 4px;
+  padding: 6px 2px;
   background: none;
   border: none;
   cursor: pointer;
   transition: color .15s;
-  scroll-snap-align: start;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -2717,11 +2808,12 @@ button, a {
 }
 .data-table-scroll::-webkit-scrollbar { height: 3px; }
 .data-table-scroll::-webkit-scrollbar-track { background: transparent; }
-.data-table-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+.data-table-scroll::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.25); border-radius: 2px; }
+[data-theme="light"] .data-table-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); }
 
 /* ─── Mobile: hide non-essential columns (nth-child) ─────────────────────
    Desktop table layout: 1=Token, 2=Price, 3=Change%, 4=Amount, 5=Value, 6=Share, 7=Actions
-   On mobile keep: Token (1), Change% (3), Value (5), Actions (7)
+   On ≤639px keep: Token (1), Change% (3), Value (5), Actions (7)
    Hide: Price (2), Amount (4), Share (6)
    ─────────────────────────────────────────────────────────────────────── */
 @media (max-width: 639px) {
@@ -2780,7 +2872,7 @@ button, a {
     scroll-snap-type: x proximity;
   }
   .stakes-table-wrapper::-webkit-scrollbar { height: 3px; }
-  .stakes-table-wrapper::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+  .stakes-table-wrapper::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.25); border-radius: 2px; }
 
   /* Larger touch targets on visible cells */
   .stakes-table td {
@@ -2829,4 +2921,129 @@ button, a {
     grid-template-columns: 1fr 1fr !important;
     gap: 8px !important;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE HISTORY FILTER ROW — prevent overflow, allow wrapping
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 639px) {
+  /* The header row that holds filter selects + CSV button */
+  .history-filter-row {
+    gap: 6px !important;
+    flex-wrap: wrap !important;
+  }
+
+  /* Filter <select> elements — make them compact on phones */
+  .history-filter-row select,
+  .history-filter-select {
+    font-size: 11px !important;
+    padding: 4px 6px !important;
+    max-width: 100px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIGHT MODE POLISH
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Skeleton loading shimmer works on light bg */
+[data-theme="light"] .skeleton {
+  background: linear-gradient(90deg, #e2e2ea 25%, #ececf4 50%, #e2e2ea 75%);
+  background-size: 200% 100%;
+}
+
+/* Market Watch modal in light mode */
+[data-theme="light"] .mwm-panel {
+  background: var(--bg-surface);
+  border-color: var(--border);
+}
+[data-theme="light"] .mwm-table tbody tr:hover {
+  background: var(--bg-elevated) !important;
+}
+[data-theme="light"] .mwm-rank {
+  color: var(--fg-subtle);
+}
+
+/* Token card modal on light bg */
+[data-theme="light"] .tcm-panel {
+  background: var(--bg-surface);
+}
+
+/* Overview cards on light bg — ensure inner stat box is visible */
+[data-theme="light"] .asset-card-premium {
+  background: var(--bg-surface);
+  border-color: var(--border);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+}
+[data-theme="light"] .asset-card-premium:hover {
+  box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+}
+
+/* acv2 footer stats on light */
+[data-theme="light"] .acv2-footer {
+  background: rgba(0,0,0,0.03);
+  border-top-color: rgba(0,0,0,0.08);
+}
+[data-theme="light"] .acv2-footer-label {
+  color: var(--fg-subtle);
+}
+[data-theme="light"] .acv2-footer-val {
+  color: var(--fg-muted);
+}
+
+/* Stakes table in light mode */
+[data-theme="light"] .stakes-table thead th {
+  background: var(--bg-elevated);
+  color: var(--fg-muted);
+}
+[data-theme="light"] .stakes-table tbody tr:hover {
+  background: var(--bg-elevated);
+}
+
+/* Chain toggle pills — active state visible in both modes */
+[data-theme="light"] .chain-toggle-btn.active {
+  background: var(--accent) !important;
+  color: #fff !important;
+  border-color: var(--accent) !important;
+}
+[data-theme="light"] .chain-toggle-btn {
+  color: var(--fg-muted);
+}
+
+/* Filter search input — border visible on light bg */
+[data-theme="light"] .filter-search-input {
+  border-color: rgba(0,0,0,0.15);
+  background: #fff;
+}
+[data-theme="light"] .filter-search-input:focus {
+  border-color: var(--accent);
+}
+
+/* Mobile bottom nav on light */
+[data-theme="light"] .mobile-bottom-nav {
+  background: rgba(244,244,248,0.96);
+  border-top-color: rgba(0,0,0,0.10);
+}
+
+/* mwm import row on light */
+[data-theme="light"] .mwm-import-row {
+  background: var(--bg-elevated);
+}
+[data-theme="light"] .mwm-import-input {
+  background: var(--bg-surface);
+  border-color: rgba(0,0,0,0.15);
+  color: var(--fg);
+}
+
+/* Watchlist banner on light */
+[data-theme="light"] .mwm-watchlist-banner {
+  background: rgba(0,122,77,0.07);
+  border-bottom-color: rgba(0,122,77,0.18);
+  color: var(--accent);
+}
+
+/* Scrollbar thumbs on light — ensure visibility */
+[data-theme="light"] .mwm-body::-webkit-scrollbar-thumb,
+[data-theme="light"] .tcm-body::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.18);
 }
