@@ -19,6 +19,42 @@ export const PHEX_YIELD_BI_DEN = 1_000_000n;
 export const EHEX_YIELD_BI_NUM = 170n;
 export const EHEX_YIELD_BI_DEN = 1_000_000n;
 
+// ── Static fallback descriptions for major PulseChain / Ethereum tokens ──
+// DexScreener's API rarely populates info.description for these tokens.
+// Used in TokenCardModal when the API returns an empty description field.
+export const FALLBACK_DESCRIPTIONS: Record<string, string> = {
+  // PLS / WPLS
+  '0xa1077a294dde1b09bb078844df40758a5d0f9a27':
+    'PulseChain (PLS) is the native gas token of PulseChain, an Ethereum hard-fork created by Richard Heart. It is used to pay for transactions and smart-contract execution on the PulseChain network. WPLS is the ERC-20 wrapped version of PLS used in DeFi protocols.',
+  // PLSX
+  '0x95b303987a60c71504d99aa1b13b4da07b0790ab':
+    'PulseX (PLSX) is the governance and fee-sharing token of PulseX DEX — the primary decentralised exchange on PulseChain. A portion of all trading fees is used to buy and burn PLSX, making it deflationary.',
+  // pHEX (PulseChain)
+  '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39':
+    'HEX is a certificate-of-deposit (CD) smart contract on PulseChain (pHEX) and Ethereum (eHEX). Users lock HEX for a chosen duration to earn interest paid in newly-minted HEX. Longer and larger stakes earn a higher share of the daily interest pool.',
+  // eHEX (Ethereum)
+  '0x57fde0a71132198bbec939b98976993d8d89d225':
+    'eHEX is the original Ethereum-native version of HEX. It operates identically to pHEX but on the Ethereum mainnet. Yield rates can differ from pHEX because of varying staking participation on each chain.',
+  // INC
+  '0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d':
+    'Incentive (INC) is the native token of the Incentive protocol on PulseChain. INC was distributed to HEX stakers and PulseChain participants as an incentive for early adoption of the PulseChain ecosystem.',
+  // PRVX
+  '0xf6f8db0aba00007681f8faf16a0fda1c9b030b11':
+    'PrivacyX (PRVX) is a privacy-focused token on PulseChain. It aims to provide enhanced transactional privacy features for PulseChain users while remaining interoperable with the broader PulseChain DeFi ecosystem.',
+  // pDAI
+  '0xefd766ccb38eaf1dfd701853bfce31359239f305':
+    'pDAI is a bridged version of the Ethereum DAI stablecoin on PulseChain. It is pegged to the US dollar and originated on Ethereum — on PulseChain it typically trades at a small discount to $1 due to bridge and liquidity dynamics.',
+  // pUSDC
+  '0x15d38573d2feeb82e7ad5187ab8c1d52810b1f07':
+    'pUSDC is a bridged version of USD Coin (USDC) on PulseChain. As a fiat-backed stablecoin, each USDC on Ethereum is redeemable 1-for-1 for one US dollar. On PulseChain its price is determined by bridge liquidity.',
+  // pWETH
+  '0x02dcdd04e3f455d838cd1249292c58f3b79e3c3c':
+    'pWETH is a bridged version of Wrapped Ether (WETH) from Ethereum on PulseChain. It represents Ethereum exposure on the PulseChain network and is commonly used as a trading pair base in PulseChain DeFi.',
+  // pWBTC
+  '0xb17d901469b9208b17d916112988a3fed19b5ca1':
+    'pWBTC is a bridged version of Wrapped Bitcoin (WBTC) from Ethereum on PulseChain. It tracks the price of Bitcoin and allows BTC exposure within PulseChain DeFi and smart contracts.',
+};
+
 export const HEX_ABI = [
   {
     "constant": true,

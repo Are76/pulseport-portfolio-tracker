@@ -59,7 +59,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
 import { createPublicClient, http, fallback, formatUnits, getAddress } from 'viem';
 import { cn } from './lib/utils';
-import { CHAINS, HEX_ABI, TOKENS, PULSEX_V2_PAIR_ABI, PULSEX_LP_PAIRS, PHEX_YIELD_PER_TSHARE, EHEX_YIELD_PER_TSHARE, PHEX_YIELD_BI_NUM, PHEX_YIELD_BI_DEN, EHEX_YIELD_BI_NUM, EHEX_YIELD_BI_DEN } from './constants';
+import { CHAINS, HEX_ABI, TOKENS, PULSEX_V2_PAIR_ABI, PULSEX_LP_PAIRS, PHEX_YIELD_PER_TSHARE, EHEX_YIELD_PER_TSHARE, PHEX_YIELD_BI_NUM, PHEX_YIELD_BI_DEN, EHEX_YIELD_BI_NUM, EHEX_YIELD_BI_DEN, FALLBACK_DESCRIPTIONS } from './constants';
 import type { Asset, Wallet, Chain, HexStake, LpPosition, FarmPosition, PortfolioSummary, HistoryPoint, Transaction } from './types';
 import { LiquidityOverviewStrip, LiquiditySection } from './components/LiquiditySection';
 import { TokenPnLCard } from './components/TokenPnLCard';
@@ -1559,7 +1559,7 @@ export default function App() {
                   const hexPrice   = fetchedPrices[hexPriceChainKey]?.usd || hexChainFallback || 0;
 
                   const valueUsd       = stakedHex * hexPrice;
-                  const totalValueUsd  = (Number(heartsBI + interestHearts) / 1e8) * hexPrice;
+                  const totalValueUsd  = (Number(heartsBI + fullYieldHearts) / 1e8) * hexPrice;
 
                   allStakes.push({
                     id: `${chainKey}-${address}-${stakeId}`,
@@ -2533,7 +2533,7 @@ export default function App() {
               priceChange6h:  top?.priceChange?.h6  ?? null,
               priceChange24h: top?.priceChange?.h24 ?? null,
               priceChange7d:  top?.priceChange?.d7  ?? null,
-              description:    top?.info?.description || null,
+              description:    top?.info?.description || FALLBACK_DESCRIPTIONS[addr?.toLowerCase()] || null,
               websites:       top?.info?.websites    || [],
               socials:        top?.info?.socials     || [],
             }
@@ -2583,7 +2583,7 @@ export default function App() {
             priceChange6h:  top?.priceChange?.h6  ?? null,
             priceChange24h: top?.priceChange?.h24 ?? null,
             priceChange7d:  top?.priceChange?.d7  ?? null,
-            description:    top?.info?.description || null,
+            description:    top?.info?.description || FALLBACK_DESCRIPTIONS[addr?.toLowerCase()] || null,
             websites:       top?.info?.websites    || [],
             socials:        top?.info?.socials     || [],
           },
@@ -2632,7 +2632,7 @@ export default function App() {
             priceChange6h:  top?.priceChange?.h6  ?? null,
             priceChange24h: top?.priceChange?.h24 ?? null,
             priceChange7d:  top?.priceChange?.d7  ?? null,
-            description:    top?.info?.description || null,
+            description:    top?.info?.description || FALLBACK_DESCRIPTIONS[addr?.toLowerCase()] || null,
             websites:       top?.info?.websites    || [],
             socials:        top?.info?.socials     || [],
           },
