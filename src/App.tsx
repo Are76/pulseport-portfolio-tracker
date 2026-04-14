@@ -471,7 +471,7 @@ export default function App() {
     const saved = localStorage.getItem('pulseport_manual_entries');
     return saved ? JSON.parse(saved) : {};
   });
-  const [prices, setPrices] = useState<Record<string, any>>({});
+  const [prices, setPrices] = useState<Record<string, any>>(() => tryReadCache<Record<string, any>>('pulseport_cache_prices') ?? {});
   const [etherscanApiKey, setEtherscanApiKey] = useState<string>(() => localStorage.getItem('pulseport_etherscan_key') || '');
   const [basescanApiKey, setBasescanApiKey] = useState<string>(() => localStorage.getItem('pulseport_basescan_key') || '');
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
@@ -614,6 +614,12 @@ export default function App() {
       try { localStorage.setItem('pulseport_cache_wallet_assets', JSON.stringify(walletAssets)); } catch {}
     }
   }, [walletAssets]);
+
+  useEffect(() => {
+    if (Object.keys(prices).length > 0) {
+      try { localStorage.setItem('pulseport_cache_prices', JSON.stringify(prices)); } catch {}
+    }
+  }, [prices]);
 
   useEffect(() => {
     localStorage.setItem('pulseport_hide_dust', JSON.stringify(hideDust));
@@ -2624,7 +2630,7 @@ export default function App() {
                   transition: 'all .15s', width: '100%', textAlign: 'left',
                   borderLeft: isActive ? `2px solid ${isDefi ? defiLine : 'var(--accent)'}` : '2px solid transparent',
                 }}
-                onMouseOver={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLElement).style.color = 'var(--fg)'; } }}
+                onMouseOver={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)'; (e.currentTarget as HTMLElement).style.color = 'var(--fg)'; } }}
                 onMouseOut={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--fg-muted)'; } }}
               >
                 <Icon size={16} />
@@ -2672,7 +2678,7 @@ export default function App() {
                         cursor: 'pointer', transition: 'all .12s',
                       }}
                       className="group flex items-center justify-between"
-                      onMouseOver={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'; }}
+                      onMouseOver={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)'; }}
                       onMouseOut={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
@@ -2821,9 +2827,9 @@ export default function App() {
           </div>
         </header>
 
-        {/* ── Wallet Selector Bar (all tabs) ── */}
+        {/* ── Wallet Selector Bar (sticky sub-header, all tabs) ── */}
         {wallets.length > 0 && (
-          <div style={{ padding: '8px 20px', borderBottom: '1px solid var(--border)' }}>
+          <div className="wallet-selector-subheader">
             <WalletSelector
               wallets={wallets.map(w => w.address)}
               activeWallet={activeWallet}
@@ -3410,8 +3416,8 @@ export default function App() {
                               {(['1w','1m','1y','all'] as const).map(p => (
                                 <button key={p} onClick={() => setPerfPeriod(p)}
                                   style={{ padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none', transition: 'all .12s',
-                                    background: perfPeriod === p ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
-                                    color: perfPeriod === p ? '#000' : 'var(--fg-muted)',
+                                    background: perfPeriod === p ? 'var(--accent)' : 'var(--bg-elevated)',
+                                    color: perfPeriod === p ? (theme === 'dark' ? '#000' : '#fff') : 'var(--fg-muted)',
                                     boxShadow: perfPeriod === p ? '0 0 10px rgba(0,255,159,0.25)' : 'none' }}>
                                   {periodLabel[p]}
                                 </button>
@@ -4001,7 +4007,7 @@ export default function App() {
                 </div>
                 {/* View as You toggle */}
                 <button onClick={() => setViewAsYou(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}>
-                  <div style={{ width: 36, height: 20, borderRadius: 10, background: viewAsYou ? 'var(--accent)' : 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.1)', transition: 'background .15s', position: 'relative', flexShrink: 0 }}>
+                  <div style={{ width: 36, height: 20, borderRadius: 10, background: viewAsYou ? 'var(--accent)' : 'var(--bg-elevated)', border: '1px solid var(--border)', transition: 'background .15s', position: 'relative', flexShrink: 0 }}>
                     <div style={{ position: 'absolute', top: 2, left: viewAsYou ? 18 : 2, width: 14, height: 14, borderRadius: '50%', background: 'white', transition: 'left .15s', boxShadow: '0 1px 3px rgba(0,0,0,0.4)' }} />
                   </div>
                   <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg-muted)', whiteSpace: 'nowrap' }}>
@@ -4010,7 +4016,7 @@ export default function App() {
                 </button>
                 {/* Compact toggle */}
                 <button onClick={() => setTxCompact(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}>
-                  <div style={{ width: 36, height: 20, borderRadius: 10, background: txCompact ? 'var(--accent)' : 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.1)', transition: 'background .15s', position: 'relative', flexShrink: 0 }}>
+                  <div style={{ width: 36, height: 20, borderRadius: 10, background: txCompact ? 'var(--accent)' : 'var(--bg-elevated)', border: '1px solid var(--border)', transition: 'background .15s', position: 'relative', flexShrink: 0 }}>
                     <div style={{ position: 'absolute', top: 2, left: txCompact ? 18 : 2, width: 14, height: 14, borderRadius: '50%', background: 'white', transition: 'left .15s', boxShadow: '0 1px 3px rgba(0,0,0,0.4)' }} />
                   </div>
                   <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg-muted)', whiteSpace: 'nowrap' }}>Compact</span>
