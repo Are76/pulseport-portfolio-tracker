@@ -63,6 +63,7 @@ import type { Asset, Wallet, Chain, HexStake, LpPosition, FarmPosition, Portfoli
 import { LiquidityOverviewStrip, LiquiditySection } from './components/LiquiditySection';
 import { TokenPnLCard } from './components/TokenPnLCard';
 import { PnLModal } from './components/PnLModal';
+import { ProfitPlannerModal } from './components/ProfitPlannerModal';
 import { StakesSection } from './components/StakesSection';
 
 const ERC20_ABI = [
@@ -482,6 +483,7 @@ export default function App() {
   const [expandedAssetIds, setExpandedAssetIds] = useState<Set<string>>(new Set());
   const [priceDisplayCurrency, setPriceDisplayCurrency] = useState<'usd' | 'pls'>('usd');
   const [pnlAsset, setPnlAsset] = useState<Asset | null>(null);
+  const [profitPlannerOpen, setProfitPlannerOpen] = useState(false);
   const [perfPeriod, setPerfPeriod] = useState<'1w' | '1m' | '1y' | 'all'>('all');
   const fmtLabel = (ts: number) => {
     if (perfPeriod === '1w') return format(ts, 'EEE d');
@@ -2886,6 +2888,24 @@ export default function App() {
                                </div>
                              ))}
                            </div>
+                         </div>
+                         {/* Profit Planner button */}
+                         <div style={{ marginTop: 14 }}>
+                           <button
+                             onClick={() => setProfitPlannerOpen(true)}
+                             style={{
+                               display: 'inline-flex', alignItems: 'center', gap: 8,
+                               padding: '10px 20px', borderRadius: 12,
+                               background: 'linear-gradient(135deg, rgba(0,255,159,0.15) 0%, rgba(99,70,255,0.10) 100%)',
+                               border: '1px solid rgba(0,255,159,0.30)',
+                               color: 'var(--accent)', fontSize: 13, fontWeight: 700,
+                               cursor: 'pointer', transition: 'all .15s',
+                               boxShadow: '0 0 20px rgba(0,255,159,0.08)',
+                             }}
+                           >
+                             <TrendingUp size={15} />
+                             Profit Planner
+                           </button>
                          </div>
                          {/* Right: Live Prices | Portfolio Allocation — side by side */}
                          <div className="hero-right-cols">
@@ -5619,6 +5639,16 @@ export default function App() {
           logoUrl={(pnlAsset as any).logoUrl || tokenLogos[(pnlAsset as any).address?.toLowerCase?.()] || getTokenLogoUrl(pnlAsset)}
           onClose={() => setPnlAsset(null)}
           walletAddress={selectedWalletAddr !== 'all' ? selectedWalletAddr : undefined}
+        />
+      )}
+
+      {/* ── Profit Planner Modal ── */}
+      {profitPlannerOpen && (
+        <ProfitPlannerModal
+          open={profitPlannerOpen}
+          onClose={() => setProfitPlannerOpen(false)}
+          assets={currentAssets}
+          totalValue={summary?.totalValue ?? 0}
         />
       )}
 
