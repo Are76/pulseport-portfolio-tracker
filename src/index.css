@@ -3168,6 +3168,38 @@ button, a {
   }
 }
 
+/* ── PLS Flow (Tracker) tab ───────────────────────────────────────────────── */
+@media (max-width: 639px) {
+  /* Shrink row padding and font on mobile */
+  .pls-movement-row {
+    padding: 10px 12px !important;
+    gap: 8px !important;
+  }
+  /* Expanded detail grid: allow smaller minimum column so 2 columns fit on phone */
+  .pls-movement-detail-grid {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)) !important;
+    gap: 8px !important;
+  }
+  /* Charts: single column on mobile */
+  .pls-charts-row {
+    display: block !important;
+  }
+  .pls-charts-row > * + * {
+    margin-top: 12px;
+  }
+}
+
+/* ── Transaction history chain label on mobile ────────────────────────────── */
+@media (max-width: 639px) {
+  /* Show chain name text badge instead of just a dot on mobile */
+  .tx-chain-dot {
+    display: none;
+  }
+  .tx-chain-label {
+    display: inline-block !important;
+  }
+}
+
 /* ── Light mode contrast & spacing tweaks ─────────────────────────────────── */
 [data-theme="light"] .stat-card {
   background: #ffffff;
