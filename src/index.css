@@ -3081,6 +3081,11 @@ button, a {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
+  /* Override the JS-set minWidth so the table fits within phone screens
+     after col-hide-mobile removes 5 of 10 columns (leaving ~5 visible). */
+  .stakes-table {
+    min-width: 320px !important;
+  }
   .stakes-table th,
   .stakes-table td {
     white-space: nowrap;
