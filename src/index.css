@@ -1659,7 +1659,7 @@ button, a {
   align-items: stretch;
   overflow-x: auto;
   overflow-y: hidden;
-  scroll-snap-type: x proximity;
+  scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   width: 100%;
@@ -1668,13 +1668,13 @@ button, a {
   display: none;
 }
 .mobile-bottom-nav-inner > * {
-  flex: 0 0 auto;
-  min-width: 64px;
+  flex: 1 0 auto;
+  min-width: 56px;
   scroll-snap-align: start;
 }
 @media (max-width: 360px) {
   .mobile-bottom-nav-inner > * {
-    min-width: 52px;
+    min-width: 48px;
   }
 }
 

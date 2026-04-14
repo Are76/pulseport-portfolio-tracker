@@ -1427,7 +1427,10 @@ export default function App() {
                 if (chainKey === 'pulsechain' && token.address !== 'native') {
                   try { pulsexLogo = `https://tokens.app.pulsex.com/images/tokens/${getAddress(token.address)}.png`; } catch { /* invalid address */ }
                 }
-                const logoUrl = cgLogo || twLogo || pulsexLogo || null;
+                // STATIC_LOGOS takes priority — prevents CoinGecko/PulseX from overwriting
+                // known-correct logos (e.g. pDAI which maps to the regular DAI icon otherwise).
+                const staticLogo = STATIC_LOGOS[effectiveAddress.toLowerCase()] ?? null;
+                const logoUrl = staticLogo || cgLogo || twLogo || pulsexLogo || null;
 
                 assetMap[assetKey] = {
                   id: assetKey,
@@ -2536,6 +2539,9 @@ export default function App() {
   };
 
   const getTokenLogoUrl = (asset: Asset): string => {
+    // 0. Hard-coded overrides always win — prevents stale cached / wrong CoinGecko logos
+    const addrKey = ((asset as any).address as string | undefined)?.toLowerCase();
+    if (addrKey && tokenLogos[addrKey]) return tokenLogos[addrKey];
     // 1. Use any logo already fetched and stored on the asset (CoinGecko / DeFi Llama)
     if (asset.logoUrl) return asset.logoUrl;
     // 2. Well-known native / base tokens
@@ -5516,9 +5522,12 @@ export default function App() {
         <div className="mobile-bottom-nav-inner">
         {([
           { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-          { id: 'assets',   label: 'Assets',   icon: WalletIcon },
-          { id: 'stakes',   label: 'Stakes',   icon: Layers },
-          { id: 'wallets',  label: 'Wallets',  icon: User },
+          { id: 'assets',   label: 'Assets',   icon: Coins },
+          { id: 'stakes',   label: 'Stakes',   icon: Lock },
+          { id: 'defi',     label: 'DeFi',     icon: Droplets },
+          { id: 'history',  label: 'History',  icon: History },
+          { id: 'tracker',  label: 'PLS Flow', icon: ArrowLeftRight },
+          { id: 'wallets',  label: 'Wallets',  icon: WalletIcon },
         ] as const).map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setActiveTab(id)}
             className="flex-1 flex flex-col items-center justify-center"
