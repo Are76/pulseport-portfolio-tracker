@@ -292,7 +292,7 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
         <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>
           <span style={{ color: 'var(--fg)', fontWeight: 700 }}>${fmtK(totalUsd)}</span>
           {' · '}<span style={{ color: '#fb923c' }}>{fmtK(totalHex)} HEX</span>
-          {' · '}<span style={{ color: '#00FF9F' }}>{fmtK(totalTShares)} T-Shares</span>
+          {' · '}<span style={{ color: 'var(--accent)' }}>{fmtK(totalTShares)} T-Shares</span>
         </div>
       </div>
       <ResponsiveContainer width="100%" height={240}>
@@ -451,7 +451,7 @@ export default function App() {
   const isFetchingRef = useRef(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'assets' | 'stakes' | 'history' | 'tracker' | 'wallets' | 'defi'>('overview');
   const [selectedWalletAddr, setSelectedWalletAddr] = useState<string>('all');
-  const [walletAssets, setWalletAssets] = useState<Record<string, Asset[]>>({});
+  const [walletAssets, setWalletAssets] = useState<Record<string, Asset[]>>(() => tryReadCache<Record<string, Asset[]>>('pulseport_cache_wallet_assets') ?? {});
   const [walletChainFilter, setWalletChainFilter] = useState<'all' | 'pulsechain' | 'ethereum' | 'base'>('all');
   const [overviewChainFilter, setOverviewChainFilter] = useState<'all' | 'pulsechain' | 'ethereum' | 'base'>('all');
   const [overviewTokenSearch, setOverviewTokenSearch] = useState<string>('');
@@ -608,6 +608,12 @@ export default function App() {
       try { localStorage.setItem('pulseport_cache_txs', JSON.stringify(transactions.slice(0, 200))); } catch {}
     }
   }, [transactions]);
+
+  useEffect(() => {
+    if (Object.keys(walletAssets).length > 0) {
+      try { localStorage.setItem('pulseport_cache_wallet_assets', JSON.stringify(walletAssets)); } catch {}
+    }
+  }, [walletAssets]);
 
   useEffect(() => {
     localStorage.setItem('pulseport_hide_dust', JSON.stringify(hideDust));
@@ -3027,8 +3033,8 @@ export default function App() {
                                      {(['1h','24h','7d'] as const).map(id => (
                                        <button key={id} onClick={() => setPriceChangePeriod(id)}
                                          style={{ padding: '2px 8px', borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
-                                           background: priceChangePeriod === id ? '#00FF9F' : t.cardHigh,
-                                           color: priceChangePeriod === id ? '#000' : t.textMuted }}>
+                                           background: priceChangePeriod === id ? 'var(--accent)' : t.cardHigh,
+                                           color: priceChangePeriod === id ? (theme === 'dark' ? '#000' : '#fff') : t.textMuted }}>
                                          {id.toUpperCase()}
                                        </button>
                                      ))}
@@ -3195,7 +3201,7 @@ export default function App() {
                             const pct = asset.priceChange24h ?? asset.pnl24h ?? 0;
                             const share = ((asset.value / (summary.totalValue || 1)) * 100);
                             const accentColor = ASSET_COLORS[asset.symbol] || '#8b5cf6';
-                            const sparkColor = pct >= 0 ? '#00FF9F' : '#f43f5e';
+                            const sparkColor = pct >= 0 ? t.green : t.red;
                             const logo = (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()];
                             const sparkData = Array.from({ length: 12 }, (_, i) => ({
                               v: asset.value * (SPARKLINE_VARIANCE_SCALE + Math.sin(i * 0.8 + asset.value % 3) * SPARKLINE_SIN_AMPLITUDE + i * SPARKLINE_TREND_STEP),
@@ -3428,8 +3434,8 @@ export default function App() {
                               <AreaChart data={chartPoints} margin={{ top: 4, right: 18, left: 0, bottom: 0 }}>
                                 <defs>
                                   <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#00FF9F" stopOpacity={0.22}/>
-                                    <stop offset="95%" stopColor="#00FF9F" stopOpacity={0}/>
+                                    <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.22}/>
+                                    <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
                                   </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#1e1e1e' : '#e8e8e8'} vertical={false} />
@@ -3440,7 +3446,7 @@ export default function App() {
                                   formatter={(v: any) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Portfolio Value']}
                                   labelStyle={{ color: t.textSecondary, marginBottom: 4 }}
                                 />
-                                <Area type="monotone" dataKey="value" stroke="#00FF9F" fillOpacity={1} fill="url(#colorValue)" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: '#00FF9F', strokeWidth: 0 }} />
+                                <Area type="monotone" dataKey="value" stroke="var(--accent)" fillOpacity={1} fill="url(#colorValue)" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: 'var(--accent)', strokeWidth: 0 }} />
                               </AreaChart>
                             </ResponsiveContainer>
                           </div>
@@ -3485,8 +3491,8 @@ export default function App() {
                     {(['all', 'pulsechain', 'ethereum', 'base'] as const).map(c => (
                       <button key={c} onClick={() => setWalletChainFilter(c)}
                         style={{ padding: '5px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: '1px solid', transition: 'all .12s',
-                          background: walletChainFilter === c ? '#fff' : 'transparent',
-                          color: walletChainFilter === c ? '#000' : '#aaa',
+                          background: walletChainFilter === c ? 'var(--fg)' : 'transparent',
+                          color: walletChainFilter === c ? 'var(--bg-surface)' : 'var(--fg-muted)',
                           borderColor: walletChainFilter === c ? 'var(--fg)' : 'var(--border)' }}>
                         {c === 'all' ? 'All' : c === 'pulsechain' ? 'PulseChain' : c === 'ethereum' ? 'Ethereum' : 'Base'}
                       </button>
@@ -3505,15 +3511,15 @@ export default function App() {
                       {([['1h','1H'],['6h','6H'],['24h','24H'],['7d','7D']] as const).map(([p, label]) => (
                         <button key={p} onClick={() => setPriceChangePeriod(p)}
                           style={{ padding: '4px 10px', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all .12s', border: 'none',
-                            background: priceChangePeriod === p ? '#00FF9F' : 'transparent',
-                            color: priceChangePeriod === p ? '#000' : t.textMuted }}>
+                            background: priceChangePeriod === p ? 'var(--accent)' : 'transparent',
+                            color: priceChangePeriod === p ? (theme === 'dark' ? '#000' : '#fff') : t.textMuted }}>
                           {label}
                         </button>
                       ))}
                     </div>
                     <button onClick={() => setHideDust(!hideDust)}
                       style={{ padding: '6px 14px', borderRadius: 8, border: `1px solid ${t.border}`,
-                        background: hideDust ? '#00FF9F' : t.cardHigh, color: hideDust ? '#000' : t.textSecondary,
+                        background: hideDust ? 'var(--accent)' : t.cardHigh, color: hideDust ? (theme === 'dark' ? '#000' : '#fff') : t.textSecondary,
                         fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all .12s' }}>
                       Hide Dust
                     </button>
@@ -3531,7 +3537,7 @@ export default function App() {
                         transition: 'all .12s', display: 'flex', alignItems: 'center', gap: 5 }}>
                       {isScanning ? '⟳ Scanning…' : 'Scan'}
                       {scanResult !== null && !isScanning && (
-                        <span style={{ background: scanResult > 0 ? '#f739ff33' : '#00FF9F33', color: scanResult > 0 ? '#f739ff' : '#00FF9F',
+                        <span style={{ background: scanResult > 0 ? '#f739ff33' : 'var(--accent-dim)', color: scanResult > 0 ? '#f739ff' : t.green,
                           borderRadius: 4, padding: '1px 5px', fontSize: 13 }}>
                           {scanResult > 0 ? `+${scanResult} spam` : '✓ clean'}
                         </span>
@@ -3574,7 +3580,7 @@ export default function App() {
                               else { setAssetSortField(field as any); setAssetSortDir('desc'); }
                             } : undefined}
                               style={{ padding: '11px 16px', fontSize: 13, fontWeight: 600,
-                                color: assetSortField === field ? '#00FF9F' : t.textSecondary,
+                                color: assetSortField === field ? t.green : t.textSecondary,
                                 textTransform: 'uppercase', letterSpacing: '.5px',
                                 textAlign: align as any, whiteSpace: 'nowrap', background: t.card,
                                 cursor: field ? 'pointer' : 'default', userSelect: 'none' }}>
@@ -3660,7 +3666,7 @@ export default function App() {
                                           ? <a href={explUrl} target="_blank" rel="noopener noreferrer"
                                               style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)', textDecoration: 'none' }}
                                               onClick={e => e.stopPropagation()}
-                                              onMouseOver={e => (e.currentTarget.style.color = '#00FF9F')}
+                                              onMouseOver={e => (e.currentTarget.style.color = 'var(--accent)')}
                                               onMouseOut={e => (e.currentTarget.style.color = 'var(--fg)')}>
                                               {asset.symbol}
                                             </a>
@@ -3715,7 +3721,7 @@ export default function App() {
                                 <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap', minWidth: 90 }}>
                                   <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 3 }}>{share.toFixed(1)}%</div>
                                   <div style={{ height: 2, background: 'var(--border)', borderRadius: 1 }}>
-                                    <div style={{ height: '100%', width: `${Math.min(share, 100)}%`, background: '#00FF9F', borderRadius: 1 }} />
+                                    <div style={{ height: '100%', width: `${Math.min(share, 100)}%`, background: 'var(--accent)', borderRadius: 1 }} />
                                   </div>
                                 </td>
                                 <td style={{ padding: '11px 12px', textAlign: 'right' }}>
@@ -3736,7 +3742,7 @@ export default function App() {
                                       title="Hide">
                                       <Trash2 size={13} />
                                     </button>
-                                    <span style={{ color: isExpanded ? '#00FF9F' : '#444', padding: 4, display: 'inline-flex', transition: 'color .12s' }}>
+                                    <span style={{ color: isExpanded ? t.green : 'var(--fg-subtle)', padding: 4, display: 'inline-flex', transition: 'color .12s' }}>
                                       {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                                     </span>
                                   </div>
@@ -3804,7 +3810,7 @@ export default function App() {
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                                   <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Liquidity</span>
-                                                  <span style={{ fontSize: 13, fontWeight: 700, color: '#00FF9F' }}>{md ? fmtNum(md.liquidity) : <span style={{ color: 'var(--fg-subtle)' }}>—</span>}</span>
+                                                  <span style={{ fontSize: 13, fontWeight: 700, color: t.green }}>{md ? fmtNum(md.liquidity) : <span style={{ color: 'var(--fg-subtle)' }}>—</span>}</span>
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                                   <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>24H Volume</span>
@@ -3912,7 +3918,7 @@ export default function App() {
                                           )}
                                           {explUrl && (
                                             <a href={explUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-                                              style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#00FF9F', textDecoration: 'none', transition: 'opacity .12s' }}
+                                              style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--accent)', textDecoration: 'none', transition: 'opacity .12s' }}
                                               onMouseOver={e => (e.currentTarget.style.opacity = '0.75')}
                                               onMouseOut={e => (e.currentTarget.style.opacity = '1')}>
                                               <ExternalLink size={11} /> Explorer
@@ -3995,16 +4001,16 @@ export default function App() {
                 </div>
                 {/* View as You toggle */}
                 <button onClick={() => setViewAsYou(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}>
-                  <div style={{ width: 36, height: 20, borderRadius: 10, background: viewAsYou ? '#00FF9F' : 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.1)', transition: 'background .15s', position: 'relative', flexShrink: 0 }}>
+                  <div style={{ width: 36, height: 20, borderRadius: 10, background: viewAsYou ? 'var(--accent)' : 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.1)', transition: 'background .15s', position: 'relative', flexShrink: 0 }}>
                     <div style={{ position: 'absolute', top: 2, left: viewAsYou ? 18 : 2, width: 14, height: 14, borderRadius: '50%', background: 'white', transition: 'left .15s', boxShadow: '0 1px 3px rgba(0,0,0,0.4)' }} />
                   </div>
                   <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg-muted)', whiteSpace: 'nowrap' }}>
-                    View as <span style={{ color: '#00FF9F' }}>You</span>
+                    View as <span style={{ color: 'var(--accent)' }}>You</span>
                   </span>
                 </button>
                 {/* Compact toggle */}
                 <button onClick={() => setTxCompact(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}>
-                  <div style={{ width: 36, height: 20, borderRadius: 10, background: txCompact ? '#00FF9F' : 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.1)', transition: 'background .15s', position: 'relative', flexShrink: 0 }}>
+                  <div style={{ width: 36, height: 20, borderRadius: 10, background: txCompact ? 'var(--accent)' : 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.1)', transition: 'background .15s', position: 'relative', flexShrink: 0 }}>
                     <div style={{ position: 'absolute', top: 2, left: txCompact ? 18 : 2, width: 14, height: 14, borderRadius: '50%', background: 'white', transition: 'left .15s', boxShadow: '0 1px 3px rgba(0,0,0,0.4)' }} />
                   </div>
                   <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg-muted)', whiteSpace: 'nowrap' }}>Compact</span>
@@ -4115,12 +4121,12 @@ export default function App() {
                   <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 4px 10px 0' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, paddingLeft: 18, paddingRight: 18 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.6px' }}>Portfolio Performance</div>
-                      <div style={{ display: 'flex', gap: 2, background: 'var(--bg-elevated)', border: '1px solid #252525', borderRadius: 8, padding: 3 }}>
+                      <div style={{ display: 'flex', gap: 2, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, padding: 3 }}>
                         {(['1w','1m','1y','all'] as const).map(p => (
                           <button key={p} onClick={() => setPerfPeriod(p)}
                             style={{ padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
-                              background: perfPeriod === p ? '#00FF9F' : 'transparent',
-                              color: perfPeriod === p ? '#000' : '#555' }}>
+                              background: perfPeriod === p ? 'var(--accent)' : 'transparent',
+                              color: perfPeriod === p ? (theme === 'dark' ? '#000' : '#fff') : 'var(--fg-subtle)' }}>
                             {histPeriodLabel[p]}
                           </button>
                         ))}
@@ -4130,8 +4136,8 @@ export default function App() {
                       <AreaChart data={histChartPoints} margin={{ top: 4, right: 18, left: 0, bottom: 0 }}>
                         <defs>
                           <linearGradient id="histColorValue" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#00FF9F" stopOpacity={0.2}/>
-                            <stop offset="95%" stopColor="#00FF9F" stopOpacity={0}/>
+                            <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.2}/>
+                            <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
@@ -4140,7 +4146,7 @@ export default function App() {
                         <RechartsTooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13 }}
                           formatter={(v: any) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Portfolio Value']}
                           labelStyle={{ color: '#7c8798', marginBottom: 4 }} />
-                        <Area type="monotone" dataKey="value" stroke="#00FF9F" fillOpacity={1} fill="url(#histColorValue)" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: '#00FF9F', strokeWidth: 0 }} />
+                        <Area type="monotone" dataKey="value" stroke="var(--accent)" fillOpacity={1} fill="url(#histColorValue)" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: 'var(--accent)', strokeWidth: 0 }} />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
@@ -4324,8 +4330,8 @@ export default function App() {
               <div style={{ padding: '14px 18px', borderBottom: isCollapsed('history-txs') ? 'none' : `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ fontSize: 14, fontWeight: 600, color: t.text }}>Recent Activity</span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, background: 'rgba(0,255,159,.1)', color: '#00FF9F', border: '1px solid rgba(0,255,159,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
-                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#00FF9F', display: 'inline-block', animation: 'pulse 2s infinite' }} />
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent-border)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
+                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', display: 'inline-block', animation: 'pulse 2s infinite' }} />
                     Live
                   </span>
                 </div>
@@ -4447,7 +4453,7 @@ export default function App() {
                           {!txCompact && (
                             <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
                               background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
-                              color: tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444', flexShrink: 0 }}>
+                              color: tx.type === 'transfer_in' ? t.green : tx.type === 'swap' ? '#8b5cf6' : t.red, flexShrink: 0 }}>
                               {tx.type === 'transfer_in' ? <ArrowDownLeft size={13} /> : tx.type === 'swap' ? <RefreshCcw size={13} /> : <ArrowUpRight size={13} />}
                             </div>
                           )}
@@ -4456,7 +4462,7 @@ export default function App() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: txCompact ? 0 : 1 }}>
                               <span style={{ fontSize: txCompact ? 11 : 12, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
                                 background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
-                                color: tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444' }}>
+                                color: tx.type === 'transfer_in' ? t.green : tx.type === 'swap' ? '#8b5cf6' : t.red }}>
                                 {tx.type === 'swap'
                                   ? (viewAsYou ? `Swap · ${displayAddr(tx.from)} → ${displayAddr(tx.to)}` : 'Swap')
                                   : tx.type === 'transfer_in' ? 'Received' : 'Sent'}
@@ -4534,9 +4540,9 @@ export default function App() {
                                 <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 10, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                                   <span>
                                     Swap from{' '}
-                                    <strong style={{ color: isOwn(tx.from) ? '#00FF9F' : 'var(--fg)' }}>{displayAddr(tx.from)}</strong>
+                                    <strong style={{ color: isOwn(tx.from) ? t.green : 'var(--fg)' }}>{displayAddr(tx.from)}</strong>
                                     {' '}to{' '}
-                                    <strong style={{ color: isOwn(tx.to) ? '#00FF9F' : 'var(--fg)' }}>{displayAddr(tx.to)}</strong>
+                                    <strong style={{ color: isOwn(tx.to) ? t.green : 'var(--fg)' }}>{displayAddr(tx.to)}</strong>
                                   </span>
                                   {tx.fee != null && tx.fee > 0 && (
                                     <span style={{ color: 'var(--fg-subtle)', fontSize: 11 }}>
@@ -4665,8 +4671,8 @@ export default function App() {
                               {/* Context line */}
                               <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 10 }}>
                                 {tx.type === 'transfer_in'
-                                  ? <>Received from <strong style={{ color: isOwn(tx.from) ? '#00FF9F' : 'var(--fg)' }}>{displayAddr(tx.from)}</strong></>
-                                  : <>Sent to <strong style={{ color: isOwn(tx.to) ? '#00FF9F' : 'var(--fg)' }}>{displayAddr(tx.to)}</strong></>}
+                                  ? <>Received from <strong style={{ color: isOwn(tx.from) ? t.green : 'var(--fg)' }}>{displayAddr(tx.from)}</strong></>
+                                  : <>Sent to <strong style={{ color: isOwn(tx.to) ? t.green : 'var(--fg)' }}>{displayAddr(tx.to)}</strong></>}
                                 <span style={{ color: 'var(--fg-subtle)', fontSize: 11, marginLeft: 10 }}>{format(tx.timestamp, 'MMM d, yyyy HH:mm')}</span>
                               </div>
                               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
@@ -4821,14 +4827,14 @@ export default function App() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                               <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
-                                color: tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444', flexShrink: 0 }}>
+                                color: tx.type === 'transfer_in' ? t.green : tx.type === 'swap' ? '#8b5cf6' : t.red, flexShrink: 0 }}>
                                 {tx.type === 'transfer_in' ? <ArrowDownLeft size={13} /> : tx.type === 'swap' ? <RefreshCcw size={13} /> : <ArrowUpRight size={13} />}
                               </div>
                               <div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 1 }}>
                                   <span style={{ fontSize: 12, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
                                     background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
-                                    color: tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444' }}>
+                                    color: tx.type === 'transfer_in' ? t.green : tx.type === 'swap' ? '#8b5cf6' : t.red }}>
                                     {tx.type === 'swap' ? 'Swap' : tx.type === 'transfer_in' ? 'Received' : 'Sent'}
                                   </span>
                                   <span style={{ fontSize: 13, color: t.textSecondary }}>{format(tx.timestamp, 'MMM d, yyyy')}</span>
@@ -4866,7 +4872,7 @@ export default function App() {
                               <div style={{ marginTop: 8 }}>
                                 <a href={`${tx.chain === 'pulsechain' ? 'https://scan.pulsechain.com' : tx.chain === 'ethereum' ? 'https://etherscan.io' : 'https://basescan.org'}/tx/${tx.hash}`}
                                   target="_blank" rel="noopener noreferrer"
-                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#00FF9F', textDecoration: 'none' }}>
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--accent)', textDecoration: 'none' }}>
                                   <ExternalLink size={11} /> View on Explorer
                                 </a>
                               </div>
@@ -4998,8 +5004,8 @@ export default function App() {
                   {(['all', 'pulsechain', 'ethereum', 'base'] as const).map(c => (
                     <button key={c} onClick={() => setWalletChainFilter(c)}
                       style={{ padding: '5px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: '1px solid', transition: 'all .12s',
-                        background: walletChainFilter === c ? '#fff' : 'transparent',
-                        color: walletChainFilter === c ? '#000' : '#aaa',
+                        background: walletChainFilter === c ? 'var(--fg)' : 'transparent',
+                        color: walletChainFilter === c ? 'var(--bg-surface)' : 'var(--fg-muted)',
                         borderColor: walletChainFilter === c ? 'var(--fg)' : 'var(--border)' }}>
                       {c === 'all' ? 'All' : c === 'pulsechain' ? 'PulseChain' : c === 'ethereum' ? 'Ethereum' : 'Base'}
                     </button>
@@ -5019,8 +5025,8 @@ export default function App() {
                       {([['1h','1H'],['6h','6H'],['24h','24H'],['7d','7D']] as const).map(([p, label]) => (
                         <button key={p} onClick={() => setPriceChangePeriod(p)}
                           style={{ padding: '4px 10px', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all .12s', border: 'none',
-                            background: priceChangePeriod === p ? '#00FF9F' : 'transparent',
-                            color: priceChangePeriod === p ? '#000' : '#555' }}>
+                            background: priceChangePeriod === p ? 'var(--accent)' : 'transparent',
+                            color: priceChangePeriod === p ? (theme === 'dark' ? '#000' : '#fff') : 'var(--fg-subtle)' }}>
                           {label}
                         </button>
                       ))}
@@ -5053,7 +5059,7 @@ export default function App() {
                             else { setAssetSortField(field as any); setAssetSortDir('desc'); }
                           } : undefined}
                             style={{ padding: '11px 16px', fontSize: 13, fontWeight: 600,
-                              color: assetSortField === field ? '#00FF9F' : '#aaa',
+                              color: assetSortField === field ? t.green : 'var(--fg-muted)',
                               textTransform: 'uppercase', letterSpacing: '.5px',
                               textAlign: align as any, whiteSpace: 'nowrap', background: 'var(--bg-surface)',
                               cursor: field ? 'pointer' : 'default', userSelect: 'none' }}>
@@ -5110,7 +5116,7 @@ export default function App() {
                                       {explUrl
                                         ? <a href={explUrl} target="_blank" rel="noopener noreferrer"
                                             style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)', textDecoration: 'none' }}
-                                            onMouseOver={e => (e.currentTarget.style.color = '#00FF9F')}
+                                            onMouseOver={e => (e.currentTarget.style.color = 'var(--accent)')}
                                             onMouseOut={e => (e.currentTarget.style.color = 'var(--fg)')}>
                                             {asset.symbol}
                                           </a>
@@ -5162,7 +5168,7 @@ export default function App() {
                               <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap', minWidth: 90 }}>
                                 <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 3 }}>{share.toFixed(1)}%</div>
                                 <div style={{ height: 2, background: 'var(--border)', borderRadius: 1 }}>
-                                  <div style={{ height: '100%', width: `${Math.min(share, 100)}%`, background: '#00FF9F', borderRadius: 1 }} />
+                                  <div style={{ height: '100%', width: `${Math.min(share, 100)}%`, background: 'var(--accent)', borderRadius: 1 }} />
                                 </div>
                               </td>
                               <td style={{ padding: '11px 12px', textAlign: 'right' }}>
@@ -5183,7 +5189,7 @@ export default function App() {
                                     title="Hide">
                                     <Trash2 size={13} />
                                   </button>
-                                  <span style={{ color: expandedWalletAssetIds.has(asset.id) ? '#00FF9F' : '#444', padding: 4, display: 'inline-flex', transition: 'color .12s' }}>
+                                  <span style={{ color: expandedWalletAssetIds.has(asset.id) ? t.green : 'var(--fg-subtle)', padding: 4, display: 'inline-flex', transition: 'color .12s' }}>
                                     {expandedWalletAssetIds.has(asset.id) ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                                   </span>
                                 </div>
@@ -5313,7 +5319,7 @@ export default function App() {
                                                <tbody>
                                                  {showTxs.map((tx, ti) => {
                                                    const isBuyTx = tx.type === 'transfer_in' || (tx.type === 'swap' && tx.counterAsset !== asset.symbol);
-                                                   const typeColor = tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'transfer_out' ? 'var(--fg-muted)' : isBuyTx ? '#00FF9F' : '#f43f5e';
+                                                   const typeColor = tx.type === 'transfer_in' ? t.green : tx.type === 'transfer_out' ? 'var(--fg-muted)' : isBuyTx ? t.green : t.red;
                                                    const typeLabel = tx.type === 'transfer_in' ? '↓ Received' : tx.type === 'transfer_out' ? '↑ Sent' : isBuyTx ? '↓ Buy' : '↑ Sell';
                                                    return (
                                                      <tr key={ti} style={{ borderBottom: '1px solid var(--border)' }}
@@ -5341,7 +5347,7 @@ export default function App() {
                                                <div style={{ textAlign: 'center', padding: '8px', fontSize: 12, color: 'var(--fg-subtle)' }}>
                                                  +{tokenTxs.length - 8} more —{' '}
                                                  <button onClick={e => { e.stopPropagation(); setTxAssetFilter(asset.symbol); setActiveTab('history'); }}
-                                                   style={{ fontSize: 12, color: '#00FF9F', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
+                                                   style={{ fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
                                                    view all in History
                                                  </button>
                                                </div>
@@ -5395,8 +5401,8 @@ export default function App() {
                     <div style={{ padding: '14px 18px', borderBottom: isCollapsed('wallet-txs') ? 'none' : '1px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: 14, fontWeight: 600 }}>Recent Activity</span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, background: 'rgba(0,255,159,.1)', color: '#00FF9F', border: '1px solid rgba(0,255,159,.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
-                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#00FF9F', display: 'inline-block' }} />
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent-border)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
+                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', display: 'inline-block' }} />
                           {baseTxs.length} txs
                         </span>
                       </div>
@@ -5432,14 +5438,14 @@ export default function App() {
                               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                 <div style={{ width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
                                   background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
-                                  color: tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444', flexShrink: 0 }}>
+                                  color: tx.type === 'transfer_in' ? t.green : tx.type === 'swap' ? '#8b5cf6' : t.red, flexShrink: 0 }}>
                                   {tx.type === 'transfer_in' ? <ArrowDownLeft size={15} /> : tx.type === 'swap' ? <RefreshCcw size={15} /> : <ArrowUpRight size={15} />}
                                 </div>
                                 <div>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                                     <span style={{ fontSize: 13, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
                                       background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
-                                      color: tx.type === 'transfer_in' ? '#00FF9F' : tx.type === 'swap' ? '#8b5cf6' : '#ef4444' }}>
+                                      color: tx.type === 'transfer_in' ? t.green : tx.type === 'swap' ? '#8b5cf6' : t.red }}>
                                       {tx.type === 'transfer_in' ? 'Received' : tx.type === 'transfer_out' ? 'Sent' : 'Swap'}
                                     </span>
                                     <span style={{ fontSize: 13, padding: '1px 6px', borderRadius: 3, fontWeight: 600, background: 'var(--border)', color: 'var(--fg-muted)' }}>{tx.chain}</span>
@@ -5456,7 +5462,7 @@ export default function App() {
                               </div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
                                 <div style={{ textAlign: 'right' }}>
-                                  <div style={{ fontSize: 13, fontWeight: 600, color: tx.type === 'transfer_in' ? '#00FF9F' : '#fff' }}>
+                                  <div style={{ fontSize: 13, fontWeight: 600, color: tx.type === 'transfer_in' ? t.green : 'var(--fg)' }}>
                                     {tx.type === 'transfer_in' ? '+' : '-'}{tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {tx.asset}
                                   </div>
                                   {tx.valueUsd && <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>}
@@ -5468,7 +5474,7 @@ export default function App() {
                                 </a>
                                 <button title={isHidden ? 'Unhide' : 'Hide'}
                                   onClick={() => setHiddenTxIds(prev => isHidden ? prev.filter(id => id !== tx.id) : [...prev, tx.id])}
-                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: isHidden ? '#00FF9F' : '#666', padding: 4 }}
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: isHidden ? t.green : 'var(--fg-subtle)', padding: 4 }}
                                   onMouseOver={e => (e.currentTarget.style.color = isHidden ? '#00FF9F' : '#888')} onMouseOut={e => (e.currentTarget.style.color = isHidden ? '#00FF9F' : '#666')}>
                                   {isHidden ? <Eye size={14} /> : <EyeOff size={14} />}
                                 </button>
@@ -5572,7 +5578,7 @@ export default function App() {
                     style={{ width: '100%', background: t.cardHigh, border: `1px solid ${t.border}`,
                       borderRadius: 10, color: t.text, fontSize: 14, padding: '11px 14px',
                       outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace', transition: 'border-color .15s' }}
-                    onFocus={e => (e.currentTarget.style.borderColor = '#00FF9F')}
+                    onFocus={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
                     onBlur={e => (e.currentTarget.style.borderColor = t.border)}
                   />
                 </div>
@@ -5589,7 +5595,7 @@ export default function App() {
                     style={{ width: '100%', background: t.cardHigh, border: `1px solid ${t.border}`,
                       borderRadius: 10, color: t.text, fontSize: 14, padding: '11px 14px',
                       outline: 'none', boxSizing: 'border-box', transition: 'border-color .15s' }}
-                    onFocus={e => (e.currentTarget.style.borderColor = '#00FF9F')}
+                    onFocus={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
                     onBlur={e => (e.currentTarget.style.borderColor = t.border)}
                   />
                 </div>
@@ -5603,7 +5609,7 @@ export default function App() {
                   </button>
                   <button 
                     onClick={addWallet}
-                    style={{ flex: 1, minHeight: 44, borderRadius: 10, background: '#00FF9F',
+                    style={{ flex: 1, minHeight: 44, borderRadius: 10, background: 'var(--accent)',
                       border: 'none', color: '#000', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
                   >
                     Add Wallet
@@ -5643,7 +5649,7 @@ export default function App() {
                 <div style={{ width: 36, height: 4, borderRadius: 2, background: t.border }} />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-                <Pencil size={18} style={{ color: '#00FF9F' }} />
+                <Pencil size={18} style={{ color: 'var(--accent)' }} />
                 <span style={{ fontSize: 16, fontWeight: 700, color: t.text }}>Rename Wallet</span>
               </div>
               <div style={{ fontSize: 12, color: t.textMuted, fontFamily: 'monospace', marginBottom: 16, padding: '6px 10px', background: t.cardHigh, borderRadius: 6 }}>
@@ -5662,7 +5668,7 @@ export default function App() {
                   style={{ width: '100%', background: t.cardHigh, border: `1px solid ${t.border}`,
                     borderRadius: 10, color: t.text, fontSize: 14, padding: '11px 14px',
                     outline: 'none', boxSizing: 'border-box', transition: 'border-color .15s' }}
-                  onFocus={e => (e.currentTarget.style.borderColor = '#00FF9F')}
+                  onFocus={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
                   onBlur={e => (e.currentTarget.style.borderColor = t.border)}
                 />
               </div>
@@ -5673,7 +5679,7 @@ export default function App() {
                   Cancel
                 </button>
                 <button onClick={() => renameWallet(editingWalletAddress, editWalletName)}
-                  style={{ flex: 1, padding: '11px 0', borderRadius: 10, background: '#00FF9F',
+                  style={{ flex: 1, padding: '11px 0', borderRadius: 10, background: 'var(--accent)',
                     border: 'none', color: '#000', fontWeight: 700, fontSize: 13, cursor: 'pointer', minHeight: 44 }}>
                   Save
                 </button>
@@ -5716,7 +5722,7 @@ export default function App() {
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               style={{ position: 'relative', width: '100%', maxWidth: 480, background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 20, padding: 28 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-                <Settings size={18} style={{ color: '#00FF9F' }} />
+                <Settings size={18} style={{ color: 'var(--accent)' }} />
                 <span style={{ fontSize: 16, fontWeight: 700 }}>API Keys</span>
               </div>
               <p style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 14, lineHeight: 1.6 }}>
@@ -5746,7 +5752,7 @@ export default function App() {
                   setIsApiKeyModalOpen(false);
                   setTimeout(fetchPortfolio, 100);
                 }}
-                  style={{ flex: 1, padding: '10px 0', borderRadius: 10, background: '#00FF9F',
+                  style={{ flex: 1, padding: '10px 0', borderRadius: 10, background: 'var(--accent)',
                     border: 'none', color: '#000', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
                   Save &amp; Refresh
                 </button>

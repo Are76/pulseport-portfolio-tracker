@@ -1452,11 +1452,18 @@ button, a {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
   padding: 6px 10px;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: 12px;
+  /* hide scrollbar on all platforms for a clean look */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.wallet-selector-bar::-webkit-scrollbar {
+  display: none;
 }
 [data-theme="light"] .wallet-selector-bar {
   background: #ffffff;
