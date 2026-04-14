@@ -59,7 +59,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
 import { createPublicClient, http, fallback, formatUnits, getAddress } from 'viem';
 import { cn } from './lib/utils';
-import { CHAINS, HEX_ABI, TOKENS, PULSEX_V2_PAIR_ABI, PULSEX_LP_PAIRS } from './constants';
+import { CHAINS, HEX_ABI, TOKENS, PULSEX_V2_PAIR_ABI, PULSEX_LP_PAIRS, HEX_YIELD_RATE, HEX_YIELD_RATE_BI_NUM, HEX_YIELD_RATE_BI_DEN } from './constants';
 import type { Asset, Wallet, Chain, HexStake, LpPosition, FarmPosition, PortfolioSummary, HistoryPoint, Transaction } from './types';
 import { LiquidityOverviewStrip, LiquiditySection } from './components/LiquiditySection';
 import { TokenPnLCard } from './components/TokenPnLCard';
@@ -1474,100 +1474,116 @@ export default function App() {
 
           // 3. Fetch HEX Stakes if on PulseChain or Ethereum
           if ((chainKey === 'pulsechain' || chainKey === 'ethereum') && 'hexAddress' in chainConfig) {
+            // Each chain is fully isolated: a failure on Ethereum never blocks PulseChain.
+            let hexStakeCount = 0n;
+            let hexCurrentDay = 0n;
+
             try {
               const hexAddr = getAddress(chainConfig.hexAddress);
-              const [stakeCount, currentDay] = await withRetry(() => Promise.all([
-                client.readContract({
-                  address: hexAddr,
-                  abi: HEX_ABI,
-                  functionName: 'stakeCount',
-                  args: [address]
-                } as any),
-                client.readContract({
-                  address: hexAddr,
-                  abi: HEX_ABI,
-                  functionName: 'currentDay'
-                } as any)
-              ])) as [bigint, bigint];
 
-              if (Number(stakeCount) > 0) {
-                const stakes = await Promise.all(
-                  Array.from({ length: Number(stakeCount) }, (_, i) =>
+              // Fetch stakeCount and currentDay in separate try/catch so one bad RPC
+              // call cannot kill the other — they are independent contract reads.
+              try {
+                hexStakeCount = await withRetry(() => client.readContract({
+                  address: hexAddr, abi: HEX_ABI, functionName: 'stakeCount', args: [address],
+                } as any)) as bigint;
+              } catch (e: any) {
+                console.error(`[HEX stakes] stakeCount failed on ${chainKey} (${address.slice(0, 8)}…): ${e?.shortMessage ?? e?.message ?? String(e)}`);
+              }
+
+              try {
+                hexCurrentDay = await withRetry(() => client.readContract({
+                  address: hexAddr, abi: HEX_ABI, functionName: 'currentDay',
+                } as any)) as bigint;
+              } catch (e: any) {
+                console.error(`[HEX stakes] currentDay failed on ${chainKey}: ${e?.shortMessage ?? e?.message ?? String(e)}`);
+              }
+
+              if (Number(hexStakeCount) > 0) {
+                // Use Promise.allSettled so a single bad index never aborts the whole batch
+                const stakeResults = await Promise.allSettled(
+                  Array.from({ length: Number(hexStakeCount) }, (_, i) =>
                     withRetry(() => client.readContract({
-                      address: hexAddr,
-                      abi: HEX_ABI,
-                      functionName: 'stakeLists',
-                      args: [address, BigInt(i)]
+                      address: hexAddr, abi: HEX_ABI, functionName: 'stakeLists',
+                      args: [address, BigInt(i)],
                     } as any))
                   )
                 );
 
-                stakes.forEach((stakeResult: any, i) => {
+                stakeResults.forEach((settled, i) => {
+                  if (settled.status === 'rejected') {
+                    console.warn(`[HEX stakes] index ${i} rejected on ${chainKey}: ${settled.reason?.message ?? settled.reason}`);
+                    return;
+                  }
+                  const stakeResult: any = settled.value;
                   if (!stakeResult) return;
-                  let stakeId, stakedHearts, stakeShares, lockedDay, stakedDays, unlockedDay, isAutoStake;
+
+                  let stakeId: any, stakedHearts: any, stakeShares: any,
+                      lockedDay: any, stakedDays: any, unlockedDay: any, isAutoStake: any;
+
                   if (Array.isArray(stakeResult)) {
                     [stakeId, stakedHearts, stakeShares, lockedDay, stakedDays, unlockedDay, isAutoStake] = stakeResult;
                   } else {
-                    stakeId = stakeResult.stakeId;
-                    stakedHearts = stakeResult.stakedHearts;
-                    stakeShares = stakeResult.stakeShares;
-                    lockedDay = stakeResult.lockedDay;
-                    stakedDays = stakeResult.stakedDays;
-                    unlockedDay = stakeResult.unlockedDay;
-                    isAutoStake = stakeResult.isAutoStake;
+                    ({ stakeId, stakedHearts, stakeShares, lockedDay, stakedDays, unlockedDay, isAutoStake } = stakeResult);
                   }
 
                   if (stakeId === undefined) return;
-                  const progress = Math.min(100, Math.max(0, ((Number(currentDay) - Number(lockedDay)) / Number(stakedDays)) * 100));
 
-                  // Use chain-specific HEX price (pHEX vs eHEX differ significantly)
+                  // Always coerce to BigInt — the ABI returns uint72 which viem gives as bigint,
+                  // but defensive casting prevents precision loss if a non-bigint sneaks in.
+                  const sharesBI     = BigInt(stakeShares  ?? 0);
+                  const heartsBI     = BigInt(stakedHearts ?? 0);
+                  const lockedDayN   = Number(lockedDay  ?? 0);
+                  const stakedDaysN  = Number(stakedDays ?? 0);
+                  const currentDayN  = Number(hexCurrentDay);
+
+                  const progress     = Math.min(100, Math.max(0, ((currentDayN - lockedDayN) / Math.max(1, stakedDaysN)) * 100));
+                  const daysStakedN  = Math.max(0, currentDayN - lockedDayN);
+                  const daysRemaining = Math.max(0, (lockedDayN + stakedDaysN) - currentDayN);
+
+                  // Yield rate: 6.2 HEX per T-Share per day.
+                  // BigInt formula: (shares × days × 62) / 100_000
+                  //   — for 1 T-Share (1e12 raw shares), 1 day:
+                  //     1e12 × 1 × 62 / 100_000 = 6.2×10^8 hearts = 6.2 HEX ✓
+                  const interestHearts  = (sharesBI * BigInt(daysStakedN) * HEX_YIELD_RATE_BI_NUM) / HEX_YIELD_RATE_BI_DEN;
+                  const fullYieldHearts = (sharesBI * BigInt(stakedDaysN) * HEX_YIELD_RATE_BI_NUM) / HEX_YIELD_RATE_BI_DEN;
+
+                  const tShares    = Number(sharesBI) / 1e12;
+                  const stakedHex  = Number(heartsBI) / 1e8;
+                  const stakeHexYield = Number(fullYieldHearts) / 1e8;
+
                   const hexPriceChainKey = `${chainKey}:${hexAddr.toLowerCase()}`;
                   const hexChainFallback = chainKey === 'pulsechain' ? fetchedPrices['pulsechain:hex']?.usd : fetchedPrices['hex']?.usd;
-                  const hexPrice = fetchedPrices[hexPriceChainKey]?.usd || hexChainFallback || 0;
-                  const stakedHeartsNum = Number(stakedHearts) / 1e8;
-                  const valueUsd = stakedHeartsNum * hexPrice;
+                  const hexPrice   = fetchedPrices[hexPriceChainKey]?.usd || hexChainFallback || 0;
 
-                  // ~6 HEX per T-Share per day: (shares × days × 6) / 10000
-                  // interestHearts = accrued so far (daysStaked elapsed)
-                  // fullYieldHearts = total yield at maturity (stakedDays full duration)
-                  const shares = BigInt(stakeShares);
-                  const daysStaked = Math.max(0, Number(currentDay) - Number(lockedDay));
-                  const interestHearts = (shares * BigInt(daysStaked) * 6n) / 10000n;
-                  const totalHearts = BigInt(stakedHearts) + interestHearts;
-                  const totalValueUsd = (Number(totalHearts) / 1e8) * hexPrice;
-
-                  const daysRemaining = Math.max(0, (Number(lockedDay) + Number(stakedDays)) - Number(currentDay));
-                  const tShares = Number(shares) / 1e12;
-                  const stakedHex = Number(BigInt(stakedHearts)) / 1e8;
-                  // Full projected yield using the same rate over the complete stake duration
-                  const fullYieldHearts = (shares * BigInt(stakedDays) * 6n) / 10000n;
-                  const stakeHexYield = Number(fullYieldHearts) / 1e8;
+                  const valueUsd       = stakedHex * hexPrice;
+                  const totalValueUsd  = (Number(heartsBI + interestHearts) / 1e8) * hexPrice;
 
                   allStakes.push({
                     id: `${chainKey}-${address}-${stakeId}`,
-                    stakeId: Number(stakeId),
-                    stakedHearts: BigInt(stakedHearts),
-                    stakeShares: BigInt(stakeShares),
-                    lockedDay: Number(lockedDay),
-                    stakedDays: Number(stakedDays),
-                    unlockedDay: Number(unlockedDay),
-                    isAutoStake: Boolean(isAutoStake),
-                    progress: Math.round(progress),
+                    stakeId:           Number(stakeId),
+                    stakedHearts:      heartsBI,
+                    stakeShares:       sharesBI,
+                    lockedDay:         lockedDayN,
+                    stakedDays:        stakedDaysN,
+                    unlockedDay:       Number(unlockedDay ?? 0),
+                    isAutoStake:       Boolean(isAutoStake),
+                    progress:          Math.round(progress),
                     estimatedValueUsd: valueUsd,
-                    interestHearts: interestHearts,
-                    totalValueUsd: totalValueUsd,
-                    chain: chainKey,
-                    walletLabel: wallet.name,
-                    walletAddress: address.toLowerCase(),
+                    interestHearts,
+                    totalValueUsd,
+                    chain:             chainKey,
+                    walletLabel:       wallet.name,
+                    walletAddress:     address.toLowerCase(),
                     daysRemaining,
                     tShares,
                     stakedHex,
-                    stakeHexYield
+                    stakeHexYield,
                   });
                 });
               }
-            } catch (e) {
-              console.error(`Error fetching HEX stakes on ${chainKey}:`, e);
+            } catch (e: any) {
+              console.error(`[HEX stakes] Unexpected error on ${chainKey} for ${address.slice(0, 8)}…: ${e?.shortMessage ?? e?.message ?? String(e)}`);
             }
           }
         }));
@@ -2098,13 +2114,17 @@ export default function App() {
     const assets = currentAssets;
     const liquidValue = assets.reduce((acc, curr) => acc + curr.value, 0);
 
-    // Add HEX staking value so the grand total reflects everything the user owns
+    // Add HEX staking value so the grand total reflects everything the user owns.
+    // Recalculate accrued yield from tShares × daysStaked × 6.2 so stale cached
+    // interestHearts (written with the old rate-6 formula) never corrupt the total.
     const stakingValueUsd = currentStakes.reduce((acc, s) => {
       const hexPriceKey = `${s.chain}:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39`;
       const chainHexFallback = s.chain === 'pulsechain' ? prices['pulsechain:hex']?.usd : prices['hex']?.usd;
-      const hexPrice = prices[hexPriceKey]?.usd || chainHexFallback || 0.004;
-      const stakedHex = Number(s.stakedHearts) / 1e8;
-      const interestHex = Number(s.interestHearts || 0n) / 1e8;
+      const hexPrice = prices[hexPriceKey]?.usd || chainHexFallback || 0;
+      const stakedHex  = Number(s.stakedHearts ?? 0n) / 1e8;
+      const tShares    = Number(s.stakeShares  ?? 0n) / 1e12;
+      const daysStaked = Math.max(0, (s.stakedDays ?? 0) - (s.daysRemaining ?? 0));
+      const interestHex = tShares * daysStaked * HEX_YIELD_RATE;
       return acc + (stakedHex + interestHex) * hexPrice;
     }, 0);
 
@@ -2284,23 +2304,28 @@ export default function App() {
     let totalInterestHex = 0;
 
     stakes.forEach(s => {
-      const stakedHex = Number(s.stakedHearts) / 1e8;
-      const tShares = Number(s.stakeShares) / 1e12;
-      const interestHex = Number(s.interestHearts || 0n) / 1e8;
-      
-      // Use chain-specific HEX price
+      const stakedHex  = Number(s.stakedHearts ?? 0n) / 1e8;
+      const tShares    = Number(s.stakeShares  ?? 0n) / 1e12;
+      // Recalculate accrued yield from first principles (6.2 rate) so stale
+      // cached interestHearts — written with the old rate-6 formula — never
+      // corrupt the totals shown on the Stakes page and Overview.
+      const daysStaked  = Math.max(0, (s.stakedDays ?? 0) - (s.daysRemaining ?? 0));
+      const interestHex = tShares * daysStaked * HEX_YIELD_RATE;
+
+      // Use chain-specific HEX price; fall back to 0 (not 0.004) so we show
+      // $0 instead of a wrong value while prices are still loading.
       const hexPriceKey = `${s.chain}:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39`;
       const chainHexFallback = s.chain === 'pulsechain' ? prices['pulsechain:hex']?.usd : prices['hex']?.usd;
-      const hexPrice = prices[hexPriceKey]?.usd || chainHexFallback || 0.004;
+      const hexPrice = prices[hexPriceKey]?.usd || chainHexFallback || 0;
 
-      totalStakedHex += stakedHex;
-      totalTShares += tShares;
-      totalValueUsd += (stakedHex + interestHex) * hexPrice;
+      totalStakedHex  += stakedHex;
+      totalTShares    += tShares;
+      totalValueUsd   += (stakedHex + interestHex) * hexPrice;
       totalInterestHex += interestHex;
     });
 
-    const phexPrice = prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0.004;
-    const estimatedDailyPayoutHex = totalTShares * 6.2;
+    const phexPrice = prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0;
+    const estimatedDailyPayoutHex = totalTShares * HEX_YIELD_RATE;
     const estimatedDailyPayoutUsd = estimatedDailyPayoutHex * phexPrice;
 
     return {
@@ -3475,10 +3500,12 @@ export default function App() {
                   const HEX_ADDR_LC = '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39';
                   // pHEX liquid: native HEX on PulseChain (symbol HEX, same address as eHEX contract but on PLS chain)
                   const pHexLiquid = currentAssets.filter(a => a.chain === 'pulsechain' && (a as any).address?.toLowerCase() === HEX_ADDR_LC).reduce((s, a) => s + a.balance, 0);
-                  // Staked = principal + accrued yield so far (interestHearts already accrued)
+                  // Staked = principal + accrued yield (recalculated at 6.2 rate, never from stale cache)
                   const pHexStaked = currentStakes.filter(s => s.chain === 'pulsechain').reduce((s, st) => {
-                    const principal = st.stakedHex ?? 0;
-                    const interest = Number(st.interestHearts || 0n) / 1e8;
+                    const principal  = st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8;
+                    const tSharesVal = st.tShares    ?? Number(st.stakeShares  ?? 0n) / 1e12;
+                    const daysStaked = Math.max(0, (st.stakedDays ?? 0) - (st.daysRemaining ?? 0));
+                    const interest   = tSharesVal * daysStaked * HEX_YIELD_RATE;
                     return s + principal + interest;
                   }, 0);
                   // eHEX liquid: HEX on Ethereum + bridged eHEX on PulseChain
@@ -3486,8 +3513,10 @@ export default function App() {
                   const eHexLiquidPls = currentAssets.filter(a => a.chain === 'pulsechain' && a.symbol === 'eHEX').reduce((s, a) => s + a.balance, 0);
                   const eHexLiquid = eHexLiquidEth + eHexLiquidPls;
                   const eHexStaked = currentStakes.filter(s => s.chain === 'ethereum').reduce((s, st) => {
-                    const principal = st.stakedHex ?? 0;
-                    const interest = Number(st.interestHearts || 0n) / 1e8;
+                    const principal  = st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8;
+                    const tSharesVal = st.tShares    ?? Number(st.stakeShares  ?? 0n) / 1e12;
+                    const daysStaked = Math.max(0, (st.stakedDays ?? 0) - (st.daysRemaining ?? 0));
+                    const interest   = tSharesVal * daysStaked * HEX_YIELD_RATE;
                     return s + principal + interest;
                   }, 0);
                   const pHexTotal = pHexLiquid + pHexStaked;

@@ -1,6 +1,13 @@
 /**
  * HEX Contract ABI (Minimal for querying stakes)
  */
+// Approximate HEX yield rate used for all stake calculations.
+// 6.2 HEX per T-Share per day (BigInt formula: shares × days × 62 / 100_000).
+// Update this single constant if the network average rate changes.
+export const HEX_YIELD_RATE = 6.2;
+export const HEX_YIELD_RATE_BI_NUM = 62n;      // BigInt numerator
+export const HEX_YIELD_RATE_BI_DEN = 100000n;  // BigInt denominator
+
 export const HEX_ABI = [
   {
     "constant": true,
