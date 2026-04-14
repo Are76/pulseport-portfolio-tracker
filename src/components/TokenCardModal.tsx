@@ -69,6 +69,7 @@ interface Props {
     priceChange6h?: number | null;
     priceChange24h?: number | null;
     priceChange7d?: number | null;
+    holders?: number | null;
     description?: string | null;
     websites?: { label: string; url: string }[];
     socials?: { type: string; url: string }[];
@@ -319,7 +320,15 @@ export function TokenCardModal({
               </div>
               <div className="tcm-stat-cell">
                 <div className="tcm-stat-label">Holders</div>
-                <div className="tcm-stat-value">—</div>
+                <div className="tcm-stat-value">
+                  {marketData?.holders
+                    ? marketData.holders >= 1e6
+                      ? `${(marketData.holders / 1e6).toFixed(2)}M`
+                      : marketData.holders >= 1e3
+                        ? `${(marketData.holders / 1e3).toFixed(1)}K`
+                        : marketData.holders.toLocaleString()
+                    : '—'}
+                </div>
               </div>
               {marketData?.nativePriceUsd && (
                 <div className="tcm-stat-cell">
