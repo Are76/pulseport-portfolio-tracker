@@ -722,7 +722,7 @@ export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySect
             </div>
           </div>
           {/* Info cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, width: '100%', maxWidth: 560, margin: '4px 0' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, width: '100%', maxWidth: 560, margin: '4px 0' }}>
             {[
               { icon: <Droplets size={18} />, title: 'Add Liquidity', desc: 'Deposit two tokens into a V2 pair to earn swap fees on every trade.' },
               { icon: <Zap size={18} />, title: 'Farm INC', desc: 'Stake your LP tokens in the MasterChef farm to earn INC rewards daily.' },
