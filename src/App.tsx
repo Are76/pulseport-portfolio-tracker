@@ -66,6 +66,7 @@ import { TokenPnLCard } from './components/TokenPnLCard';
 import { PnLModal } from './components/PnLModal';
 import { ProfitPlannerModal } from './components/ProfitPlannerModal';
 import { StakesSection } from './components/StakesSection';
+import { TokenCardModal } from './components/TokenCardModal';
 
 const ERC20_ABI = [
   {
@@ -533,6 +534,8 @@ export default function App() {
     return saved ? JSON.parse(saved) : {};
   });
   const [tokenMarketData, setTokenMarketData] = useState<Record<string, any>>({});
+  const [tokenCardModal, setTokenCardModal] = useState<Asset | null>(null);
+  const [tokenCardModalLoading, setTokenCardModalLoading] = useState(false);
   const [expandedWalletAssetIds, setExpandedWalletAssetIds] = useState<Set<string>>(new Set());
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     const saved = localStorage.getItem('pulseport_theme');
@@ -2497,6 +2500,44 @@ export default function App() {
     fetchMarketData();
   }, [expandedAssetIds]); // intentionally omits tokenMarketData (cache check) and currentAssets (stable ref) to avoid re-fetching on unrelated renders
 
+  // ── Fetch market data when token card modal opens ────────────────────────
+  useEffect(() => {
+    if (!tokenCardModal) return;
+    const id   = tokenCardModal.id;
+    const addr = (tokenCardModal as any).address as string | undefined;
+    if (!addr || addr === 'native') return;
+    if (tokenMarketData[id]) { setTokenCardModalLoading(false); return; }
+    setTokenCardModalLoading(true);
+    (async () => {
+      try {
+        const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${addr}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const pairs = data.pairs || [];
+        if (pairs.length === 0) return;
+        const sorted = [...pairs].sort((a: any, b: any) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0));
+        const top = sorted[0];
+        setTokenMarketData(prev => ({
+          ...prev,
+          [id]: {
+            liquidity:      sorted.reduce((s: number, p: any) => s + (p.liquidity?.usd || 0), 0),
+            volume24h:      sorted.reduce((s: number, p: any) => s + (p.volume?.h24 || 0), 0),
+            marketCap:      top?.marketCap || null,
+            fdv:            top?.fdv || null,
+            pools:          pairs.length,
+            txns24h:        sorted.reduce((s: number, p: any) => s + (p.txns?.h24?.buys || 0) + (p.txns?.h24?.sells || 0), 0),
+            nativePriceUsd: top?.priceNative || null,
+            priceChange1h:  top?.priceChange?.h1 ?? null,
+            priceChange6h:  top?.priceChange?.h6 ?? null,
+            priceChange24h: top?.priceChange?.h24 ?? null,
+            priceChange7d:  top?.priceChange?.d7 ?? null,
+          },
+        }));
+      } catch { /* ignore */ }
+      finally { setTokenCardModalLoading(false); }
+    })();
+  }, [tokenCardModal?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── tokenPrices: symbol → USD price map for LP hook ─────────────────────
   const tokenPrices = useMemo<Record<string, number>>(() => {
     const p = prices;
@@ -3208,62 +3249,125 @@ export default function App() {
                             const share = ((asset.value / (summary.totalValue || 1)) * 100);
                             const accentColor = ASSET_COLORS[asset.symbol] || '#8b5cf6';
                             const sparkColor = pct >= 0 ? t.green : t.red;
+                            const changeColor = pct >= 0 ? t.green : t.red;
                             const logo = (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()];
                             const sparkData = Array.from({ length: 12 }, (_, i) => ({
                               v: asset.value * (SPARKLINE_VARIANCE_SCALE + Math.sin(i * 0.8 + asset.value % 3) * SPARKLINE_SIN_AMPLITUDE + i * SPARKLINE_TREND_STEP),
                             }));
+                            const md = tokenMarketData[asset.id];
+                            const fmtStatVal = (v: number | null | undefined) =>
+                              !v ? '—' :
+                              v >= 1e9 ? `$${(v/1e9).toFixed(1)}B` :
+                              v >= 1e6 ? `$${(v/1e6).toFixed(1)}M` :
+                              v >= 1e3 ? `$${(v/1e3).toFixed(0)}K` :
+                              `$${v.toFixed(0)}`;
+                            const mcap = md ? (md.marketCap || md.fdv || null) : null;
                             return (
-                              <div key={asset.id} className="asset-card-premium" onClick={() => setActiveTab('assets')}>
-                                <div style={{ padding: '20px 20px 0' }}>
-                                  {/* Row 1: Logo + symbol + 24h % */}
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 }}>
-                                    <div style={{
-                                      width: 36, height: 36, borderRadius: '50%',
-                                      background: `${accentColor}18`, border: `1.5px solid ${accentColor}55`,
-                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                      fontSize: 12, fontWeight: 800, color: accentColor,
-                                      overflow: 'hidden', flexShrink: 0,
+                              <div key={asset.id} className="asset-card-premium asset-card-v2"
+                                onClick={() => setTokenCardModal(asset)}
+                                role="button" tabIndex={0}
+                                onKeyDown={e => e.key === 'Enter' && setTokenCardModal(asset)}>
+                                {/* Colored top accent line */}
+                                <div style={{
+                                  position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+                                  background: accentColor, opacity: 0.5, pointerEvents: 'none',
+                                }} />
+
+                                <div style={{ padding: '16px 16px 12px' }}>
+                                  {/* Row 1: Logo + symbol/name + portfolio% badge */}
+                                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 11 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
+                                      <div style={{
+                                        width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+                                        background: `${accentColor}18`, border: `1.5px solid ${accentColor}44`,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontSize: 13, fontWeight: 800, color: accentColor, overflow: 'hidden',
+                                      }}>
+                                        {logo ? (
+                                          <img src={logo} alt={asset.symbol}
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                                            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                        ) : asset.symbol[0]}
+                                      </div>
+                                      <div style={{ minWidth: 0 }}>
+                                        <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--fg)', letterSpacing: '-0.01em', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                          {asset.symbol}
+                                        </div>
+                                        <div style={{ fontSize: 11, color: 'var(--fg-subtle)', lineHeight: 1.3, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 100 }}>
+                                          {asset.name}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <span className="acv2-portfolio-badge" style={{
+                                      color: accentColor,
+                                      background: `${accentColor}18`,
+                                      border: `1px solid ${accentColor}33`,
+                                      marginTop: 2,
                                     }}>
-                                      {logo ? (
-                                        <img src={logo} alt={asset.symbol}
-                                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
-                                          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                                      ) : asset.symbol[0]}
-                                    </div>
-                                    <div style={{ minWidth: 0, flex: 1 }}>
-                                      <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--fg)', letterSpacing: '-0.01em', lineHeight: 1.2 }}>{asset.symbol}</div>
-                                    </div>
-                                    <span className={`change-badge-${pct >= 0 ? 'pos' : 'neg'}`} style={{ fontSize: 11, fontFamily: 'JetBrains Mono, monospace', whiteSpace: 'nowrap' }}>
-                                      {pct >= 0 ? '+' : ''}{pct.toFixed(1)}%
-                                    </span>
-                                  </div>
-                                  {/* Row 2: Large balance amount */}
-                                  <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 6 }}>
-                                    {asset.balance >= 1e9 ? `${(asset.balance/1e9).toFixed(2)}B` : asset.balance >= 1e6 ? `${(asset.balance/1e6).toFixed(2)}M` : asset.balance >= 1e3 ? `${(asset.balance/1e3).toFixed(1)}K` : asset.balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                  </div>
-                                  {/* Row 3: USD value + portfolio % */}
-                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4, marginBottom: 10 }}>
-                                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
-                                      {fmtValue(asset.value)}
-                                    </span>
-                                    <span style={{ fontSize: 11, fontWeight: 700, color: accentColor, background: `${accentColor}18`, border: `1px solid ${accentColor}33`, padding: '1px 6px', borderRadius: 100, fontFamily: 'JetBrains Mono, monospace' }}>
                                       {share.toFixed(1)}%
                                     </span>
                                   </div>
+
+                                  {/* Row 2: Current price + 24h change */}
+                                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 6, marginBottom: 10 }}>
+                                    <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.025em', lineHeight: 1, flexShrink: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                      {fmtPrice(asset.price)}
+                                    </div>
+                                    <span className={`change-badge-${pct >= 0 ? 'pos' : 'neg'}`} style={{ fontSize: 11, fontFamily: 'JetBrains Mono, monospace', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                                      {pct >= 0 ? '\u25b2' : '\u25bc'} {Math.abs(pct).toFixed(2)}%
+                                    </span>
+                                  </div>
+
+                                  {/* Row 3: Holdings */}
+                                  <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 6 }}>
+                                    <div style={{ minWidth: 0 }}>
+                                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.5px', textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 2 }}>Holdings</div>
+                                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg-muted)', fontFamily: 'JetBrains Mono, monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        {asset.balance >= 1e9 ? `${(asset.balance/1e9).toFixed(2)}B` :
+                                         asset.balance >= 1e6 ? `${(asset.balance/1e6).toFixed(2)}M` :
+                                         asset.balance >= 1e3 ? `${(asset.balance/1e3).toFixed(1)}K` :
+                                         asset.balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}{" "}
+                                        <span style={{ fontSize: 10, color: 'var(--fg-subtle)' }}>{asset.symbol}</span>
+                                      </div>
+                                    </div>
+                                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.5px', textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 2 }}>Value</div>
+                                      <div style={{ fontSize: 14, fontWeight: 800, color: changeColor, fontFamily: 'JetBrains Mono, monospace' }}>
+                                        {fmtValue(asset.value)}
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
-                                {/* Row 4: Sparkline at bottom */}
-                                <div className="sparkline-container" style={{ height: 50 }}>
+
+                                {/* Sparkline */}
+                                <div className="sparkline-container" style={{ height: 36, margin: '4px 0 0' }}>
                                   <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={sparkData} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
                                       <defs>
                                         <linearGradient id={`spark-${asset.id}`} x1="0" y1="0" x2="0" y2="1">
-                                          <stop offset="0%" stopColor={sparkColor} stopOpacity={0.40} />
+                                          <stop offset="0%" stopColor={sparkColor} stopOpacity={0.35} />
                                           <stop offset="100%" stopColor={sparkColor} stopOpacity={0} />
                                         </linearGradient>
                                       </defs>
                                       <Area type="monotone" dataKey="v" stroke={sparkColor} strokeWidth={1.5} fill={`url(#spark-${asset.id})`} dot={false} isAnimationActive={false} />
                                     </AreaChart>
                                   </ResponsiveContainer>
+                                </div>
+
+                                {/* Bottom stat footer: MCap | Liquidity | Volume */}
+                                <div className="acv2-footer">
+                                  <div className="acv2-footer-cell">
+                                    <div className="acv2-footer-label">Mkt Cap</div>
+                                    <div className="acv2-footer-val">{mcap ? fmtStatVal(mcap) : '\u2014'}</div>
+                                  </div>
+                                  <div className="acv2-footer-cell">
+                                    <div className="acv2-footer-label">Liquidity</div>
+                                    <div className="acv2-footer-val" style={md?.liquidity ? { color: t.green } : undefined}>{md ? fmtStatVal(md.liquidity) : '\u2014'}</div>
+                                  </div>
+                                  <div className="acv2-footer-cell">
+                                    <div className="acv2-footer-label">Vol 24H</div>
+                                    <div className="acv2-footer-val">{md ? fmtStatVal(md.volume24h) : '\u2014'}</div>
+                                  </div>
                                 </div>
                               </div>
                             );
@@ -5704,6 +5808,21 @@ export default function App() {
           logoUrl={(pnlAsset as any).logoUrl || tokenLogos[(pnlAsset as any).address?.toLowerCase?.()] || getTokenLogoUrl(pnlAsset)}
           onClose={() => setPnlAsset(null)}
           walletAddress={selectedWalletAddr !== 'all' ? selectedWalletAddr : undefined}
+        />
+      )}
+
+      {/* ── Token Card Detail Modal ── */}
+      {tokenCardModal && (
+        <TokenCardModal
+          asset={tokenCardModal}
+          portfolioTotal={summary.totalValue}
+          logoUrl={(tokenCardModal as any).logoUrl || tokenLogos[(tokenCardModal as any).address?.toLowerCase?.()] || getTokenLogoUrl(tokenCardModal)}
+          marketData={tokenMarketData[tokenCardModal.id]}
+          isLoadingMarketData={tokenCardModalLoading}
+          theme={theme}
+          onClose={() => setTokenCardModal(null)}
+          dexScreenerUrl={dexScreenerUrl(tokenCardModal.chain, (tokenCardModal as any).address)}
+          explorerUrl={explorerUrl(tokenCardModal.chain, (tokenCardModal as any).address)}
         />
       )}
 
