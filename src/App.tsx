@@ -882,8 +882,22 @@ export default function App() {
 
           // pWETH/WPLS — token0=pWETH(18), token1=WPLS(18)
           const [wethR0, wethR1] = parseRes(batchData[lpKeys.indexOf('PWETH_WPLS')].result);
-          if (wethR0 > 0 && wethR1 > 0)
-            setTokenPrice('0x02dcdd04e3f455d838cd1249292c58f3b79e3c3c', (wethR1 / wethR0) * wplsUSD, 'ethereum');
+          if (wethR0 > 0 && wethR1 > 0) {
+            const ethFromLp = (wethR1 / wethR0) * wplsUSD;
+            setTokenPrice('0x02dcdd04e3f455d838cd1249292c58f3b79e3c3c', ethFromLp, 'ethereum');
+            // Propagate ETH price to the native-token keys used by ETH balance valuation and
+            // transaction valueUsd fallback.  CoinGecko covers these when available; this ensures
+            // they are never $0 when CoinGecko is rate-limited, so netInvestment stays correct.
+            if (!fetchedPrices['ethereum']?.usd) {
+              fetchedPrices['ethereum'] = { usd: ethFromLp };
+            }
+            if (!fetchedPrices['ethereum:native']?.usd) {
+              fetchedPrices['ethereum:native'] = { usd: ethFromLp };
+            }
+            if (!fetchedPrices['base:native']?.usd) {
+              fetchedPrices['base:native'] = { usd: ethFromLp };
+            }
+          }
 
           // pWBTC/WPLS — REVERSED: token0=WPLS(18), token1=pWBTC(8)
           const [wbtcR0, wbtcR1] = parseRes(batchData[lpKeys.indexOf('PWBTC_WPLS')].result);
@@ -2242,7 +2256,12 @@ export default function App() {
 
     // Use the live prices state as a fallback for ETH valueUsd — this handles the case where
     // transactions were fetched before CoinGecko prices loaded (valueUsd would be 0 at that point).
-    const ethPriceFallback = prices['ethereum']?.usd || 0;
+    // Also try the pWETH LP-derived price (stored under 'ethereum:native') so the fallback
+    // works even when CoinGecko is rate-limited.
+    const ethPriceFallback = prices['ethereum']?.usd
+      || prices['ethereum:native']?.usd
+      || prices['pulsechain:0x02dcdd04e3f455d838cd1249292c58f3b79e3c3c']?.usd
+      || 0;
     // Helper: derive a consistent USD value for a tx (handles stale-zero valueUsd for ETH)
     const txUsdValue = (tx: { asset: string; valueUsd: number; amount: number }) => {
       if (tx.valueUsd > 0) return tx.valueUsd;
@@ -5287,17 +5306,20 @@ export default function App() {
           const filteredViewAssets = walletChainFilter === 'all' ? viewAssets : viewAssets.filter(a => a.chain === walletChainFilter);
 
           const walletUsdValue = viewAssets.reduce((s, a) => s + a.value, 0);
-          // Recalculate staking value from first principles using live prices + full maturity yield,
-          // so the total is never stale or wrong due to cached totalValueUsd.
+          // Recalculate staking value from first principles using live prices + accrued yield
+          // (principal + interest earned so far), keeping this consistent with summary.stakingValueUsd
+          // and the Overview HEX Holdings section. Using full maturity yield here would make the
+          // Wallets total vastly higher than the Overview total for long-running stakes.
           const stakingUsdValue = viewStakes.reduce((s, st) => {
             const hexPriceKey = `${st.chain}:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39`;
             const chainHexFallback = st.chain === 'pulsechain' ? prices['pulsechain:hex']?.usd : prices['hex']?.usd;
             const hexPrice = prices[hexPriceKey]?.usd || chainHexFallback || 0;
             const stakedHex = st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8;
             const tShares = st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12;
+            const daysStaked = Math.max(0, (st.stakedDays ?? 0) - (st.daysRemaining ?? 0));
             const rate = st.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
-            const maturityHex = stakedHex + tShares * (st.stakedDays ?? 0) * rate;
-            return s + maturityHex * hexPrice;
+            const accruedHex = stakedHex + tShares * daysStaked * rate;
+            return s + accruedHex * hexPrice;
           }, 0);
           const totalUsdValue = walletUsdValue + stakingUsdValue;
 
