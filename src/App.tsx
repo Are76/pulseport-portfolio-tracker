@@ -210,7 +210,7 @@ function StakingLadder({ stakes }: { stakes: HexStake[] }) {
     const d = payload[0].payload;
     return (
       <div className="chart-tooltip" style={{ fontSize: 13 }}>
-        <div style={{ fontWeight: 700, color: '#00FF9F', marginBottom: 6 }}>Days: {d.bucketRange}</div>
+        <div style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: 6 }}>Days: {d.bucketRange}</div>
         <div>T-Shares: {d.totalShares.toFixed(2)}</div>
         <div>Stakes: {d.stakeCount}</div>
       </div>
@@ -4162,14 +4162,14 @@ export default function App() {
                   <ArrowDownLeft size={16} style={{ color: '#627EEA' }} />
                   <span style={{ fontSize: 14, fontWeight: 600 }}>Received Assets History</span>
                   <select value={receivedChainFilter} onChange={e => setReceivedChainFilter(e.target.value)}
-                    style={{ background: 'var(--bg-elevated)', border: '1px solid #252525', borderRadius: 6, color: 'var(--fg)', fontSize: 13, padding: '4px 10px', cursor: 'pointer', outline: 'none' }}>
+                    style={{ background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 6, color: 'var(--fg)', fontSize: 13, padding: '4px 10px', cursor: 'pointer', outline: 'none' }}>
                     <option value="all">All Chains</option>
                     <option value="ethereum">Ethereum</option>
                     <option value="base">Base</option>
                     <option value="pulsechain">PulseChain</option>
                   </select>
                   <select value={receivedCoinFilter} onChange={e => setReceivedCoinFilter(e.target.value)}
-                    style={{ background: 'var(--bg-elevated)', border: '1px solid #252525', borderRadius: 6, color: 'var(--fg)', fontSize: 13, padding: '4px 10px', cursor: 'pointer', outline: 'none' }}>
+                    style={{ background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 6, color: 'var(--fg)', fontSize: 13, padding: '4px 10px', cursor: 'pointer', outline: 'none' }}>
                     <option value="all">All Coins</option>
                     <option value="ETH">ETH</option>
                     <option value="PLS">PLS</option>
@@ -5015,13 +5015,13 @@ export default function App() {
 
               {/* Asset list — full Token Positions module */}
               <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
-                <div style={{ padding: '14px 16px', borderBottom: isCollapsed('wallet-holdings') ? 'none' : '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ padding: '14px 16px', borderBottom: isCollapsed('wallet-holdings') ? 'none' : `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                   <div>
                     <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)' }}>Token Positions</div>
                     <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginTop: 2 }}>{filteredViewAssets.length} tokens · ${walletUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ display: 'flex', gap: 3, background: 'var(--bg-elevated)', border: '1px solid #252525', borderRadius: 8, padding: 3 }}>
+                    <div style={{ display: 'flex', gap: 3, background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 8, padding: 3 }}>
                       {([['1h','1H'],['6h','6H'],['24h','24H'],['7d','7D']] as const).map(([p, label]) => (
                         <button key={p} onClick={() => setPriceChangePeriod(p)}
                           style={{ padding: '4px 10px', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all .12s', border: 'none',
@@ -5412,7 +5412,7 @@ export default function App() {
                           { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Assets'], ...Array.from(new Set(baseTxs.map(tx => tx.asset))).sort().map(a => [a,a])] as [string,string][] },
                         ].map(({ value, onChange, options }, i) => (
                           <select key={i} value={value} onChange={e => onChange(e.target.value)}
-                            style={{ background: 'var(--bg-elevated)', border: '1px solid #252525', borderRadius: 6, color: 'var(--fg)', fontSize: 13, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
+                            style={{ background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 6, color: 'var(--fg)', fontSize: 13, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
                             {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                           </select>
                         ))}
@@ -5475,7 +5475,7 @@ export default function App() {
                                 <button title={isHidden ? 'Unhide' : 'Hide'}
                                   onClick={() => setHiddenTxIds(prev => isHidden ? prev.filter(id => id !== tx.id) : [...prev, tx.id])}
                                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: isHidden ? t.green : 'var(--fg-subtle)', padding: 4 }}
-                                  onMouseOver={e => (e.currentTarget.style.color = isHidden ? '#00FF9F' : '#888')} onMouseOut={e => (e.currentTarget.style.color = isHidden ? '#00FF9F' : '#666')}>
+                                  onMouseOver={e => (e.currentTarget.style.color = isHidden ? 'var(--accent)' : 'var(--fg)')} onMouseOut={e => (e.currentTarget.style.color = isHidden ? 'var(--accent)' : 'var(--fg-subtle)')}>
                                   {isHidden ? <Eye size={14} /> : <EyeOff size={14} />}
                                 </button>
                               </div>
@@ -5731,7 +5731,7 @@ export default function App() {
               </p>
               <input type="text" placeholder="Paste your Etherscan API key..."
                 value={apiKeyInput} onChange={e => setApiKeyInput(e.target.value)}
-                style={{ width: '100%', background: 'var(--bg-elevated)', border: '1px solid #252525', borderRadius: 8,
+                style={{ width: '100%', background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 8,
                   color: 'var(--fg)', fontSize: 13, padding: '10px 14px', outline: 'none',
                   fontFamily: 'monospace', boxSizing: 'border-box', marginBottom: 20 }} />
               <div style={{ display: 'flex', gap: 10 }}>
