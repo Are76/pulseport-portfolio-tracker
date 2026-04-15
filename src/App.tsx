@@ -3136,6 +3136,7 @@ export default function App() {
                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none',
                          background: 'radial-gradient(ellipse at 5% 60%, rgba(0,255,159,.07) 0%, transparent 45%), radial-gradient(ellipse at 92% 50%, rgba(99,102,241,.05) 0%, transparent 45%)' }} />
                        <div className="hero-grid" style={{ position: 'relative' }}>
+                          <div className="hero-grid-top">
                          {/* Left: Portfolio Value + Stats */}
                          <div>
                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 6 }}>Total Portfolio Value</div>
@@ -3216,9 +3217,10 @@ export default function App() {
                              Profit Planner
                            </button>
                          </div>
-                         {/* Right: My Holdings panel */}
+                          </div>{/* end hero-grid-top */}
+                         {/* Holdings — full width below stats */}
                          {(() => {
-                           const MAX_HERO_HOLDINGS = 7;
+                           const MAX_HERO_HOLDINGS = 10;
                            const holdingAssets = [...currentAssets].sort((a, b) => b.value - a.value).slice(0, MAX_HERO_HOLDINGS);
                            const fmtBal = (b: number) =>
                              b >= 1e9 ? `${(b/1e9).toFixed(2)}B` :
@@ -3253,15 +3255,18 @@ export default function App() {
                                    <WalletIcon size={28} style={{ opacity: 0.35 }} />
                                    <span style={{ fontSize: 13 }}>Add wallets to see holdings</span>
                                  </div>
-                               ) : holdingAssets.map((asset, idx) => {
+                               ) : (
+                                 <div className="hero-holdings-items">
+                                 {holdingAssets.map((asset) => {
                                  const pct = asset.priceChange24h ?? asset.pnl24h ?? null;
                                  const lowerAddress = asset.address?.toLowerCase?.() ?? '';
                                  const logo = STATIC_LOGOS[lowerAddress] || asset.logoUrl || tokenLogos[lowerAddress];
+                                 const allocPct = summary.totalValue > 0 ? (asset.value / summary.totalValue) * 100 : 0;
+                                 const chainLabel = asset.chain === 'ethereum' ? 'ETH' : asset.chain === 'base' ? 'BASE' : 'PLS';
                                  return (
                                    <div
                                      key={asset.id}
                                      className="hero-holding-row"
-                                     style={{ borderTop: idx === 0 ? 'none' : `1px solid var(--border)` }}
                                      onClick={() => setTokenCardModal(asset)}>
                                      {/* Icon */}
                                      <div style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0, overflow: 'hidden', background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: 'var(--fg-muted)', border: '1px solid var(--border)' }}>
@@ -3273,13 +3278,17 @@ export default function App() {
                                      {/* Name + symbol/price */}
                                      <div style={{ flex: 1, minWidth: 0 }}>
                                        <div title={asset.name || asset.symbol} style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{asset.name || asset.symbol}</div>
-                                       <div style={{ fontSize: 12, color: 'var(--fg-subtle)', lineHeight: 1.3, marginTop: 1 }}>
-                                         {asset.symbol}{asset.price > 0 && <span style={{ marginLeft: 4 }}>· {fmtPrice(asset.price)}</span>}
+                                       <div style={{ fontSize: 12, color: 'var(--fg-subtle)', lineHeight: 1.3, marginTop: 1, display: 'flex', alignItems: 'center', gap: 5 }}>
+                                         <span>{asset.symbol}{asset.price > 0 && <span style={{ marginLeft: 4 }}>· {fmtPrice(asset.price)}</span>}</span>
+                                         <span className="hero-holding-chain-badge">{chainLabel}</span>
                                        </div>
                                      </div>
-                                     {/* Value + amount */}
+                                     {/* Value + amount + alloc */}
                                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 }}>
-                                       <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', fontVariantNumeric: 'tabular-nums' }}>{fmtVal(asset.value)}</span>
+                                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                         <span className="hero-holding-alloc">{allocPct >= 0.1 ? `${allocPct.toFixed(1)}%` : '<0.1%'}</span>
+                                         <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', fontVariantNumeric: 'tabular-nums' }}>{fmtVal(asset.value)}</span>
+                                       </div>
                                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                                          <span style={{ fontSize: 11, color: 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace' }}>{fmtBal(asset.balance)}</span>
                                          {pct !== null && (
@@ -3292,6 +3301,8 @@ export default function App() {
                                    </div>
                                  );
                                })}
+                                 </div>
+                               )}
                              </div>
                            );
                          })()}
