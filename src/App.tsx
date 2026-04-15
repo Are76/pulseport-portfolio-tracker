@@ -3802,9 +3802,7 @@ export default function App() {
                         <tr style={{ borderBottom: `1px solid ${t.border}` }}>
                           {[
                             { label: 'Token', field: null, align: 'left' },
-                            { label: 'Price', field: null, align: 'right' },
                             { label: priceChangePeriod.toUpperCase(), field: 'change', align: 'right' },
-                            { label: 'Held', field: null, align: 'right' },
                             { label: 'Value', field: 'value', align: 'right' },
                             { label: '% of Portfolio', field: null, align: 'right' },
                             { label: '', field: null, align: 'right' },
@@ -3826,17 +3824,17 @@ export default function App() {
                       <tbody>
                         {isLoading && wallets.length > 0 && currentAssets.length === 0 && [...Array(5)].map((_, i) => (
                           <tr key={`skel-${i}`}>
-                            <td style={{ padding: '11px 16px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                <div className="skeleton" style={{ width: 34, height: 34, borderRadius: '50%' }} />
+                            <td style={{ padding: '13px 16px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div className="skeleton" style={{ width: 42, height: 42, borderRadius: '50%', flexShrink: 0 }} />
                                 <div>
-                                  <div className="skeleton" style={{ width: 60, height: 13, marginBottom: 4 }} />
-                                  <div className="skeleton" style={{ width: 80, height: 11 }} />
+                                  <div className="skeleton" style={{ width: 80, height: 13, marginBottom: 5 }} />
+                                  <div className="skeleton" style={{ width: 110, height: 11 }} />
                                 </div>
                               </div>
                             </td>
-                            {[...Array(6)].map((_, j) => (
-                              <td key={j} style={{ padding: '11px 16px', textAlign: 'right' }}>
+                            {[...Array(4)].map((_, j) => (
+                              <td key={j} style={{ padding: '13px 16px', textAlign: 'right' }}>
                                 <div className="skeleton" style={{ height: 13, width: 60, marginLeft: 'auto' }} />
                               </td>
                             ))}
@@ -3844,7 +3842,7 @@ export default function App() {
                         ))}
                         {currentAssets.length === 0 ? (
                           <tr>
-                            <td colSpan={7} style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 13 }}>
+                            <td colSpan={5} style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 13 }}>
                               No holdings found — add wallets to get started
                             </td>
                           </tr>
@@ -3876,6 +3874,11 @@ export default function App() {
                             const entryPls = manualEntries[asset.id];
                             const currentPlsValue = asset.value / plsUsdPrice;
                             const pnlPls = entryPls ? currentPlsValue - entryPls : null;
+                            const fmtBal = (b: number) =>
+                              b >= 1e9 ? `${(b/1e9).toFixed(2)}B` :
+                              b >= 1e6 ? `${(b/1e6).toFixed(2)}M` :
+                              b >= 1e3 ? `${(b/1e3).toFixed(2)}K` :
+                              b.toLocaleString(undefined, { maximumFractionDigits: 4 });
                             return (
                               <React.Fragment key={asset.id}>
                               <motion.tr
@@ -3886,41 +3889,32 @@ export default function App() {
                                 onClick={() => setExpandedAssetIds(prev => { const s = new Set(prev); s.has(asset.id) ? s.delete(asset.id) : s.add(asset.id); return s; })}
                                 onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
                                 onMouseOut={e => (e.currentTarget.style.background = isExpanded ? 'var(--bg-elevated)' : 'transparent')}>
-                                <td style={{ padding: '11px 16px', whiteSpace: 'nowrap' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                {/* ── Token cell ── */}
+                                <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                     {/* Logo */}
-                                    <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-                                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: 'var(--fg)', flexShrink: 0, overflow: 'hidden' }}>
+                                    <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 800, color: 'var(--fg)', flexShrink: 0, overflow: 'hidden' }}>
                                       {logo ? <img src={logo} alt={asset.symbol} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
                                           onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.removeAttribute('hidden'); }} /> : null}
                                       <span hidden={!!logo}>{asset.symbol[0]}</span>
                                     </div>
+                                    {/* Name + subtitle */}
                                     <div>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                                        {explUrl
-                                          ? <a href={explUrl} target="_blank" rel="noopener noreferrer"
-                                              style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)', textDecoration: 'none' }}
-                                              onClick={e => e.stopPropagation()}
-                                              onMouseOver={e => (e.currentTarget.style.color = 'var(--accent)')}
-                                              onMouseOut={e => (e.currentTarget.style.color = 'var(--fg)')}>
-                                              {asset.symbol}
-                                            </a>
-                                          : <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>{asset.symbol}</span>}
-                                        {/* Copy CA */}
+                                        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>{asset.name || asset.symbol}</span>
                                         {addr && addr !== 'native' && (
                                           <button onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(addr); }}
-                                            title={`Copy contract address: ${addr}`}
+                                            title={`Copy: ${addr}`}
                                             style={{ padding: '1px 3px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s', lineHeight: 1 }}
                                             onMouseOver={e => (e.currentTarget.style.color = '#aaa')}
                                             onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
                                             <Copy size={10} />
                                           </button>
                                         )}
-                                        {/* DexScreener */}
                                         {dsUrl && addr !== 'native' && (
                                           <a href={dsUrl} target="_blank" rel="noopener noreferrer"
-                                            title="View on DexScreener"
-                                            onClick={e => e.stopPropagation()}
+                                            title="DexScreener" onClick={e => e.stopPropagation()}
                                             style={{ padding: '1px 3px', color: 'var(--fg-subtle)', transition: 'color .12s', lineHeight: 1, display: 'inline-flex' }}
                                             onMouseOver={e => (e.currentTarget.style.color = '#f4c542')}
                                             onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
@@ -3928,29 +3922,26 @@ export default function App() {
                                           </a>
                                         )}
                                       </div>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 1 }}>
-                                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: CHAIN_COLORS[asset.chain] || '#555' }} />
-                                        <span style={{ fontSize: 13, color: 'var(--fg-muted)' }}>{asset.chain}</span>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3 }}>
+                                        <div style={{ width: 5, height: 5, borderRadius: '50%', background: CHAIN_COLORS[asset.chain] || '#555', flexShrink: 0 }} />
+                                        <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>
+                                          {asset.symbol}{asset.price > 0 && <> · <PriceDisplay price={asset.price} /></>}
+                                        </span>
                                       </div>
                                     </div>
                                   </div>
                                 </td>
-                                <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                                  <PriceDisplay price={asset.price} className="" />
-                                </td>
-                                <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap',
+                                {/* ── Change cell ── */}
+                                <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap',
                                   fontSize: 13, fontWeight: 600, color: pct >= 0 ? t.green : t.red }}>
                                   {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%
                                 </td>
                                 <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>
-                                    {asset.balance.toLocaleString(undefined, { maximumFractionDigits: 4 })}
-                                  </div>
-                                  <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>{asset.symbol}</div>
-                                </td>
-                                <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                                   <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>
                                     ${asset.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                  </div>
+                                  <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 2 }}>
+                                    {fmtBal(asset.balance)} {asset.symbol}
                                   </div>
                                 </td>
                                 <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap', minWidth: 90 }}>
@@ -3986,7 +3977,7 @@ export default function App() {
                               {/* ── Expanded details row ── */}
                               {isExpanded && (
                                 <tr style={{ borderBottom: `1px solid ${t.borderLight}`, borderLeft: `3px solid ${CHAIN_COLORS[asset.chain] || '#333'}`, background: t.expandedBg }}>
-                                  <td colSpan={7} style={{ padding: '0 16px 14px 16px' }}>
+                                  <td colSpan={5} style={{ padding: '0 16px 14px 16px' }}>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, paddingTop: 12 }}>
                                       {/* Price details */}
                                       <div style={{ background: t.cardHigh, borderRadius: 8, padding: '12px 14px' }}>
@@ -4185,7 +4176,7 @@ export default function App() {
                       {currentAssets.length > 0 && (
                         <tfoot>
                           <tr style={{ borderTop: '1px solid var(--border)' }}>
-                            <td colSpan={4} style={{ padding: '10px 16px', fontSize: 13, color: 'var(--fg-muted)', fontWeight: 600 }}>
+                            <td colSpan={2} style={{ padding: '10px 16px', fontSize: 13, color: 'var(--fg-muted)', fontWeight: 600 }}>
                               TOTAL LIQUID
                             </td>
                             <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>
