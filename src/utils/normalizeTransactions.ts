@@ -12,6 +12,13 @@
 
 import type { Transaction } from '../types';
 
+/** Native gas token symbol per chain. Used to filter out zero-value router invocations. */
+const NATIVE_TOKEN: Record<string, string> = {
+  pulsechain: 'PLS',
+  ethereum:   'ETH',
+  base:       'ETH',
+};
+
 export function normalizeTransactions(
   rawTxs: Transaction[],
   walletAddrs: Set<string>,
@@ -38,9 +45,7 @@ export function normalizeTransactions(
       const ins  = relevant.filter(t => t.type === 'deposit');
 
       // Helper: identify zero-value native-token calls (router invocations with no value)
-      const isNativeTx = (t: Transaction) =>
-        (t.chain === 'pulsechain' && t.asset === 'PLS') ||
-        ((t.chain === 'ethereum' || t.chain === 'base') && t.asset === 'ETH');
+      const isNativeTx = (t: Transaction) => t.asset === NATIVE_TOKEN[t.chain];
 
       // In + Out on the same hash → this is a swap
       if (outs.length > 0 && ins.length > 0) {

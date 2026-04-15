@@ -558,7 +558,6 @@ export default function App() {
     const saved = localStorage.getItem('pulseport_theme');
     return (saved === 'light') ? 'light' : 'dark';
   });
-  const [expandedTxIds, setExpandedTxIds] = useState<Set<string>>(new Set());
 
   // Apply theme to document
   useEffect(() => {
@@ -4757,140 +4756,20 @@ export default function App() {
                 </div>
               )}
               <div style={{ maxHeight: 600, overflowY: 'auto' }} className="custom-scrollbar">
-                {filteredTransactions.filter(tx => showHiddenTxs || !hiddenTxIds.includes(tx.id)).length === 0 ? (
-                  <div style={{ padding: '40px 20px', textAlign: 'center', color: t.textSecondary, fontSize: 13 }}>No transactions found for these filters.</div>
-                ) : filteredTransactions.filter(tx => showHiddenTxs || !hiddenTxIds.includes(tx.id)).map((tx) => {
-                  const isHidden = hiddenTxIds.includes(tx.id);
-                  const isTxExpanded = expandedTxIds.has(tx.id);
-                  const coinAsset = currentAssets.find(a => a.symbol.toUpperCase() === tx.asset.toUpperCase() && a.chain === tx.chain);
-                  const coinLogo = coinAsset ? getTokenLogoUrl(coinAsset) : '';
-                  const explorerBase = tx.chain === 'pulsechain' ? 'https://scan.pulsechain.com' : tx.chain === 'ethereum' ? 'https://etherscan.io' : 'https://basescan.org';
-                  const isOwn = (addr: string | undefined) => viewAsYou && addr && wallets.some(w => w.address.toLowerCase() === addr.toLowerCase());
-                  const displayAddr = (addr: string | undefined) => isOwn(addr) ? 'You' : addr ? `${addr.slice(0,6)}\u2026${addr.slice(-4)}` : '?';
-                  const isDeposit = tx.type === 'deposit';
-                  const isWithdraw = tx.type === 'withdraw';
-                  const isSwap = tx.type === 'swap';
-                  const typeBg = isDeposit ? 'rgba(0,255,159,.1)' : isSwap ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)';
-                  const typeColor = isDeposit ? t.green : isSwap ? '#8b5cf6' : t.red;
-                  const typeLabel = isSwap ? (viewAsYou ? `Swap \u00b7 ${displayAddr(tx.from)} \u2192 ${displayAddr(tx.to)}` : 'Swap') : isDeposit ? 'Received' : 'Sent';
-                  return (
-                    <div key={tx.id} className={`tx-card-row${isHidden ? ' tx-card-row--hidden' : ''}`} style={{ borderBottom: `1px solid ${t.borderLight}` }}>
-                      <div className="tx-card" style={{ padding: txCompact ? '6px 18px' : '10px 18px', cursor: 'pointer' }}
-                        onClick={() => setExpandedTxIds(prev => { const s = new Set(prev); s.has(tx.id) ? s.delete(tx.id) : s.add(tx.id); return s; })}
-                        onMouseOver={e => (e.currentTarget.style.background = t.hoverBg)}
-                        onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
-                        <div className="tx-card__left">
-                          {!txCompact && (<div className="tx-card__icon" style={{ background: typeBg, color: typeColor }}>{isDeposit ? <ArrowDownLeft size={13} /> : isSwap ? <RefreshCcw size={13} /> : <ArrowUpRight size={13} />}</div>)}
-                          <div className="tx-card__meta">
-                            <div className="tx-card__badges">
-                              <span className="tx-card__type-badge" style={{ background: typeBg, color: typeColor }}>{typeLabel}</span>
-                              <span className="tx-chain-dot" style={{ background: tx.chain === 'pulsechain' ? '#f739ff' : tx.chain === 'ethereum' ? '#627EEA' : '#0052FF' }} title={tx.chain} />
-                              <span className="tx-chain-label" style={{ color: tx.chain === 'pulsechain' ? '#f739ff' : tx.chain === 'ethereum' ? '#818cf8' : '#60a5fa' }}>{tx.chain === 'pulsechain' ? 'PLS' : tx.chain === 'ethereum' ? 'ETH' : 'BASE'}</span>
-                              <span className="tx-card__date">{format(tx.timestamp, 'MMM d, yyyy')}</span>
-                            </div>
-                            {(!txCompact || isSwap) && (
-                              <div className="tx-card__amount" style={{ color: isDeposit ? t.green : isSwap ? t.text : t.red }}>
-                                {isDeposit ? '+' : isWithdraw ? '\u2212' : ''}
-                                {isSwap && tx.counterAsset ? `${tx.counterAmount?.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.counterAsset} \u2192 ${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}` : `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`}
-                                {!txCompact && tx.valueUsd ? (<span className="tx-card__usd">\u2248 ${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>) : null}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="tx-card__actions">
-                          {coinLogo && (
-                            <button onClick={e => { e.stopPropagation(); setTxAssetFilter(tx.asset); }} title={`Filter by ${tx.asset}`}
-                              style={{ width: 20, height: 20, borderRadius: '50%', overflow: 'hidden', border: `1px solid ${t.border}`, background: t.cardHighest, flexShrink: 0, cursor: 'pointer', padding: 0 }}>
-                              <img src={coinLogo} alt={tx.asset} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                            </button>
-                          )}
-                          <button title={isHidden ? 'Unhide' : 'Hide'} onClick={e => { e.stopPropagation(); setHiddenTxIds(prev => isHidden ? prev.filter(id => id !== tx.id) : [...prev, tx.id]); }} className="tx-card__hide-btn">
-                            {isHidden ? <Eye size={13} /> : <EyeOff size={13} />}
-                          </button>
-                          <span style={{ color: isTxExpanded ? t.green : t.textMuted, transition: 'color .12s' }}>{isTxExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}</span>
-                        </div>
-                      </div>
-                      {isTxExpanded && (
-                        <div style={{ padding: '0 18px 14px', background: t.expandedBg }}>
-                          {isSwap ? (() => {
-                            const counterAsset = tx.counterAsset ? currentAssets.find(a => a.symbol.toUpperCase() === tx.counterAsset!.toUpperCase() && a.chain === tx.chain) : undefined;
-                            const counterLogo = counterAsset ? getTokenLogoUrl(counterAsset) : '';
-                            const nowPriceReceived = coinAsset?.price ?? 0;
-                            const nowPriceSpent = counterAsset?.price ?? 0;
-                            const thenPriceReceived = tx.valueUsd && tx.amount > 0 ? tx.valueUsd / tx.amount : 0;
-                            const thenPriceSpent = tx.valueUsd && tx.counterAmount && tx.counterAmount > 0 ? tx.valueUsd / tx.counterAmount : 0;
-                            const dollarPnl = tx.valueUsd != null && nowPriceReceived > 0 ? (tx.amount * nowPriceReceived) - tx.valueUsd : null;
-                            const tradePnl = nowPriceReceived > 0 && nowPriceSpent > 0 && tx.counterAmount ? (tx.amount * nowPriceReceived) - (tx.counterAmount * nowPriceSpent) : null;
-                            const fmtPnl = (n: number) => { const abs = Math.abs(n); const dp = abs < 0.001 ? 6 : abs < 0.1 ? 4 : 2; return `${n >= 0 ? '+' : ''}$${Math.abs(n).toFixed(dp)}`; };
-                            const fmtPrice = (p: number) => p <= 0 ? '\u2014' : p < 0.001 ? `$${p.toFixed(8)}` : p < 1 ? `$${p.toFixed(6)}` : `$${p.toFixed(4)}`;
-                            return (
-                              <div style={{ paddingTop: 10, borderTop: `1px solid ${t.borderLight}` }}>
-                                <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 10, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                                  <span>Swap from <strong style={{ color: isOwn(tx.from) ? t.green : 'var(--fg)' }}>{displayAddr(tx.from)}</strong> to <strong style={{ color: isOwn(tx.to) ? t.green : 'var(--fg)' }}>{displayAddr(tx.to)}</strong></span>
-                                  {tx.fee != null && tx.fee > 0 && <span style={{ color: 'var(--fg-subtle)', fontSize: 11 }}>&#x26FD; {tx.fee.toLocaleString(undefined, { maximumFractionDigits: 4 })} {tx.chain === 'ethereum' ? 'ETH' : 'PLS'}</span>}
-                                  <span style={{ marginLeft: 'auto', color: 'var(--fg-subtle)', fontSize: 11 }}>{format(tx.timestamp, 'MMM d, yyyy HH:mm')}</span>
-                                </div>
-                                {(tradePnl !== null || dollarPnl !== null) && (
-                                  <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-                                    {tradePnl !== null && (<div className="tx-pnl-card" style={{ background: tradePnl >= 0 ? 'rgba(0,255,159,0.06)' : 'rgba(244,63,94,0.06)', border: `1px solid ${tradePnl >= 0 ? 'rgba(0,255,159,0.18)' : 'rgba(244,63,94,0.18)'}` }}><div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>{tradePnl >= 0 ? <TrendingUp size={11} style={{ color: t.green }} /> : <TrendingDown size={11} style={{ color: t.red }} />}<span style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Trade P/L</span></div><div style={{ fontSize: 14, fontWeight: 800, color: tradePnl >= 0 ? t.green : t.red, fontFamily: 'JetBrains Mono, monospace' }}>{fmtPnl(tradePnl)}</div><div style={{ fontSize: 10, color: 'var(--fg-subtle)' }}>At current prices</div></div>)}
-                                    {dollarPnl !== null && (<div className="tx-pnl-card" style={{ background: dollarPnl >= 0 ? 'rgba(0,255,159,0.06)' : 'rgba(244,63,94,0.06)', border: `1px solid ${dollarPnl >= 0 ? 'rgba(0,255,159,0.18)' : 'rgba(244,63,94,0.18)'}` }}><div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>{dollarPnl >= 0 ? <TrendingUp size={11} style={{ color: t.green }} /> : <TrendingDown size={11} style={{ color: t.red }} />}<span style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Dollar P/L</span></div><div style={{ fontSize: 14, fontWeight: 800, color: dollarPnl >= 0 ? t.green : t.red, fontFamily: 'JetBrains Mono, monospace' }}>{fmtPnl(dollarPnl)}</div><div style={{ fontSize: 10, color: 'var(--fg-subtle)' }}>Position change</div></div>)}
-                                  </div>
-                                )}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--bg-inset)', borderRadius: 8, marginBottom: 6 }}>
-                                  {coinLogo ? <img src={coinLogo} alt={tx.asset} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /> : <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,255,159,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: t.green, flexShrink: 0 }}>{tx.asset[0]}</div>}
-                                  <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontSize: 13, fontWeight: 700, color: t.green, fontFamily: 'JetBrains Mono, monospace' }}>+ {tx.amount.toLocaleString(undefined, { maximumFractionDigits: 6 })} {tx.asset}</div>
-                                    {thenPriceReceived > 0 && (<div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 1 }}>Then: <span style={{ color: 'var(--fg-muted)' }}>{fmtPrice(thenPriceReceived)}</span>{nowPriceReceived > 0 && <> &middot; Now: <span style={{ color: nowPriceReceived >= thenPriceReceived ? t.green : t.red }}>{fmtPrice(nowPriceReceived)}</span></>}</div>)}
-                                  </div>
-                                  <a href={`${explorerBase}/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: 'var(--fg-subtle)', transition: 'color .12s', flexShrink: 0 }} onMouseOver={e => ((e.currentTarget as HTMLAnchorElement).style.color = t.green)} onMouseOut={e => ((e.currentTarget as HTMLAnchorElement).style.color = 'var(--fg-subtle)')}><ExternalLink size={12} /></a>
-                                  <button onClick={e => { e.stopPropagation(); setTxAssetFilter(tx.asset); }} title={`Filter by ${tx.asset}`} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', padding: 2, transition: 'color .12s', flexShrink: 0 }} onMouseOver={e => (e.currentTarget.style.color = '#a78bfa')} onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}><Filter size={12} /></button>
-                                </div>
-                                {tx.counterAsset && tx.counterAmount != null && (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--bg-inset)', borderRadius: 8 }}>
-                                    {counterLogo ? <img src={counterLogo} alt={tx.counterAsset} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /> : <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(244,63,94,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: t.red, flexShrink: 0 }}>{tx.counterAsset[0]}</div>}
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                      <div style={{ fontSize: 13, fontWeight: 700, color: t.red, fontFamily: 'JetBrains Mono, monospace' }}>&minus; {tx.counterAmount.toLocaleString(undefined, { maximumFractionDigits: 6 })} {tx.counterAsset}</div>
-                                      {thenPriceSpent > 0 && (<div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 1 }}>Then: <span style={{ color: 'var(--fg-muted)' }}>{fmtPrice(thenPriceSpent)}</span>{nowPriceSpent > 0 && <> &middot; Now: <span style={{ color: nowPriceSpent >= thenPriceSpent ? t.green : t.red }}>{fmtPrice(nowPriceSpent)}</span></>}</div>)}
-                                    </div>
-                                    <a href={`${explorerBase}/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: 'var(--fg-subtle)', transition: 'color .12s', flexShrink: 0 }} onMouseOver={e => ((e.currentTarget as HTMLAnchorElement).style.color = t.green)} onMouseOut={e => ((e.currentTarget as HTMLAnchorElement).style.color = 'var(--fg-subtle)')}><ExternalLink size={12} /></a>
-                                    <button onClick={e => { e.stopPropagation(); setTxAssetFilter(tx.counterAsset!); }} title={`Filter by ${tx.counterAsset}`} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', padding: 2, transition: 'color .12s', flexShrink: 0 }} onMouseOver={e => (e.currentTarget.style.color = '#a78bfa')} onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}><Filter size={12} /></button>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })() : (
-                            <div style={{ paddingTop: 10, borderTop: `1px solid ${t.borderLight}` }}>
-                              <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 10 }}>
-                                {isDeposit ? <>Received from <strong style={{ color: isOwn(tx.from) ? t.green : 'var(--fg)' }}>{displayAddr(tx.from)}</strong></> : <>Sent to <strong style={{ color: isOwn(tx.to) ? t.green : 'var(--fg)' }}>{displayAddr(tx.to)}</strong></>}
-                                <span style={{ color: 'var(--fg-subtle)', fontSize: 11, marginLeft: 10 }}>{format(tx.timestamp, 'MMM d, yyyy HH:mm')}</span>
-                              </div>
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
-                                {[
-                                  { label: 'Amount', val: `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${tx.asset}`, sub: 'Token amount' },
-                                  { label: 'USD Value', val: tx.valueUsd ? `$${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '\u2014', sub: 'At time of tx' },
-                                  { label: 'Current Price', val: coinAsset?.price ? `$${coinAsset.price < 0.001 ? coinAsset.price.toFixed(8) : coinAsset.price.toLocaleString(undefined, { maximumFractionDigits: 4 })}` : '\u2014', sub: coinAsset ? `${tx.asset} now` : 'Unknown' },
-                                  { label: 'Current Value', val: coinAsset ? `$${(tx.amount * coinAsset.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '\u2014', sub: 'If held to now', color: coinAsset && tx.valueUsd ? ((tx.amount * coinAsset.price) >= tx.valueUsd ? t.green : t.red) : undefined },
-                                  ...(tx.valueUsd && coinAsset ? [{ label: 'Profit / Loss', val: `${(tx.amount * coinAsset.price - tx.valueUsd) >= 0 ? '+' : ''}$${Math.abs(tx.amount * coinAsset.price - tx.valueUsd).toLocaleString(undefined, { maximumFractionDigits: 2 })}`, sub: `${(((tx.amount * coinAsset.price) / tx.valueUsd - 1) * 100).toFixed(1)}% change`, color: (tx.amount * coinAsset.price - tx.valueUsd) >= 0 ? t.green : t.red }] : []),
-                                  { label: 'Chain', val: tx.chain === 'pulsechain' ? 'PulseChain' : tx.chain === 'ethereum' ? 'Ethereum' : 'Base', sub: isDeposit ? `From ${displayAddr(tx.from)}` : `To ${displayAddr(tx.to)}` },
-                                  { label: 'Date', val: format(tx.timestamp, 'MMM d, yyyy'), sub: format(tx.timestamp, 'HH:mm:ss') },
-                                ].map(({ label, val, sub, color }) => (
-                                  <div key={label} style={{ background: t.cardHigh, borderRadius: 8, padding: '10px 12px' }}>
-                                    <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>{label}</div>
-                                    <div style={{ fontSize: 14, fontWeight: 700, color: (color as string | undefined) || t.text }}>{val}</div>
-                                    <div style={{ fontSize: 12, color: t.textTertiary, marginTop: 1 }}>{sub}</div>
-                                  </div>
-                                ))}
-                              </div>
-                              <div style={{ marginTop: 8 }}>
-                                <a href={`${explorerBase}/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: t.green, textDecoration: 'none' }}><ExternalLink size={11} /> View on Explorer</a>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                <TransactionList
+                  transactions={filteredTransactions}
+                  viewAsYou={viewAsYou}
+                  wallets={wallets}
+                  compact={txCompact}
+                  assets={currentAssets}
+                  getTokenLogoUrl={getTokenLogoUrl}
+                  tokenLogos={tokenLogos}
+                  hideIds={hiddenTxIds}
+                  onToggleHide={id => setHiddenTxIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
+                  showHidden={showHiddenTxs}
+                  onFilterByAsset={symbol => setTxAssetFilter(symbol)}
+                  emptyMessage="No transactions found for these filters."
+                />
               </div>
               </>)}
             </div>
@@ -5392,9 +5271,13 @@ export default function App() {
                                            {/* Unified tx-card list replaces old mini table */}
                                            <TransactionList
                                              transactions={previewTxs}
-                                             wallets={viewAsYou ? wallets : []}
-                                             tokenLogos={tokenLogos}
+                                             viewAsYou={viewAsYou}
+                                             wallets={wallets}
                                              compact
+                                             assets={currentAssets}
+                                             getTokenLogoUrl={getTokenLogoUrl}
+                                             tokenLogos={tokenLogos}
+                                             onFilterByAsset={symbol => { setTxAssetFilter(symbol); setActiveTab('history'); }}
                                              emptyMessage="No transactions for this token."
                                            />
                                            {tokenTxs.length > 8 && (
@@ -5481,12 +5364,16 @@ export default function App() {
                       <div style={{ maxHeight: 520, overflowY: 'auto' }} className="custom-scrollbar">
                         <TransactionList
                           transactions={filtered}
+                          viewAsYou={viewAsYou}
+                          wallets={wallets}
+                          compact
+                          assets={currentAssets}
+                          getTokenLogoUrl={getTokenLogoUrl}
+                          tokenLogos={tokenLogos}
                           hideIds={hiddenTxIds}
                           onToggleHide={id => setHiddenTxIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
                           showHidden={showHiddenTxs}
-                          wallets={viewAsYou ? wallets : []}
-                          tokenLogos={tokenLogos}
-                          compact
+                          onFilterByAsset={symbol => setTxAssetFilter(symbol)}
                           emptyMessage="No transactions found for these filters."
                         />
                       </div>
