@@ -95,6 +95,8 @@ export interface LpPositionEnriched extends LpPosition {
   isStaked: boolean;
   poolId?: number;
   pendingIncUsd?: number;
+  walletLpBalance: number;   // LP tokens held in wallet (normalised to 1e18)
+  stakedLpBalance: number;   // LP tokens staked in MasterChef (normalised to 1e18)
   sparkline: { t: number; v: number }[];  // 7 points, approximate — totalUsd ± small variance
 }
 

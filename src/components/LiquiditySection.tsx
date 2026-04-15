@@ -443,8 +443,13 @@ function SectionHeader({ positions, loading, onRefetch, onViewAll }: SectionHead
 
 // ─── Hook auto-fetch helper ───────────────────────────────────────────────────
 // Uses a stable ref so price changes (which recreate `refetch`) don't trigger
-// a second RPC round-trip — only wallet list changes cause a re-fetch.
-function useAutoFetch(walletAddresses: string[], refetch: () => void) {
+// a second RPC round-trip — only wallet list changes and the first price
+// availability cause a re-fetch.
+function useAutoFetch(
+  walletAddresses: string[],
+  refetch: () => void,
+  tokenPrices: Record<string, number>,
+) {
   const refetchRef = useRef(refetch);
   // Keep ref current after every render (no-dep effect runs first within same cycle)
   useEffect(() => { refetchRef.current = refetch; });
@@ -454,6 +459,18 @@ function useAutoFetch(walletAddresses: string[], refetch: () => void) {
     if (walletAddresses.length > 0) refetchRef.current();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [walletsKey]);
+
+  // Issue #2 — also re-fetch once when tokenPrices transitions from empty to
+  // non-empty, so positions that loaded before prices were available get USD
+  // values recalculated against real prices.
+  const pricesReady = Object.keys(tokenPrices).length > 0;
+  const prevPricesReady = useRef(false);
+  useEffect(() => {
+    if (pricesReady && !prevPricesReady.current && walletAddresses.length > 0) {
+      refetchRef.current();
+    }
+    prevPricesReady.current = pricesReady;
+  }, [pricesReady, walletAddresses.length]);
 }
 
 // ─── OVERVIEW STRIP ───────────────────────────────────────────────────────────
@@ -469,7 +486,7 @@ export function LiquidityOverviewStrip({
   onViewAll,
 }: LiquidityOverviewStripProps) {
   const { positions, loading, error, refetch } = useLiquidityPositions(walletAddresses, tokenPrices);
-  useAutoFetch(walletAddresses, refetch);
+  useAutoFetch(walletAddresses, refetch, tokenPrices);
 
   // Render null only when definitively empty (not loading)
   if (!loading && positions.length === 0 && !error) return null;
@@ -549,7 +566,7 @@ export interface LiquiditySectionProps {
 
 export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySectionProps) {
   const { positions, loading, error, refetch } = useLiquidityPositions(walletAddresses, tokenPrices);
-  useAutoFetch(walletAddresses, refetch);
+  useAutoFetch(walletAddresses, refetch, tokenPrices);
 
   const stakedPositions  = positions.filter(p => p.isStaked);
   const regularPositions = positions.filter(p => !p.isStaked);
