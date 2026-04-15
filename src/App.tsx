@@ -3280,8 +3280,8 @@ export default function App() {
                                      <button
                                        onClick={() => setAllocWheelOpen(v => !v)}
                                        title={allocWheelOpen ? 'Hide wheel' : 'Show wheel'}
-                                       style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, borderRadius: 4, border: '1px solid var(--border)', background: allocWheelOpen ? 'var(--accent-dim)' : t.cardHigh, cursor: 'pointer', color: allocWheelOpen ? 'var(--accent)' : t.textMuted, padding: 0, transition: 'all .15s' }}>
-                                       {allocWheelOpen ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                                       style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: 5, border: `1px solid ${allocWheelOpen ? "var(--accent-border)" : "var(--border)"}`, background: allocWheelOpen ? "var(--accent-dim)" : t.cardHigh, cursor: "pointer", color: allocWheelOpen ? "var(--accent)" : t.textMuted, padding: 0, transition: "all .15s" }}>
+                                       <PieChartIcon size={11} />
                                      </button>
                                    </div>
                                    <div style={{ display: 'flex', gap: 4 }}>
@@ -3729,8 +3729,56 @@ export default function App() {
                         </span>
                       )}
                     </button>
+                    <button
+                      onClick={() => setAllocWheelOpen(v => !v)}
+                      title={allocWheelOpen ? 'Hide allocation' : 'Show allocation'}
+                      style={{ padding: '6px 8px', borderRadius: 8, border: `1px solid ${allocWheelOpen ? 'var(--accent-border)' : t.border}`,
+                        background: allocWheelOpen ? 'var(--accent-dim)' : t.cardHigh,
+                        color: allocWheelOpen ? 'var(--accent)' : t.textSecondary,
+                        cursor: 'pointer', transition: 'all .12s', display: 'flex', alignItems: 'center' }}>
+                      <PieChartIcon size={14} />
+                    </button>
                   </div>
                 </div>
+
+                {/* ── Allocation panel ── */}
+                {allocWheelOpen && (() => {
+                  const ALLOC_COLORS_P = ['#00FF9F','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
+                  const alloc = assetAllocation.length > 0 ? assetAllocation : [];
+                  const emptyData = [{ name: '', value: 1 }];
+                  return (
+                    <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, padding: '16px 20px', display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <div style={{ width: 130, height: 130, flexShrink: 0 }}>
+                        <ResponsiveContainer width="100%" height="100%" debounce={50}>
+                          <PieChart>
+                            <Pie data={alloc.length > 0 ? alloc : emptyData} cx="50%" cy="50%" innerRadius={38} outerRadius={58} paddingAngle={alloc.length > 0 ? 3 : 0} dataKey="value" strokeWidth={0}>
+                              {(alloc.length > 0 ? alloc : emptyData).map((_, i) => (
+                                <Cell key={i} fill={alloc.length > 0 ? ALLOC_COLORS_P[i % ALLOC_COLORS_P.length] : 'var(--border)'} />
+                              ))}
+                            </Pie>
+                            <RechartsTooltip contentStyle={{ background: 'var(--bg-surface)', border: '1px solid rgba(0,255,159,0.15)', borderRadius: 10, fontSize: 12, color: 'var(--fg)', boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 7, minWidth: 160 }}>
+                        {alloc.length > 0 ? alloc.map((a, i) => {
+                          const pct = (a.value / (summary.totalValue || 1)) * 100;
+                          const valFmt = a.value >= 1e6 ? `$${(a.value/1e6).toFixed(1)}M` : a.value >= 1e3 ? `$${(a.value/1e3).toFixed(0)}K` : `$${a.value.toFixed(0)}`;
+                          return (
+                            <div key={a.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <div style={{ width: 8, height: 8, borderRadius: 2, background: ALLOC_COLORS_P[i % ALLOC_COLORS_P.length], flexShrink: 0, boxShadow: `0 0 6px ${ALLOC_COLORS_P[i % ALLOC_COLORS_P.length]}66` }} />
+                              <span style={{ fontSize: 13, color: t.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</span>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: t.textSecondary, fontFamily: 'JetBrains Mono, monospace', fontVariantNumeric: 'tabular-nums', marginLeft: 4 }}>{pct.toFixed(1)}%</span>
+                              <span style={{ fontSize: 12, color: t.textMuted, fontFamily: 'JetBrains Mono, monospace', minWidth: 52, textAlign: 'right' }}>{valFmt}</span>
+                            </div>
+                          );
+                        }) : (
+                          <div style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>Add wallets to see allocation</div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Token Table */}
                 <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, overflow: 'hidden' }} className="md-elevation-1">
