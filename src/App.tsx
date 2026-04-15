@@ -1317,9 +1317,10 @@ export default function App() {
               return results;
             };
 
-            const [txResults, tokenTxResults] = await Promise.all([
+            const [txResults, tokenTxResults, internalTxResults] = await Promise.all([
               fetchAllTxPages('txlist'),
-              fetchAllTxPages('tokentx')
+              fetchAllTxPages('tokentx'),
+              fetchAllTxPages('txlistinternal')
             ]);
 
             const txData = { status: txResults.length ? '1' : '0', result: txResults };
@@ -1401,6 +1402,30 @@ export default function App() {
                 }
               });
             }
+
+            // Internal ETH transfers — captures the ETH received/sent leg of token↔ETH swaps
+            // (e.g. selling USDC for ETH: the ETH comes back via an internal call from the router)
+            internalTxResults.forEach((tx: any, i: number) => {
+              const isOut = (tx.from || '').toLowerCase() === address.toLowerCase();
+              const isIn  = (tx.to  || '').toLowerCase() === address.toLowerCase();
+              if (!isOut && !isIn) return;
+              const amount = Number(formatUnits(BigInt(tx.value || '0'), 18));
+              if (amount <= 0) return;
+              const price = fetchedPrices['ethereum']?.usd || 0;
+              allTransactions.push({
+                id: `${tx.hash}-internal-${i}`,
+                hash: tx.hash,
+                timestamp: Number(tx.timeStamp) * 1000,
+                type: isOut ? 'transfer_out' : 'transfer_in',
+                from: tx.from || '',
+                to: tx.to || '',
+                asset: 'ETH',
+                amount,
+                chain: chainKey,
+                valueUsd: amount * price,
+                fee: 0
+              });
+            });
             } // end else (ethereum/base)
           } catch (e) {
             console.warn(`Could not fetch transactions for ${address} on ${chainKey}:`, e);
