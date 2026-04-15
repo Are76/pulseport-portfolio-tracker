@@ -196,29 +196,45 @@ export function MarketWatchModal({ theme, onClose }: Props) {
     setLoading(true);
     setError(null);
     try {
-      // Batch request for core PulseChain tokens
-      const batchUrl = `https://api.dexscreener.com/latest/dex/tokens/${CORE_ADDRESSES.join(',')}`;
-      const [batchRes, searchRes] = await Promise.allSettled([
-        fetch(batchUrl),
+      // DexScreener silently truncates results at 30 tokens per request.
+      // Chunk CORE_ADDRESSES into groups of ≤30 and fan out in parallel.
+      const DEXSCREENER_LIMIT = 30;
+      const addrChunks: string[][] = [];
+      for (let i = 0; i < CORE_ADDRESSES.length; i += DEXSCREENER_LIMIT) {
+        addrChunks.push(CORE_ADDRESSES.slice(i, i + DEXSCREENER_LIMIT));
+      }
+
+      const chunkFetches = addrChunks.map(chunk =>
+        fetch(`https://api.dexscreener.com/latest/dex/tokens/${chunk.join(',')}`),
+      );
+
+      const [searchResult, ...chunkResults] = await Promise.allSettled([
         fetch('https://api.dexscreener.com/latest/dex/search?q=PLSX'),
+        ...chunkFetches,
       ]);
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rawPairs: any[] = [];
 
-      if (batchRes.status === 'fulfilled' && batchRes.value.ok) {
-        const d = await batchRes.value.json();
-        if (d.pairs) rawPairs.push(...d.pairs);
+      for (const res of chunkResults) {
+        if (res.status === 'fulfilled' && res.value.ok) {
+          const d = await res.value.json();
+          if (d.pairs) rawPairs.push(...d.pairs);
+        }
       }
-      if (searchRes.status === 'fulfilled' && searchRes.value.ok) {
-        const d = await searchRes.value.json();
+      if (searchResult.status === 'fulfilled' && searchResult.value.ok) {
+        const d = await searchResult.value.json();
         if (d.pairs) rawPairs.push(...d.pairs);
       }
 
       // Keep only PulseChain pairs
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const plsPairs = rawPairs.filter((p: any) => p.chainId === 'pulsechain');
 
       // Deduplicate by pairAddress, pick best (highest liquidity) per base token symbol
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const bySymbol = new Map<string, any>();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       for (const p of plsPairs) {
         const sym = p.baseToken?.symbol?.toUpperCase() ?? '';
         if (!sym || sym === 'WPLS') continue; // skip WPLS-as-base (it's always the quote)
@@ -228,6 +244,7 @@ export function MarketWatchModal({ theme, onClose }: Props) {
         }
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result: WatchPair[] = Array.from(bySymbol.values()).map((p: any) => ({
         pairAddress: p.pairAddress,
         baseToken: p.baseToken,

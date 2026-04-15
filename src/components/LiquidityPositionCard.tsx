@@ -370,7 +370,17 @@ function LiquidityPositionCardFull({ pos }: { pos: LpPositionEnriched }) {
           fontSize: 11, color: 'var(--fg-subtle)',
           fontFamily: 'JetBrains Mono, monospace',
         }}>
-          LP Balance: {pos.lpBalance.toLocaleString(undefined, { maximumFractionDigits: 6 })}
+          {pos.walletLpBalance > 0 && pos.stakedLpBalance > 0 ? (
+            <>
+              Wallet: {pos.walletLpBalance.toLocaleString(undefined, { maximumFractionDigits: 6 })}
+              {' · '}
+              Staked: {pos.stakedLpBalance.toLocaleString(undefined, { maximumFractionDigits: 6 })}
+            </>
+          ) : pos.stakedLpBalance > 0 ? (
+            <>Staked LP: {pos.stakedLpBalance.toLocaleString(undefined, { maximumFractionDigits: 6 })}</>
+          ) : (
+            <>LP Balance: {pos.walletLpBalance.toLocaleString(undefined, { maximumFractionDigits: 6 })}</>
+          )}
         </span>
 
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>

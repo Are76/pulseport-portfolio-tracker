@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { LpPositionEnriched } from '../types';
 
 // ─── Pair Registry ────────────────────────────────────────────────────────────
@@ -90,6 +90,7 @@ async function batchRPC(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(10_000),
   });
   const json: { id: number; result?: string }[] = await res.json();
   return [...json]
@@ -321,7 +322,7 @@ export function useLiquidityPositions(
         const d    = pairData[pairAddr];
         if (!d || d.totalSupply === 0n) continue;
 
-        // Sum wallet balances (not yet counting staked)
+        // Sum wallet balances
         const walletBal = wallets.reduce(
           (acc, w) => acc + (d.walletBalances[w] ?? 0n),
           0n,
@@ -340,8 +341,8 @@ export function useLiquidityPositions(
           }
         }
 
-        // Total user LP — wallet balance OR staked balance (not both, per spec)
-        const userLPBalance = isStaked ? stakedBal : walletBal;
+        // Total user LP — wallet balance PLUS staked balance (a user can hold both)
+        const userLPBalance = stakedBal + walletBal;
         if (userLPBalance === 0n) continue;
 
         // ── Per-spec math ──────────────────────────────────────────────────
@@ -429,6 +430,8 @@ export function useLiquidityPositions(
           isStaked,
           poolId:          isStaked ? pid : undefined,
           pendingIncUsd:   isStaked ? pendingIncUsd : undefined,
+          walletLpBalance: Number(walletBal) / 1e18,
+          stakedLpBalance: Number(stakedBal) / 1e18,
           sparkline,
         });
       }
@@ -448,6 +451,17 @@ export function useLiquidityPositions(
   const refetch = useCallback(() => {
     fetchPositions();
   }, [fetchPositions]);
+
+  // Issue #1 — Auto-refresh LP positions every 60 s when wallets are present.
+  // Reserves and prices change constantly, so a periodic refresh keeps data fresh.
+  const refetchRef = useRef(refetch);
+  useEffect(() => { refetchRef.current = refetch; });
+
+  useEffect(() => {
+    if (walletAddresses.length === 0) return;
+    const id = setInterval(() => refetchRef.current(), 60_000);
+    return () => clearInterval(id);
+  }, [walletAddresses.length]);
 
   return { positions, loading, error, refetch };
 }
