@@ -122,20 +122,37 @@ export interface HistoryPoint {
   chainPnl?: Record<Chain, number>;
 }
 
-export type TransactionType = 'trade' | 'transfer_in' | 'transfer_out' | 'swap' | 'stake' | 'unstake';
+/** Normalized financial transaction types.
+ *  - deposit   : tokens/native arriving in a wallet (transfer-in)
+ *  - withdraw  : tokens/native leaving a wallet (transfer-out)
+ *  - swap      : atomic exchange of one asset for another
+ */
+export type TransactionType = 'deposit' | 'withdraw' | 'swap';
 
 export interface Transaction {
+  /** Unique identifier (hash-based). */
   id: string;
+  /** On-chain transaction hash. */
   hash: string;
+  /** Unix epoch milliseconds. */
   timestamp: number;
   type: TransactionType;
+  /** Sender address (lowercase). */
   from: string;
+  /** Receiver address (lowercase). */
   to: string;
+  /** Symbol of the primary asset (received for deposit/swap, sent for withdraw). */
   asset: string;
+  /** Amount of the primary asset. */
   amount: number;
+  /** USD value at time of transaction (optional — may be 0 for older txs). */
   valueUsd?: number;
+  /** Gas fee paid in native token (PLS or ETH). */
   fee?: number;
   chain: Chain;
+  // ── Swap-only fields ──────────────────────────────────────────────────────
+  /** Asset that was spent in the swap (the "sell" side). */
   counterAsset?: string;
+  /** Amount of counterAsset spent. */
   counterAmount?: number;
 }
