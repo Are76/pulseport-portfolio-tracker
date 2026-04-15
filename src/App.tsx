@@ -2825,7 +2825,7 @@ export default function App() {
             { id: 'assets',   label: 'Holdings',           icon: Coins },
             { id: 'stakes',   label: 'HEX Stakes',         icon: Lock },
             { id: 'defi',     label: 'DeFi Positions',     icon: Droplets },
-            { id: 'history',  label: 'Total Investment', icon: History },
+            { id: 'history',  label: 'Bridge Activity', icon: History },
             { id: 'wallets',  label: 'Wallets',  icon: WalletIcon },
           ] as const).map(({ id, label, icon: Icon }) => {
             const isDefi = id === 'defi';
@@ -4498,8 +4498,8 @@ export default function App() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)', marginBottom: 2 }}>Total Investment</div>
-                  <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Investment &amp; performance tracking</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)', marginBottom: 2 }}>Bridge Activity</div>
+                  <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Cross-chain activity &amp; performance tracking</div>
                 </div>
               </div>
             </div>
@@ -5406,7 +5406,7 @@ export default function App() {
           { id: 'assets',   label: 'Holdings',           icon: Coins },
           { id: 'stakes',   label: 'HEX Stakes',         icon: Lock },
           { id: 'defi',     label: 'DeFi Positions',     icon: Droplets },
-          { id: 'history',  label: 'Total Invest.',         icon: History },
+          { id: 'history',  label: 'Bridge Activity',       icon: History },
           { id: 'wallets',  label: 'Wallets',  icon: WalletIcon },
         ] as const).map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setActiveTab(id)}
