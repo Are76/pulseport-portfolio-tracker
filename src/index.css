@@ -803,20 +803,29 @@ button, a {
 }
 
 /* ── HERO GRID ───────────────────────────────────────────────────────── */
+/* Flex-column: top row (stats + planner) + full-width holdings below */
 .hero-grid {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 32px;
-  align-items: start;
-}
-@media (max-width: 640px) {
-  .hero-grid { grid-template-columns: 1fr; }
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-/* My Holdings panel in the hero card */
+/* Top row inside hero: stats (flex-1) beside profit planner button */
+.hero-grid-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+.hero-grid-top > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+/* My Holdings panel — full-width below stats row */
 .hero-holdings-panel {
-  min-width: 280px;
-  max-width: 340px;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -824,8 +833,17 @@ button, a {
   display: flex;
   flex-direction: column;
 }
-@media (max-width: 640px) {
-  .hero-holdings-panel { min-width: 0; max-width: 100%; width: 100%; }
+
+/* Holdings items container — 2-col grid on desktop */
+.hero-holdings-items {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 768px) {
+  .hero-holdings-items {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 4px;
+  }
 }
 
 .hero-holding-row {
@@ -839,9 +857,47 @@ button, a {
   margin: 0 -8px;
   padding-left: 8px;
   padding-right: 8px;
+  border-top: 1px solid var(--border);
+}
+.hero-holding-row:first-child {
+  border-top: none;
+}
+@media (min-width: 768px) {
+  /* In 2-col grid the second item also starts a new visual row at the top */
+  .hero-holdings-items .hero-holding-row:nth-child(2) {
+    border-top: none;
+  }
 }
 .hero-holding-row:hover {
   background: rgba(0, 255, 159, 0.05);
+}
+
+/* Chain badge — small pill on holding rows (hidden on mobile) */
+.hero-holding-chain-badge {
+  display: none;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--fg-subtle);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  letter-spacing: .3px;
+}
+@media (min-width: 768px) {
+  .hero-holding-chain-badge { display: inline-block; }
+}
+
+/* Allocation % — hidden on mobile, shown on desktop */
+.hero-holding-alloc {
+  display: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg-subtle);
+  font-family: 'JetBrains Mono', monospace;
+}
+@media (min-width: 768px) {
+  .hero-holding-alloc { display: inline; }
 }
 
 /* ── VALUE HERO ──────────────────────────────────────────────────────── */
