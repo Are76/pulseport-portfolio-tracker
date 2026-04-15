@@ -215,16 +215,16 @@ export function TokenCardModal({
 
           {/* ── PRICE HERO ── */}
           <div className="tcm-section tcm-price-hero">
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <div className="tcm-price-row" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
               <div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 4 }}>Current Price</div>
-                <div style={{ fontSize: 30, fontWeight: 800, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.03em', lineHeight: 1 }}>
+                <div className="tcm-price-number" style={{ fontSize: 30, fontWeight: 800, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.03em', lineHeight: 1 }}>
                   {fmtPrice(asset.price)}
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 4 }}>24h Change</div>
-                <div style={{
+                <div className="tcm-change-number" style={{
                   fontSize: 22, fontWeight: 800, color: changeColor,
                   fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.02em',
                   display: 'flex', alignItems: 'center', gap: 5,
