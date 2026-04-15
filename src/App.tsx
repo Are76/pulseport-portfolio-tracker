@@ -124,16 +124,23 @@ const MOCK_HISTORY: HistoryPoint[] = Array.from({ length: 30 }, (_, i) => {
 });
 
 // ─── Bridge Activity helpers ──────────────────────────────────────────────────
-/** Groups transactions by calendar date (e.g. "Apr 12, 2026"), newest date first. */
-function groupByDate(txs: Transaction[]): { date: string; items: Transaction[] }[] {
-  const map: Record<string, Transaction[]> = {};
-  const sorted = [...txs].sort((a, b) => b.timestamp - a.timestamp);
-  sorted.forEach(tx => {
-    const key = new Date(tx.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    if (!map[key]) map[key] = [];
-    map[key].push(tx);
+/** Groups bridge activities by calendar date (e.g. "Apr 12, 2026"), newest date first. */
+function groupByDate(bridgeActivities: Transaction[]): Record<string, Transaction[]> {
+  const groups = new Map<string, Transaction[]>();
+  const sorted = [...bridgeActivities].sort((a, b) => b.timestamp - a.timestamp);
+
+  sorted.forEach((activity) => {
+    const dateKey = new Date(activity.timestamp).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    const bucket = groups.get(dateKey) ?? [];
+    bucket.push(activity);
+    groups.set(dateKey, bucket);
   });
-  return Object.keys(map).map(date => ({ date, items: map[date] }));
+
+  return Object.fromEntries(groups.entries());
 }
 
 function fmtTxAmt(n: number): string {
@@ -149,6 +156,115 @@ const BRIDGE_CHAIN_COLORS: Record<string, string> = {
   ethereum: '#627EEA',
   base: '#0052FF',
 };
+
+type BridgeTimelineEventProps = {
+  tx: Transaction;
+  matchedAsset?: Asset;
+  logoUrl?: string;
+  themeCardColor: string;
+  hidden: boolean;
+  isSelected: boolean;
+  tokenTransactions: Transaction[];
+  plsPriceUsd: number;
+  onSelect: (tx: Transaction, asset?: Asset) => void;
+  onToggleHide: (id: string) => void;
+};
+
+function BridgeTimelineEvent({
+  tx,
+  matchedAsset,
+  logoUrl,
+  themeCardColor,
+  hidden,
+  isSelected,
+  tokenTransactions,
+  plsPriceUsd,
+  onSelect,
+  onToggleHide,
+}: BridgeTimelineEventProps) {
+  const isDeposit = tx.type === 'deposit';
+  const isSwap = tx.type === 'swap';
+  const dotColor = isDeposit ? 'var(--accent)' : isSwap ? '#8b5cf6' : '#f97316';
+  const chainColor = BRIDGE_CHAIN_COLORS[tx.chain] || '#888';
+  const chainLabel = tx.chain === 'pulsechain' ? 'PulseChain' : tx.chain === 'ethereum' ? 'Ethereum' : 'Base';
+  const timeStr = new Date(tx.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const usdVal = tx.valueUsd ?? 0;
+  const fromChain = tx.type === 'withdraw' ? chainLabel : (tx.type === 'swap' ? chainLabel : 'External');
+  const toChain = tx.type === 'deposit' ? chainLabel : (tx.type === 'swap' ? chainLabel : 'External');
+
+  return (
+    <div className="bridge-timeline-event">
+      <div className="bridge-timeline-dot" style={{ background: dotColor, borderColor: themeCardColor }} />
+      <div className={`bridge-event-card${hidden ? ' bridge-event-card--hidden' : ''}`} onClick={() => onSelect(tx, matchedAsset)}>
+        <div className="bridge-event-head">
+          <div className="bridge-event-logo">
+            {logoUrl
+              ? <img src={logoUrl} alt={tx.asset} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              : tx.asset[0]}
+          </div>
+          <span className="bridge-event-asset">{tx.asset}</span>
+          <div className="bridge-event-type-icon" style={{ background: `${dotColor}1a`, borderColor: `${dotColor}44` }}>
+            {isDeposit ? <ArrowDownLeft size={10} style={{ color: dotColor }} /> : isSwap ? <ArrowLeftRight size={10} style={{ color: dotColor }} /> : <ArrowUpRight size={10} style={{ color: dotColor }} />}
+          </div>
+          <span className="bridge-event-chain-chip" style={{ background: `${chainColor}18`, color: chainColor, borderColor: `${chainColor}33` }}>
+            {chainLabel}
+          </span>
+          <span className="bridge-event-time">{timeStr}</span>
+        </div>
+
+        <div className="bridge-event-flow">
+          <div className="bridge-event-flow-row">
+            <span className="bridge-event-flow-label">Chain</span>
+            <span className="bridge-event-flow-value">{fromChain} <ArrowRight size={10} /> {toChain}</span>
+          </div>
+          <div className="bridge-event-flow-row">
+            <span className="bridge-event-flow-label">Asset</span>
+            <span className="bridge-event-flow-value">
+              {isSwap ? `${fmtTxAmt(tx.counterAmount ?? 0)} ${tx.counterAsset} → ${fmtTxAmt(tx.amount)} ${tx.asset}` : `${isDeposit ? '+' : '−'}${fmtTxAmt(tx.amount)} ${tx.asset}`}
+            </span>
+          </div>
+        </div>
+
+        <div className="bridge-event-footer">
+          {usdVal > 0 && (
+            <span className="bridge-event-usd">${usdVal.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+          )}
+          <button
+            onClick={e => { e.stopPropagation(); onToggleHide(tx.id); }}
+            title={hidden ? 'Show' : 'Hide'}
+            className="bridge-event-icon-btn"
+          >
+            <EyeOff size={11} />
+          </button>
+          {tx.hash && tx.hash.length > 6 && (
+            <a
+              href={tx.chain === 'pulsechain' ? `https://scan.pulsechain.com/tx/${tx.hash}` : tx.chain === 'base' ? `https://basescan.org/tx/${tx.hash}` : `https://etherscan.io/tx/${tx.hash}`}
+              target="_blank" rel="noopener noreferrer"
+              onClick={e => e.stopPropagation()}
+              title="View on explorer"
+              className="bridge-event-icon-btn"
+            >
+              <ExternalLink size={11} />
+            </a>
+          )}
+        </div>
+      </div>
+
+      {isSelected && matchedAsset && (
+        <div className="bridge-event-pnl">
+          <TokenPnLCard
+            symbol={matchedAsset.symbol}
+            transactions={tokenTransactions}
+            asset={matchedAsset}
+            priceUsd={matchedAsset.price ?? 0}
+            plsPriceUsd={plsPriceUsd}
+            logoUrl={logoUrl}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
 
 const MOCK_WALLET = '0xdemo0000000000000000000000000000000001';
 const MOCK_TRANSACTIONS: Transaction[] = [
@@ -541,6 +657,7 @@ export default function App() {
   const [expandedAssetIds, setExpandedAssetIds] = useState<Set<string>>(new Set());
   const [priceDisplayCurrency, setPriceDisplayCurrency] = useState<'usd' | 'pls'>('usd');
   const [pnlAsset, setPnlAsset] = useState<Asset | null>(null);
+  const [selectedBridgeTxId, setSelectedBridgeTxId] = useState<string | null>(null);
   const [profitPlannerOpen, setProfitPlannerOpen] = useState(false);
   const [allocWheelOpen, setAllocWheelOpen] = useState(true);
   const [allocationCalculatorOpen, setAllocationCalculatorOpen] = useState(false);
@@ -4400,112 +4517,45 @@ export default function App() {
                         <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 13 }}>
                           No activity found for these filters.
                         </div>
-                      ) : groupByDate(filteredTransactions).map(({ date, items }) => {
+                      ) : Object.entries(groupByDate(filteredTransactions)).map(([date, items]) => {
                         const visibleItems = showHiddenTxs ? items : items.filter(tx => !hiddenTxIds.includes(tx.id));
                         if (visibleItems.length === 0) return null;
                         return (
                           <div key={date} className="bridge-timeline-date-group">
-                            {/* Date header */}
                             <div className="bridge-timeline-date-label">
                               <span>{date}</span>
                               <span className="bridge-timeline-date-count">{visibleItems.length}</span>
                             </div>
-                            {/* Events track */}
                             <div className="bridge-timeline-track">
-                              {visibleItems.map(tx => {
-                                const isDeposit = tx.type === 'deposit';
-                                const isSwap = tx.type === 'swap';
-                                const dotColor = isDeposit ? 'var(--accent)' : isSwap ? '#8b5cf6' : '#f97316';
-                                const chainColor = BRIDGE_CHAIN_COLORS[tx.chain] || '#888';
-                                const chainLabel = tx.chain === 'pulsechain' ? 'PulseChain' : tx.chain === 'ethereum' ? 'Ethereum' : 'Base';
-                                const timeStr = new Date(tx.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-                                const matchedAsset = currentAssets.find(a => a.symbol.toUpperCase() === tx.asset.toUpperCase() && (txChainFilter === 'all' || a.chain === tx.chain));
+                              {visibleItems.map((tx) => {
+                                const matchedAsset = currentAssets.find(
+                                  (a) => a.symbol.toUpperCase() === tx.asset.toUpperCase() && (txChainFilter === 'all' || a.chain === tx.chain),
+                                );
                                 const logo = matchedAsset
                                   ? (STATIC_LOGOS[(matchedAsset as any).address?.toLowerCase?.()] || (matchedAsset as any).logoUrl || tokenLogos[(matchedAsset as any).address?.toLowerCase?.()])
                                   : undefined;
-                                const usdVal = tx.valueUsd ?? 0;
+                                const tokenTransactions = currentTransactions.filter(
+                                  (eventTx) => eventTx.asset.toUpperCase() === tx.asset.toUpperCase() || (eventTx.counterAsset ?? '').toUpperCase() === tx.asset.toUpperCase(),
+                                );
+
                                 return (
-                                  <div key={tx.id} className="bridge-timeline-event">
-                                    <div className="bridge-timeline-dot" style={{ background: dotColor, borderColor: t.card }} />
-                                    <div
-                                      className="bridge-event-card"
-                                      onClick={() => {
-                                        if (matchedAsset) setPnlAsset(matchedAsset);
-                                        else setTxAssetFilter(tx.asset);
-                                      }}
-                                    >
-                                      {/* Row 1: logo + asset + type icon + chain badge + time */}
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}>
-                                        {/* Token logo / initial */}
-                                        <div style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: 'var(--bg-elevated)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', fontSize: 10, fontWeight: 800, color: 'var(--fg-muted)' }}>
-                                          {logo
-                                            ? <img src={logo} alt={tx.asset} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                                            : tx.asset[0]}
-                                        </div>
-                                        {/* Asset symbol */}
-                                        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>{tx.asset}</span>
-                                        {/* Type icon */}
-                                        <div style={{ width: 20, height: 20, borderRadius: 5, background: `${dotColor}1a`, border: `1px solid ${dotColor}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                          {isDeposit
-                                            ? <ArrowDownLeft size={10} style={{ color: dotColor }} />
-                                            : isSwap
-                                            ? <ArrowLeftRight size={10} style={{ color: dotColor }} />
-                                            : <ArrowUpRight size={10} style={{ color: dotColor }} />}
-                                        </div>
-                                        {/* Chain badge */}
-                                        <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 100, background: `${chainColor}18`, color: chainColor, border: `1px solid ${chainColor}33`, whiteSpace: 'nowrap' }}>
-                                          {chainLabel}
-                                        </span>
-                                        {/* Time */}
-                                        <span style={{ fontSize: 11, color: 'var(--fg-subtle)', marginLeft: 'auto', whiteSpace: 'nowrap' }}>{timeStr}</span>
-                                      </div>
-                                      {/* Row 2: flow + USD value */}
-                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                                        <div style={{ fontSize: 12, color: 'var(--fg-muted)', display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap', minWidth: 0 }}>
-                                          {isSwap ? (
-                                            <>
-                                              <span style={{ color: '#ef4444', fontFamily: 'JetBrains Mono, monospace' }}>{fmtTxAmt(tx.counterAmount ?? 0)} {tx.counterAsset}</span>
-                                              <ArrowRight size={10} style={{ color: 'var(--fg-subtle)', flexShrink: 0 }} />
-                                              <span style={{ color: 'var(--accent)', fontFamily: 'JetBrains Mono, monospace' }}>{fmtTxAmt(tx.amount)} {tx.asset}</span>
-                                            </>
-                                          ) : isDeposit ? (
-                                            <span style={{ color: 'var(--accent)', fontFamily: 'JetBrains Mono, monospace' }}>+{fmtTxAmt(tx.amount)} {tx.asset}</span>
-                                          ) : (
-                                            <span style={{ color: '#f97316', fontFamily: 'JetBrains Mono, monospace' }}>−{fmtTxAmt(tx.amount)} {tx.asset}</span>
-                                          )}
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                                          {usdVal > 0 && (
-                                            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace' }}>
-                                              ${usdVal.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                            </span>
-                                          )}
-                                          {/* Hide button */}
-                                          <button
-                                            onClick={e => { e.stopPropagation(); setHiddenTxIds(prev => prev.includes(tx.id) ? prev.filter(x => x !== tx.id) : [...prev, tx.id]); }}
-                                            title={hiddenTxIds.includes(tx.id) ? 'Show' : 'Hide'}
-                                            style={{ padding: 3, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', opacity: 0.6, transition: 'opacity .12s, color .12s', display: 'flex' }}
-                                            onMouseOver={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; (e.currentTarget as HTMLElement).style.color = '#ef4444'; }}
-                                            onMouseOut={e => { (e.currentTarget as HTMLElement).style.opacity = '0.6'; (e.currentTarget as HTMLElement).style.color = 'var(--fg-subtle)'; }}>
-                                            <EyeOff size={11} />
-                                          </button>
-                                          {/* Explorer link */}
-                                          {tx.hash && tx.hash.length > 6 && (
-                                            <a
-                                              href={tx.chain === 'pulsechain' ? `https://scan.pulsechain.com/tx/${tx.hash}` : tx.chain === 'base' ? `https://basescan.org/tx/${tx.hash}` : `https://etherscan.io/tx/${tx.hash}`}
-                                              target="_blank" rel="noopener noreferrer"
-                                              onClick={e => e.stopPropagation()}
-                                              title="View on explorer"
-                                              style={{ color: 'var(--fg-subtle)', opacity: 0.6, display: 'flex', transition: 'opacity .12s' }}
-                                              onMouseOver={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
-                                              onMouseOut={e => ((e.currentTarget as HTMLElement).style.opacity = '0.6')}>
-                                              <ExternalLink size={11} />
-                                            </a>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
+                                  <BridgeTimelineEvent
+                                    key={tx.id}
+                                    tx={tx}
+                                    matchedAsset={matchedAsset}
+                                    logoUrl={logo}
+                                    themeCardColor={t.card}
+                                    hidden={hiddenTxIds.includes(tx.id)}
+                                    isSelected={selectedBridgeTxId === tx.id}
+                                    tokenTransactions={tokenTransactions}
+                                    plsPriceUsd={prices['pulsechain']?.usd ?? 0}
+                                    onSelect={(selectedTx, asset) => {
+                                      setSelectedBridgeTxId((prev) => (prev === selectedTx.id ? null : selectedTx.id));
+                                      if (asset) setPnlAsset(asset);
+                                      else setTxAssetFilter(selectedTx.asset);
+                                    }}
+                                    onToggleHide={(id) => setHiddenTxIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
+                                  />
                                 );
                               })}
                             </div>

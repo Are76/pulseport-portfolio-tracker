@@ -3776,6 +3776,131 @@ textarea:focus-visible,
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
+.bridge-event-card--hidden {
+  opacity: 0.5;
+}
+
+.bridge-event-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 8px;
+}
+
+.bridge-event-logo {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--fg-muted);
+}
+
+.bridge-event-asset {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.bridge-event-type-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  border: 1px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.bridge-event-chain-chip {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 100px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.bridge-event-time {
+  font-size: 11px;
+  color: var(--fg-subtle);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.bridge-event-flow {
+  display: grid;
+  gap: 4px;
+}
+
+.bridge-event-flow-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bridge-event-flow-label {
+  font-size: 11px;
+  color: var(--fg-subtle);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  font-weight: 600;
+}
+
+.bridge-event-flow-value {
+  font-size: 12px;
+  color: var(--fg-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.bridge-event-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.bridge-event-usd {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--fg);
+  margin-right: auto;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.bridge-event-icon-btn {
+  padding: 3px;
+  background: none;
+  border: none;
+  color: var(--fg-subtle);
+  opacity: 0.7;
+  display: inline-flex;
+  cursor: pointer;
+  transition: opacity .12s, color .12s;
+}
+
+.bridge-event-icon-btn:hover {
+  opacity: 1;
+  color: var(--fg);
+}
+
+.bridge-event-pnl {
+  margin: 8px 0 2px 10px;
+}
+
 /* Mobile */
 @media (max-width: 639px) {
   .bridge-timeline-track {
@@ -3799,5 +3924,19 @@ textarea:focus-visible,
 
   .bridge-timeline-date-label {
     font-size: 10px;
+  }
+
+  .bridge-event-flow-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .bridge-event-time {
+    font-size: 10px;
+  }
+
+  .bridge-event-pnl {
+    margin-left: 0;
   }
 }
