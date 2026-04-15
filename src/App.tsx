@@ -4602,9 +4602,9 @@ export default function App() {
               </div>
               {!isCollapsed('received-assets') && (<>
               {receivedAssetsData.list.length > 0 && (
-                <div style={{ display: 'flex', gap: 1, borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)' }}>
+                <div tabIndex={0} style={{ display: 'flex', gap: 1, borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)', overflowX: 'auto' }} className="custom-scrollbar">
                   {(Object.entries(receivedAssetsData.byAsset) as [string, { amount: number; valueUsd: number }][]).map(([sym, data]) => (
-                    <div key={sym} style={{ flex: 1, padding: '10px 16px', borderRight: '1px solid var(--border)' }}>
+                    <div key={sym} style={{ flex: '1 0 100px', padding: '10px 16px', borderRight: '1px solid var(--border)' }}>
                       <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 4, fontWeight: 700, letterSpacing: '.5px' }}>{sym}</div>
                       <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>
                         {sym === 'ETH' ? data.amount.toLocaleString(undefined, { maximumFractionDigits: 4 }) : data.amount.toLocaleString(undefined, { maximumFractionDigits: 0 })} {sym}
@@ -5882,6 +5882,7 @@ export default function App() {
                           { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Tokens'], ...Array.from(new Set(baseTxs.map(tx => tx.asset))).sort().map(a => [a,a])] as [string,string][] },
                         ].map(({ value, onChange, options }, i) => (
                           <select key={i} value={value} onChange={e => onChange(e.target.value)}
+                            className="history-filter-select"
                             style={{ background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 6, color: 'var(--fg)', fontSize: 13, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
                             {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                           </select>
