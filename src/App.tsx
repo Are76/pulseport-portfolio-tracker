@@ -2825,7 +2825,7 @@ export default function App() {
             { id: 'assets',   label: 'Holdings',           icon: Coins },
             { id: 'stakes',   label: 'HEX Stakes',         icon: Lock },
             { id: 'defi',     label: 'DeFi Positions',     icon: Droplets },
-            { id: 'history',  label: 'Transaction History', icon: History },
+            { id: 'history',  label: 'Total Investment', icon: History },
             { id: 'wallets',  label: 'Wallets',  icon: WalletIcon },
           ] as const).map(({ id, label, icon: Icon }) => {
             const isDefi = id === 'defi';
@@ -4316,6 +4316,162 @@ export default function App() {
                   </>)}
                 </div>
 
+                {/* ── Transactions ── */}
+                <div style={{ marginTop: 8 }}>
+                  {/* Type filter pills + active filter chips */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+                    {([
+                      { value: 'all', label: 'All' },
+                      { value: 'deposit', label: 'Received' },
+                      { value: 'withdraw', label: 'Sent' },
+                      { value: 'swap', label: 'Swaps' },
+                    ] as { value: string; label: string }[]).map(({ value, label }) => (
+                      <button key={value}
+                        onClick={() => setTxTypeFilter(value)}
+                        style={{
+                          padding: '5px 16px', borderRadius: 999, fontSize: 12, fontWeight: 700,
+                          cursor: 'pointer', transition: 'all .12s',
+                          background: txTypeFilter === value ? 'var(--fg)' : 'transparent',
+                          color: txTypeFilter === value ? 'var(--bg)' : 'var(--fg-muted)',
+                          border: `1px solid ${txTypeFilter === value ? 'var(--fg)' : 'var(--border)'}`,
+                        }}>
+                        {label}
+                      </button>
+                    ))}
+                    {(txAssetFilter !== 'all' || txChainFilter !== 'all' || txYearFilter !== 'all' || txCoinCategory !== 'all') && (
+                      <>
+                        <div style={{ width: 1, height: 18, background: 'var(--border)', flexShrink: 0 }} />
+                        {txAssetFilter !== 'all' && (
+                          <button className="filter-chip" onClick={() => setTxAssetFilter('all')}>
+                            {txAssetFilter}<span className="chip-x">✕</span>
+                          </button>
+                        )}
+                        {txChainFilter !== 'all' && (
+                          <button className="filter-chip" onClick={() => setTxChainFilter('all')}>
+                            {txChainFilter === 'pulsechain' ? 'PulseChain' : txChainFilter === 'ethereum' ? 'Ethereum' : 'Base'}<span className="chip-x">✕</span>
+                          </button>
+                        )}
+                        {txYearFilter !== 'all' && (
+                          <button className="filter-chip" onClick={() => setTxYearFilter('all')}>
+                            {txYearFilter}<span className="chip-x">✕</span>
+                          </button>
+                        )}
+                        {txCoinCategory !== 'all' && (
+                          <button className="filter-chip" onClick={() => setTxCoinCategory('all')}>
+                            {txCoinCategory === 'stablecoins' ? 'Stablecoins' : txCoinCategory === 'eth_weth' ? 'ETH/WETH' : txCoinCategory === 'hex' ? 'HEX/eHEX' : txCoinCategory === 'pls_wpls' ? 'PLS/WPLS' : 'Bridged'}<span className="chip-x">✕</span>
+                          </button>
+                        )}
+                        <button
+                          onClick={() => { setTxTypeFilter('all'); setTxAssetFilter('all'); setTxChainFilter('all'); setTxYearFilter('all'); setTxCoinCategory('all'); }}
+                          style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', background: 'none', border: 'none', cursor: 'pointer', padding: '3px 6px', textDecoration: 'underline' }}>
+                          Clear all
+                        </button>
+                      </>
+                    )}
+                  </div>
+
+                  <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, overflow: 'hidden' }} className="md-elevation-1">
+                    <div style={{ padding: '14px 18px', borderBottom: isCollapsed('holdings-txs') ? 'none' : `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: t.text }}>Transactions</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent-border)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
+                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', display: 'inline-block', animation: 'pulse 2s infinite' }} />
+                          Live
+                        </span>
+                        <span style={{ fontSize: 12, color: t.textTertiary }}>{filteredTransactions.length} tx</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                        <button onClick={() => setViewAsYou(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}>
+                          <div style={{ width: 36, height: 20, borderRadius: 10, background: viewAsYou ? 'var(--accent)' : 'var(--bg-elevated)', border: '1px solid var(--border)', transition: 'background .15s', position: 'relative', flexShrink: 0 }}>
+                            <div style={{ position: 'absolute', top: 2, left: viewAsYou ? 18 : 2, width: 14, height: 14, borderRadius: '50%', background: 'white', transition: 'left .15s', boxShadow: '0 1px 3px rgba(0,0,0,0.4)' }} />
+                          </div>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg-muted)', whiteSpace: 'nowrap' }}>
+                            View as <span style={{ color: 'var(--accent)' }}>You</span>
+                          </span>
+                        </button>
+                        <button onClick={() => setTxCompact(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}>
+                          <div style={{ width: 36, height: 20, borderRadius: 10, background: txCompact ? 'var(--accent)' : 'var(--bg-elevated)', border: '1px solid var(--border)', transition: 'background .15s', position: 'relative', flexShrink: 0 }}>
+                            <div style={{ position: 'absolute', top: 2, left: txCompact ? 18 : 2, width: 14, height: 14, borderRadius: '50%', background: 'white', transition: 'left .15s', boxShadow: '0 1px 3px rgba(0,0,0,0.4)' }} />
+                          </div>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg-muted)', whiteSpace: 'nowrap' }}>Compact</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            const hdrs = ['Date', 'Type', 'Asset', 'Amount', 'Counter Asset', 'Counter Amount', 'Value USD', 'Chain', 'Hash'];
+                            const rows = filteredTransactions.map(tx => [
+                              new Date(tx.timestamp).toISOString().slice(0, 10),
+                              tx.type, tx.asset, tx.amount, tx.counterAsset ?? '', tx.counterAmount ?? '', tx.valueUsd ?? '', tx.chain, tx.hash ?? '',
+                            ]);
+                            exportCSV(`pulseport-history-${Date.now()}.csv`, hdrs, rows);
+                          }}
+                          title="Export CSV"
+                          className="history-csv-btn"
+                          style={{ padding: '5px 10px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 6, cursor: 'pointer', color: 'var(--accent)', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <Download size={12} /> CSV
+                        </button>
+                        <button onClick={() => toggleSection('holdings-txs')}
+                          style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: t.textTertiary, transition: 'color .12s', flexShrink: 0 }}
+                          onMouseOver={e => (e.currentTarget.style.color = t.text)}
+                          onMouseOut={e => (e.currentTarget.style.color = t.textMuted)}
+                          title={isCollapsed('holdings-txs') ? 'Expand' : 'Collapse'}>
+                          {isCollapsed('holdings-txs') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                        </button>
+                      </div>
+                    </div>
+                    {!isCollapsed('holdings-txs') && (<>
+                    <div className="tx-filter-row" style={{ padding: '8px 18px', borderBottom: `1px solid ${t.border}` }}>
+                      {[
+                        { value: txChainFilter, onChange: setTxChainFilter, options: [['all','All Chains'],['pulsechain','PulseChain'],['ethereum','Ethereum'],['base','Base']] as [string,string][] },
+                        { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Tokens'], ...Array.from(new Set(currentTransactions.map(tx => tx.asset))).sort().map(a => [a,a])] as [string,string][] },
+                        { value: txYearFilter, onChange: setTxYearFilter, options: [['all','All Years'],['2026','2026'],['2025','2025'],['2024','2024'],['2023','2023'],['2022','2022'],['2021','2021']] as [string,string][] },
+                        { value: txCoinCategory, onChange: setTxCoinCategory, options: [['all','All Coins'],['stablecoins','Stablecoins'],['eth_weth','ETH/WETH'],['hex','HEX/eHEX'],['pls_wpls','PLS/WPLS'],['bridged','Bridged']] as [string,string][] },
+                      ].map(({ value, onChange, options }, i) => (
+                        <select key={i} value={value} onChange={e => onChange(e.target.value)}
+                          className="history-filter-select"
+                          style={{ background: t.cardHigh, border: `1px solid ${t.border}`, borderRadius: 6, color: t.text, fontSize: 13, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
+                          {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                        </select>
+                      ))}
+                    </div>
+                    {hiddenTxIds.length > 0 && (
+                      <div style={{ padding: '6px 18px', borderBottom: `1px solid ${t.borderLight}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 13, color: t.textTertiary }}>{hiddenTxIds.length} hidden transaction{hiddenTxIds.length > 1 ? 's' : ''}</span>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button onClick={() => setShowHiddenTxs(v => !v)} style={{ fontSize: 13, color: t.textSecondary, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>{showHiddenTxs ? 'Hide' : 'Show'}</button>
+                          <button onClick={() => setHiddenTxIds([])} style={{ fontSize: 13, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Clear all</button>
+                        </div>
+                      </div>
+                    )}
+                    {(txAssetFilter !== 'all' || txChainFilter !== 'all' || txYearFilter !== 'all' || txCoinCategory !== 'all') && (
+                      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, padding: '8px 18px', borderBottom: '1px solid var(--border)' }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginRight: 4 }}>Filtering by:</span>
+                        {txAssetFilter !== 'all' && (<button className="filter-chip" onClick={() => setTxAssetFilter('all')}>{txAssetFilter}<span className="chip-x">&#x2715;</span></button>)}
+                        {txChainFilter !== 'all' && (<button className="filter-chip" onClick={() => setTxChainFilter('all')}>{txChainFilter === 'pulsechain' ? 'PulseChain' : txChainFilter === 'ethereum' ? 'Ethereum' : 'Base'}<span className="chip-x">&#x2715;</span></button>)}
+                        {txYearFilter !== 'all' && (<button className="filter-chip" onClick={() => setTxYearFilter('all')}>{txYearFilter}<span className="chip-x">&#x2715;</span></button>)}
+                        {txCoinCategory !== 'all' && (<button className="filter-chip" onClick={() => setTxCoinCategory('all')}>{txCoinCategory === 'stablecoins' ? 'Stablecoins' : txCoinCategory === 'eth_weth' ? 'ETH/WETH' : txCoinCategory === 'hex' ? 'HEX/eHEX' : txCoinCategory === 'pls_wpls' ? 'PLS/WPLS' : 'Bridged'}<span className="chip-x">&#x2715;</span></button>)}
+                        <button onClick={() => { setTxTypeFilter('all'); setTxAssetFilter('all'); setTxChainFilter('all'); setTxYearFilter('all'); setTxCoinCategory('all'); }} style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', textDecoration: 'underline', marginLeft: 4 }}>Clear all</button>
+                      </div>
+                    )}
+                    <div style={{ maxHeight: 600, overflowY: 'auto' }} className="custom-scrollbar">
+                      <TransactionList
+                        transactions={filteredTransactions}
+                        viewAsYou={viewAsYou}
+                        wallets={wallets}
+                        compact={txCompact}
+                        assets={currentAssets}
+                        getTokenLogoUrl={getTokenLogoUrl}
+                        tokenLogos={tokenLogos}
+                        hideIds={hiddenTxIds}
+                        onToggleHide={id => setHiddenTxIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
+                        showHidden={showHiddenTxs}
+                        onFilterByAsset={symbol => setTxAssetFilter(symbol)}
+                        emptyMessage="No transactions found for these filters."
+                      />
+                    </div>
+                    </>)}
+                  </div>
+                </div>
+
                   </>);
                 })()}
               </motion.div>
@@ -4342,79 +4498,10 @@ export default function App() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)', marginBottom: 2 }}>Transaction History</div>
-                  <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>On-chain activity &amp; performance tracking</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)', marginBottom: 2 }}>Total Investment</div>
+                  <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Investment &amp; performance tracking</div>
                 </div>
-                {/* View as You toggle */}
-                <button onClick={() => setViewAsYou(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}>
-                  <div style={{ width: 36, height: 20, borderRadius: 10, background: viewAsYou ? 'var(--accent)' : 'var(--bg-elevated)', border: '1px solid var(--border)', transition: 'background .15s', position: 'relative', flexShrink: 0 }}>
-                    <div style={{ position: 'absolute', top: 2, left: viewAsYou ? 18 : 2, width: 14, height: 14, borderRadius: '50%', background: 'white', transition: 'left .15s', boxShadow: '0 1px 3px rgba(0,0,0,0.4)' }} />
-                  </div>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg-muted)', whiteSpace: 'nowrap' }}>
-                    View as <span style={{ color: 'var(--accent)' }}>You</span>
-                  </span>
-                </button>
-                {/* Compact toggle */}
-                <button onClick={() => setTxCompact(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}>
-                  <div style={{ width: 36, height: 20, borderRadius: 10, background: txCompact ? 'var(--accent)' : 'var(--bg-elevated)', border: '1px solid var(--border)', transition: 'background .15s', position: 'relative', flexShrink: 0 }}>
-                    <div style={{ position: 'absolute', top: 2, left: txCompact ? 18 : 2, width: 14, height: 14, borderRadius: '50%', background: 'white', transition: 'left .15s', boxShadow: '0 1px 3px rgba(0,0,0,0.4)' }} />
-                  </div>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg-muted)', whiteSpace: 'nowrap' }}>Compact</span>
-                </button>
               </div>
-            </div>
-
-            {/* Type filter pills + active filter chips */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              {([
-                { value: 'all', label: 'All' },
-                { value: 'deposit', label: 'Received' },
-                { value: 'withdraw', label: 'Sent' },
-                { value: 'swap', label: 'Swaps' },
-              ] as { value: string; label: string }[]).map(({ value, label }) => (
-                <button key={value}
-                  onClick={() => setTxTypeFilter(value)}
-                  style={{
-                    padding: '5px 16px', borderRadius: 999, fontSize: 12, fontWeight: 700,
-                    cursor: 'pointer', transition: 'all .12s',
-                    background: txTypeFilter === value ? 'var(--fg)' : 'transparent',
-                    color: txTypeFilter === value ? 'var(--bg)' : 'var(--fg-muted)',
-                    border: `1px solid ${txTypeFilter === value ? 'var(--fg)' : 'var(--border)'}`,
-                  }}>
-                  {label}
-                </button>
-              ))}
-              {/* Active filter chips for chain / asset / year / category */}
-              {(txAssetFilter !== 'all' || txChainFilter !== 'all' || txYearFilter !== 'all' || txCoinCategory !== 'all') && (
-                <>
-                  <div style={{ width: 1, height: 18, background: 'var(--border)', flexShrink: 0 }} />
-                  {txAssetFilter !== 'all' && (
-                    <button className="filter-chip" onClick={() => setTxAssetFilter('all')}>
-                      {txAssetFilter}<span className="chip-x">✕</span>
-                    </button>
-                  )}
-                  {txChainFilter !== 'all' && (
-                    <button className="filter-chip" onClick={() => setTxChainFilter('all')}>
-                      {txChainFilter === 'pulsechain' ? 'PulseChain' : txChainFilter === 'ethereum' ? 'Ethereum' : 'Base'}<span className="chip-x">✕</span>
-                    </button>
-                  )}
-                  {txYearFilter !== 'all' && (
-                    <button className="filter-chip" onClick={() => setTxYearFilter('all')}>
-                      {txYearFilter}<span className="chip-x">✕</span>
-                    </button>
-                  )}
-                  {txCoinCategory !== 'all' && (
-                    <button className="filter-chip" onClick={() => setTxCoinCategory('all')}>
-                      {txCoinCategory === 'stablecoins' ? 'Stablecoins' : txCoinCategory === 'eth_weth' ? 'ETH/WETH' : txCoinCategory === 'hex' ? 'HEX/eHEX' : txCoinCategory === 'pls_wpls' ? 'PLS/WPLS' : 'Bridged'}<span className="chip-x">✕</span>
-                    </button>
-                  )}
-                  <button
-                    onClick={() => { setTxTypeFilter('all'); setTxAssetFilter('all'); setTxChainFilter('all'); setTxYearFilter('all'); setTxCoinCategory('all'); }}
-                    style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', background: 'none', border: 'none', cursor: 'pointer', padding: '3px 6px', textDecoration: 'underline' }}>
-                    Clear all
-                  </button>
-                </>
-              )}
             </div>
 
             {/* Stats grid */}
@@ -4685,94 +4772,6 @@ export default function App() {
               );
             })()}
 
-
-            {/* ── Transactions ── */}
-            <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, overflow: 'hidden' }} className="md-elevation-1">
-              <div style={{ padding: '14px 18px', borderBottom: isCollapsed('history-txs') ? 'none' : `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: t.text }}>Transactions</span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent-border)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
-                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', display: 'inline-block', animation: 'pulse 2s infinite' }} />
-                    Live
-                  </span>
-                  <span style={{ fontSize: 12, color: t.textTertiary }}>{filteredTransactions.length} tx</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                  <button
-                    onClick={() => {
-                      const hdrs = ['Date', 'Type', 'Asset', 'Amount', 'Counter Asset', 'Counter Amount', 'Value USD', 'Chain', 'Hash'];
-                      const rows = filteredTransactions.map(tx => [
-                        new Date(tx.timestamp).toISOString().slice(0, 10),
-                        tx.type, tx.asset, tx.amount, tx.counterAsset ?? '', tx.counterAmount ?? '', tx.valueUsd ?? '', tx.chain, tx.hash ?? '',
-                      ]);
-                      exportCSV(`pulseport-history-${Date.now()}.csv`, hdrs, rows);
-                    }}
-                    title="Export CSV"
-                    className="history-csv-btn"
-                    style={{ padding: '5px 10px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 6, cursor: 'pointer', color: 'var(--accent)', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <Download size={12} /> CSV
-                  </button>
-                  <button onClick={() => toggleSection('history-txs')}
-                    style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: t.textTertiary, transition: 'color .12s', flexShrink: 0 }}
-                    onMouseOver={e => (e.currentTarget.style.color = t.text)}
-                    onMouseOut={e => (e.currentTarget.style.color = t.textMuted)}
-                    title={isCollapsed('history-txs') ? 'Expand' : 'Collapse'}>
-                    {isCollapsed('history-txs') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-                  </button>
-                </div>
-              </div>
-              {!isCollapsed('history-txs') && (<>
-              <div className="tx-filter-row" style={{ padding: '8px 18px', borderBottom: `1px solid ${t.border}` }}>
-                {[
-                  { value: txChainFilter, onChange: setTxChainFilter, options: [['all','All Chains'],['pulsechain','PulseChain'],['ethereum','Ethereum'],['base','Base']] as [string,string][] },
-                  { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Tokens'], ...Array.from(new Set(currentTransactions.map(tx => tx.asset))).sort().map(a => [a,a])] as [string,string][] },
-                  { value: txYearFilter, onChange: setTxYearFilter, options: [['all','All Years'],['2026','2026'],['2025','2025'],['2024','2024'],['2023','2023'],['2022','2022'],['2021','2021']] as [string,string][] },
-                  { value: txCoinCategory, onChange: setTxCoinCategory, options: [['all','All Coins'],['stablecoins','Stablecoins'],['eth_weth','ETH/WETH'],['hex','HEX/eHEX'],['pls_wpls','PLS/WPLS'],['bridged','Bridged']] as [string,string][] },
-                ].map(({ value, onChange, options }, i) => (
-                  <select key={i} value={value} onChange={e => onChange(e.target.value)}
-                    className="history-filter-select"
-                    style={{ background: t.cardHigh, border: `1px solid ${t.border}`, borderRadius: 6, color: t.text, fontSize: 13, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
-                    {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                  </select>
-                ))}
-              </div>
-              {hiddenTxIds.length > 0 && (
-                <div style={{ padding: '6px 18px', borderBottom: `1px solid ${t.borderLight}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 13, color: t.textTertiary }}>{hiddenTxIds.length} hidden transaction{hiddenTxIds.length > 1 ? 's' : ''}</span>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => setShowHiddenTxs(v => !v)} style={{ fontSize: 13, color: t.textSecondary, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>{showHiddenTxs ? 'Hide' : 'Show'}</button>
-                    <button onClick={() => setHiddenTxIds([])} style={{ fontSize: 13, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Clear all</button>
-                  </div>
-                </div>
-              )}
-              {(txAssetFilter !== 'all' || txChainFilter !== 'all' || txYearFilter !== 'all' || txCoinCategory !== 'all') && (
-                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, padding: '8px 18px', borderBottom: '1px solid var(--border)' }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginRight: 4 }}>Filtering by:</span>
-                  {txAssetFilter !== 'all' && (<button className="filter-chip" onClick={() => setTxAssetFilter('all')}>{txAssetFilter}<span className="chip-x">&#x2715;</span></button>)}
-                  {txChainFilter !== 'all' && (<button className="filter-chip" onClick={() => setTxChainFilter('all')}>{txChainFilter === 'pulsechain' ? 'PulseChain' : txChainFilter === 'ethereum' ? 'Ethereum' : 'Base'}<span className="chip-x">&#x2715;</span></button>)}
-                  {txYearFilter !== 'all' && (<button className="filter-chip" onClick={() => setTxYearFilter('all')}>{txYearFilter}<span className="chip-x">&#x2715;</span></button>)}
-                  {txCoinCategory !== 'all' && (<button className="filter-chip" onClick={() => setTxCoinCategory('all')}>{txCoinCategory === 'stablecoins' ? 'Stablecoins' : txCoinCategory === 'eth_weth' ? 'ETH/WETH' : txCoinCategory === 'hex' ? 'HEX/eHEX' : txCoinCategory === 'pls_wpls' ? 'PLS/WPLS' : 'Bridged'}<span className="chip-x">&#x2715;</span></button>)}
-                  <button onClick={() => { setTxTypeFilter('all'); setTxAssetFilter('all'); setTxChainFilter('all'); setTxYearFilter('all'); setTxCoinCategory('all'); }} style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', textDecoration: 'underline', marginLeft: 4 }}>Clear all</button>
-                </div>
-              )}
-              <div style={{ maxHeight: 600, overflowY: 'auto' }} className="custom-scrollbar">
-                <TransactionList
-                  transactions={filteredTransactions}
-                  viewAsYou={viewAsYou}
-                  wallets={wallets}
-                  compact={txCompact}
-                  assets={currentAssets}
-                  getTokenLogoUrl={getTokenLogoUrl}
-                  tokenLogos={tokenLogos}
-                  hideIds={hiddenTxIds}
-                  onToggleHide={id => setHiddenTxIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
-                  showHidden={showHiddenTxs}
-                  onFilterByAsset={symbol => setTxAssetFilter(symbol)}
-                  emptyMessage="No transactions found for these filters."
-                />
-              </div>
-              </>)}
-            </div>
 
             {/* ── PLS Flow Summary (merged from former tracker tab) ── */}
             {plsSwapData.rows.length > 0 && (
@@ -5277,15 +5276,15 @@ export default function App() {
                                              assets={currentAssets}
                                              getTokenLogoUrl={getTokenLogoUrl}
                                              tokenLogos={tokenLogos}
-                                             onFilterByAsset={symbol => { setTxAssetFilter(symbol); setActiveTab('history'); }}
+                                             onFilterByAsset={symbol => { setTxAssetFilter(symbol); setActiveTab('assets'); }}
                                              emptyMessage="No transactions for this token."
                                            />
                                            {tokenTxs.length > 8 && (
                                              <div style={{ textAlign: 'center', padding: '8px', fontSize: 12, color: 'var(--fg-subtle)' }}>
                                                +{tokenTxs.length - 8} more &mdash;{' '}
-                                               <button onClick={e => { e.stopPropagation(); setTxAssetFilter(asset.symbol); setActiveTab('history'); }}
+                                               <button onClick={e => { e.stopPropagation(); setTxAssetFilter(asset.symbol); setActiveTab('assets'); }}
                                                  style={{ fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
-                                                 view all in Transaction History
+                                                 view all in Holdings
                                                </button>
                                              </div>
                                            )}
@@ -5407,7 +5406,7 @@ export default function App() {
           { id: 'assets',   label: 'Holdings',           icon: Coins },
           { id: 'stakes',   label: 'HEX Stakes',         icon: Lock },
           { id: 'defi',     label: 'DeFi Positions',     icon: Droplets },
-          { id: 'history',  label: 'Tx History',         icon: History },
+          { id: 'history',  label: 'Total Invest.',         icon: History },
           { id: 'wallets',  label: 'Wallets',  icon: WalletIcon },
         ] as const).map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setActiveTab(id)}
