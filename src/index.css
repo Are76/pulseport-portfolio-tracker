@@ -1628,7 +1628,22 @@ button, a {
   gap: 12px;
   padding: 14px 16px;
 }
-@media (max-width: 480px) {
+
+/* ── TokenPnLCard: two-column body ──────────────────────────────────────────── */
+.pnl-cols {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media (min-width: 540px) {
+  .pnl-cols {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+}
+
+/* ── TokenPnLCard: header wrap at medium-narrow screens ─────────────────────── */
+@media (max-width: 540px) {
   .pnl-card-header {
     flex-direction: column;
     align-items: flex-start;
@@ -1637,19 +1652,6 @@ button, a {
   }
   .pnl-card-header > *:last-child {
     align-self: flex-end;
-  }
-}
-
-/* ── TokenPnLCard: two-column body ──────────────────────────────────────────── */
-.pnl-cols {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-}
-@media (min-width: 640px) {
-  .pnl-cols {
-    grid-template-columns: 1fr 1fr;
-    gap: 0;
   }
 }
 
@@ -1837,6 +1839,26 @@ button, a {
   .stakes-charts-grid { grid-template-columns: 1fr !important; }
   .stakes-totals-grid { grid-template-columns: 1fr 1fr !important; }
   .stakes-metrics-grid { grid-template-columns: 1fr 1fr !important; }
+}
+
+/* Stakes hero – intermediate tablet range where it's still in row layout */
+@media (min-width: 641px) and (max-width: 900px) {
+  .stakes-hero-card {
+    padding: 22px 24px;
+    gap: 16px;
+  }
+}
+
+/* ── LP Summary Stats responsive grid ──────────────────────────────────────── */
+.lp-summary-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+@media (min-width: 640px) {
+  .lp-summary-stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 /* ── Mobile responsive stat/metric grid ─────────────────────────────────── */
@@ -2124,6 +2146,7 @@ button, a {
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   flex-wrap: wrap;
+  row-gap: 6px;
 }
 
 .tcm-body {
@@ -2257,9 +2280,9 @@ button, a {
   font-weight: 700;
   color: var(--fg);
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  min-width: 0;
 }
 
 .tcm-close-btn {
@@ -2360,9 +2383,50 @@ button, a {
   }
   .tcm-changes-grid {
     grid-template-columns: 1fr 1fr;
+    gap: 4px 10px;
   }
   .tcm-market-grid {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Very small screens — single column for changes/market grids */
+@media (max-width: 400px) {
+  .tcm-changes-grid {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+  .tcm-market-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .tcm-holdings-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  /* CA row: shrink button text on tiny screens */
+  .tcm-ca-row {
+    padding: 8px 14px;
+  }
+  .tcm-icon-btn span {
+    display: none;
+  }
+  .tcm-icon-btn {
+    padding: 6px 8px;
+  }
+  /* Stat cells: slightly smaller font */
+  .tcm-stat-value {
+    font-size: 13px;
+  }
+  /* Section padding: tighter */
+  .tcm-section {
+    padding: 12px 14px;
+  }
+  .tcm-header {
+    padding: 14px 14px 10px;
+  }
+  .tcm-footer {
+    padding: 8px 14px;
   }
 }
 

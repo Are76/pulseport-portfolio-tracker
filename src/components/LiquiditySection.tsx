@@ -303,7 +303,7 @@ function LpSummaryStats({ positions }: { positions: LpPositionEnriched[] }) {
   const stakedCount   = positions.filter(p => p.isStaked).length;
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }} className="max-sm:grid-cols-2">
+    <div className="lp-summary-stats-grid">
       {[
         {
           label: 'Total LP Value',
