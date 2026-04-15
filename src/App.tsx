@@ -3047,7 +3047,17 @@ export default function App() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
               <div style={{ width: 34, height: 34, borderRadius: '50%', overflow: 'hidden', background: 'var(--bg-elevated)', border: `1px solid ${t.border}` }}>
-                {card.logo && <img src={card.logo} alt={card.symbol} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: t.textMuted }}>
+                  {card.symbol.slice(0, 3)}
+                </div>
+                {card.logo && (
+                  <img
+                    src={card.logo}
+                    alt={card.symbol}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', marginTop: '-100%' }}
+                    onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                  />
+                )}
               </div>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>{card.name}</div>
