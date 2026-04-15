@@ -214,6 +214,16 @@ function tryReadCache<T>(key: string, withBigInt = false): T | null {
   }
 }
 
+function readStoredJSON<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
 // ── StakingLadder ─────────────────────────────────────────────────────────────
 // Bar chart showing stake distribution by 30-day end-date buckets (from pulsechain-dashboard)
 function StakingLadder({ stakes }: { stakes: HexStake[] }) {
@@ -455,21 +465,14 @@ export default function App() {
   };
 
   const [wallets, setWallets] = useState<Wallet[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('pulseport_wallets') ?? '[]');
-    } catch {
-      return [];
-    }
+    return readStoredJSON<Wallet[]>('pulseport_wallets', []);
   });
   const [realAssets, setRealAssets] = useState<Asset[]>(() => tryReadCache<Asset[]>('pulseport_cache_assets') ?? []);
   const [realStakes, setRealStakes] = useState<HexStake[]>(() => tryReadCache<HexStake[]>('pulseport_cache_stakes', true) ?? []);
   const [lpPositions, setLpPositions] = useState<LpPosition[]>(() => tryReadCache<LpPosition[]>('pulseport_cache_lp') ?? []);
   const [farmPositions, setFarmPositions] = useState<FarmPosition[]>(() => tryReadCache<FarmPosition[]>('pulseport_cache_farms') ?? []);
   const [transactions, setTransactions] = useState<Transaction[]>(() => tryReadCache<Transaction[]>('pulseport_cache_txs') ?? []);
-  const [history, setHistory] = useState<HistoryPoint[]>(() => {
-    const saved = localStorage.getItem('pulseport_history');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [history, setHistory] = useState<HistoryPoint[]>(() => readStoredJSON<HistoryPoint[]>('pulseport_history', []));
   const [newWalletAddress, setNewWalletAddress] = useState('');
   const [newWalletName, setNewWalletName] = useState('');
   const [walletFormError, setWalletFormError] = useState('');
@@ -477,10 +480,7 @@ export default function App() {
   const [editingWalletAddress, setEditingWalletAddress] = useState<string | null>(null);
   const [editWalletName, setEditWalletName] = useState('');
   const [isCustomCoinsModalOpen, setIsCustomCoinsModalOpen] = useState(false);
-  const [customCoins, setCustomCoins] = useState<any[]>(() => {
-    const saved = localStorage.getItem('custom_coins');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [customCoins, setCustomCoins] = useState<any[]>(() => readStoredJSON<any[]>('custom_coins', []));
 
   useEffect(() => {
     localStorage.setItem('custom_coins', JSON.stringify(customCoins));
@@ -516,23 +516,16 @@ export default function App() {
   const [receivedCoinFilter, setReceivedCoinFilter] = useState<string>('all');
   const [receivedChainFilter, setReceivedChainFilter] = useState<string>('all');
   const [timeSinceLastUpdate, setTimeSinceLastUpdate] = useState<number>(0);
-  const [manualEntries, setManualEntries] = useState<Record<string, number>>(() => {
-    const saved = localStorage.getItem('pulseport_manual_entries');
-    return saved ? JSON.parse(saved) : {};
-  });
+  const [manualEntries, setManualEntries] = useState<Record<string, number>>(() => readStoredJSON<Record<string, number>>('pulseport_manual_entries', {}));
   const [prices, setPrices] = useState<Record<string, any>>(() => tryReadCache<Record<string, any>>('pulseport_cache_prices') ?? {});
   const [etherscanApiKey, setEtherscanApiKey] = useState<string>(() => localStorage.getItem('pulseport_etherscan_key') || '');
   const [basescanApiKey, setBasescanApiKey] = useState<string>(() => localStorage.getItem('pulseport_basescan_key') || '');
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [basescanApiKeyInput, setBasescanApiKeyInput] = useState('');
-  const [hideDust, setHideDust] = useState<boolean>(() => {
-    const saved = localStorage.getItem('pulseport_hide_dust');
-    return saved ? JSON.parse(saved) : false;
-  });
+  const [hideDust, setHideDust] = useState<boolean>(() => readStoredJSON<boolean>('pulseport_hide_dust', false));
   const [hiddenTokens, setHiddenTokens] = useState<string[]>(() => {
-    const saved = localStorage.getItem('pulseport_hidden_tokens');
-    return saved ? JSON.parse(saved) : [];
+    return readStoredJSON<string[]>('pulseport_hidden_tokens', []);
   });
   const [priceChangePeriod, setPriceChangePeriod] = useState<'1h' | '6h' | '24h' | '7d'>('24h');
   const [assetSortField, setAssetSortField] = useState<'value' | 'change'>('value');
@@ -560,26 +553,18 @@ export default function App() {
     return format(ts, 'MMM yy');
   };
   const [hiddenTxIds, setHiddenTxIds] = useState<string[]>(() => {
-    const saved = localStorage.getItem('pulseport_hidden_txs');
-    return saved ? JSON.parse(saved) : [];
+    return readStoredJSON<string[]>('pulseport_hidden_txs', []);
   });
   const [showHiddenTxs, setShowHiddenTxs] = useState(false);
   const [showReceivedAssets, setShowReceivedAssets] = useState(true);
   const [showRecentActivity, setShowRecentActivity] = useState(true);
-  const [hideSpam, setHideSpam] = useState<boolean>(() => {
-    const saved = localStorage.getItem('pulseport_hide_spam');
-    return saved !== null ? JSON.parse(saved) : true;
-  });
+  const [hideSpam, setHideSpam] = useState<boolean>(() => readStoredJSON<boolean>('pulseport_hide_spam', true));
   const [spamTokenIds, setSpamTokenIds] = useState<string[]>(() => {
-    const saved = localStorage.getItem('pulseport_spam_tokens');
-    return saved ? JSON.parse(saved) : [];
+    return readStoredJSON<string[]>('pulseport_spam_tokens', []);
   });
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<number | null>(null);
-  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => {
-    const saved = localStorage.getItem('pulseport_collapsed');
-    return saved ? JSON.parse(saved) : {};
-  });
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => readStoredJSON<Record<string, boolean>>('pulseport_collapsed', {}));
   const [tokenMarketData, setTokenMarketData] = useState<Record<string, any>>({});
   const [tokenCardModal, setTokenCardModal] = useState<Asset | null>(null);
   const [tokenCardModalLoading, setTokenCardModalLoading] = useState(false);

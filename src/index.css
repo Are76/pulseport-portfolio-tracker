@@ -340,6 +340,18 @@ button, a {
   cursor: pointer;
 }
 
+/* Strong keyboard focus ring for accessibility */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* ── SCROLLBAR ────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -2041,6 +2053,7 @@ button, a {
     left: -260px !important;
     top: 0 !important;
     height: 100vh !important;
+    height: 100dvh !important;
     z-index: 300 !important;
     transition: left 0.28s cubic-bezier(0.16,1,0.3,1) !important;
     overflow-y: auto;
@@ -2052,6 +2065,13 @@ button, a {
   .app-main {
     margin-left: 0 !important;
     width: 100% !important;
+  }
+}
+
+/* Modern viewport unit support for mobile browser UI chrome changes */
+@supports (min-height: 100dvh) {
+  body {
+    min-height: 100dvh;
   }
 }
 
