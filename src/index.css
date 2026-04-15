@@ -2049,6 +2049,7 @@ textarea:focus-visible,
 /* ── Sidebar mobile behavior ────────────────────────────────────────────── */
 @media (max-width: 767px) {
   .app-sidebar {
+    display: flex !important;
     position: fixed !important;
     left: -260px !important;
     top: 0 !important;
@@ -3604,6 +3605,31 @@ textarea:focus-visible,
   flex-shrink: 0;
 }
 
+@media (max-width: 639px) {
+  .tx-card {
+    padding: 8px 12px;
+    align-items: flex-start;
+  }
+  .tx-card__left {
+    min-width: 0;
+  }
+  .tx-card__meta {
+    width: 100%;
+  }
+  .tx-card__amount {
+    font-size: 12px;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+  .tx-card__actions {
+    align-self: center;
+    gap: 2px;
+  }
+  .tx-card__date {
+    font-size: 11px;
+  }
+}
+
 /* Explorer link */
 .tx-card__explorer-link {
   display: flex;
@@ -3920,6 +3946,26 @@ textarea:focus-visible,
 
   .bridge-event-card {
     padding: 8px 10px;
+  }
+
+  .bridge-event-head {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .bridge-event-asset {
+    max-width: 84px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .bridge-event-time {
+    margin-left: 0;
+  }
+
+  .bridge-event-flow-value {
+    overflow-wrap: anywhere;
   }
 
   .bridge-timeline-date-label {

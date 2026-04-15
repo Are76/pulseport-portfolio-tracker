@@ -158,6 +158,7 @@ const BRIDGE_CHAIN_COLORS: Record<string, string> = {
 };
 
 type BridgeTimelineEventProps = {
+  key?: React.Key;
   tx: Transaction;
   matchedAsset?: Asset;
   logoUrl?: string;
@@ -697,6 +698,23 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('pulseport_theme', theme);
   }, [theme]);
+
+  // Prevent background scroll when the mobile sidebar drawer is open.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!window.matchMedia('(max-width: 767px)').matches) return;
+
+    const previousOverflow = document.body.style.overflow;
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = previousOverflow || '';
+    }
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [sidebarOpen]);
 
   // Theme-aware color helpers — CSS variable-backed for automatic light/dark theming
   const t = useMemo(() => ({
@@ -3064,7 +3082,7 @@ export default function App() {
           background: 'var(--bg-sidebar)',
           borderRight: '1px solid var(--border)',
         }}
-        className={`app-sidebar hidden md:flex flex-col sticky top-0 h-screen overflow-y-auto custom-scrollbar${sidebarOpen ? ' open' : ''}`}>
+        className={`app-sidebar flex flex-col sticky top-0 h-screen overflow-y-auto custom-scrollbar${sidebarOpen ? ' open' : ''}`}>
         {/* Logo */}
         <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--border)' }} className="flex items-center gap-2.5">
           <div style={{
