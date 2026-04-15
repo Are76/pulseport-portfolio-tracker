@@ -9,6 +9,7 @@ export interface Asset {
   id: string;
   symbol: string;
   name: string;
+  address?: string;
   balance: number;
   stakedBalance?: number;
   price: number;

@@ -115,7 +115,7 @@ export function TokenCardModal({
     return () => { document.body.style.overflow = ''; };
   }, []);
 
-  const addr   = (asset as any).address as string | undefined;
+  const addr   = asset.address;
   const pct24h = asset.priceChange24h ?? asset.pnl24h ?? 0;
   const green  = theme === 'dark' ? '#00FF9F' : '#059669';
   const red    = theme === 'dark' ? '#f43f5e' : '#dc2626';

@@ -67,7 +67,7 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
 
   const sym       = asset.symbol.toUpperCase();
   const chainKey  = asset.chain as keyof typeof CHAINS;
-  const assetName = (asset as any).name || asset.symbol;
+  const assetName = asset.name || asset.symbol;
   const plsPrice  = prices['pulsechain']?.usd || 0.00005;
   const ethPrice  = prices['ethereum']?.usd || 3400;
   const nativePrice = chainKey === 'ethereum' ? ethPrice : plsPrice;
