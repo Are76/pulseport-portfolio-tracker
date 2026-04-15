@@ -230,17 +230,22 @@ export function useHexDailyData(): HexDailyDataResult {
       fetchChainDailyData(PULSECHAIN_RPC_PRIMARY, PULSECHAIN_RPC_FALLBACK),
       fetchChainDailyData(ETHEREUM_RPC_PRIMARY,   ETHEREUM_RPC_FALLBACK),
     ]).then(([pulseRes, ethRes]) => {
+      // Use a local variable to track whether an error was already set,
+      // avoiding reliance on the stale `error` state value from closure.
+      let errorSet = false;
+
       if (pulseRes.status === 'fulfilled' && pulseRes.value.length > 0) {
         setPulsechain(pulseRes.value);
         saveCache(CACHE_KEY_PULSE, pulseRes.value);
       } else if (pulseRes.status === 'rejected') {
         setError('Failed to fetch PulseChain HEX daily data');
+        errorSet = true;
       }
 
       if (ethRes.status === 'fulfilled' && ethRes.value.length > 0) {
         setEthereum(ethRes.value);
         saveCache(CACHE_KEY_ETH, ethRes.value);
-      } else if (ethRes.status === 'rejected' && !error) {
+      } else if (ethRes.status === 'rejected' && !errorSet) {
         setError('Failed to fetch Ethereum HEX daily data');
       }
     }).finally(() => {

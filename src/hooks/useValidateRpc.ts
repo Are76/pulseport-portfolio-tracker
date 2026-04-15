@@ -6,7 +6,7 @@
  *
  * Ported from GitLab pulsechain-dashboard/useValidateRpc.js and converted to TypeScript.
  */
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 const PULSECHAIN_CHAIN_ID = '0x171'; // 369 in hex
 const FETCH_TIMEOUT = 8_000;
@@ -76,11 +76,12 @@ export function useValidateRpc(initialUrl?: string | null): UseValidateRpcResult
   }, []);
 
   // Validate on mount if an initial URL is provided
-  useState(() => {
+  useEffect(() => {
     if (initialUrl) {
       validateRpc(initialUrl);
     }
-  });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return { isValid, isChecking, error, validateRpc };
 }
