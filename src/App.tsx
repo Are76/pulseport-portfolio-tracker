@@ -472,6 +472,7 @@ export default function App() {
   });
   const [newWalletAddress, setNewWalletAddress] = useState('');
   const [newWalletName, setNewWalletName] = useState('');
+  const [walletFormError, setWalletFormError] = useState('');
   const [isAddingWallet, setIsAddingWallet] = useState(false);
   const [editingWalletAddress, setEditingWalletAddress] = useState<string | null>(null);
   const [editWalletName, setEditWalletName] = useState('');
@@ -713,6 +714,10 @@ export default function App() {
       localStorage.setItem('pulseport_wallets', JSON.stringify(wallets));
     } catch {}
   }, [wallets]);
+
+  useEffect(() => {
+    if (isAddingWallet) setWalletFormError('');
+  }, [isAddingWallet]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -2023,24 +2028,31 @@ export default function App() {
   };
 
   const addWallet = () => {
-    if (!newWalletAddress.startsWith('0x') || newWalletAddress.length !== 42) {
-      alert('Invalid Ethereum address');
+    const normalizedInput = newWalletAddress.trim();
+    let checksummedAddress = '';
+
+    try {
+      checksummedAddress = getAddress(normalizedInput);
+    } catch {
+      setWalletFormError('Enter a valid EVM wallet address (0x...).');
       return;
     }
     
     // Prevent duplicate wallets
-    if (wallets.some(w => w.address.toLowerCase() === newWalletAddress.toLowerCase())) {
-      alert('This wallet has already been added.');
+    if (wallets.some(w => w.address.toLowerCase() === checksummedAddress.toLowerCase())) {
+      setWalletFormError('This wallet has already been added.');
       return;
     }
 
+    const trimmedName = newWalletName.trim();
     const newWallet: Wallet = {
-      address: newWalletAddress,
-      name: newWalletName || `Wallet ${wallets.length + 1}`
+      address: checksummedAddress,
+      name: trimmedName || `Wallet ${wallets.length + 1}`
     };
     setWallets([...wallets, newWallet]);
     setNewWalletAddress('');
     setNewWalletName('');
+    setWalletFormError('');
     setIsAddingWallet(false);
   };
 
@@ -5426,7 +5438,11 @@ export default function App() {
                     placeholder="0x..."
                     inputMode="text"
                     value={newWalletAddress}
-                    onChange={(e) => setNewWalletAddress(e.target.value)}
+                    onChange={(e) => {
+                      setNewWalletAddress(e.target.value);
+                      if (walletFormError) setWalletFormError('');
+                    }}
+                    onKeyDown={e => { if (e.key === 'Enter') addWallet(); }}
                     style={{ width: '100%', background: t.cardHigh, border: `1px solid ${t.border}`,
                       borderRadius: 10, color: t.text, fontSize: 14, padding: '11px 14px',
                       outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace', transition: 'border-color .15s' }}
@@ -5442,7 +5458,10 @@ export default function App() {
                     type="text" 
                     placeholder="My Main Wallet"
                     value={newWalletName}
-                    onChange={(e) => setNewWalletName(e.target.value)}
+                    onChange={(e) => {
+                      setNewWalletName(e.target.value);
+                      if (walletFormError) setWalletFormError('');
+                    }}
                     onKeyDown={e => { if (e.key === 'Enter') addWallet(); }}
                     style={{ width: '100%', background: t.cardHigh, border: `1px solid ${t.border}`,
                       borderRadius: 10, color: t.text, fontSize: 14, padding: '11px 14px',
@@ -5451,9 +5470,15 @@ export default function App() {
                     onBlur={e => (e.currentTarget.style.borderColor = t.border)}
                   />
                 </div>
+                <div style={{ fontSize: 12, color: walletFormError ? 'var(--negative)' : t.textMuted, minHeight: 18 }}>
+                  {walletFormError || 'Tip: Wallets are read-only. PulsePort never requests private keys.'}
+                </div>
                 <div style={{ paddingTop: 8, display: 'flex', gap: 10 }}>
                   <button 
-                    onClick={() => setIsAddingWallet(false)}
+                    onClick={() => {
+                      setIsAddingWallet(false);
+                      setWalletFormError('');
+                    }}
                     style={{ flex: 1, minHeight: 44, borderRadius: 10, background: t.cardHigh,
                       border: `1px solid ${t.border}`, color: t.text, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
                   >
@@ -5461,8 +5486,9 @@ export default function App() {
                   </button>
                   <button 
                     onClick={addWallet}
-                    style={{ flex: 1, minHeight: 44, borderRadius: 10, background: 'var(--accent)',
-                      border: 'none', color: '#000', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+                    disabled={!newWalletAddress.trim()}
+                    style={{ flex: 1, minHeight: 44, borderRadius: 10, background: newWalletAddress.trim() ? 'var(--accent)' : 'var(--border)',
+                      border: 'none', color: newWalletAddress.trim() ? '#000' : 'var(--fg-subtle)', fontWeight: 700, fontSize: 13, cursor: newWalletAddress.trim() ? 'pointer' : 'not-allowed' }}
                   >
                     Add Wallet
                   </button>

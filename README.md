@@ -1,43 +1,49 @@
 # PulsePort Portfolio Tracker
 
-## Overview
-PulsePort is a powerful tool designed for tracking your investment portfolio in real time. With intuitive features and robust analytics, you can make informed decisions about your investment strategies.
+PulsePort is a multi-chain portfolio dashboard for PulseChain, Ethereum, and Base.
 
-## Real-Time Portfolio Tracking
-Stay updated with live market data that allows you to see the performance of your assets instantly. Our portfolio tracker synchronizes with multiple data sources to provide accurate pricing and market trends.
+## What users can do
 
-## Detailed Analytics Features
-- **Performance Metrics:** Analyze the returns of your investments over different periods and identify emerging trends.
-- **Risk Assessment:** Evaluate the risk profile of your portfolio with detailed metrics and alerts.
-- **Custom Reports:** Generate comprehensive reports that help you assess the performance of your investments.
+- Track balances for multiple wallets in one view.
+- Monitor 24h P&L and portfolio allocation.
+- Review bridge / wallet activity history.
+- Analyze HEX staking and DeFi positions.
+- Hide dust and spam tokens for cleaner holdings.
 
-## Installation Guide
-To get started with PulsePort, follow these steps:
-1. **Clone the Repository:**
-   ```bash
-   git clone https://github.com/Are76/pulseport-portfolio-tracker.git
-   ```
-2. **Navigate to the Directory:**
-   ```bash
-   cd pulseport-portfolio-tracker
-   ```
-3. **Install Dependencies:**
-   ```bash
-   npm install
-   ```
-4. **Run the Application:**
-   ```bash
-   npm start
-   ```
+## Quick start (local)
 
-## Usage
-Once you have the application running, you can start adding your investments and monitoring the performance in real-time. You will also have access to detailed analytics that will guide you in your investment decisions.
+```bash
+npm install
+npm run dev
+```
 
-## Contribution
-We welcome contributions! Please fork the repository and submit your pull requests for any improvements or bug fixes.
+App runs on **http://localhost:5174** by default.
 
-## License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## Build for production
 
----
-Feel free to reach out to us if you have questions or need help with the application!
+```bash
+npm run build
+npm run preview
+```
+
+## Desktop (Electron) builds
+
+- `npm run electron:build` (Windows installer + portable + zip)
+- `npm run electron:build:mac`
+- `npm run electron:build:linux`
+
+## Environment notes
+
+Create a local env file before running:
+
+```bash
+cp .env.example .env
+```
+
+Then set any optional keys you want to enable (for example explorer API integrations).
+
+## User-facing privacy model
+
+- Wallets are **read-only** addresses.
+- No private keys are requested or stored.
+- App state is saved in browser localStorage for faster reloads.
