@@ -813,16 +813,35 @@ button, a {
   .hero-grid { grid-template-columns: 1fr; }
 }
 
-/* Right panel: Live Prices + Portfolio Allocation side by side */
-.hero-right-cols {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  align-items: start;
-  min-width: 380px;
+/* My Holdings panel in the hero card */
+.hero-holdings-panel {
+  min-width: 280px;
+  max-width: 340px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 16px 8px;
+  display: flex;
+  flex-direction: column;
 }
 @media (max-width: 640px) {
-  .hero-right-cols { min-width: 0; grid-template-columns: 1fr; }
+  .hero-holdings-panel { min-width: 0; max-width: 100%; width: 100%; }
+}
+
+.hero-holding-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  cursor: pointer;
+  transition: background 0.12s;
+  border-radius: 8px;
+  margin: 0 -8px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+.hero-holding-row:hover {
+  background: rgba(0, 255, 159, 0.05);
 }
 
 /* ── VALUE HERO ──────────────────────────────────────────────────────── */

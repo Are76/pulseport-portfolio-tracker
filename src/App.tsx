@@ -3216,117 +3216,85 @@ export default function App() {
                              Profit Planner
                            </button>
                          </div>
-                         {/* Right: My Holdings | Portfolio Allocation — side by side */}
-                         <div className="hero-right-cols">
-                           {/* My Holdings (user's own coins displayed as live-price-style rows) */}
-                           {(() => {
-                             const holdingAssets = [...currentAssets].sort((a, b) => b.value - a.value).slice(0, 6);
-                             const fmtBal = (b: number) =>
-                               b >= 1e9 ? `${(b/1e9).toFixed(1)}B` :
-                               b >= 1e6 ? `${(b/1e6).toFixed(1)}M` :
-                               b >= 1e3 ? `${(b/1e3).toFixed(0)}K` :
-                               b.toLocaleString(undefined, { maximumFractionDigits: 2 });
-                             const fmtVal = (v: number) =>
-                               v >= 1e6 ? `$${(v/1e6).toFixed(1)}M` :
-                               v >= 1e3 ? `$${(v/1e3).toFixed(0)}K` :
-                               `$${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
-                             return (
-                               <div>
-                                 <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 10 }}>My Holdings</div>
-                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                                   {holdingAssets.length === 0 ? (
-                                     <div style={{ fontSize: 12, color: 'var(--fg-subtle)', padding: '8px 0' }}>Add wallets to see holdings</div>
-                                   ) : holdingAssets.map(asset => {
-                                     const pct = asset.priceChange24h ?? asset.pnl24h ?? null;
-                                     const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()] || (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()];
-                                     return (
-                                       <div key={asset.id} className="live-price-row" style={{ cursor: 'pointer' }} onClick={() => setTokenCardModal(asset)}>
-                                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                           <div style={{ width: 22, height: 22, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: 'var(--fg-muted)' }}>
-                                             {logo ? (
-                                               <img src={logo} alt={asset.symbol} style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }}
-                                                 onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                                             ) : asset.symbol[0]}
-                                           </div>
-                                           <div>
-                                             <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg)', lineHeight: 1.2 }}>{asset.symbol}</div>
-                                             <div style={{ fontSize: 10, color: 'var(--fg-subtle)', lineHeight: 1.2 }}>{fmtBal(asset.balance)}</div>
-                                           </div>
-                                         </div>
-                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
-                                           <span style={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: 'var(--fg-muted)', fontWeight: 600 }}>{fmtVal(asset.value)}</span>
-                                           {pct !== null && (
-                                             <span style={{ fontSize: 10, fontWeight: 700, color: pct >= 0 ? t.green : t.red, fontFamily: 'JetBrains Mono, monospace' }}>
-                                               {pct >= 0 ? '+' : ''}{pct.toFixed(1)}%
-                                             </span>
-                                           )}
-                                         </div>
+                         {/* Right: My Holdings panel */}
+                         {(() => {
+                           const MAX_HERO_HOLDINGS = 7;
+                           const holdingAssets = [...currentAssets].sort((a, b) => b.value - a.value).slice(0, MAX_HERO_HOLDINGS);
+                           const fmtBal = (b: number) =>
+                             b >= 1e9 ? `${(b/1e9).toFixed(2)}B` :
+                             b >= 1e6 ? `${(b/1e6).toFixed(2)}M` :
+                             b >= 1e3 ? `${(b/1e3).toFixed(2)}K` :
+                             b.toLocaleString(undefined, { maximumFractionDigits: 2 });
+                           const fmtVal = (v: number) =>
+                             v >= 1e6 ? `$${(v/1e6).toFixed(2)}M` :
+                             v >= 1e3 ? `$${(v/1e3).toFixed(2)}K` :
+                             `$${v.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+                           return (
+                             <div className="hero-holdings-panel">
+                               {/* Panel header */}
+                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                                   <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>My Holdings</span>
+                                   {wallets.length > 0 && summary.liquidValue > 0 && (
+                                     <span style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>
+                                       · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                     </span>
+                                   )}
+                                 </div>
+                                 <button
+                                   onClick={() => setActiveTab('assets')}
+                                   style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 6, padding: '3px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
+                                   View All <ChevronRight size={11} />
+                                 </button>
+                               </div>
+                               {/* Token rows */}
+                               {holdingAssets.length === 0 ? (
+                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '28px 0', color: 'var(--fg-subtle)' }}>
+                                   <WalletIcon size={28} style={{ opacity: 0.35 }} />
+                                   <span style={{ fontSize: 13 }}>Add wallets to see holdings</span>
+                                 </div>
+                               ) : holdingAssets.map((asset, idx) => {
+                                 const pct = asset.priceChange24h ?? asset.pnl24h ?? null;
+                                 const lowerAddress = asset.address?.toLowerCase?.() ?? '';
+                                 const logo = STATIC_LOGOS[lowerAddress] || asset.logoUrl || tokenLogos[lowerAddress];
+                                 return (
+                                   <div
+                                     key={asset.id}
+                                     className="hero-holding-row"
+                                     style={{ borderTop: idx === 0 ? 'none' : `1px solid var(--border)` }}
+                                     onClick={() => setTokenCardModal(asset)}>
+                                     {/* Icon */}
+                                     <div style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0, overflow: 'hidden', background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: 'var(--fg-muted)', border: '1px solid var(--border)' }}>
+                                       {logo ? (
+                                         <img src={logo} alt={asset.symbol} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }}
+                                           onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                       ) : asset.symbol[0]}
+                                     </div>
+                                     {/* Name + symbol/price */}
+                                     <div style={{ flex: 1, minWidth: 0 }}>
+                                       <div title={asset.name || asset.symbol} style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{asset.name || asset.symbol}</div>
+                                       <div style={{ fontSize: 12, color: 'var(--fg-subtle)', lineHeight: 1.3, marginTop: 1 }}>
+                                         {asset.symbol}{asset.price > 0 && <span style={{ marginLeft: 4 }}>· {fmtPrice(asset.price)}</span>}
                                        </div>
-                                     );
-                                   })}
-                                 </div>
-                               </div>
-                             );
-                           })()}
-                           {/* Portfolio Allocation — toggle button reveals/hides the color wheel */}
-                           {(() => {
-                             const ALLOC_COLORS2 = ['#00FF9F','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
-                             const alloc = assetAllocation.length > 0 ? assetAllocation : [];
-                             return (
-                               <div>
-                                 <div style={{ fontSize: 11, fontWeight: 700, color: t.textSecondary, textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                     <span>Allocation</span>
-                                     <button
-                                       onClick={() => setAllocWheelOpen(v => !v)}
-                                       title={allocWheelOpen ? 'Hide wheel' : 'Show wheel'}
-                                       style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: 5, border: `1px solid ${allocWheelOpen ? "var(--accent-border)" : "var(--border)"}`, background: allocWheelOpen ? "var(--accent-dim)" : t.cardHigh, cursor: "pointer", color: allocWheelOpen ? "var(--accent)" : t.textMuted, padding: 0, transition: "all .15s" }}>
-                                       <PieChartIcon size={11} />
-                                     </button>
-                                   </div>
-                                   <div style={{ display: 'flex', gap: 4 }}>
-                                     {(['1h','24h','7d'] as const).map(id => (
-                                       <button key={id} onClick={() => setPriceChangePeriod(id)}
-                                         style={{ padding: '2px 8px', borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
-                                           background: priceChangePeriod === id ? 'var(--accent)' : t.cardHigh,
-                                           color: priceChangePeriod === id ? (theme === 'dark' ? '#000' : '#fff') : t.textMuted }}>
-                                         {id.toUpperCase()}
-                                       </button>
-                                     ))}
-                                   </div>
-                                 </div>
-                                 {allocWheelOpen && (alloc.length > 0 ? (
-                                   <>
-                                     <div style={{ width: '100%', height: 120 }}>
-                                       <ResponsiveContainer width="100%" height="100%" debounce={50}>
-                                         <PieChart>
-                                           <Pie data={alloc} cx="50%" cy="50%" innerRadius={35} outerRadius={52} paddingAngle={3} dataKey="value" strokeWidth={0}>
-                                             {alloc.map((_, i) => <Cell key={i} fill={ALLOC_COLORS2[i % ALLOC_COLORS2.length]} />)}
-                                           </Pie>
-                                           <RechartsTooltip contentStyle={{ background: 'var(--bg-surface)', border: '1px solid rgba(0,255,159,0.15)', borderRadius: 10, fontSize: 12, color: 'var(--fg)', boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }} />
-                                         </PieChart>
-                                       </ResponsiveContainer>
                                      </div>
-                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 8 }}>
-                                       {alloc.map((a, i) => {
-                                         const pct = (a.value / (summary.totalValue || 1)) * 100;
-                                         return (
-                                           <div key={a.name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                             <div style={{ width: 7, height: 7, borderRadius: 2, background: ALLOC_COLORS2[i % ALLOC_COLORS2.length], flexShrink: 0, boxShadow: `0 0 6px ${ALLOC_COLORS2[i % ALLOC_COLORS2.length]}66` }} />
-                                             <span style={{ fontSize: 11, color: 'var(--fg-muted)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</span>
-                                             <span style={{ fontSize: 11, color: 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace', fontVariantNumeric: 'tabular-nums' }}>{pct.toFixed(1)}%</span>
-                                           </div>
-                                         );
-                                       })}
+                                     {/* Value + amount */}
+                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 }}>
+                                       <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', fontVariantNumeric: 'tabular-nums' }}>{fmtVal(asset.value)}</span>
+                                       <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                                         <span style={{ fontSize: 11, color: 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace' }}>{fmtBal(asset.balance)}</span>
+                                         {pct !== null && (
+                                           <span style={{ fontSize: 11, fontWeight: 700, color: pct >= 0 ? t.green : t.red, fontFamily: 'JetBrains Mono, monospace' }}>
+                                             {pct >= 0 ? '+' : ''}{pct.toFixed(1)}%
+                                           </span>
+                                         )}
+                                       </div>
                                      </div>
-                                   </>
-                                 ) : (
-                                   <div style={{ fontSize: 12, color: 'var(--fg-subtle)', textAlign: 'center', padding: '24px 0' }}>Add wallets to see allocation</div>
-                                 ))}
-                               </div>
-                             );
-                           })()}
-                         </div>
+                                   </div>
+                                 );
+                               })}
+                             </div>
+                           );
+                         })()}
                        </div>
                      </div>
                      </>
