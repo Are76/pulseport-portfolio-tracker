@@ -548,6 +548,7 @@ export default function App() {
   const [priceDisplayCurrency, setPriceDisplayCurrency] = useState<'usd' | 'pls'>('usd');
   const [pnlAsset, setPnlAsset] = useState<Asset | null>(null);
   const [profitPlannerOpen, setProfitPlannerOpen] = useState(false);
+  const [allocWheelOpen, setAllocWheelOpen] = useState(true);
   const [perfPeriod, setPerfPeriod] = useState<'1w' | '1m' | '1y' | 'all'>('all');
   const fmtLabel = (ts: number) => {
     if (perfPeriod === '1w') return format(ts, 'EEE d');
@@ -3215,69 +3216,74 @@ export default function App() {
                              Profit Planner
                            </button>
                          </div>
-                         {/* Right: Live Prices | Portfolio Allocation — side by side */}
+                         {/* Right: My Holdings | Portfolio Allocation — side by side */}
                          <div className="hero-right-cols">
-                           {/* Live Prices */}
+                           {/* My Holdings (user's own coins displayed as live-price-style rows) */}
                            {(() => {
-                             const corePriceCoins: { symbol: string; price: number; change24h: number | null; logo: string; fallbackLogo?: string; dexUrl: string }[] = [
-                               { symbol: 'PLS',  price: prices['pulsechain']?.usd || 0, change24h: prices['pulsechain']?.usd_24h_change ?? prices['pulsechain:native']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png', dexUrl: 'https://dexscreener.com/pulsechain/' },
-                               { symbol: 'PLSX', price: prices['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd || prices['pulsex']?.usd || 0, change24h: prices['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd_24h_change ?? prices['pulsex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x95B303987A60C71504D99Aa1b13B4DA07b0790ab.png', dexUrl: 'https://dexscreener.com/pulsechain/0x1b45b9148791d3a104184cd5dfe5ce57193a3ee9' },
-                               { symbol: 'INC',  price: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd || prices['incentive']?.usd || 0, change24h: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd_24h_change ?? prices['incentive']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png', dexUrl: 'https://dexscreener.com/pulsechain/0xf808bb6265e9ca27002c0a04562bf50d4fe37eaa' },
-                               { symbol: 'HEX',  price: prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0, change24h: prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd_24h_change ?? prices['hex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39.png', dexUrl: 'https://dexscreener.com/pulsechain/0xf1f4ee610b2babb05c635f726ef8b0c568c8dc65' },
-                               { symbol: 'PRVX', price: prices['pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11']?.usd || 0, change24h: prices['pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11']?.usd_24h_change ?? null, logo: 'https://cdn.dexscreener.com/cms/images/ODHYYN7yppDHnd6u?width=64&height=64&fit=crop&quality=95&format=auto', dexUrl: 'https://dexscreener.com/pulsechain/0x7f681a5ad615238357ba148c281e2eaefd2de55a' },
-                               { symbol: 'eHEX', price: prices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['hex']?.usd || 0, change24h: prices['hex']?.usd_24h_change ?? null, logo: 'https://cdn.dexscreener.com/cms/images/a46bd12940d8501c2aacdd10ad4780e818bdedaba1ec8eb46b52e4d8313d4a93?width=64&height=64&fit=crop&quality=95&format=auto', dexUrl: 'https://dexscreener.com/pulsechain/0xf0ea3efe42c11c8819948ec2d3179f4084863d3f' },
-                             ];
-                             const fmtCoinPrice = fmtPrice;
+                             const holdingAssets = [...currentAssets].sort((a, b) => b.value - a.value).slice(0, 6);
+                             const fmtBal = (b: number) =>
+                               b >= 1e9 ? `${(b/1e9).toFixed(1)}B` :
+                               b >= 1e6 ? `${(b/1e6).toFixed(1)}M` :
+                               b >= 1e3 ? `${(b/1e3).toFixed(0)}K` :
+                               b.toLocaleString(undefined, { maximumFractionDigits: 2 });
+                             const fmtVal = (v: number) =>
+                               v >= 1e6 ? `$${(v/1e6).toFixed(1)}M` :
+                               v >= 1e3 ? `$${(v/1e3).toFixed(0)}K` :
+                               `$${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
                              return (
                                <div>
-                                 <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 10 }}>Live Prices</div>
+                                 <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 10 }}>My Holdings</div>
                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                                   {corePriceCoins.map(coin => (
-                                     <a key={coin.symbol} href={coin.dexUrl} target="_blank" rel="noopener noreferrer" className="live-price-row" style={{ textDecoration: 'none', color: 'inherit' }}>
-                                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                         <div style={{ width: 22, height: 22, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                           <img src={coin.logo} alt={coin.symbol} style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }}
-                                             onError={e => {
-                                               const img = e.target as HTMLImageElement;
-                                               if (coin.fallbackLogo && img.src !== coin.fallbackLogo) {
-                                                 img.src = coin.fallbackLogo;
-                                               } else {
-                                                 img.style.display = 'none';
-                                                 const parent = img.parentElement;
-                                                 if (parent) {
-                                                   parent.style.fontSize = '10px';
-                                                   parent.style.fontWeight = '800';
-                                                   parent.style.color = 'var(--fg-muted)';
-                                                   parent.textContent = coin.symbol[0];
-                                                 }
-                                               }
-                                             }} />
+                                   {holdingAssets.length === 0 ? (
+                                     <div style={{ fontSize: 12, color: 'var(--fg-subtle)', padding: '8px 0' }}>Add wallets to see holdings</div>
+                                   ) : holdingAssets.map(asset => {
+                                     const pct = asset.priceChange24h ?? asset.pnl24h ?? null;
+                                     const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()] || (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()];
+                                     return (
+                                       <div key={asset.id} className="live-price-row" style={{ cursor: 'pointer' }} onClick={() => setTokenCardModal(asset)}>
+                                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                           <div style={{ width: 22, height: 22, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: 'var(--fg-muted)' }}>
+                                             {logo ? (
+                                               <img src={logo} alt={asset.symbol} style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }}
+                                                 onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                             ) : asset.symbol[0]}
+                                           </div>
+                                           <div>
+                                             <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg)', lineHeight: 1.2 }}>{asset.symbol}</div>
+                                             <div style={{ fontSize: 10, color: 'var(--fg-subtle)', lineHeight: 1.2 }}>{fmtBal(asset.balance)}</div>
+                                           </div>
                                          </div>
-                                         <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>{coin.symbol}</span>
+                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
+                                           <span style={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: 'var(--fg-muted)', fontWeight: 600 }}>{fmtVal(asset.value)}</span>
+                                           {pct !== null && (
+                                             <span style={{ fontSize: 10, fontWeight: 700, color: pct >= 0 ? t.green : t.red, fontFamily: 'JetBrains Mono, monospace' }}>
+                                               {pct >= 0 ? '+' : ''}{pct.toFixed(1)}%
+                                             </span>
+                                           )}
+                                         </div>
                                        </div>
-                                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                         <span style={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: 'var(--fg-muted)' }}>{fmtCoinPrice(coin.price)}</span>
-                                         {coin.change24h !== null && (
-                                           <span style={{ fontSize: 11, fontWeight: 700, color: coin.change24h >= 0 ? t.green : t.red, minWidth: 40, textAlign: 'right', fontFamily: 'JetBrains Mono, monospace' }}>
-                                             {coin.change24h >= 0 ? '+' : ''}{coin.change24h.toFixed(1)}%
-                                           </span>
-                                         )}
-                                       </div>
-                                     </a>
-                                   ))}
+                                     );
+                                   })}
                                  </div>
                                </div>
                              );
                            })()}
-                           {/* Portfolio Allocation — hidden on mobile, shows live prices full-width instead */}
-                           <div className="hidden sm:block">
+                           {/* Portfolio Allocation — toggle button reveals/hides the color wheel */}
                            {(() => {
                              const ALLOC_COLORS2 = ['#00FF9F','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
                              const alloc = assetAllocation.length > 0 ? assetAllocation : [];
                              return (
                                <div>
                                  <div style={{ fontSize: 11, fontWeight: 700, color: t.textSecondary, textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                   <span>Allocation</span>
+                                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                     <span>Allocation</span>
+                                     <button
+                                       onClick={() => setAllocWheelOpen(v => !v)}
+                                       title={allocWheelOpen ? 'Hide wheel' : 'Show wheel'}
+                                       style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, borderRadius: 4, border: '1px solid var(--border)', background: allocWheelOpen ? 'var(--accent-dim)' : t.cardHigh, cursor: 'pointer', color: allocWheelOpen ? 'var(--accent)' : t.textMuted, padding: 0, transition: 'all .15s' }}>
+                                       {allocWheelOpen ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                                     </button>
+                                   </div>
                                    <div style={{ display: 'flex', gap: 4 }}>
                                      {(['1h','24h','7d'] as const).map(id => (
                                        <button key={id} onClick={() => setPriceChangePeriod(id)}
@@ -3289,7 +3295,7 @@ export default function App() {
                                      ))}
                                    </div>
                                  </div>
-                                 {alloc.length > 0 ? (
+                                 {allocWheelOpen && (alloc.length > 0 ? (
                                    <>
                                      <div style={{ width: '100%', height: 120 }}>
                                        <ResponsiveContainer width="100%" height="100%" debounce={50}>
@@ -3316,11 +3322,10 @@ export default function App() {
                                    </>
                                  ) : (
                                    <div style={{ fontSize: 12, color: 'var(--fg-subtle)', textAlign: 'center', padding: '24px 0' }}>Add wallets to see allocation</div>
-                                 )}
+                                 ))}
                                </div>
                              );
                            })()}
-                           </div>
                          </div>
                        </div>
                      </div>
@@ -3328,191 +3333,61 @@ export default function App() {
                    );
                  })()}
 
-                {/* ── ASSET POSITIONS GRID (3×3) — standalone section below hero ── */}
+                {/* ── LIVE PRICES GRID — standalone section below hero ── */}
                 {(() => {
-                  const ASSET_COLORS: Record<string, string> = {
-                    PLS: '#00FF9F', WPLS: '#00FF9F', PLSX: '#f739ff', HEX: '#fb923c', pHEX: '#fb923c',
-                    INC: '#22d3ee', eHEX: '#627EEA', PRVX: '#a855f7',
-                    ETH: '#627EEA', WBTC: '#f7931a', USDC: '#2775ca', USDT: '#26a17b',
-                    DAI: '#f5a623', WETH: '#627EEA', BNB: '#f0b90b', SOL: '#9945FF',
-                    pDAI: '#f5a623', pUSDC: '#2775ca', pUSDT: '#26a17b', pWETH: '#627EEA',
+                  const PRICE_COLORS: Record<string, string> = {
+                    PLS: '#00FF9F', PLSX: '#f739ff', INC: '#22d3ee', HEX: '#fb923c', PRVX: '#a855f7', eHEX: '#627EEA',
                   };
-                  const baseAssets = currentAssets.length > 0 ? currentAssets : MOCK_ASSETS;
-                  const chainFilteredAssets = overviewChainFilter === 'all'
-                    ? baseAssets
-                    : baseAssets.filter(a => a.chain === overviewChainFilter);
-                  const tokenSearchFiltered = overviewTokenSearch
-                    ? chainFilteredAssets.filter(a =>
-                        a.symbol.toUpperCase().includes(overviewTokenSearch.toUpperCase()) ||
-                        ((a as any).name || '').toUpperCase().includes(overviewTokenSearch.toUpperCase()))
-                    : chainFilteredAssets;
-                  const displayAssets = [...tokenSearchFiltered].sort((a, b) => b.value - a.value).slice(0, 9);
-                  if (displayAssets.length === 0 && currentAssets.length === 0) return null;
-                  const totalShown = displayAssets.reduce((s, a) => s + a.value, 0);
-                  const fmtValue = (v: number) => v >= 1e6 ? `$${(v/1e6).toFixed(2)}M` : v >= 1e3 ? `$${(v/1e3).toFixed(0)}K` : `$${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+                  const livePriceCoins: { symbol: string; name: string; price: number; change24h: number | null; logo: string; dexUrl: string; mdKey?: string }[] = [
+                    { symbol: 'PLS',  name: 'PulseChain',   price: prices['pulsechain']?.usd || 0, change24h: prices['pulsechain']?.usd_24h_change ?? prices['pulsechain:native']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png', dexUrl: 'https://dexscreener.com/pulsechain/', mdKey: 'pulsechain:native' },
+                    { symbol: 'PLSX', name: 'PulseX',       price: prices['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd || prices['pulsex']?.usd || 0, change24h: prices['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd_24h_change ?? prices['pulsex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x95B303987A60C71504D99Aa1b13B4DA07b0790ab.png', dexUrl: 'https://dexscreener.com/pulsechain/0x1b45b9148791d3a104184cd5dfe5ce57193a3ee9', mdKey: 'pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab' },
+                    { symbol: 'INC',  name: 'Incentive',    price: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd || prices['incentive']?.usd || 0, change24h: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd_24h_change ?? prices['incentive']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png', dexUrl: 'https://dexscreener.com/pulsechain/0xf808bb6265e9ca27002c0a04562bf50d4fe37eaa', mdKey: 'pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d' },
+                    { symbol: 'HEX',  name: 'pHEX',         price: prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0, change24h: prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd_24h_change ?? prices['hex']?.usd_24h_change ?? null, logo: 'https://tokens.app.pulsex.com/images/tokens/0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39.png', dexUrl: 'https://dexscreener.com/pulsechain/0xf1f4ee610b2babb05c635f726ef8b0c568c8dc65', mdKey: 'pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39' },
+                    { symbol: 'PRVX', name: 'PrivacyX',     price: prices['pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11']?.usd || 0, change24h: prices['pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11']?.usd_24h_change ?? null, logo: 'https://cdn.dexscreener.com/cms/images/ODHYYN7yppDHnd6u?width=64&height=64&fit=crop&quality=95&format=auto', dexUrl: 'https://dexscreener.com/pulsechain/0x7f681a5ad615238357ba148c281e2eaefd2de55a', mdKey: 'pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11' },
+                    { symbol: 'eHEX', name: 'Ethereum HEX', price: prices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['hex']?.usd || 0, change24h: prices['hex']?.usd_24h_change ?? null, logo: 'https://cdn.dexscreener.com/cms/images/a46bd12940d8501c2aacdd10ad4780e818bdedaba1ec8eb46b52e4d8313d4a93?width=64&height=64&fit=crop&quality=95&format=auto', dexUrl: 'https://dexscreener.com/pulsechain/0xf0ea3efe42c11c8819948ec2d3179f4084863d3f', mdKey: 'ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39' },
+                  ];
+                  const fmtStatVal = (v: number | null | undefined) =>
+                    !v ? '—' :
+                    v >= 1e9 ? `$${(v/1e9).toFixed(1)}B` :
+                    v >= 1e6 ? `$${(v/1e6).toFixed(1)}M` :
+                    v >= 1e3 ? `$${(v/1e3).toFixed(0)}K` :
+                    `$${v.toFixed(0)}`;
                   return (
                     <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 16, overflow: 'hidden' }}>
                       {/* Header */}
-                      <div style={{ padding: '16px 20px 14px', borderBottom: `1px solid ${t.border}` }}>
-                        {/* Row 1: Title + View all */}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                          <div>
-                            <div style={{ fontSize: 14, fontWeight: 700, color: t.text }}>Top Holdings</div>
-                            <div style={{ fontSize: 12, color: t.textSecondary, marginTop: 2 }}>
-                              {displayAssets.length} token{displayAssets.length !== 1 ? 's' : ''}{overviewChainFilter !== 'all' ? ` on ${overviewChainFilter === 'pulsechain' ? 'PulseChain' : overviewChainFilter === 'ethereum' ? 'Ethereum' : 'Base'}` : ''} · {fmtValue(totalShown)} tracked
-                            </div>
-                          </div>
-                          <button onClick={() => setActiveTab('assets')}
-                            style={{ fontSize: 12, color: 'var(--accent)', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 8, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', transition: 'all .15s', flexShrink: 0 }}
-                            onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent-border)'; }}
-                            onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent-dim)'; }}>
-                            Holdings <ChevronRight size={12} />
-                          </button>
+                      <div style={{ padding: '16px 20px 14px', borderBottom: `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: t.text }}>Live Prices</div>
+                          <div style={{ fontSize: 12, color: t.textSecondary, marginTop: 2 }}>Core PulseChain tokens · live market data</div>
                         </div>
-                        {/* Row 2: Filter bar */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                          {/* Market Watch button */}
-                          <button className="market-watch-btn" onClick={() => setShowMarketWatch(true)}>
-                            <span className="market-watch-dot" />
-                            Market Watch
-                          </button>
-                          {/* Chain segmented toggle */}
-                          <div className="chain-toggle-group">
-                            {(['all', 'pulsechain', 'ethereum', 'base'] as const).map(c => {
-                              const count = c === 'all' ? baseAssets.length : baseAssets.filter(a => a.chain === c).length;
-                              if (count === 0 && c !== 'all') return null;
-                              return (
-                                <button key={c} onClick={() => setOverviewChainFilter(c)}
-                                  className={`chain-toggle-btn${overviewChainFilter === c ? ' active' : ''}`}>
-                                  {c === 'all' ? 'All' : c === 'pulsechain' ? 'PulseChain' : c === 'ethereum' ? 'ETH' : 'Base'}
-                                  {c !== 'all' && (
-                                    <span style={{ marginLeft: 4, fontSize: 10, fontWeight: 600, opacity: 0.7 }}>{count}</span>
-                                  )}
-                                </button>
-                              );
-                            })}
-                          </div>
-                          {/* Search input */}
-                          <div style={{ position: 'relative', flex: '1 1 160px', maxWidth: 240 }}>
-                            <Search size={12} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--fg-subtle)', pointerEvents: 'none' }} />
-                            <input
-                              type="text"
-                              className="filter-search-input"
-                              placeholder="Filter by token…"
-                              value={overviewTokenSearch}
-                              onChange={e => setOverviewTokenSearch(e.target.value)}
-                            />
-                            {overviewTokenSearch && (
-                              <button onClick={() => setOverviewTokenSearch('')}
-                                style={{ position: 'absolute', right: 7, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', padding: 0, display: 'flex', alignItems: 'center' }}>
-                                <X size={12} />
-                              </button>
-                            )}
-                          </div>
-                          {/* Active token filter chip */}
-                          {overviewTokenSearch && (() => {
-                            const chipAsset =
-                              tokenSearchFiltered.find(a => a.symbol.toUpperCase() === overviewTokenSearch.toUpperCase()) ||
-                              (tokenSearchFiltered.length === 1 ? tokenSearchFiltered[0] : null);
-                            const chipLogo = chipAsset
-                              ? (STATIC_LOGOS[(chipAsset as any).address?.toLowerCase?.()] || (chipAsset as any).logoUrl || tokenLogos[(chipAsset as any).address?.toLowerCase?.()])
-                              : null;
-                            return (
-                              <button className="overview-token-chip" onClick={() => setOverviewTokenSearch('')}>
-                                {chipLogo ? (
-                                  <img src={chipLogo} alt=""
-                                    style={{ width: 16, height: 16, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
-                                    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                                ) : (
-                                  <span style={{ fontSize: 11, lineHeight: 1, flexShrink: 0 }}>🔍</span>
-                                )}
-                                <span>{overviewTokenSearch}</span>
-                                <span className="chip-x">✕</span>
-                              </button>
-                            );
-                          })()}
-                          {/* Clear all */}
-                          {(overviewChainFilter !== 'all' || overviewTokenSearch) && (
-                            <button className="filter-clear-btn"
-                              onClick={() => { setOverviewChainFilter('all'); setOverviewTokenSearch(''); }}>
-                              Clear all
-                            </button>
-                          )}
-                          {/* Result count */}
-                          {(overviewTokenSearch || overviewChainFilter !== 'all') && tokenSearchFiltered.length !== baseAssets.length && (
-                            <span style={{ fontSize: 11, color: 'var(--fg-subtle)', marginLeft: 'auto', fontVariantNumeric: 'tabular-nums' }}>
-                              {tokenSearchFiltered.length}/{baseAssets.length}
-                            </span>
-                          )}
-                        </div>
+                        <button onClick={() => setActiveTab('assets')}
+                          style={{ fontSize: 12, color: 'var(--accent)', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 8, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', transition: 'all .15s', flexShrink: 0 }}
+                          onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent-border)'; }}
+                          onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent-dim)'; }}>
+                          My Holdings <ChevronRight size={12} />
+                        </button>
                       </div>
                       <div style={{ padding: '20px 20px 24px' }}>
                         <div className="asset-grid-3col">
-                          {displayAssets.map((asset) => {
-                            const pct = asset.priceChange24h ?? asset.pnl24h ?? 0;
-                            const share = ((asset.value / (summary.totalValue || 1)) * 100);
-                            const accentColor = ASSET_COLORS[asset.symbol] || '#8b5cf6';
-                            const sparkColor = pct >= 0 ? t.green : t.red;
-                            const changeColor = pct >= 0 ? t.green : t.red;
-                            const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()] || (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()];
-                            const md = tokenMarketData[asset.id];
-                            // Real price sparkline: backward-extrapolate anchor prices from DexScreener
-                            // change percentages, then linearly interpolate 12 evenly-spaced points.
-                            const sparkData = (() => {
-                              const N = 12;
-                              const price = asset.price > 0 ? asset.price : 1;
-                              const ch24 = md?.priceChange24h ?? asset.priceChange24h ?? asset.pnl24h ?? null;
-                              const ch6  = md?.priceChange6h ?? null;
-                              const ch1  = md?.priceChange1h ?? asset.priceChange1h ?? null;
-                              const p24 = ch24 != null ? price / (1 + ch24 / 100) : null;
-                              const p6  = ch6  != null ? price / (1 + ch6  / 100) : null;
-                              const p1  = ch1  != null ? price / (1 + ch1  / 100) : null;
-                              type Anch = [number, number];
-                              const anch: Anch[] = [];
-                              if (p24 != null) anch.push([0, p24]);
-                              if (p6  != null) anch.push([Math.round(18 / 24 * (N - 1)), p6]);
-                              if (p1  != null) anch.push([Math.round(23 / 24 * (N - 1)), p1]);
-                              anch.push([N - 1, price]);
-                              if (anch.length < 2) return Array.from({ length: N }, () => ({ v: price }));
-                              const pts: number[] = [];
-                              for (let i = 0; i < N; i++) {
-                                let lo = anch[0], hi = anch[anch.length - 1];
-                                for (let j = 0; j < anch.length - 1; j++) {
-                                  if (i >= anch[j][0] && i <= anch[j + 1][0]) { lo = anch[j]; hi = anch[j + 1]; break; }
-                                }
-                                const span = hi[0] - lo[0];
-                                pts.push(span > 0 ? lo[1] + (hi[1] - lo[1]) * (i - lo[0]) / span : price);
-                              }
-                              return pts.map(v => ({ v }));
-                            })();
-                            const fmtStatVal = (v: number | null | undefined) =>
-                              !v ? '—' :
-                              v >= 1e9 ? `$${(v/1e9).toFixed(1)}B` :
-                              v >= 1e6 ? `$${(v/1e6).toFixed(1)}M` :
-                              v >= 1e3 ? `$${(v/1e3).toFixed(0)}K` :
-                              `$${v.toFixed(0)}`;
-                            const fmtHolders = (n: number) =>
-                              n >= 1e6 ? `${(n/1e6).toFixed(1)}M` :
-                              n >= 1e3 ? `${(n/1e3).toFixed(1)}K` :
-                              n.toLocaleString();
+                          {livePriceCoins.map((coin) => {
+                            const accentColor = PRICE_COLORS[coin.symbol] || '#8b5cf6';
+                            const changeColor = coin.change24h != null ? (coin.change24h >= 0 ? t.green : t.red) : t.textMuted;
+                            const md = coin.mdKey ? tokenMarketData[coin.mdKey] : undefined;
                             const mcap = md ? (md.marketCap || md.fdv || null) : null;
                             return (
-                              <div key={asset.id} className="asset-card-premium asset-card-v2"
-                                onClick={() => setTokenCardModal(asset)}
-                                role="button" tabIndex={0}
-                                onKeyDown={e => e.key === 'Enter' && setTokenCardModal(asset)}>
+                              <a key={coin.symbol} href={coin.dexUrl} target="_blank" rel="noopener noreferrer"
+                                className="asset-card-premium asset-card-v2"
+                                style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
                                 {/* Colored top accent line */}
                                 <div style={{
                                   position: 'absolute', top: 0, left: 0, right: 0, height: 3,
                                   background: `linear-gradient(90deg, ${accentColor}00 0%, ${accentColor} 40%, ${accentColor} 60%, ${accentColor}00 100%)`,
                                   opacity: 0.7, pointerEvents: 'none',
                                 }} />
-
                                 <div style={{ padding: '18px 16px 14px' }}>
-                                  {/* Row 1: Logo + symbol/name + portfolio% badge */}
+                                  {/* Row 1: Logo + symbol/name */}
                                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 14 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                                      {/* Logo with glow ring */}
                                       <div style={{
                                         width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
                                         background: `${accentColor}15`,
@@ -3521,113 +3396,52 @@ export default function App() {
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         fontSize: 14, fontWeight: 800, color: accentColor, overflow: 'hidden',
                                       }}>
-                                        {logo ? (
-                                          <img src={logo} alt={asset.symbol}
-                                            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
-                                            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                                        ) : asset.symbol[0]}
+                                        <img src={coin.logo} alt={coin.symbol}
+                                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                                          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                                       </div>
                                       <div style={{ minWidth: 0 }}>
-                                        <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--fg)', letterSpacing: '-0.01em', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                          {asset.symbol}
-                                        </div>
-                                        <div style={{ fontSize: 11, color: 'var(--fg-subtle)', lineHeight: 1.3, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 110 }}>
-                                          {asset.name}
-                                        </div>
+                                        <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--fg)', letterSpacing: '-0.01em', lineHeight: 1.2 }}>{coin.symbol}</div>
+                                        <div style={{ fontSize: 11, color: 'var(--fg-subtle)', lineHeight: 1.3, marginTop: 2 }}>{coin.name}</div>
                                       </div>
                                     </div>
-                                    {/* Portfolio % badge */}
-                                    <span className="acv2-portfolio-badge" style={{
-                                      color: accentColor,
-                                      background: `${accentColor}18`,
-                                      border: `1px solid ${accentColor}40`,
-                                      marginTop: 2,
-                                    }}>
-                                      {share.toFixed(1)}%
-                                    </span>
+                                    {/* 24h change badge */}
+                                    {coin.change24h != null && (
+                                      <span className="acv2-portfolio-badge" style={{ color: changeColor, background: `${coin.change24h >= 0 ? 'rgba(0,255,159' : 'rgba(244,63,94'},.12)`, border: `1px solid ${coin.change24h >= 0 ? 'rgba(0,255,159' : 'rgba(244,63,94'},.25)`, marginTop: 2, fontFamily: 'JetBrains Mono, monospace' }}>
+                                        {coin.change24h >= 0 ? '+' : ''}{coin.change24h.toFixed(1)}%
+                                      </span>
+                                    )}
                                   </div>
-
                                   {/* Row 2: Price (dominant) */}
                                   <div style={{ marginBottom: 6 }}>
                                     <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.6px', textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 3 }}>Price</div>
-                                    <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.03em', lineHeight: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                      {fmtPrice(asset.price)}
+                                    <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.03em', lineHeight: 1 }}>
+                                      {fmtPrice(coin.price)}
                                     </div>
                                   </div>
-
-                                  {/* Row 3: 24h change (prominent) */}
+                                  {/* Row 3: 24h change bar */}
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
-                                    <span style={{
-                                      display: 'inline-flex', alignItems: 'center', gap: 4,
-                                      fontSize: 15, fontWeight: 800, fontFamily: 'JetBrains Mono, monospace',
-                                      color: changeColor, letterSpacing: '-0.01em',
-                                    }}>
-                                      {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%
-                                    </span>
+                                    {coin.change24h != null ? (
+                                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 15, fontWeight: 800, fontFamily: 'JetBrains Mono, monospace', color: changeColor, letterSpacing: '-0.01em' }}>
+                                        {coin.change24h >= 0 ? '▲' : '▼'} {Math.abs(coin.change24h).toFixed(2)}%
+                                      </span>
+                                    ) : <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>—</span>}
                                     <span style={{ fontSize: 10, color: 'var(--fg-subtle)', fontWeight: 600 }}>24h</span>
                                   </div>
-
-                                  {/* Row 4: Holdings */}
-                                  <div style={{
-                                    display: 'flex', alignItems: 'stretch', justifyContent: 'space-between',
-                                    gap: 0, background: 'rgba(255,255,255,0.04)', borderRadius: 10,
-                                    border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden',
-                                  }}>
+                                  {/* Row 4: MCap / Volume */}
+                                  <div style={{ display: 'flex', alignItems: 'stretch', justifyContent: 'space-between', gap: 0, background: 'rgba(255,255,255,0.04)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden' }}>
                                     <div style={{ flex: 1, padding: '8px 10px' }}>
-                                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.5px', textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 3 }}>Held</div>
-                                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg-muted)', fontFamily: 'JetBrains Mono, monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                        {asset.balance >= 1e9 ? `${(asset.balance/1e9).toFixed(2)}B` :
-                                         asset.balance >= 1e6 ? `${(asset.balance/1e6).toFixed(2)}M` :
-                                         asset.balance >= 1e3 ? `${(asset.balance/1e3).toFixed(1)}K` :
-                                         asset.balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                        {' '}<span style={{ fontSize: 10, color: 'var(--fg-subtle)' }}>{asset.symbol}</span>
-                                      </div>
+                                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.5px', textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 3 }}>Market Cap</div>
+                                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg-muted)', fontFamily: 'JetBrains Mono, monospace' }}>{fmtStatVal(mcap)}</div>
                                     </div>
                                     <div style={{ width: 1, background: 'rgba(255,255,255,0.07)', flexShrink: 0 }} />
                                     <div style={{ flex: 1, padding: '8px 10px', textAlign: 'right' }}>
-                                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.5px', textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 3 }}>Value</div>
-                                      <div style={{ fontSize: 14, fontWeight: 800, color: changeColor, fontFamily: 'JetBrains Mono, monospace' }}>
-                                        {fmtValue(asset.value)}
-                                      </div>
+                                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.5px', textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 3 }}>Volume 24h</div>
+                                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg-muted)', fontFamily: 'JetBrains Mono, monospace' }}>{fmtStatVal(md?.volume24h)}</div>
                                     </div>
                                   </div>
                                 </div>
-
-                                {/* Sparkline */}
-                                <div className="sparkline-container" style={{ height: 42, margin: '2px 0 0' }}>
-                                  <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={sparkData} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
-                                      <defs>
-                                        <linearGradient id={`spark-${asset.id}`} x1="0" y1="0" x2="0" y2="1">
-                                          <stop offset="0%" stopColor={sparkColor} stopOpacity={0.35} />
-                                          <stop offset="100%" stopColor={sparkColor} stopOpacity={0} />
-                                        </linearGradient>
-                                      </defs>
-                                      <Area type="monotone" dataKey="v" stroke={sparkColor} strokeWidth={2} fill={`url(#spark-${asset.id})`} dot={false} isAnimationActive={false} />
-                                    </AreaChart>
-                                  </ResponsiveContainer>
-                                </div>
-
-                                {/* Bottom stat footer: 2×2 grid — MCap | Liquidity / Vol 24h | Holders */}
-                                <div className="acv2-footer acv2-footer-4">
-                                  <div className="acv2-footer-cell">
-                                    <div className="acv2-footer-label">Market Cap</div>
-                                    <div className="acv2-footer-val">{mcap ? fmtStatVal(mcap) : '\u2014'}</div>
-                                  </div>
-                                  <div className="acv2-footer-cell">
-                                    <div className="acv2-footer-label">Liquidity</div>
-                                    <div className="acv2-footer-val" style={md?.liquidity ? { color: t.green } : undefined}>{md ? fmtStatVal(md.liquidity) : '\u2014'}</div>
-                                  </div>
-                                  <div className="acv2-footer-cell">
-                                    <div className="acv2-footer-label">Volume 24h</div>
-                                    <div className="acv2-footer-val">{md ? fmtStatVal(md.volume24h) : '\u2014'}</div>
-                                  </div>
-                                  <div className="acv2-footer-cell">
-                                    <div className="acv2-footer-label">Holders</div>
-                                    <div className="acv2-footer-val">{md?.holders ? fmtHolders(md.holders) : '\u2014'}</div>
-                                  </div>
-                                </div>
-                              </div>
+                              </a>
                             );
                           })}
                         </div>
