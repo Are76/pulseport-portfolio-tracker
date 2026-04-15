@@ -3237,7 +3237,7 @@ export default function App() {
                                    {holdingAssets.length === 0 ? (
                                      <div style={{ fontSize: 12, color: 'var(--fg-subtle)', padding: '8px 0' }}>Add wallets to see holdings</div>
                                    ) : holdingAssets.map(asset => {
-                                     const pct = asset.priceChange24h ?? asset.pnl24h ?? 0;
+                                     const pct = asset.priceChange24h ?? asset.pnl24h ?? null;
                                      const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()] || (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()];
                                      return (
                                        <div key={asset.id} className="live-price-row" style={{ cursor: 'pointer' }} onClick={() => setTokenCardModal(asset)}>
@@ -3255,7 +3255,7 @@ export default function App() {
                                          </div>
                                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
                                            <span style={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: 'var(--fg-muted)', fontWeight: 600 }}>{fmtVal(asset.value)}</span>
-                                           {pct !== 0 && (
+                                           {pct !== null && (
                                              <span style={{ fontSize: 10, fontWeight: 700, color: pct >= 0 ? t.green : t.red, fontFamily: 'JetBrains Mono, monospace' }}>
                                                {pct >= 0 ? '+' : ''}{pct.toFixed(1)}%
                                              </span>
