@@ -1874,6 +1874,62 @@ button, a {
   }
 }
 
+/* ── Shared 4-column stat grid (2-col mobile / 4-col ≥640px) ─────────────── */
+.stat-grid-4 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (min-width: 640px) {
+  .stat-grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ── Shared 2-column chart/panel row (stacks on mobile) ─────────────────── */
+.page-charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 639px) {
+  .page-charts-row { display: block; }
+  .page-charts-row > * + * { margin-top: 12px; }
+}
+
+/* ── Shared filter select row ────────────────────────────────────────────── */
+.tx-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+@media (max-width: 639px) {
+  .tx-filter-row {
+    gap: 6px;
+  }
+  .tx-filter-row select {
+    font-size: 12px;
+    padding: 4px 6px;
+    max-width: 120px;
+  }
+}
+
+/* ── Received Token History header — stacks on mobile ────────────────────── */
+@media (max-width: 639px) {
+  .received-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  .received-header .received-totals {
+    align-self: flex-start;
+    text-align: left !important;
+  }
+  .received-header select {
+    font-size: 12px;
+  }
+}
+
 /* ── Mobile sidebar overlay ─────────────────────────────────────────────── */
 .sidebar-backdrop {
   display: none;
@@ -2387,6 +2443,19 @@ button, a {
   }
   .tcm-market-grid {
     grid-template-columns: 1fr 1fr;
+  }
+  /* Price hero: stack price + change vertically and scale fonts down */
+  .tcm-price-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+  .tcm-price-number {
+    font-size: 24px !important;
+  }
+  .tcm-change-number {
+    font-size: 18px !important;
+    text-align: left !important;
   }
 }
 
@@ -3269,13 +3338,7 @@ button, a {
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)) !important;
     gap: 8px !important;
   }
-  /* Charts: single column on mobile */
-  .pls-charts-row {
-    display: block !important;
-  }
-  .pls-charts-row > * + * {
-    margin-top: 12px;
-  }
+  /* Charts column stacking is handled by .page-charts-row above */
 }
 
 /* ── Transaction history chain label on mobile ────────────────────────────── */

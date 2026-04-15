@@ -4477,7 +4477,7 @@ export default function App() {
             </div>
 
             {/* Stats grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }} className="max-sm:grid-cols-2">
+            <div className="stat-grid-4">
               {[
                 { label: 'Total Invested', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? 'ETH + stablecoin inflows' : 'No ETH/stable inflows found', color: 'var(--fg)' },
                 { label: 'Total P&L', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}${((summary.unifiedPnl / summary.netInvestment) * 100).toFixed(1)}% vs invested` : 'P&L % needs ETH/stable history', color: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? t.green : t.red) : 'var(--fg)' },
@@ -4493,7 +4493,7 @@ export default function App() {
             </div>
 
             {/* Charts row */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }} className="max-sm:block max-sm:space-y-3">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
               {/* Portfolio Performance */}
               {(() => {
                 const now = Date.now();
@@ -4562,7 +4562,7 @@ export default function App() {
 
             {/* Received Assets History */}
             <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
-              <div style={{ padding: '14px 18px', borderBottom: isCollapsed('received-assets') ? 'none' : '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+              <div className="received-header" style={{ padding: '14px 18px', borderBottom: isCollapsed('received-assets') ? 'none' : '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
                   <ArrowDownLeft size={16} style={{ color: '#627EEA', flexShrink: 0 }} />
                   <span style={{ fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}>Received Token History</span>
@@ -4585,7 +4585,7 @@ export default function App() {
                     <option value="DAI">DAI</option>
                   </select>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+                <div className="received-totals" style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginBottom: 2, fontWeight: 600, letterSpacing: '.5px', textTransform: 'uppercase' }}>Total Received</div>
                     <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)' }}>${receivedAssetsData.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
@@ -4754,21 +4754,7 @@ export default function App() {
                     Live
                   </span>
                 </div>
-                <div className="history-filter-row" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  {!isCollapsed('history-txs') && (<>
-                    {[
-                      { value: txChainFilter, onChange: setTxChainFilter, options: [['all','All Chains'],['pulsechain','PulseChain'],['ethereum','Ethereum'],['base','Base']] as [string,string][] },
-                      { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Tokens'], ...Array.from(new Set(currentTransactions.map(tx => tx.asset))).sort().map(a => [a,a])] as [string,string][] },
-                      { value: txYearFilter, onChange: setTxYearFilter, options: [['all','All Years'],['2026','2026'],['2025','2025'],['2024','2024'],['2023','2023'],['2022','2022'],['2021','2021']] as [string,string][] },
-                      { value: txCoinCategory, onChange: setTxCoinCategory, options: [['all','All Coins'],['stablecoins','Stablecoins'],['eth_weth','ETH/WETH'],['hex','HEX/eHEX'],['pls_wpls','PLS/WPLS'],['bridged','Bridged']] as [string,string][] },
-                    ].map(({ value, onChange, options }, i) => (
-                      <select key={i} value={value} onChange={e => onChange(e.target.value)}
-                        className="history-filter-select"
-                        style={{ background: t.cardHigh, border: `1px solid ${t.border}`, borderRadius: 6, color: t.text, fontSize: 13, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
-                        {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                      </select>
-                    ))}
-                  </>)}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                   <button
                     onClick={() => {
                       const hdrs = ['Date', 'Type', 'Asset', 'Amount', 'Counter Asset', 'Counter Amount', 'Value USD', 'Chain', 'Hash'];
@@ -4791,7 +4777,7 @@ export default function App() {
                     <Download size={12} /> CSV
                   </button>
                   <button onClick={() => toggleSection('history-txs')}
-                    style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: t.textTertiary, transition: 'color .12s' }}
+                    style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: t.textTertiary, transition: 'color .12s', flexShrink: 0 }}
                     onMouseOver={e => (e.currentTarget.style.color = t.text)}
                     onMouseOut={e => (e.currentTarget.style.color = t.textMuted)}
                     title={isCollapsed('history-txs') ? 'Expand' : 'Collapse'}>
@@ -4800,6 +4786,21 @@ export default function App() {
                 </div>
               </div>
               {!isCollapsed('history-txs') && (<>
+              {/* Filter row — below the header for cleaner mobile layout */}
+              <div className="tx-filter-row" style={{ padding: '8px 18px', borderBottom: `1px solid ${t.border}` }}>
+                {[
+                  { value: txChainFilter, onChange: setTxChainFilter, options: [['all','All Chains'],['pulsechain','PulseChain'],['ethereum','Ethereum'],['base','Base']] as [string,string][] },
+                  { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Tokens'], ...Array.from(new Set(currentTransactions.map(tx => tx.asset))).sort().map(a => [a,a])] as [string,string][] },
+                  { value: txYearFilter, onChange: setTxYearFilter, options: [['all','All Years'],['2026','2026'],['2025','2025'],['2024','2024'],['2023','2023'],['2022','2022'],['2021','2021']] as [string,string][] },
+                  { value: txCoinCategory, onChange: setTxCoinCategory, options: [['all','All Coins'],['stablecoins','Stablecoins'],['eth_weth','ETH/WETH'],['hex','HEX/eHEX'],['pls_wpls','PLS/WPLS'],['bridged','Bridged']] as [string,string][] },
+                ].map(({ value, onChange, options }, i) => (
+                  <select key={i} value={value} onChange={e => onChange(e.target.value)}
+                    className="history-filter-select"
+                    style={{ background: t.cardHigh, border: `1px solid ${t.border}`, borderRadius: 6, color: t.text, fontSize: 13, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
+                    {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                  </select>
+                ))}
+              </div>
               {hiddenTxIds.length > 0 && (
                 <div style={{ padding: '6px 18px', borderBottom: `1px solid ${t.borderLight}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: 13, color: t.textTertiary }}>{hiddenTxIds.length} hidden transaction{hiddenTxIds.length > 1 ? 's' : ''}</span>
@@ -4870,7 +4871,7 @@ export default function App() {
                         onMouseOver={e => (e.currentTarget.style.background = t.hoverBg)}
                         onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                         {/* LEFT — icon + text */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
                           {!txCompact && (
                             <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
                               background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
@@ -5155,7 +5156,7 @@ export default function App() {
             </div>
 
             {/* Stats grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }} className="max-sm:grid-cols-2">
+            <div className="stat-grid-4">
               {[
                 { label: 'PLS Received', val: plsSwapData.totalReceived >= 1e9 ? `${(plsSwapData.totalReceived/1e9).toFixed(2)}B` : plsSwapData.totalReceived >= 1e6 ? `${(plsSwapData.totalReceived/1e6).toFixed(2)}M` : plsSwapData.totalReceived.toLocaleString(undefined,{maximumFractionDigits:0}), sub: 'Total PLS inflow', color: t.green },
                 { label: 'PLS Spent', val: plsSwapData.totalSpent >= 1e9 ? `${(plsSwapData.totalSpent/1e9).toFixed(2)}B` : plsSwapData.totalSpent >= 1e6 ? `${(plsSwapData.totalSpent/1e6).toFixed(2)}M` : plsSwapData.totalSpent.toLocaleString(undefined,{maximumFractionDigits:0}), sub: 'Total PLS outflow', color: t.red },
@@ -5171,7 +5172,7 @@ export default function App() {
             </div>
 
             {/* Charts row */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }} className="max-sm:block max-sm:space-y-3">
+            <div className="page-charts-row">
               {(() => {
                 const plsPrice = plsSwapData.plsPrice || 0;
                 const pts = [...plsSwapData.rows].reverse();
@@ -5234,8 +5235,8 @@ export default function App() {
             {plsSwapData.rows.length > 0 && (
               <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, overflow: 'hidden' }} className="md-elevation-1">
                 <div style={{ padding: '14px 18px', borderBottom: isCollapsed('tracker-pls') ? 'none' : `1px solid ${t.borderLight}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: t.text }}>PLS Movement</div>
-                  <button onClick={() => toggleSection('tracker-pls')} style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: t.textTertiary }}
+                  <div style={{ fontSize: 14, fontWeight: 600, color: t.text, minWidth: 0, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>PLS Movement</div>
+                  <button onClick={() => toggleSection('tracker-pls')} style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: t.textTertiary, flexShrink: 0 }}
                     onMouseOver={e => (e.currentTarget.style.color = t.text)} onMouseOut={e => (e.currentTarget.style.color = t.textMuted)}>
                     {isCollapsed('tracker-pls') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
                   </button>
