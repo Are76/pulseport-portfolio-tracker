@@ -1,0 +1,103 @@
+/**
+ * normalizeTransactions
+ * ---------------------
+ * Pure function that converts a flat list of raw deposit/withdraw transactions
+ * into a normalized list where same-hash in+out pairs are collapsed into a
+ * single `swap` record.
+ *
+ * This is the ONLY place swap-detection logic should live.
+ * All UI code must consume the output of this function — never raw blockchain
+ * structures directly.
+ */
+
+import type { Transaction } from '../types';
+
+/** Native gas token symbol per chain. Used to filter out zero-value router invocations. */
+const NATIVE_TOKEN: Record<string, string> = {
+  pulsechain: 'PLS',
+  ethereum:   'ETH',
+  base:       'ETH',
+};
+
+export function normalizeTransactions(
+  rawTxs: Transaction[],
+  walletAddrs: Set<string>,
+): Transaction[] {
+  // Group all raw transactions by their on-chain hash
+  const byHash: Record<string, Transaction[]> = {};
+  rawTxs.forEach(tx => {
+    if (!byHash[tx.hash]) byHash[tx.hash] = [];
+    byHash[tx.hash].push(tx);
+  });
+
+  const result: Transaction[] = [];
+  const seen = new Set<string>();
+
+  Object.entries(byHash).forEach(([hash, txs]) => {
+    // Only include transactions that involve at least one of the user's wallets
+    const relevant = txs.filter(t =>
+      walletAddrs.has(t.from.toLowerCase()) || walletAddrs.has(t.to.toLowerCase()),
+    );
+    if (relevant.length === 0) return;
+
+    if (relevant.length > 1) {
+      const outs = relevant.filter(t => t.type === 'withdraw');
+      const ins  = relevant.filter(t => t.type === 'deposit');
+
+      // Helper: identify zero-value native-token calls (router invocations with no value)
+      const isNativeTx = (t: Transaction) => t.asset === NATIVE_TOKEN[t.chain];
+
+      // In + Out on the same hash → this is a swap
+      if (outs.length > 0 && ins.length > 0) {
+        // Prefer a non-zero ERC-20 transfer over a zero-amount native-token router call
+        const pickBest = (arr: Transaction[]): Transaction => {
+          const tokens = arr.filter(t => !isNativeTx(t) && t.amount > 0);
+          if (tokens.length) return tokens.reduce((b, t) => t.amount > b.amount ? t : b);
+          const nonZero = arr.filter(t => t.amount > 0);
+          if (nonZero.length) return nonZero.reduce((b, t) => t.amount > b.amount ? t : b);
+          return arr[0];
+        };
+
+        const outTx = pickBest(outs);
+        const inTx  = pickBest(ins);
+        const id = `${hash}-swap`;
+
+        if (!seen.has(id)) {
+          seen.add(id);
+          result.push({
+            ...inTx,
+            id,
+            type: 'swap',
+            counterAsset: outTx.asset,
+            counterAmount: outTx.amount,
+          });
+        }
+        return;
+      }
+
+      // Multiple outs, no ins → e.g. token sold for native PLS via internal transfer
+      // Drop the zero-amount native-call entry; keep only the actual token-out
+      if (outs.length >= 2 && ins.length === 0) {
+        const tokenOuts = outs.filter(t => !isNativeTx(t) && t.amount > 0);
+        const toKeep = tokenOuts.length > 0 ? tokenOuts : outs.filter(t => t.amount > 0);
+        toKeep.forEach(tx => {
+          if (!seen.has(tx.id)) {
+            seen.add(tx.id);
+            result.push(tx);
+          }
+        });
+        return;
+      }
+    }
+
+    // Single transaction (or no swap pattern detected) — include as-is
+    relevant.forEach(tx => {
+      if (!seen.has(tx.id)) {
+        seen.add(tx.id);
+        result.push(tx);
+      }
+    });
+  });
+
+  return result.sort((a, b) => b.timestamp - a.timestamp);
+}

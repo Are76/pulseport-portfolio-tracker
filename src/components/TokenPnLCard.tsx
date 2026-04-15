@@ -134,11 +134,11 @@ export function TokenPnLCard({
           totalProceeds += usd;
           sellCount++;
         }
-      } else if (tx.type === 'transfer_in') {
+      } else if (tx.type === 'deposit') {
         // Received symbol for free / via bridge
         totalCost += usd; // at market value at time of receipt
         transferInCount++;
-      } else if (tx.type === 'transfer_out') {
+      } else if (tx.type === 'withdraw') {
         // Sent symbol away — treat as proceeds at the time
         totalProceeds += usd;
         transferOutCount++;

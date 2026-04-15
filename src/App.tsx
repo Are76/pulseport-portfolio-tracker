@@ -68,6 +68,8 @@ import { ProfitPlannerModal } from './components/ProfitPlannerModal';
 import { StakesSection } from './components/StakesSection';
 import { TokenCardModal } from './components/TokenCardModal';
 import { MarketWatchModal } from './components/MarketWatchModal';
+import { TransactionList } from './components/TransactionList';
+import { normalizeTransactions } from './utils/normalizeTransactions';
 
 const ERC20_ABI = [
   {
@@ -123,13 +125,13 @@ const MOCK_HISTORY: HistoryPoint[] = Array.from({ length: 30 }, (_, i) => {
 
 const MOCK_WALLET = '0xdemo0000000000000000000000000000000001';
 const MOCK_TRANSACTIONS: Transaction[] = [
-  { id: 'm1', hash: '0x123...', timestamp: Date.now() - 86400000 * 2, type: 'transfer_in', from: '0xabc...', to: MOCK_WALLET, asset: 'ETH', amount: 1.5, chain: 'ethereum', valueUsd: 5175 },
-  { id: 'm2', hash: '0x456...', timestamp: Date.now() - 86400000 * 5, type: 'transfer_in', from: '0xdef...', to: MOCK_WALLET, asset: 'USDC', amount: 2500, chain: 'base', valueUsd: 2500 },
+  { id: 'm1', hash: '0x123...', timestamp: Date.now() - 86400000 * 2, type: 'deposit', from: '0xabc...', to: MOCK_WALLET, asset: 'ETH', amount: 1.5, chain: 'ethereum', valueUsd: 5175 },
+  { id: 'm2', hash: '0x456...', timestamp: Date.now() - 86400000 * 5, type: 'deposit', from: '0xdef...', to: MOCK_WALLET, asset: 'USDC', amount: 2500, chain: 'base', valueUsd: 2500 },
   { id: 'm3', hash: '0x789...', timestamp: Date.now() - 86400000 * 10, type: 'swap', from: MOCK_WALLET, to: MOCK_WALLET, asset: 'ETH', amount: 0.5, chain: 'ethereum', valueUsd: 1725, counterAsset: 'USDC', counterAmount: 1725 },
-  { id: 'm4', hash: '0xabc...', timestamp: Date.now() - 86400000 * 15, type: 'transfer_in', from: '0xghi...', to: MOCK_WALLET, asset: 'ETH', amount: 2.0, chain: 'ethereum', valueUsd: 6800 },
-  { id: 'm5', hash: '0xdef...', timestamp: Date.now() - 86400000 * 20, type: 'transfer_in', from: '0xjkl...', to: MOCK_WALLET, asset: 'USDC', amount: 5000, chain: 'ethereum', valueUsd: 5000 },
-  { id: 'm6', hash: '0x000...', timestamp: Date.now() - 86400000 * 1, type: 'transfer_in', from: '0x000...', to: MOCK_WALLET, asset: 'USDC', amount: 1000, chain: 'ethereum', valueUsd: 1000 },
-  { id: 'm7', hash: '0x999...', timestamp: Date.now() - 86400000 * 0.5, type: 'transfer_in', from: '0x123...', to: MOCK_WALLET, asset: 'USDC', amount: 25000, chain: 'ethereum', valueUsd: 25000 },
+  { id: 'm4', hash: '0xabc...', timestamp: Date.now() - 86400000 * 15, type: 'deposit', from: '0xghi...', to: MOCK_WALLET, asset: 'ETH', amount: 2.0, chain: 'ethereum', valueUsd: 6800 },
+  { id: 'm5', hash: '0xdef...', timestamp: Date.now() - 86400000 * 20, type: 'deposit', from: '0xjkl...', to: MOCK_WALLET, asset: 'USDC', amount: 5000, chain: 'ethereum', valueUsd: 5000 },
+  { id: 'm6', hash: '0x000...', timestamp: Date.now() - 86400000 * 1, type: 'deposit', from: '0x000...', to: MOCK_WALLET, asset: 'USDC', amount: 1000, chain: 'ethereum', valueUsd: 1000 },
+  { id: 'm7', hash: '0x999...', timestamp: Date.now() - 86400000 * 0.5, type: 'deposit', from: '0x123...', to: MOCK_WALLET, asset: 'USDC', amount: 25000, chain: 'ethereum', valueUsd: 25000 },
 ];
 
 const fP = (n: number) => {
@@ -556,8 +558,6 @@ export default function App() {
     const saved = localStorage.getItem('pulseport_theme');
     return (saved === 'light') ? 'light' : 'dark';
   });
-  const [expandedTxIds, setExpandedTxIds] = useState<Set<string>>(new Set());
-  const [trackerExpandedIds, setTrackerExpandedIds] = useState<Set<string>>(new Set());
 
   // Apply theme to document
   useEffect(() => {
@@ -1090,7 +1090,7 @@ export default function App() {
                   id: tx.hash,
                   hash: tx.hash,
                   timestamp: ts,
-                  type: isOut ? 'transfer_out' : 'transfer_in',
+                  type: isOut ? 'withdraw' : 'deposit',
                   from: tx.from?.hash || '',
                   to: tx.to?.hash || '',
                   asset: 'PLS',
@@ -1138,7 +1138,7 @@ export default function App() {
                   id: `${tx.transaction_hash}-${tx.log_index || Math.random()}`,
                   hash: tx.transaction_hash || tx.hash || '',
                   timestamp: ts,
-                  type: isOut ? 'transfer_out' : 'transfer_in',
+                  type: isOut ? 'withdraw' : 'deposit',
                   from: tx.from?.hash || '',
                   to: tx.to?.hash || '',
                   asset: assetName,
@@ -1208,7 +1208,7 @@ export default function App() {
                   id: tx.hash,
                   hash: tx.hash,
                   timestamp: ts,
-                  type: isOut ? 'transfer_out' : 'transfer_in',
+                  type: isOut ? 'withdraw' : 'deposit',
                   from: tx.from?.hash || '',
                   to: tx.to?.hash || '',
                   asset: 'ETH',
@@ -1246,7 +1246,7 @@ export default function App() {
                   id: `${tx.transaction_hash}-${tx.log_index || Math.random()}`,
                   hash: tx.transaction_hash || tx.hash || '',
                   timestamp: ts,
-                  type: isOut ? 'transfer_out' : 'transfer_in',
+                  type: isOut ? 'withdraw' : 'deposit',
                   from: tx.from?.hash || '',
                   to: tx.to?.hash || '',
                   asset: assetName,
@@ -1337,7 +1337,7 @@ export default function App() {
                   id: tx.hash,
                   hash: tx.hash,
                   timestamp: Number(tx.timeStamp) * 1000,
-                  type: isOut ? 'transfer_out' : 'transfer_in',
+                  type: isOut ? 'withdraw' : 'deposit',
                   from: tx.from,
                   to: tx.to,
                   asset: 'ETH',
@@ -1372,7 +1372,7 @@ export default function App() {
                   id: `${tx.hash}-${tx.logIndex}`,
                   hash: tx.hash,
                   timestamp: Number(tx.timeStamp) * 1000,
-                  type: isOut ? 'transfer_out' : 'transfer_in',
+                  type: isOut ? 'withdraw' : 'deposit',
                   from: tx.from,
                   to: tx.to,
                   asset: assetName,
@@ -1416,7 +1416,7 @@ export default function App() {
                 id: `${tx.hash}-internal-${i}`,
                 hash: tx.hash,
                 timestamp: Number(tx.timeStamp) * 1000,
-                type: isOut ? 'transfer_out' : 'transfer_in',
+                type: isOut ? 'withdraw' : 'deposit',
                 from: tx.from || '',
                 to: tx.to || '',
                 asset: 'ETH',
@@ -1955,69 +1955,11 @@ export default function App() {
         console.warn('Farm position fetch failed:', e);
       }
 
-      // Group transactions by hash to identify swaps (like pulsewatch.app)
-      const groupedTxs: Record<string, Transaction[]> = {};
-      allTransactions.forEach(tx => {
-        if (!groupedTxs[tx.hash]) groupedTxs[tx.hash] = [];
-        groupedTxs[tx.hash].push(tx);
-      });
+      // Normalize raw transactions: group by hash, collapse in+out pairs into swaps.
+      const walletAddrs = new Set<string>(wallets.map(w => w.address.toLowerCase()));
+      const processedTransactions = normalizeTransactions(allTransactions, walletAddrs);
 
-      const walletAddrs = new Set(wallets.map(w => w.address.toLowerCase()));
-
-      const processedTransactions: Transaction[] = [];
-      const seenIds = new Set<string>();
-      Object.entries(groupedTxs).forEach(([hash, txs]) => {
-        // Only include if from or to is one of the user's wallets
-        const relevant = txs.filter(t =>
-          walletAddrs.has(t.from.toLowerCase()) || walletAddrs.has(t.to.toLowerCase())
-        );
-        if (relevant.length === 0) return;
-
-        if (relevant.length > 1) {
-          const outs = relevant.filter(t => t.type === 'transfer_out');
-          const ins  = relevant.filter(t => t.type === 'transfer_in');
-          // Identify zero-value native-chain call records (router invocations with no value)
-          const isNativeTx = (t: Transaction) =>
-            (t.chain === 'pulsechain' && t.asset === 'PLS') ||
-            ((t.chain === 'ethereum' || t.chain === 'base') && t.asset === 'ETH');
-          if (outs.length > 0 && ins.length > 0) {
-            // Prefer a non-zero token transfer over a zero-amount native call (router invocation)
-            const pickBest = (arr: Transaction[]) => {
-              const tokens = arr.filter(t => !isNativeTx(t) && t.amount > 0);
-              if (tokens.length) return tokens.reduce((b, t) => t.amount > b.amount ? t : b);
-              const nonZero = arr.filter(t => t.amount > 0);
-              if (nonZero.length) return nonZero.reduce((b, t) => t.amount > b.amount ? t : b);
-              return arr[0];
-            };
-            const outTx = pickBest(outs);
-            const inTx  = pickBest(ins);
-            const id = `${hash}-swap`;
-            if (!seenIds.has(id)) {
-              seenIds.add(id);
-              processedTransactions.push({ ...inTx, id, type: 'swap', counterAsset: outTx.asset, counterAmount: outTx.amount });
-            }
-            return;
-          }
-          // Multiple outs, no ins — e.g. token sold for native PLS via internal transfer (internal txs not captured)
-          // Drop the zero-amount native call entry; keep only the actual token out
-          if (outs.length >= 2 && ins.length === 0) {
-            const tokenOuts = outs.filter(t => !isNativeTx(t) && t.amount > 0);
-            const toKeep = tokenOuts.length > 0 ? tokenOuts : outs.filter(t => t.amount > 0);
-            toKeep.forEach(tx => {
-              if (!seenIds.has(tx.id)) { seenIds.add(tx.id); processedTransactions.push(tx); }
-            });
-            return;
-          }
-        }
-        relevant.forEach(tx => {
-          if (!seenIds.has(tx.id)) {
-            seenIds.add(tx.id);
-            processedTransactions.push(tx);
-          }
-        });
-      });
-
-      setTransactions(processedTransactions.sort((a, b) => b.timestamp - a.timestamp));
+      setTransactions(processedTransactions);
       setLastUpdated(Date.now());
 
       // Save a history point
@@ -2267,7 +2209,7 @@ export default function App() {
     };
     // Collect all qualifying inflows first
     const qualifiedInflows = currentTransactions.filter(tx => {
-      if (tx.type !== 'transfer_in') return false;
+      if (tx.type !== 'deposit') return false;
       if (tx.chain === 'pulsechain') return false; // always exclude; already counted via ETH/Base
       const assetUpper = tx.asset.toUpperCase();
       const isEth = assetUpper === 'ETH';
@@ -2343,7 +2285,7 @@ export default function App() {
     sortedTxs.forEach(tx => {
       const assetKey = `${tx.chain}:${tx.asset}`;
       
-      if (tx.type === 'transfer_in' || (tx.type === 'swap' && tx.counterAsset)) {
+      if (tx.type === 'deposit' || (tx.type === 'swap' && tx.counterAsset)) {
         // Buying or receiving asset
         const amount = tx.amount;
         const value = tx.valueUsd || 0;
@@ -2353,7 +2295,7 @@ export default function App() {
         }
         costBasisMap[assetKey].amount += amount;
         costBasisMap[assetKey].totalCost += value;
-      } else if (tx.type === 'transfer_out' || tx.type === 'swap') {
+      } else if (tx.type === 'withdraw' || tx.type === 'swap') {
         // Selling or sending asset
         const amount = tx.amount;
         const value = tx.valueUsd || 0;
@@ -2498,7 +2440,7 @@ export default function App() {
     const ethPrice = prices['ethereum']?.usd || 3400;
 
     const filtered = currentTransactions.filter(tx => {
-      const typeMatch = tx.type === 'transfer_in' || (tx.type as string) === 'receive';
+      const typeMatch = tx.type === 'deposit' || (tx.type as string) === 'receive';
       const chainMatch = receivedChainFilter === 'all'
         ? (tx.chain === 'ethereum' || tx.chain === 'base' || tx.chain === 'pulsechain')
         : tx.chain === receivedChainFilter;
@@ -2579,7 +2521,7 @@ export default function App() {
         // Include swaps where PLS is on either leg
         if (tx.type === 'swap' && (isPls(tx.asset) || isPls(tx.counterAsset || ''))) return true;
         // Include all PLS/WPLS native transfers on PulseChain (since Blockscout doesn't tag swaps)
-        if (tx.chain === 'pulsechain' && isPls(tx.asset) && (tx.type === 'transfer_in' || tx.type === 'transfer_out')) return true;
+        if (tx.chain === 'pulsechain' && isPls(tx.asset) && (tx.type === 'deposit' || tx.type === 'withdraw')) return true;
         return false;
       })
       .map(tx => {
@@ -2588,9 +2530,9 @@ export default function App() {
         if (tx.type === 'swap') {
           plsReceived = isPls(tx.asset) ? tx.amount : 0;
           plsSpent = isPls(tx.counterAsset || '') ? (tx.counterAmount || 0) : 0;
-        } else if (tx.type === 'transfer_in') {
+        } else if (tx.type === 'deposit') {
           plsReceived = tx.amount;
-        } else if (tx.type === 'transfer_out') {
+        } else if (tx.type === 'withdraw') {
           plsSpent = tx.amount;
         }
         const netPls = plsReceived - plsSpent;
@@ -2884,7 +2826,6 @@ export default function App() {
             { id: 'stakes',   label: 'HEX Stakes',         icon: Lock },
             { id: 'defi',     label: 'DeFi Positions',     icon: Droplets },
             { id: 'history',  label: 'Transaction History', icon: History },
-            { id: 'tracker',  label: 'PLS Flow', icon: ArrowLeftRight },
             { id: 'wallets',  label: 'Wallets',  icon: WalletIcon },
           ] as const).map(({ id, label, icon: Icon }) => {
             const isDefi = id === 'defi';
@@ -4427,8 +4368,8 @@ export default function App() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               {([
                 { value: 'all', label: 'All' },
-                { value: 'transfer_in', label: 'Received' },
-                { value: 'transfer_out', label: 'Sent' },
+                { value: 'deposit', label: 'Received' },
+                { value: 'withdraw', label: 'Sent' },
                 { value: 'swap', label: 'Swaps' },
               ] as { value: string; label: string }[]).map(({ value, label }) => (
                 <button key={value}
@@ -4744,15 +4685,17 @@ export default function App() {
               );
             })()}
 
-            {/* Recent Activity */}
+
+            {/* ── Transactions ── */}
             <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, overflow: 'hidden' }} className="md-elevation-1">
               <div style={{ padding: '14px 18px', borderBottom: isCollapsed('history-txs') ? 'none' : `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: t.text }}>Recent Activity</span>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: t.text }}>Transactions</span>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent-border)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
                     <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', display: 'inline-block', animation: 'pulse 2s infinite' }} />
                     Live
                   </span>
+                  <span style={{ fontSize: 12, color: t.textTertiary }}>{filteredTransactions.length} tx</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                   <button
@@ -4760,14 +4703,7 @@ export default function App() {
                       const hdrs = ['Date', 'Type', 'Asset', 'Amount', 'Counter Asset', 'Counter Amount', 'Value USD', 'Chain', 'Hash'];
                       const rows = filteredTransactions.map(tx => [
                         new Date(tx.timestamp).toISOString().slice(0, 10),
-                        tx.type,
-                        tx.asset,
-                        tx.amount,
-                        tx.counterAsset ?? '',
-                        tx.counterAmount ?? '',
-                        tx.valueUsd ?? '',
-                        tx.chain,
-                        tx.hash ?? '',
+                        tx.type, tx.asset, tx.amount, tx.counterAsset ?? '', tx.counterAmount ?? '', tx.valueUsd ?? '', tx.chain, tx.hash ?? '',
                       ]);
                       exportCSV(`pulseport-history-${Date.now()}.csv`, hdrs, rows);
                     }}
@@ -4786,7 +4722,6 @@ export default function App() {
                 </div>
               </div>
               {!isCollapsed('history-txs') && (<>
-              {/* Filter row — below the header for cleaner mobile layout */}
               <div className="tx-filter-row" style={{ padding: '8px 18px', borderBottom: `1px solid ${t.border}` }}>
                 {[
                   { value: txChainFilter, onChange: setTxChainFilter, options: [['all','All Chains'],['pulsechain','PulseChain'],['ethereum','Ethereum'],['base','Base']] as [string,string][] },
@@ -4805,517 +4740,73 @@ export default function App() {
                 <div style={{ padding: '6px 18px', borderBottom: `1px solid ${t.borderLight}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: 13, color: t.textTertiary }}>{hiddenTxIds.length} hidden transaction{hiddenTxIds.length > 1 ? 's' : ''}</span>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => setShowHiddenTxs(v => !v)}
-                      style={{ fontSize: 13, color: t.textSecondary, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
-                      {showHiddenTxs ? 'Hide' : 'Show'}
-                    </button>
-                    <button onClick={() => setHiddenTxIds([])}
-                      style={{ fontSize: 13, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
-                      Clear all
-                    </button>
+                    <button onClick={() => setShowHiddenTxs(v => !v)} style={{ fontSize: 13, color: t.textSecondary, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>{showHiddenTxs ? 'Hide' : 'Show'}</button>
+                    <button onClick={() => setHiddenTxIds([])} style={{ fontSize: 13, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Clear all</button>
                   </div>
                 </div>
               )}
-              {/* ── Active Filter Chips (secondary filters only — type handled by top pills) ── */}
               {(txAssetFilter !== 'all' || txChainFilter !== 'all' || txYearFilter !== 'all' || txCoinCategory !== 'all') && (
                 <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, padding: '8px 18px', borderBottom: '1px solid var(--border)' }}>
                   <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginRight: 4 }}>Filtering by:</span>
-                  {txAssetFilter !== 'all' && (
-                    <button className="filter-chip" onClick={() => setTxAssetFilter('all')}>
-                      {txAssetFilter}
-                      <span className="chip-x">✕</span>
-                    </button>
-                  )}
-                  {txChainFilter !== 'all' && (
-                    <button className="filter-chip" onClick={() => setTxChainFilter('all')}>
-                      {txChainFilter === 'pulsechain' ? 'PulseChain' : txChainFilter === 'ethereum' ? 'Ethereum' : 'Base'}
-                      <span className="chip-x">✕</span>
-                    </button>
-                  )}
-                  {txYearFilter !== 'all' && (
-                    <button className="filter-chip" onClick={() => setTxYearFilter('all')}>
-                      {txYearFilter}
-                      <span className="chip-x">✕</span>
-                    </button>
-                  )}
-                  {txCoinCategory !== 'all' && (
-                    <button className="filter-chip" onClick={() => setTxCoinCategory('all')}>
-                      {txCoinCategory === 'stablecoins' ? 'Stablecoins' : txCoinCategory === 'eth_weth' ? 'ETH/WETH' : txCoinCategory === 'hex' ? 'HEX/eHEX' : txCoinCategory === 'pls_wpls' ? 'PLS/WPLS' : 'Bridged'}
-                      <span className="chip-x">✕</span>
-                    </button>
-                  )}
-                  <button
-                    onClick={() => { setTxTypeFilter('all'); setTxAssetFilter('all'); setTxChainFilter('all'); setTxYearFilter('all'); setTxCoinCategory('all'); }}
-                    style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', textDecoration: 'underline', marginLeft: 4 }}>
-                    Clear all
-                  </button>
+                  {txAssetFilter !== 'all' && (<button className="filter-chip" onClick={() => setTxAssetFilter('all')}>{txAssetFilter}<span className="chip-x">&#x2715;</span></button>)}
+                  {txChainFilter !== 'all' && (<button className="filter-chip" onClick={() => setTxChainFilter('all')}>{txChainFilter === 'pulsechain' ? 'PulseChain' : txChainFilter === 'ethereum' ? 'Ethereum' : 'Base'}<span className="chip-x">&#x2715;</span></button>)}
+                  {txYearFilter !== 'all' && (<button className="filter-chip" onClick={() => setTxYearFilter('all')}>{txYearFilter}<span className="chip-x">&#x2715;</span></button>)}
+                  {txCoinCategory !== 'all' && (<button className="filter-chip" onClick={() => setTxCoinCategory('all')}>{txCoinCategory === 'stablecoins' ? 'Stablecoins' : txCoinCategory === 'eth_weth' ? 'ETH/WETH' : txCoinCategory === 'hex' ? 'HEX/eHEX' : txCoinCategory === 'pls_wpls' ? 'PLS/WPLS' : 'Bridged'}<span className="chip-x">&#x2715;</span></button>)}
+                  <button onClick={() => { setTxTypeFilter('all'); setTxAssetFilter('all'); setTxChainFilter('all'); setTxYearFilter('all'); setTxCoinCategory('all'); }} style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', textDecoration: 'underline', marginLeft: 4 }}>Clear all</button>
                 </div>
               )}
               <div style={{ maxHeight: 600, overflowY: 'auto' }} className="custom-scrollbar">
-                {filteredTransactions.filter(tx => showHiddenTxs || !hiddenTxIds.includes(tx.id)).length === 0 ? (
-                  <div style={{ padding: '40px 20px', textAlign: 'center', color: t.textSecondary, fontSize: 13 }}>No transactions found for these filters.</div>
-                ) : filteredTransactions.filter(tx => showHiddenTxs || !hiddenTxIds.includes(tx.id)).map((tx) => {
-                  const isHidden = hiddenTxIds.includes(tx.id);
-                  const isTxExpanded = expandedTxIds.has(tx.id);
-                  const coinAsset = currentAssets.find(a => a.symbol.toUpperCase() === tx.asset.toUpperCase() && a.chain === tx.chain);
-                  const coinLogo = coinAsset ? getTokenLogoUrl(coinAsset) : '';
-                  const chainDotColor: Record<string, string> = { pulsechain: '#f739ff', ethereum: '#627EEA', base: '#0052FF' };
-                  const explorerBase = tx.chain === 'pulsechain' ? 'https://scan.pulsechain.com' : tx.chain === 'ethereum' ? 'https://etherscan.io' : 'https://basescan.org';
-                  // View as You helper
-                  const isOwn = (addr: string | undefined) => viewAsYou && addr && wallets.some(w => w.address.toLowerCase() === addr.toLowerCase());
-                  const displayAddr = (addr: string | undefined) => isOwn(addr) ? 'You' : addr ? `${addr.slice(0,6)}…${addr.slice(-4)}` : '?';
-                  return (
-                    <div key={tx.id} style={{ borderBottom: `1px solid ${t.borderLight}`, opacity: isHidden ? 0.35 : 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: txCompact ? '6px 18px' : '10px 18px', transition: 'background .1s', cursor: 'pointer' }}
-                        onClick={() => setExpandedTxIds(prev => { const s = new Set(prev); s.has(tx.id) ? s.delete(tx.id) : s.add(tx.id); return s; })}
-                        onMouseOver={e => (e.currentTarget.style.background = t.hoverBg)}
-                        onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
-                        {/* LEFT — icon + text */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
-                          {!txCompact && (
-                            <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
-                              color: tx.type === 'transfer_in' ? t.green : tx.type === 'swap' ? '#8b5cf6' : t.red, flexShrink: 0 }}>
-                              {tx.type === 'transfer_in' ? <ArrowDownLeft size={13} /> : tx.type === 'swap' ? <RefreshCcw size={13} /> : <ArrowUpRight size={13} />}
-                            </div>
-                          )}
-                          <div>
-                            {/* Row 1: type badge + chain dot + date */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: txCompact ? 0 : 1 }}>
-                              <span style={{ fontSize: txCompact ? 11 : 12, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
-                                background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
-                                color: tx.type === 'transfer_in' ? t.green : tx.type === 'swap' ? '#8b5cf6' : t.red }}>
-                                {tx.type === 'swap'
-                                  ? (viewAsYou ? `Swap · ${displayAddr(tx.from)} → ${displayAddr(tx.to)}` : 'Swap')
-                                  : tx.type === 'transfer_in' ? 'Received' : 'Sent'}
-                              </span>
-                              <span className="tx-chain-dot" style={{ width: 6, height: 6, borderRadius: '50%', background: chainDotColor[tx.chain] || t.textMuted, flexShrink: 0, display: 'inline-block' }} title={tx.chain} />
-                              <span className="tx-chain-label" style={{ display: 'none', fontSize: 10, fontWeight: 700, padding: '1px 5px', borderRadius: 3,
-                                background: tx.chain === 'pulsechain' ? 'rgba(247,57,255,.1)' : tx.chain === 'ethereum' ? 'rgba(99,102,241,.1)' : 'rgba(0,82,255,.1)',
-                                color: tx.chain === 'pulsechain' ? '#f739ff' : tx.chain === 'ethereum' ? '#818cf8' : '#60a5fa',
-                              }}>
-                                {tx.chain === 'pulsechain' ? 'PLS' : tx.chain === 'ethereum' ? 'ETH' : 'BASE'}
-                              </span>
-                              <span style={{ fontSize: txCompact ? 11 : 13, color: t.textSecondary }}>{format(tx.timestamp, 'MMM d, yyyy')}</span>
-                            </div>
-                            {/* Row 2: amount (hide in compact for transfers) */}
-                            {(!txCompact || tx.type === 'swap') && (
-                              <div style={{ fontSize: txCompact ? 12 : 13, fontWeight: 700, color: tx.type === 'transfer_in' ? t.green : tx.type === 'swap' ? t.text : t.red, fontFamily: 'JetBrains Mono, monospace' }}>
-                                {tx.type === 'transfer_in' ? '+' : tx.type === 'transfer_out' ? '-' : ''}
-                                {tx.type === 'swap' && tx.counterAsset
-                                  ? `${tx.counterAmount?.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.counterAsset} → ${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`
-                                  : `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`}
-                                {!txCompact && tx.valueUsd ? (
-                                  <span style={{ fontSize: 12, color: t.textTertiary, fontWeight: 500, marginLeft: 6 }}>
-                                    ≈ ${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                  </span>
-                                ) : null}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        {/* RIGHT — coin filter + hide + chevron */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                          {coinLogo && (
-                            <button onClick={e => { e.stopPropagation(); setTxAssetFilter(tx.asset); }}
-                              title={`Filter by ${tx.asset}`}
-                              style={{ width: 20, height: 20, borderRadius: '50%', overflow: 'hidden', border: `1px solid ${t.border}`, background: t.cardHighest, flexShrink: 0, cursor: 'pointer', padding: 0 }}>
-                              <img src={coinLogo} alt={tx.asset} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
-                                onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                            </button>
-                          )}
-                          <button
-                            title={isHidden ? 'Unhide' : 'Hide'}
-                            onClick={e => { e.stopPropagation(); setHiddenTxIds(prev => isHidden ? prev.filter(id => id !== tx.id) : [...prev, tx.id]); }}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: isHidden ? t.green : t.textTertiary, padding: 4, flexShrink: 0 }}>
-                            {isHidden ? <Eye size={13} /> : <EyeOff size={13} />}
-                          </button>
-                          <span style={{ color: isTxExpanded ? t.green : t.textMuted, transition: 'color .12s' }}>
-                            {isTxExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                          </span>
-                        </div>
-                      </div>
-                      {/* Expanded detail */}
-                      {isTxExpanded && (
-                        <div style={{ padding: '0 18px 14px', background: t.expandedBg }}>
-                          {tx.type === 'swap' ? (() => {
-                            // ── Enhanced swap expanded row ──
-                            const counterAsset = tx.counterAsset
-                              ? currentAssets.find(a => a.symbol.toUpperCase() === tx.counterAsset!.toUpperCase() && a.chain === tx.chain)
-                              : undefined;
-                            const counterLogo = counterAsset ? getTokenLogoUrl(counterAsset) : '';
-                            const nowPriceReceived = coinAsset?.price ?? 0;
-                            const nowPriceSpent = counterAsset?.price ?? 0;
-                            const thenPriceReceived = tx.valueUsd && tx.amount > 0 ? tx.valueUsd / tx.amount : 0;
-                            const thenPriceSpent = tx.valueUsd && tx.counterAmount && tx.counterAmount > 0 ? tx.valueUsd / tx.counterAmount : 0;
-                            // Dollar P/L: received asset current value vs what was paid
-                            const dollarPnl = tx.valueUsd != null && nowPriceReceived > 0
-                              ? (tx.amount * nowPriceReceived) - tx.valueUsd
-                              : null;
-                            // Trade P/L: current value of received vs current value of spent
-                            const tradePnl = nowPriceReceived > 0 && nowPriceSpent > 0 && tx.counterAmount
-                              ? (tx.amount * nowPriceReceived) - (tx.counterAmount * nowPriceSpent)
-                              : null;
-                            const fmtPnl = (n: number) => {
-                              const abs = Math.abs(n);
-                              const dp = abs < 0.001 ? 6 : abs < 0.1 ? 4 : 2;
-                              return `${n >= 0 ? '+' : ''}$${Math.abs(n).toFixed(dp)}`;
-                            };
-                            const fmtPrice = (p: number) => p <= 0 ? '—' : p < 0.001 ? `$${p.toFixed(8)}` : p < 1 ? `$${p.toFixed(6)}` : `$${p.toFixed(4)}`;
-                            return (
-                              <div style={{ paddingTop: 10, borderTop: `1px solid ${t.borderLight}` }}>
-                                {/* "from / to" context */}
-                                <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 10, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                                  <span>
-                                    Swap from{' '}
-                                    <strong style={{ color: isOwn(tx.from) ? t.green : 'var(--fg)' }}>{displayAddr(tx.from)}</strong>
-                                    {' '}to{' '}
-                                    <strong style={{ color: isOwn(tx.to) ? t.green : 'var(--fg)' }}>{displayAddr(tx.to)}</strong>
-                                  </span>
-                                  {tx.fee != null && tx.fee > 0 && (
-                                    <span style={{ color: 'var(--fg-subtle)', fontSize: 11 }}>
-                                      ⛽ {tx.fee.toLocaleString(undefined, { maximumFractionDigits: 4 })} {tx.chain === 'ethereum' ? 'ETH' : 'PLS'}
-                                    </span>
-                                  )}
-                                  <span style={{ marginLeft: 'auto', color: 'var(--fg-subtle)', fontSize: 11 }}>{format(tx.timestamp, 'MMM d, yyyy HH:mm')}</span>
-                                </div>
-
-                                {/* P/L summary cards */}
-                                {(tradePnl !== null || dollarPnl !== null) && (
-                                  <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-                                    {tradePnl !== null && (
-                                      <div style={{
-                                        flex: 1, padding: '10px 14px', borderRadius: 10,
-                                        background: tradePnl >= 0 ? 'rgba(0,255,159,0.06)' : 'rgba(244,63,94,0.06)',
-                                        border: `1px solid ${tradePnl >= 0 ? 'rgba(0,255,159,0.18)' : 'rgba(244,63,94,0.18)'}`,
-                                        display: 'flex', flexDirection: 'column', gap: 3,
-                                      }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                                          {tradePnl >= 0
-                                            ? <TrendingUp size={11} style={{ color: t.green }} />
-                                            : <TrendingDown size={11} style={{ color: t.red }} />}
-                                          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Trade P/L</span>
-                                        </div>
-                                        <div style={{ fontSize: 14, fontWeight: 800, color: tradePnl >= 0 ? t.green : t.red, fontFamily: 'JetBrains Mono, monospace' }}>
-                                          {fmtPnl(tradePnl)}
-                                        </div>
-                                        <div style={{ fontSize: 10, color: 'var(--fg-subtle)' }}>At current prices</div>
-                                      </div>
-                                    )}
-                                    {dollarPnl !== null && (
-                                      <div style={{
-                                        flex: 1, padding: '10px 14px', borderRadius: 10,
-                                        background: dollarPnl >= 0 ? 'rgba(0,255,159,0.06)' : 'rgba(244,63,94,0.06)',
-                                        border: `1px solid ${dollarPnl >= 0 ? 'rgba(0,255,159,0.18)' : 'rgba(244,63,94,0.18)'}`,
-                                        display: 'flex', flexDirection: 'column', gap: 3,
-                                      }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                                          {dollarPnl >= 0
-                                            ? <TrendingUp size={11} style={{ color: t.green }} />
-                                            : <TrendingDown size={11} style={{ color: t.red }} />}
-                                          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Dollar P/L</span>
-                                        </div>
-                                        <div style={{ fontSize: 14, fontWeight: 800, color: dollarPnl >= 0 ? t.green : t.red, fontFamily: 'JetBrains Mono, monospace' }}>
-                                          {fmtPnl(dollarPnl)}
-                                        </div>
-                                        <div style={{ fontSize: 10, color: 'var(--fg-subtle)' }}>Position change</div>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-
-                                {/* Received leg */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--bg-inset)', borderRadius: 8, marginBottom: 6 }}>
-                                  {coinLogo
-                                    ? <img src={coinLogo} alt={tx.asset} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                                    : <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,255,159,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: t.green, flexShrink: 0 }}>{tx.asset[0]}</div>
-                                  }
-                                  <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontSize: 13, fontWeight: 700, color: t.green, fontFamily: 'JetBrains Mono, monospace' }}>
-                                      + {tx.amount.toLocaleString(undefined, { maximumFractionDigits: 6 })} {tx.asset}
-                                    </div>
-                                    {thenPriceReceived > 0 && (
-                                      <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 1 }}>
-                                        Then: <span style={{ color: 'var(--fg-muted)' }}>{fmtPrice(thenPriceReceived)}</span>
-                                        {nowPriceReceived > 0 && <> · Now: <span style={{ color: nowPriceReceived >= thenPriceReceived ? t.green : t.red }}>{fmtPrice(nowPriceReceived)}</span></>}
-                                      </div>
-                                    )}
-                                  </div>
-                                  <a href={`${explorerBase}/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer"
-                                    onClick={e => e.stopPropagation()}
-                                    style={{ color: 'var(--fg-subtle)', transition: 'color .12s', flexShrink: 0 }}
-                                    onMouseOver={e => ((e.currentTarget as HTMLAnchorElement).style.color = t.green)}
-                                    onMouseOut={e => ((e.currentTarget as HTMLAnchorElement).style.color = 'var(--fg-subtle)')}>
-                                    <ExternalLink size={12} />
-                                  </a>
-                                  <button onClick={e => { e.stopPropagation(); setTxAssetFilter(tx.asset); }}
-                                    title={`Filter by ${tx.asset}`}
-                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', padding: 2, transition: 'color .12s', flexShrink: 0 }}
-                                    onMouseOver={e => (e.currentTarget.style.color = '#a78bfa')}
-                                    onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
-                                    <Filter size={12} />
-                                  </button>
-                                </div>
-
-                                {/* Spent leg */}
-                                {tx.counterAsset && tx.counterAmount != null && (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--bg-inset)', borderRadius: 8 }}>
-                                    {counterLogo
-                                      ? <img src={counterLogo} alt={tx.counterAsset} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                                      : <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(244,63,94,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: t.red, flexShrink: 0 }}>{tx.counterAsset[0]}</div>
-                                    }
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                      <div style={{ fontSize: 13, fontWeight: 700, color: t.red, fontFamily: 'JetBrains Mono, monospace' }}>
-                                        − {tx.counterAmount.toLocaleString(undefined, { maximumFractionDigits: 6 })} {tx.counterAsset}
-                                      </div>
-                                      {thenPriceSpent > 0 && (
-                                        <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 1 }}>
-                                          Then: <span style={{ color: 'var(--fg-muted)' }}>{fmtPrice(thenPriceSpent)}</span>
-                                          {nowPriceSpent > 0 && <> · Now: <span style={{ color: nowPriceSpent >= thenPriceSpent ? t.green : t.red }}>{fmtPrice(nowPriceSpent)}</span></>}
-                                        </div>
-                                      )}
-                                    </div>
-                                    <a href={`${explorerBase}/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer"
-                                      onClick={e => e.stopPropagation()}
-                                      style={{ color: 'var(--fg-subtle)', transition: 'color .12s', flexShrink: 0 }}
-                                      onMouseOver={e => ((e.currentTarget as HTMLAnchorElement).style.color = t.green)}
-                                      onMouseOut={e => ((e.currentTarget as HTMLAnchorElement).style.color = 'var(--fg-subtle)')}>
-                                      <ExternalLink size={12} />
-                                    </a>
-                                    <button onClick={e => { e.stopPropagation(); setTxAssetFilter(tx.counterAsset!); }}
-                                      title={`Filter by ${tx.counterAsset}`}
-                                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', padding: 2, transition: 'color .12s', flexShrink: 0 }}
-                                      onMouseOver={e => (e.currentTarget.style.color = '#a78bfa')}
-                                      onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
-                                      <Filter size={12} />
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })() : (
-                            // ── Non-swap: classic card grid ──
-                            <div style={{ paddingTop: 10, borderTop: `1px solid ${t.borderLight}` }}>
-                              {/* Context line */}
-                              <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 10 }}>
-                                {tx.type === 'transfer_in'
-                                  ? <>Received from <strong style={{ color: isOwn(tx.from) ? t.green : 'var(--fg)' }}>{displayAddr(tx.from)}</strong></>
-                                  : <>Sent to <strong style={{ color: isOwn(tx.to) ? t.green : 'var(--fg)' }}>{displayAddr(tx.to)}</strong></>}
-                                <span style={{ color: 'var(--fg-subtle)', fontSize: 11, marginLeft: 10 }}>{format(tx.timestamp, 'MMM d, yyyy HH:mm')}</span>
-                              </div>
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
-                                {[
-                                  { label: 'Amount', val: `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${tx.asset}`, sub: 'Token amount' },
-                                  { label: 'USD Value', val: tx.valueUsd ? `$${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—', sub: 'At time of tx' },
-                                  { label: 'Current Price', val: coinAsset?.price ? `$${coinAsset.price < 0.001 ? coinAsset.price.toFixed(8) : coinAsset.price.toLocaleString(undefined, { maximumFractionDigits: 4 })}` : '—', sub: coinAsset ? `${tx.asset} now` : 'Unknown' },
-                                  { label: 'Current Value', val: coinAsset ? `$${(tx.amount * coinAsset.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—', sub: 'If held to now', color: coinAsset && tx.valueUsd ? ((tx.amount * coinAsset.price) >= tx.valueUsd ? t.green : t.red) : undefined },
-                                  ...(tx.valueUsd && coinAsset ? [{
-                                    label: 'Profit / Loss',
-                                    val: `${(tx.amount * coinAsset.price - tx.valueUsd) >= 0 ? '+' : ''}$${Math.abs(tx.amount * coinAsset.price - tx.valueUsd).toLocaleString(undefined, { maximumFractionDigits: 2 })}`,
-                                    sub: `${(((tx.amount * coinAsset.price) / tx.valueUsd - 1) * 100).toFixed(1)}% change`,
-                                    color: (tx.amount * coinAsset.price - tx.valueUsd) >= 0 ? t.green : t.red
-                                  }] : []),
-                                  { label: 'Chain', val: tx.chain === 'pulsechain' ? 'PulseChain' : tx.chain === 'ethereum' ? 'Ethereum' : 'Base', sub: tx.type === 'transfer_in' ? `From ${displayAddr(tx.from)}` : `To ${displayAddr(tx.to)}` },
-                                  { label: 'Date', val: format(tx.timestamp, 'MMM d, yyyy'), sub: format(tx.timestamp, 'HH:mm:ss') },
-                                ].map(({ label, val, sub, color }) => (
-                                  <div key={label} style={{ background: t.cardHigh, borderRadius: 8, padding: '10px 12px' }}>
-                                    <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>{label}</div>
-                                    <div style={{ fontSize: 14, fontWeight: 700, color: (color as string | undefined) || t.text }}>{val}</div>
-                                    <div style={{ fontSize: 12, color: t.textTertiary, marginTop: 1 }}>{sub}</div>
-                                  </div>
-                                ))}
-                              </div>
-                              <div style={{ marginTop: 8 }}>
-                                <a href={`${explorerBase}/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer"
-                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: t.green, textDecoration: 'none' }}>
-                                  <ExternalLink size={11} /> View on Explorer
-                                </a>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                <TransactionList
+                  transactions={filteredTransactions}
+                  viewAsYou={viewAsYou}
+                  wallets={wallets}
+                  compact={txCompact}
+                  assets={currentAssets}
+                  getTokenLogoUrl={getTokenLogoUrl}
+                  tokenLogos={tokenLogos}
+                  hideIds={hiddenTxIds}
+                  onToggleHide={id => setHiddenTxIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
+                  showHidden={showHiddenTxs}
+                  onFilterByAsset={symbol => setTxAssetFilter(symbol)}
+                  emptyMessage="No transactions found for these filters."
+                />
               </div>
               </>)}
             </div>
-          </motion.div>
-        )}
 
-        {activeTab === 'tracker' && (
-          <motion.div key="tracker" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
-
-            {/* Page header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-              <div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)', marginBottom: 2 }}>PLS Movement</div>
-                <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Track PLS flows across all wallets</div>
-              </div>
-            </div>
-
-            {/* Stats grid */}
-            <div className="stat-grid-4">
-              {[
-                { label: 'PLS Received', val: plsSwapData.totalReceived >= 1e9 ? `${(plsSwapData.totalReceived/1e9).toFixed(2)}B` : plsSwapData.totalReceived >= 1e6 ? `${(plsSwapData.totalReceived/1e6).toFixed(2)}M` : plsSwapData.totalReceived.toLocaleString(undefined,{maximumFractionDigits:0}), sub: 'Total PLS inflow', color: t.green },
-                { label: 'PLS Spent', val: plsSwapData.totalSpent >= 1e9 ? `${(plsSwapData.totalSpent/1e9).toFixed(2)}B` : plsSwapData.totalSpent >= 1e6 ? `${(plsSwapData.totalSpent/1e6).toFixed(2)}M` : plsSwapData.totalSpent.toLocaleString(undefined,{maximumFractionDigits:0}), sub: 'Total PLS outflow', color: t.red },
-                { label: 'Net PLS', val: `${plsSwapData.totalNet >= 0 ? '+' : ''}${plsSwapData.totalNet >= 1e9 ? (plsSwapData.totalNet/1e9).toFixed(2)+'B' : plsSwapData.totalNet >= 1e6 ? (plsSwapData.totalNet/1e6).toFixed(2)+'M' : plsSwapData.totalNet.toLocaleString(undefined,{maximumFractionDigits:0})}`, sub: 'Net balance', color: plsSwapData.totalNet >= 0 ? t.green : t.red },
-                { label: 'Net USD', val: `${plsSwapData.netUsd >= 0 ? '+' : ''}$${Math.abs(plsSwapData.netUsd).toLocaleString(undefined,{maximumFractionDigits:0})}`, sub: `@ $${(plsSwapData.plsPrice||0).toFixed(6)}/PLS`, color: plsSwapData.netUsd >= 0 ? t.green : t.red },
-              ].map(({ label, val, sub, color }) => (
-                <div key={label} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 18 }}>
-                  <div style={{ fontSize: 13, color: 'var(--fg-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>{label}</div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color, marginBottom: 2 }}>{val}</div>
-                  {sub && <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>{sub}</div>}
-                </div>
-              ))}
-            </div>
-
-            {/* Charts row */}
-            <div className="page-charts-row">
-              {(() => {
-                const plsPrice = plsSwapData.plsPrice || 0;
-                const pts = [...plsSwapData.rows].reverse();
-                let cumulative = 0;
-                const chartPts = pts.map(r => {
-                  cumulative += r.netPls;
-                  return { day: format(r.tx.timestamp, 'MMM d'), pls: cumulative };
-                });
-                return (
-                  <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 18px 10px' }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.6px' }}>Cumulative PLS Balance</div>
-                    <ResponsiveContainer width="100%" height={220}>
-                      <AreaChart data={chartPts}>
-                        <defs>
-                          <linearGradient id="plsGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#f739ff" stopOpacity={0.2}/>
-                            <stop offset="95%" stopColor="#f739ff" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                        <XAxis dataKey="day" tick={{ fill: '#7c8798', fontSize: 11 }} axisLine={{ stroke: '#222' }} tickLine={false} interval={Math.max(0, Math.floor(chartPts.length / 6) - 1)} />
-                        <YAxis hide />
-                        <RechartsTooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13 }}
-                          formatter={(v: any) => [Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' PLS', 'Balance']} />
-                        <Area type="monotone" dataKey="pls" stroke="#f739ff" fillOpacity={1} fill="url(#plsGrad)" strokeWidth={2} dot={false} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                );
-              })()}
-              {(() => {
-                const plsPrice = plsSwapData.plsPrice || 0.00005;
-                const histPts = wallets.length > 0 ? history : MOCK_HISTORY;
-                const chartPts = histPts.map(p => ({ day: format(p.timestamp, 'MMM d'), pls: p.nativeValue || p.value / plsPrice }));
-                return (
-                  <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 18px 10px' }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.6px' }}>Portfolio Value in PLS</div>
-                    <ResponsiveContainer width="100%" height={220}>
-                      <AreaChart data={chartPts}>
-                        <defs>
-                          <linearGradient id="plsPortGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#627EEA" stopOpacity={0.2}/>
-                            <stop offset="95%" stopColor="#627EEA" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                        <XAxis dataKey="day" tick={{ fill: '#7c8798', fontSize: 11 }} axisLine={{ stroke: '#222' }} tickLine={false} interval={Math.max(0, Math.floor(chartPts.length / 6) - 1)} />
-                        <YAxis hide />
-                        <RechartsTooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13 }}
-                          formatter={(v: any) => [Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' PLS', 'Value']} />
-                        <Area type="monotone" dataKey="pls" stroke="#627EEA" fillOpacity={1} fill="url(#plsPortGrad)" strokeWidth={2} dot={false} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                );
-              })()}
-            </div>
-
-            {/* PLS Movement table — expandable card rows like HEX stakes */}
+            {/* ── PLS Flow Summary (merged from former tracker tab) ── */}
             {plsSwapData.rows.length > 0 && (
-              <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, overflow: 'hidden' }} className="md-elevation-1">
-                <div style={{ padding: '14px 18px', borderBottom: isCollapsed('tracker-pls') ? 'none' : `1px solid ${t.borderLight}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: t.text, minWidth: 0, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>PLS Movement</div>
-                  <button onClick={() => toggleSection('tracker-pls')} style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: t.textTertiary, flexShrink: 0 }}
-                    onMouseOver={e => (e.currentTarget.style.color = t.text)} onMouseOut={e => (e.currentTarget.style.color = t.textMuted)}>
-                    {isCollapsed('tracker-pls') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+              <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, overflow: 'hidden' }}>
+                <div style={{ padding: '14px 18px', borderBottom: isCollapsed('history-pls') ? 'none' : `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: t.text }}>PLS Flow</div>
+                    <div style={{ fontSize: 12, color: t.textSecondary, marginTop: 2 }}>Net PLS movement across all wallets</div>
+                  </div>
+                  <button onClick={() => toggleSection('history-pls')} style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: t.textTertiary }} onMouseOver={e => (e.currentTarget.style.color = t.text)} onMouseOut={e => (e.currentTarget.style.color = t.textMuted)}>
+                    {isCollapsed('history-pls') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
                   </button>
                 </div>
-                {!isCollapsed('tracker-pls') && (
-                  <div style={{ maxHeight: 500, overflowY: 'auto' }} className="custom-scrollbar">
-                    {plsSwapData.rows.map(({ tx, plsReceived, plsSpent, netPls }, i) => {
-                      const netUsdRow = netPls * (plsSwapData.plsPrice || 0);
-                      const isRowExpanded = trackerExpandedIds.has(tx.id + i);
-                      return (
-                        <div key={tx.id + i} style={{ borderBottom: `1px solid ${t.borderLight}` }}>
-                          <div className="pls-movement-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', cursor: 'pointer', transition: 'background .1s' }}
-                            onClick={() => setTrackerExpandedIds(prev => { const s = new Set(prev); s.has(tx.id + i) ? s.delete(tx.id + i) : s.add(tx.id + i); return s; })}
-                            onMouseOver={e => (e.currentTarget.style.background = t.hoverBg)}
-                            onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                              <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
-                                color: tx.type === 'transfer_in' ? t.green : tx.type === 'swap' ? '#8b5cf6' : t.red, flexShrink: 0 }}>
-                                {tx.type === 'transfer_in' ? <ArrowDownLeft size={13} /> : tx.type === 'swap' ? <RefreshCcw size={13} /> : <ArrowUpRight size={13} />}
-                              </div>
-                              <div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 1 }}>
-                                  <span style={{ fontSize: 12, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
-                                    background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
-                                    color: tx.type === 'transfer_in' ? t.green : tx.type === 'swap' ? '#8b5cf6' : t.red }}>
-                                    {tx.type === 'swap' ? 'Swap' : tx.type === 'transfer_in' ? 'Received' : 'Sent'}
-                                  </span>
-                                  <span style={{ fontSize: 13, color: t.textSecondary }}>{format(tx.timestamp, 'MMM d, yyyy')}</span>
-                                </div>
-                                <div style={{ fontSize: 13, fontWeight: 700, color: netPls >= 0 ? t.green : t.red }}>
-                                  {netPls >= 0 ? '+' : ''}{Math.abs(netPls) >= 1e6 ? (netPls/1e6).toFixed(2)+'M' : netPls.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS
-                                  <span style={{ fontSize: 12, color: t.textTertiary, fontWeight: 500, marginLeft: 6 }}>
-                                    {netUsdRow !== 0 ? `≈ ${netUsdRow >= 0 ? '+' : ''}$${Math.abs(netUsdRow).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ''}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            <span style={{ color: isRowExpanded ? t.green : t.textMuted, transition: 'color .12s' }}>
-                              {isRowExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                            </span>
-                          </div>
-                          {isRowExpanded && (
-                            <div style={{ padding: '0 18px 14px', background: t.expandedBg }}>
-                              <div className="pls-movement-detail-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, paddingTop: 10, borderTop: `1px solid ${t.borderLight}` }}>
-                                {[
-                                  { label: 'PLS Received', val: plsReceived > 0 ? `+${plsReceived >= 1e6 ? (plsReceived/1e6).toFixed(2)+'M' : plsReceived.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—', sub: 'Inflow', color: t.green },
-                                  { label: 'PLS Spent', val: plsSpent > 0 ? `-${plsSpent >= 1e6 ? (plsSpent/1e6).toFixed(2)+'M' : plsSpent.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—', sub: 'Outflow', color: t.red },
-                                  { label: 'Net PLS', val: `${netPls >= 0 ? '+' : ''}${Math.abs(netPls) >= 1e6 ? (netPls/1e6).toFixed(2)+'M' : netPls.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Balance change', color: netPls >= 0 ? t.green : t.red },
-                                  { label: 'Net USD', val: netUsdRow !== 0 ? `${netUsdRow >= 0 ? '+' : ''}$${Math.abs(netUsdRow).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—', sub: `@ $${(plsSwapData.plsPrice || 0).toFixed(6)}/PLS`, color: t.textSecondary },
-                                  { label: 'Type', val: tx.type === 'swap' ? 'Swap' : tx.type === 'transfer_in' ? 'Transfer In' : 'Transfer Out', sub: tx.type === 'swap' ? `${tx.counterAsset || ''} ↔ ${tx.asset}` : tx.type === 'transfer_in' ? `From ${tx.from.slice(0,6)}…${tx.from.slice(-4)}` : `To ${tx.to.slice(0,6)}…${tx.to.slice(-4)}` },
-                                  { label: 'Date', val: format(tx.timestamp, 'MMM d, yyyy'), sub: format(tx.timestamp, 'HH:mm:ss') },
-                                ].map(({ label, val, sub, color }) => (
-                                  <div key={label} style={{ background: t.cardHigh, borderRadius: 8, padding: '10px 12px' }}>
-                                    <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>{label}</div>
-                                    <div style={{ fontSize: 14, fontWeight: 700, color: color || t.text }}>{val}</div>
-                                    <div style={{ fontSize: 12, color: t.textTertiary, marginTop: 1 }}>{sub}</div>
-                                  </div>
-                                ))}
-                              </div>
-                              <div style={{ marginTop: 8 }}>
-                                <a href={`${tx.chain === 'pulsechain' ? 'https://scan.pulsechain.com' : tx.chain === 'ethereum' ? 'https://etherscan.io' : 'https://basescan.org'}/tx/${tx.hash}`}
-                                  target="_blank" rel="noopener noreferrer"
-                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--accent)', textDecoration: 'none' }}>
-                                  <ExternalLink size={11} /> View on Explorer
-                                </a>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                {!isCollapsed('history-pls') && (
+                  <div className="stat-grid-4" style={{ padding: '12px 18px' }}>
+                    {[
+                      { label: 'PLS Received', val: plsSwapData.totalReceived >= 1e6 ? `${(plsSwapData.totalReceived/1e6).toFixed(2)}M` : plsSwapData.totalReceived.toLocaleString(undefined,{maximumFractionDigits:0}), sub: 'Total inflow', color: t.green },
+                      { label: 'PLS Spent', val: plsSwapData.totalSpent >= 1e6 ? `${(plsSwapData.totalSpent/1e6).toFixed(2)}M` : plsSwapData.totalSpent.toLocaleString(undefined,{maximumFractionDigits:0}), sub: 'Total outflow', color: t.red },
+                      { label: 'Net PLS', val: `${plsSwapData.totalNet >= 0 ? '+' : ''}${Math.abs(plsSwapData.totalNet) >= 1e6 ? (plsSwapData.totalNet/1e6).toFixed(2)+'M' : plsSwapData.totalNet.toLocaleString(undefined,{maximumFractionDigits:0})}`, sub: 'Net balance', color: plsSwapData.totalNet >= 0 ? t.green : t.red },
+                      { label: 'Net USD', val: `${plsSwapData.netUsd >= 0 ? '+' : ''}$${Math.abs(plsSwapData.netUsd).toLocaleString(undefined,{maximumFractionDigits:0})}`, sub: `@ $${(plsSwapData.plsPrice||0).toFixed(6)}/PLS`, color: plsSwapData.netUsd >= 0 ? t.green : t.red },
+                    ].map(({ label, val, sub, color }) => (
+                      <div key={label} style={{ background: 'var(--bg-elevated)', borderRadius: 10, padding: '12px 14px' }}>
+                        <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 6 }}>{label}</div>
+                        <div style={{ fontSize: 16, fontWeight: 700, color }}>{val}</div>
+                        <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 2 }}>{sub}</div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
             )}
-
           </motion.div>
         )}
+
 
         {activeTab === 'wallets' && (() => {
           const isAll = selectedWalletAddr === 'all';
@@ -5747,12 +5238,12 @@ export default function App() {
                                        if (tokenTxs.length === 0) return null;
                                        let totalBoughtAmt = 0, totalSoldAmt = 0, totalCostUsd = 0, totalProceedsUsd = 0;
                                        tokenTxs.forEach(tx => {
-                                         const isBuyTx = tx.type === 'transfer_in' || (tx.type === 'swap' && tx.counterAsset !== asset.symbol);
+                                         const isBuyTx = tx.type === 'deposit' || (tx.type === 'swap' && tx.counterAsset !== asset.symbol);
                                          if (isBuyTx) { totalBoughtAmt += tx.amount; totalCostUsd += tx.valueUsd || 0; }
                                          else { totalSoldAmt += tx.amount; totalProceedsUsd += tx.valueUsd || 0; }
                                        });
                                        const realizedPnlTok = totalProceedsUsd - totalCostUsd;
-                                       const showTxs = tokenTxs.slice(0, 8);
+                                       const previewTxs = tokenTxs.slice(0, 8);
                                        return (
                                          <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
                                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
@@ -5777,52 +5268,27 @@ export default function App() {
                                                </div>
                                              )}
                                            </div>
-                                           <div className="data-table-scroll">
-                                             <table className="data-table data-table-mini" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 340 }}>
-                                               <thead>
-                                                 <tr style={{ background: 'var(--bg-elevated)' }}>
-                                                   {['Type', 'Amount', 'Value', 'Date'].map(h => (
-                                                     <th key={h} style={{ padding: '5px 10px', fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.6px', textAlign: h === 'Type' ? 'left' : 'right', whiteSpace: 'nowrap', borderBottom: '1px solid var(--border)' }}>{h}</th>
-                                                   ))}
-                                                 </tr>
-                                               </thead>
-                                               <tbody>
-                                                 {showTxs.map((tx, ti) => {
-                                                   const isBuyTx = tx.type === 'transfer_in' || (tx.type === 'swap' && tx.counterAsset !== asset.symbol);
-                                                   const typeColor = tx.type === 'transfer_in' ? t.green : tx.type === 'transfer_out' ? 'var(--fg-muted)' : isBuyTx ? t.green : t.red;
-                                                   const typeLabel = tx.type === 'transfer_in' ? '↓ Received' : tx.type === 'transfer_out' ? '↑ Sent' : isBuyTx ? '↓ Buy' : '↑ Sell';
-                                                   return (
-                                                     <tr key={ti} style={{ borderBottom: '1px solid var(--border)' }}
-                                                       onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
-                                                       onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
-                                                       <td style={{ padding: '7px 10px', whiteSpace: 'nowrap' }}>
-                                                         <span style={{ fontSize: 12, fontWeight: 700, color: typeColor, background: typeColor.startsWith('var') ? 'transparent' : `${typeColor}1a`, padding: '2px 7px', borderRadius: 4 }}>{typeLabel}</span>
-                                                         {tx.type === 'swap' && tx.counterAsset && <span style={{ fontSize: 11, color: 'var(--fg-subtle)', marginLeft: 6 }}>← {tx.counterAsset}</span>}
-                                                       </td>
-                                                       <td style={{ padding: '7px 10px', textAlign: 'right', fontSize: 12, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap' }}>
-                                                         {tx.amount >= 1e6 ? `${(tx.amount/1e6).toFixed(2)}M` : tx.amount >= 1e3 ? `${(tx.amount/1e3).toFixed(2)}K` : tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {sym}
-                                                       </td>
-                                                       <td style={{ padding: '7px 10px', textAlign: 'right', fontSize: 12, color: 'var(--fg-muted)', whiteSpace: 'nowrap' }}>
-                                                         {tx.valueUsd ? `$${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}
-                                                       </td>
-                                                       <td style={{ padding: '7px 10px', textAlign: 'right', fontSize: 11, color: 'var(--fg-subtle)', whiteSpace: 'nowrap' }}>
-                                                         {format(tx.timestamp, 'MMM d, yyyy')}
-                                                       </td>
-                                                     </tr>
-                                                   );
-                                                 })}
-                                               </tbody>
-                                             </table>
-                                             {tokenTxs.length > 8 && (
-                                               <div style={{ textAlign: 'center', padding: '8px', fontSize: 12, color: 'var(--fg-subtle)' }}>
-                                                 +{tokenTxs.length - 8} more —{' '}
-                                                 <button onClick={e => { e.stopPropagation(); setTxAssetFilter(asset.symbol); setActiveTab('history'); }}
-                                                   style={{ fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
-                                                   view all in Transaction History
-                                                 </button>
-                                               </div>
-                                             )}
-                                           </div>
+                                           {/* Unified tx-card list replaces old mini table */}
+                                           <TransactionList
+                                             transactions={previewTxs}
+                                             viewAsYou={viewAsYou}
+                                             wallets={wallets}
+                                             compact
+                                             assets={currentAssets}
+                                             getTokenLogoUrl={getTokenLogoUrl}
+                                             tokenLogos={tokenLogos}
+                                             onFilterByAsset={symbol => { setTxAssetFilter(symbol); setActiveTab('history'); }}
+                                             emptyMessage="No transactions for this token."
+                                           />
+                                           {tokenTxs.length > 8 && (
+                                             <div style={{ textAlign: 'center', padding: '8px', fontSize: 12, color: 'var(--fg-subtle)' }}>
+                                               +{tokenTxs.length - 8} more &mdash;{' '}
+                                               <button onClick={e => { e.stopPropagation(); setTxAssetFilter(asset.symbol); setActiveTab('history'); }}
+                                                 style={{ fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
+                                                 view all in Transaction History
+                                               </button>
+                                             </div>
+                                           )}
                                          </div>
                                        );
                                      })()}
@@ -5853,12 +5319,11 @@ export default function App() {
 
 
 
-              {/* ── WALLET TRANSACTIONS (Recent Activity style) ── */}
+              {/* ── WALLET TRANSACTIONS ── */}
               {(() => {
                 const baseTxs = isAll
                   ? currentTransactions
                   : currentTransactions.filter(tx => tx.from?.toLowerCase() === selectedWalletAddr || tx.to?.toLowerCase() === selectedWalletAddr);
-                // Apply same filters as history tab
                 const filtered = baseTxs.filter(tx => {
                   if (txTypeFilter !== 'all' && tx.type !== txTypeFilter) return false;
                   if (walletChainFilter !== 'all' && tx.chain !== walletChainFilter) return false;
@@ -5870,7 +5335,7 @@ export default function App() {
                   <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
                     <div style={{ padding: '14px 18px', borderBottom: isCollapsed('wallet-txs') ? 'none' : '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: 14, fontWeight: 600 }}>Recent Activity</span>
+                        <span style={{ fontSize: 14, fontWeight: 600 }}>Transactions</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent-border)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
                           <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', display: 'inline-block' }} />
                           {baseTxs.length} txs
@@ -5878,7 +5343,7 @@ export default function App() {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {!isCollapsed('wallet-txs') && [
-                          { value: txTypeFilter, onChange: setTxTypeFilter, options: [['all','All Types'],['transfer_in','Received'],['transfer_out','Sent'],['swap','Swaps']] as [string,string][] },
+                          { value: txTypeFilter, onChange: setTxTypeFilter, options: [['all','All Types'],['deposit','Received'],['withdraw','Sent'],['swap','Swaps']] as [string,string][] },
                           { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Tokens'], ...Array.from(new Set(baseTxs.map(tx => tx.asset))).sort().map(a => [a,a])] as [string,string][] },
                         ].map(({ value, onChange, options }, i) => (
                           <select key={i} value={value} onChange={e => onChange(e.target.value)}
@@ -5897,62 +5362,20 @@ export default function App() {
                     </div>
                     {!isCollapsed('wallet-txs') && (
                       <div style={{ maxHeight: 520, overflowY: 'auto' }} className="custom-scrollbar">
-                        {filtered.length === 0 ? (
-                          <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--fg-muted)', fontSize: 13 }}>No transactions found for these filters.</div>
-                        ) : filtered.map((tx) => {
-                          const isHidden = hiddenTxIds.includes(tx.id);
-                          if (isHidden && !showHiddenTxs) return null;
-                          return (
-                            <div key={tx.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', borderBottom: '1px solid var(--border)', transition: 'background .1s', opacity: isHidden ? 0.35 : 1 }}
-                              onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
-                              onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <div style={{ width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
-                                  color: tx.type === 'transfer_in' ? t.green : tx.type === 'swap' ? '#8b5cf6' : t.red, flexShrink: 0 }}>
-                                  {tx.type === 'transfer_in' ? <ArrowDownLeft size={15} /> : tx.type === 'swap' ? <RefreshCcw size={15} /> : <ArrowUpRight size={15} />}
-                                </div>
-                                <div>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                                    <span style={{ fontSize: 13, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
-                                      background: tx.type === 'transfer_in' ? 'rgba(0,255,159,.1)' : tx.type === 'swap' ? 'rgba(139,92,246,.1)' : 'rgba(239,68,68,.1)',
-                                      color: tx.type === 'transfer_in' ? t.green : tx.type === 'swap' ? '#8b5cf6' : t.red }}>
-                                      {tx.type === 'transfer_in' ? 'Received' : tx.type === 'transfer_out' ? 'Sent' : 'Swap'}
-                                    </span>
-                                    <span style={{ fontSize: 13, padding: '1px 6px', borderRadius: 3, fontWeight: 600, background: 'var(--border)', color: 'var(--fg-muted)' }}>{tx.chain}</span>
-                                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>
-                                      {tx.type === 'swap' && tx.counterAsset
-                                        ? `${tx.counterAmount?.toLocaleString()} ${tx.counterAsset} → ${tx.amount.toLocaleString()} ${tx.asset}`
-                                        : `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`}
-                                    </span>
-                                  </div>
-                                  <div style={{ fontSize: 13, color: 'var(--fg-muted)', fontFamily: 'monospace' }}>
-                                    {tx.hash.slice(0, 6)}…{tx.hash.slice(-4)} · {format(tx.timestamp, 'MMM d, yyyy HH:mm')}
-                                  </div>
-                                </div>
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-                                <div style={{ textAlign: 'right' }}>
-                                  <div style={{ fontSize: 13, fontWeight: 600, color: tx.type === 'transfer_in' ? t.green : 'var(--fg)' }}>
-                                    {tx.type === 'transfer_in' ? '+' : '-'}{tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {tx.asset}
-                                  </div>
-                                  {tx.valueUsd && <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>}
-                                </div>
-                                <a href={`${CHAINS[tx.chain].explorer}/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer"
-                                  style={{ color: 'var(--fg-subtle)', padding: 4 }}
-                                  onMouseOver={e => (e.currentTarget.style.color = '#a78bfa')} onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
-                                  <ExternalLink size={13} />
-                                </a>
-                                <button title={isHidden ? 'Unhide' : 'Hide'}
-                                  onClick={() => setHiddenTxIds(prev => isHidden ? prev.filter(id => id !== tx.id) : [...prev, tx.id])}
-                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: isHidden ? t.green : 'var(--fg-subtle)', padding: 4 }}
-                                  onMouseOver={e => (e.currentTarget.style.color = isHidden ? 'var(--accent)' : 'var(--fg)')} onMouseOut={e => (e.currentTarget.style.color = isHidden ? 'var(--accent)' : 'var(--fg-subtle)')}>
-                                  {isHidden ? <Eye size={14} /> : <EyeOff size={14} />}
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
+                        <TransactionList
+                          transactions={filtered}
+                          viewAsYou={viewAsYou}
+                          wallets={wallets}
+                          compact
+                          assets={currentAssets}
+                          getTokenLogoUrl={getTokenLogoUrl}
+                          tokenLogos={tokenLogos}
+                          hideIds={hiddenTxIds}
+                          onToggleHide={id => setHiddenTxIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
+                          showHidden={showHiddenTxs}
+                          onFilterByAsset={symbol => setTxAssetFilter(symbol)}
+                          emptyMessage="No transactions found for these filters."
+                        />
                       </div>
                     )}
                   </div>
@@ -5985,7 +5408,6 @@ export default function App() {
           { id: 'stakes',   label: 'HEX Stakes',         icon: Lock },
           { id: 'defi',     label: 'DeFi Positions',     icon: Droplets },
           { id: 'history',  label: 'Tx History',         icon: History },
-          { id: 'tracker',  label: 'PLS Flow', icon: ArrowLeftRight },
           { id: 'wallets',  label: 'Wallets',  icon: WalletIcon },
         ] as const).map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setActiveTab(id)}

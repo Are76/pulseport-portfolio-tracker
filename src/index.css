@@ -3370,3 +3370,219 @@ button, a {
 [data-theme="light"] .token-logo-ring {
   border-color: rgba(0,0,0,0.10);
 }
+
+/* ── Unified Transaction Card System ─────────────────────────────────────── */
+/*
+ * .tx-card       — flex row for a single transaction
+ * .tx-card--compact — smaller padding variant
+ * .tx-card--hidden  — dimmed (hidden) state
+ * .tx-card-row    — outer wrapper that holds the card + optional expand panel
+ * .tx-card-row--hidden — dimmed outer row
+ */
+
+/* Row wrapper */
+.tx-card-row {
+  transition: background 0.1s;
+}
+.tx-card-row--hidden {
+  opacity: 0.38;
+}
+
+/* The card itself */
+.tx-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 18px;
+  transition: background 0.1s;
+  cursor: default;
+  min-width: 0;
+}
+.tx-card:hover {
+  background: var(--bg-elevated, rgba(255,255,255,0.04)) !important;
+}
+.tx-card--compact {
+  padding: 6px 14px;
+}
+.tx-card--hidden {
+  opacity: 0.38;
+}
+
+/* Left side: icon + meta */
+.tx-card__left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+/* Circular icon bubble */
+.tx-card__icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.tx-card--compact .tx-card__icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* Text meta block */
+.tx-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+/* Badge row: type + chain dot + chain label + date */
+.tx-card__badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Pill badge for deposit / withdraw / swap */
+.tx-card__type-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+  letter-spacing: 0.015em;
+}
+
+/* Chain dot */
+.tx-chain-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+/* Chain label (e.g. PLS / ETH / BASE) */
+.tx-chain-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+/* Date string */
+.tx-card__date {
+  font-size: 12px;
+  color: var(--fg-subtle);
+  white-space: nowrap;
+}
+
+/* Amount line */
+.tx-card__amount {
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* USD approximation inside amount */
+.tx-card__usd {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg-subtle);
+  font-family: inherit;
+}
+
+/* Right side: action buttons */
+.tx-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* Explorer link */
+.tx-card__explorer-link {
+  display: flex;
+  align-items: center;
+  color: var(--fg-subtle);
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.12s;
+  text-decoration: none;
+}
+.tx-card__explorer-link:hover {
+  color: var(--fg);
+}
+
+/* Hide/unhide button */
+.tx-card__hide-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--fg-subtle);
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: color 0.12s;
+}
+.tx-card__hide-btn:hover {
+  color: var(--fg);
+}
+
+/* Empty state */
+.tx-list-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--fg-subtle);
+  font-size: 13px;
+}
+
+/* Context line (From / To) below badges */
+.tx-card__context {
+  font-size: 11px;
+  color: var(--fg-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Swap P/L mini cards inside the expand panel */
+.tx-pnl-card {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* Responsive: on very narrow screens, badges wrap */
+@media (max-width: 380px) {
+  .tx-card__badges {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .tx-card {
+    padding: 8px 14px;
+  }
+}
+
+/* ── Light mode overrides ─────────────────────────────────────────────────── */
+[data-theme="light"] .tx-card:hover {
+  background: rgba(0,0,0,0.03) !important;
+}
+[data-theme="light"] .tx-card__date,
+[data-theme="light"] .tx-card__usd,
+[data-theme="light"] .tx-card__context {
+  color: rgba(0,0,0,0.45);
+}
