@@ -836,8 +836,9 @@ textarea:focus-visible,
 /* My Holdings panel — full-width below stats row */
 .hero-holdings-panel {
   min-width: 0;
-  max-width: 100%;
+  max-width: 920px;
   width: 100%;
+  margin: 0 auto;
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: 14px;

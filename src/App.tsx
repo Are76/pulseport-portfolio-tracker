@@ -3471,7 +3471,7 @@ export default function App() {
                           </div>{/* end hero-grid-top */}
                          {/* Holdings — full width below stats */}
                          {(() => {
-                           const MAX_HERO_HOLDINGS = 10;
+                           const MAX_HERO_HOLDINGS = 7;
                            const holdingAssets = [...currentAssets].sort((a, b) => b.value - a.value).slice(0, MAX_HERO_HOLDINGS);
                            const fmtBal = (b: number) =>
                              b >= 1e9 ? `${(b/1e9).toFixed(2)}B` :
