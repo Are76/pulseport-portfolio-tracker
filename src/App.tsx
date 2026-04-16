@@ -3481,57 +3481,81 @@ export default function App() {
                                    </div>
                                  ) : (
                                    <div className="hero-holdings-items">
-                                   {holdingAssets.map((asset) => {
-                                   const pct = asset.priceChange24h ?? asset.pnl24h ?? null;
-                                   const lowerAddress = asset.address?.toLowerCase?.() ?? '';
-                                   const logo = STATIC_LOGOS[lowerAddress] || asset.logoUrl || tokenLogos[lowerAddress];
-                                   const allocPct = summary.totalValue > 0 ? (asset.value / summary.totalValue) * 100 : 0;
-                                   const chainLabel = asset.chain === 'ethereum' ? 'ETH' : asset.chain === 'base' ? 'BASE' : 'PLS';
-                                   return (
-                                     <div
-                                       key={asset.id}
-                                       className="hero-holding-row"
-                                       onClick={() => setTokenCardModal(asset)}>
-                                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                                         <div style={{ width: 38, height: 38, borderRadius: '50%', flexShrink: 0, overflow: 'hidden', background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: 'var(--fg-muted)', border: '1px solid var(--border)' }}>
-                                           {logo ? (
-                                             <img src={logo} alt={asset.symbol} style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover' }}
-                                               onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                                           ) : asset.symbol[0]}
-                                         </div>
-                                         <div style={{ minWidth: 0 }}>
-                                           <div title={asset.name || asset.symbol} style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>{asset.name || asset.symbol}</div>
-                                           <div style={{ marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                             <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>{asset.symbol}</span>
-                                             <span className="hero-holding-chain-badge">{chainLabel}</span>
-                                           </div>
-                                         </div>
-                                       </div>
-
-                                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                                         <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', fontVariantNumeric: 'tabular-nums' }}>{fmtVal(asset.value)}</span>
-                                         <span className="hero-holding-alloc">{allocPct >= 0.1 ? `${allocPct.toFixed(1)}% of portfolio` : '<0.1% of portfolio'}</span>
-                                       </div>
-
-                                       <div className="hero-holding-metrics">
-                                         <span style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>Qty <strong style={{ color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', fontWeight: 700 }}>{fmtBal(asset.balance)}</strong></span>
-                                         <span style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>Price <strong style={{ color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', fontWeight: 700 }}>{fmtPrice(asset.price)}</strong></span>
-                                         <span style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>
-                                           24h{' '}
-                                           {pct !== null ? (
-                                             <strong style={{ color: pct >= 0 ? t.green : t.red, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700 }}>
-                                               {pct >= 0 ? '+' : ''}{pct.toFixed(1)}%
-                                             </strong>
-                                           ) : '—'}
-                                         </span>
-                                       </div>
-
-                                       <div className="hero-holding-alloc-bar">
-                                         <div className="hero-holding-alloc-fill" style={{ width: `${Math.max(4, Math.min(allocPct, 100))}%` }} />
-                                       </div>
+                                     <div className="data-table-scroll">
+                                       <table className="data-table hero-holdings-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                         <thead>
+                                           <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                                             {['Token', '24H', 'Value', '% of Portfolio'].map((label, i) => (
+                                               <th key={i} style={{
+                                                 padding: '10px 12px',
+                                                 fontSize: 11,
+                                                 fontWeight: 700,
+                                                 color: 'var(--fg-subtle)',
+                                                 textTransform: 'uppercase',
+                                                 letterSpacing: '.5px',
+                                                 textAlign: i === 0 ? 'left' : 'right',
+                                                 whiteSpace: 'nowrap'
+                                               }}>
+                                                 {label}
+                                               </th>
+                                             ))}
+                                           </tr>
+                                         </thead>
+                                         <tbody>
+                                           {holdingAssets.map((asset) => {
+                                             const pct = asset.priceChange24h ?? asset.pnl24h ?? null;
+                                             const lowerAddress = asset.address?.toLowerCase?.() ?? '';
+                                             const logo = STATIC_LOGOS[lowerAddress] || asset.logoUrl || tokenLogos[lowerAddress];
+                                             const share = ((asset.value / (summary.totalValue || 1)) * 100);
+                                             return (
+                                               <tr
+                                                 key={asset.id}
+                                                 onClick={() => setTokenCardModal(asset)}
+                                                 style={{ borderBottom: `1px solid ${t.borderLight}`, cursor: 'pointer' }}
+                                                 onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
+                                                 onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
+                                                 <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
+                                                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                     <div style={{
+                                                       width: 34, height: 34, borderRadius: '50%', background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+                                                       display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: 'var(--fg)', flexShrink: 0, overflow: 'hidden'
+                                                     }}>
+                                                       {logo ? <img src={logo} alt={asset.symbol} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                                                         onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.removeAttribute('hidden'); }} /> : null}
+                                                       <span hidden={!!logo}>{asset.symbol[0]}</span>
+                                                     </div>
+                                                     <div style={{ minWidth: 0 }}>
+                                                       <div title={asset.name || asset.symbol} style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
+                                                         {asset.name || asset.symbol}
+                                                       </div>
+                                                       <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                                                         <div style={{ width: 5, height: 5, borderRadius: '50%', background: CHAIN_COLORS[asset.chain] || '#555', flexShrink: 0 }} />
+                                                         <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>
+                                                           {asset.symbol}{asset.price > 0 && <> · <PriceDisplay price={asset.price} /></>}
+                                                         </span>
+                                                       </div>
+                                                     </div>
+                                                   </div>
+                                                 </td>
+                                                 <td style={{ padding: '10px 12px', textAlign: 'right', whiteSpace: 'nowrap', fontSize: 12, fontWeight: 700, color: (pct ?? 0) >= 0 ? t.green : t.red }}>
+                                                   {pct !== null ? `${pct >= 0 ? '▲' : '▼'} ${Math.abs(pct).toFixed(2)}%` : '—'}
+                                                 </td>
+                                                 <td style={{ padding: '10px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                                                   <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>{fmtVal(asset.value)}</div>
+                                                   <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 2 }}>{fmtBal(asset.balance)} {asset.symbol}</div>
+                                                 </td>
+                                                 <td style={{ padding: '10px 12px', textAlign: 'right', whiteSpace: 'nowrap', minWidth: 96 }}>
+                                                   <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 3 }}>{share.toFixed(1)}%</div>
+                                                   <div style={{ height: 2, background: 'var(--border)', borderRadius: 1 }}>
+                                                     <div style={{ height: '100%', width: `${Math.min(share, 100)}%`, background: 'var(--accent)', borderRadius: 1 }} />
+                                                   </div>
+                                                 </td>
+                                               </tr>
+                                             );
+                                           })}
+                                         </tbody>
+                                       </table>
                                      </div>
-                                   );
-                                 })}
                                    </div>
                                  )}
                                </div>
