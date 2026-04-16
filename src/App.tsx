@@ -2990,9 +2990,6 @@ export default function App() {
     change24h: number | null;
     logo?: string;
     href?: string;
-    chainLabel?: string;
-    balance?: number;
-    totalValue?: number;
   };
 
   const coreLiveTokens = useMemo(() => ([
@@ -3018,59 +3015,6 @@ export default function App() {
       };
     });
   }, [coreLiveTokens, prices]);
-
-  const userHoldingCards = useMemo<PortfolioPriceCard[]>(() => {
-    return [...currentAssets]
-      .filter(a => a.balance > 0)
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 8)
-      .map(a => ({
-        id: a.id,
-        symbol: a.symbol,
-        name: a.name || a.symbol,
-        price: a.price,
-        change24h: a.priceChange24h ?? a.pnl24h ?? null,
-        logo: getTokenLogoUrl(a) || undefined,
-        chainLabel: a.chain === 'pulsechain' ? 'PLS' : a.chain === 'ethereum' ? 'ETH' : 'BASE',
-        balance: a.balance,
-        totalValue: a.value
-      }));
-  }, [currentAssets, getTokenLogoUrl]);
-
-  const renderPortfolioCard = (card: PortfolioPriceCard, key: string) => {
-    const changeColor = card.change24h != null ? (card.change24h >= 0 ? t.green : t.red) : t.textMuted;
-    const Wrapper = card.href ? 'a' : 'div';
-    const wrapperProps = card.href ? { href: card.href, target: '_blank', rel: 'noopener noreferrer' } : {};
-    return (
-      <Wrapper key={key} {...wrapperProps as any} className="asset-card-premium asset-card-v2" style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
-        <div style={{ padding: '16px 14px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-              <div style={{ width: 34, height: 34, borderRadius: '50%', overflow: 'hidden', background: 'var(--bg-elevated)', border: `1px solid ${t.border}` }}>
-                {card.logo && <img src={card.logo} alt={card.symbol} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>{card.name}</div>
-                <div style={{ fontSize: 11, color: t.textMuted }}>{card.symbol}{card.chainLabel ? ` · ${card.chainLabel}` : ''}</div>
-              </div>
-            </div>
-            {card.change24h != null && (
-              <span style={{ fontSize: 11, fontWeight: 700, color: changeColor }}>
-                {card.change24h >= 0 ? '+' : ''}{card.change24h.toFixed(2)}%
-              </span>
-            )}
-          </div>
-          <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 20, fontWeight: 800, color: t.text }}>{fmtPrice(card.price)}</div>
-          {card.balance !== undefined && card.totalValue !== undefined && (
-            <div style={{ marginTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontFamily: 'JetBrains Mono, monospace' }}>
-              <span style={{ fontSize: 11, color: t.textMuted }}>Bal: {card.balance.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: t.text }}>${card.totalValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
-            </div>
-          )}
-        </div>
-      </Wrapper>
-    );
-  };
 
   return (
     <div className="min-h-screen font-sans flex" style={{ fontSize: 14, background: 'var(--bg-void)', color: 'var(--fg)' }}>
@@ -3469,7 +3413,7 @@ export default function App() {
                            </button>
                          </div>
                           </div>{/* end hero-grid-top */}
-                         {/* Holdings — full width below stats */}
+                         {/* Live prices + holdings — full width below stats */}
                          {(() => {
                            const MAX_HERO_HOLDINGS = 7;
                            const holdingAssets = [...currentAssets].sort((a, b) => b.value - a.value).slice(0, MAX_HERO_HOLDINGS);
@@ -3483,77 +3427,114 @@ export default function App() {
                              v >= 1e3 ? `$${(v/1e3).toFixed(2)}K` :
                              `$${v.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
                            return (
-                             <div className="hero-holdings-panel">
-                               {/* Panel header */}
-                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                                   <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>My Holdings</span>
-                                   {wallets.length > 0 && summary.liquidValue > 0 && (
-                                     <span style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>
-                                       · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                                     </span>
-                                   )}
+                             <div className="hero-holdings-wrap">
+                               <div className="hero-live-prices-panel">
+                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                                   <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>Live Prices</span>
+                                   <span style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>Core market snapshot</span>
                                  </div>
-                                 <button
-                                   onClick={() => setActiveTab('assets')}
-                                   style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 6, padding: '3px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
-                                   View All <ChevronRight size={11} />
-                                 </button>
-                               </div>
-                               {/* Token rows */}
-                               {holdingAssets.length === 0 ? (
-                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '28px 0', color: 'var(--fg-subtle)' }}>
-                                   <WalletIcon size={28} style={{ opacity: 0.35 }} />
-                                   <span style={{ fontSize: 13 }}>Add wallets to see holdings</span>
-                                 </div>
-                               ) : (
-                                 <div className="hero-holdings-items">
-                                 {holdingAssets.map((asset) => {
-                                 const pct = asset.priceChange24h ?? asset.pnl24h ?? null;
-                                 const lowerAddress = asset.address?.toLowerCase?.() ?? '';
-                                 const logo = STATIC_LOGOS[lowerAddress] || asset.logoUrl || tokenLogos[lowerAddress];
-                                 const allocPct = summary.totalValue > 0 ? (asset.value / summary.totalValue) * 100 : 0;
-                                 const chainLabel = asset.chain === 'ethereum' ? 'ETH' : asset.chain === 'base' ? 'BASE' : 'PLS';
-                                 return (
-                                   <div
-                                     key={asset.id}
-                                     className="hero-holding-row"
-                                     onClick={() => setTokenCardModal(asset)}>
-                                     {/* Icon */}
-                                     <div style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0, overflow: 'hidden', background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: 'var(--fg-muted)', border: '1px solid var(--border)' }}>
-                                       {logo ? (
-                                         <img src={logo} alt={asset.symbol} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }}
-                                           onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                                       ) : asset.symbol[0]}
-                                     </div>
-                                     {/* Name + symbol/price */}
-                                     <div style={{ flex: 1, minWidth: 0 }}>
-                                       <div title={asset.name || asset.symbol} style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{asset.name || asset.symbol}</div>
-                                       <div style={{ fontSize: 12, color: 'var(--fg-subtle)', lineHeight: 1.3, marginTop: 1, display: 'flex', alignItems: 'center', gap: 5 }}>
-                                         <span>{asset.symbol}{asset.price > 0 && <span style={{ marginLeft: 4 }}>· {fmtPrice(asset.price)}</span>}</span>
-                                         <span className="hero-holding-chain-badge">{chainLabel}</span>
-                                       </div>
-                                     </div>
-                                     {/* Value + amount + alloc */}
-                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 }}>
-                                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                         <span className="hero-holding-alloc">{allocPct >= 0.1 ? `${allocPct.toFixed(1)}%` : '<0.1%'}</span>
-                                         <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', fontVariantNumeric: 'tabular-nums' }}>{fmtVal(asset.value)}</span>
-                                       </div>
-                                       <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                                         <span style={{ fontSize: 11, color: 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace' }}>{fmtBal(asset.balance)}</span>
-                                         {pct !== null && (
-                                           <span style={{ fontSize: 11, fontWeight: 700, color: pct >= 0 ? t.green : t.red, fontFamily: 'JetBrains Mono, monospace' }}>
-                                             {pct >= 0 ? '+' : ''}{pct.toFixed(1)}%
+                                 <div className="hero-live-prices-grid">
+                                   {topHoldingCards.map((token) => {
+                                     const change = token.change24h ?? 0;
+                                     const changeColor = token.change24h == null ? 'var(--fg-subtle)' : (change >= 0 ? t.green : t.red);
+                                     const Wrapper = token.href ? 'a' : 'div';
+                                     const wrapperProps = token.href ? { href: token.href, target: '_blank', rel: 'noopener noreferrer' } : {};
+                                     return (
+                                       <Wrapper key={token.id} {...wrapperProps as any} className="hero-live-price-item" style={{ textDecoration: 'none', color: 'inherit' }}>
+                                         <div style={{ width: 24, height: 24, borderRadius: '50%', overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--bg-elevated)', flexShrink: 0 }}>
+                                           {token.logo ? <img src={token.logo} alt={token.symbol} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
+                                         </div>
+                                         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg)' }}>{token.symbol}</span>
+                                         <span style={{ fontSize: 11, fontFamily: 'JetBrains Mono, monospace', color: 'var(--fg-subtle)' }}>{fmtPrice(token.price)}</span>
+                                         {token.change24h != null && (
+                                           <span style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 700, color: changeColor }}>
+                                             {change >= 0 ? '+' : ''}{change.toFixed(1)}%
                                            </span>
                                          )}
+                                       </Wrapper>
+                                     );
+                                   })}
+                                 </div>
+                               </div>
+
+                               <div className="hero-holdings-panel">
+                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                                     <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>My Holdings</span>
+                                     {wallets.length > 0 && summary.liquidValue > 0 && (
+                                       <span style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>
+                                         · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                       </span>
+                                     )}
+                                   </div>
+                                   <button
+                                     onClick={() => setActiveTab('assets')}
+                                     style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 6, padding: '3px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
+                                     View All <ChevronRight size={11} />
+                                   </button>
+                                 </div>
+
+                                 {holdingAssets.length === 0 ? (
+                                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '28px 0', color: 'var(--fg-subtle)' }}>
+                                     <WalletIcon size={28} style={{ opacity: 0.35 }} />
+                                     <span style={{ fontSize: 13 }}>Add wallets to see holdings</span>
+                                   </div>
+                                 ) : (
+                                   <div className="hero-holdings-items">
+                                   {holdingAssets.map((asset) => {
+                                   const pct = asset.priceChange24h ?? asset.pnl24h ?? null;
+                                   const lowerAddress = asset.address?.toLowerCase?.() ?? '';
+                                   const logo = STATIC_LOGOS[lowerAddress] || asset.logoUrl || tokenLogos[lowerAddress];
+                                   const allocPct = summary.totalValue > 0 ? (asset.value / summary.totalValue) * 100 : 0;
+                                   const chainLabel = asset.chain === 'ethereum' ? 'ETH' : asset.chain === 'base' ? 'BASE' : 'PLS';
+                                   return (
+                                     <div
+                                       key={asset.id}
+                                       className="hero-holding-row"
+                                       onClick={() => setTokenCardModal(asset)}>
+                                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                                         <div style={{ width: 38, height: 38, borderRadius: '50%', flexShrink: 0, overflow: 'hidden', background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: 'var(--fg-muted)', border: '1px solid var(--border)' }}>
+                                           {logo ? (
+                                             <img src={logo} alt={asset.symbol} style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover' }}
+                                               onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                           ) : asset.symbol[0]}
+                                         </div>
+                                         <div style={{ minWidth: 0 }}>
+                                           <div title={asset.name || asset.symbol} style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>{asset.name || asset.symbol}</div>
+                                           <div style={{ marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                             <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>{asset.symbol}</span>
+                                             <span className="hero-holding-chain-badge">{chainLabel}</span>
+                                           </div>
+                                         </div>
+                                       </div>
+
+                                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                                         <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', fontVariantNumeric: 'tabular-nums' }}>{fmtVal(asset.value)}</span>
+                                         <span className="hero-holding-alloc">{allocPct >= 0.1 ? `${allocPct.toFixed(1)}% of portfolio` : '<0.1% of portfolio'}</span>
+                                       </div>
+
+                                       <div className="hero-holding-metrics">
+                                         <span style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>Qty <strong style={{ color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', fontWeight: 700 }}>{fmtBal(asset.balance)}</strong></span>
+                                         <span style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>Price <strong style={{ color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', fontWeight: 700 }}>{fmtPrice(asset.price)}</strong></span>
+                                         <span style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>
+                                           24h{' '}
+                                           {pct !== null ? (
+                                             <strong style={{ color: pct >= 0 ? t.green : t.red, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700 }}>
+                                               {pct >= 0 ? '+' : ''}{pct.toFixed(1)}%
+                                             </strong>
+                                           ) : '—'}
+                                         </span>
+                                       </div>
+
+                                       <div className="hero-holding-alloc-bar">
+                                         <div className="hero-holding-alloc-fill" style={{ width: `${Math.max(4, Math.min(allocPct, 100))}%` }} />
                                        </div>
                                      </div>
+                                   );
+                                 })}
                                    </div>
-                                 );
-                               })}
-                                 </div>
-                               )}
+                                 )}
+                               </div>
                              </div>
                            );
                          })()}
@@ -3562,38 +3543,6 @@ export default function App() {
                      </>
                    );
                  })()}
-
-                {/* ── TOP HOLDINGS + USER HOLDINGS CARDS ── */}
-                <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 16, overflow: 'hidden' }}>
-                  <div style={{ padding: '16px 20px 14px', borderBottom: `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: t.text }}>Top Holdings · Live Prices</div>
-                      <div style={{ fontSize: 12, color: t.textSecondary, marginTop: 2 }}>Auto-updating token prices and 24h change</div>
-                    </div>
-                    <button onClick={() => setActiveTab('assets')}
-                      style={{ fontSize: 12, color: 'var(--accent)', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 8, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px' }}>
-                      My Holdings <ChevronRight size={12} />
-                    </button>
-                  </div>
-                  <div style={{ padding: '18px 20px 22px', display: 'grid', gap: 20 }}>
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 10 }}>Top Holdings</div>
-                      <div className="asset-grid-3col">
-                        {topHoldingCards.map(card => renderPortfolioCard(card, `top-${card.id}`))}
-                      </div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 10 }}>User Holdings</div>
-                      {userHoldingCards.length > 0 ? (
-                        <div className="asset-grid-3col">
-                          {userHoldingCards.map(card => renderPortfolioCard(card, `user-${card.id}`))}
-                        </div>
-                      ) : (
-                        <div style={{ fontSize: 13, color: t.textMuted }}>Add a wallet to display your holdings with live prices.</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
 
                 {/* ── LIQUIDITY POSITIONS STRIP (overview) ── */}
                 {wallets.length > 0 && (
