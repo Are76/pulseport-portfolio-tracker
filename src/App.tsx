@@ -271,6 +271,8 @@ const MOCK_WALLET = '0xdemo0000000000000000000000000000000001';
 const MOCK_TRANSACTIONS: Transaction[] = [
   { id: 'm1', hash: '0x123...', timestamp: Date.now() - 86400000 * 2, type: 'deposit', from: '0xabc...', to: MOCK_WALLET, asset: 'ETH', amount: 1.5, chain: 'ethereum', valueUsd: 5175 },
   { id: 'm2', hash: '0x456...', timestamp: Date.now() - 86400000 * 5, type: 'deposit', from: '0xdef...', to: MOCK_WALLET, asset: 'USDC', amount: 2500, chain: 'base', valueUsd: 2500 },
+  { id: 'm-bridge-1', hash: '0xb1d9e001...', timestamp: Date.now() - 86400000 * 1.25, type: 'deposit', from: '0xbridge...', to: MOCK_WALLET, asset: 'DAI (from Ethereum)', amount: 1250, chain: 'pulsechain', valueUsd: 1248.5, bridged: true, status: 'Confirmed' },
+  { id: 'm-bridge-2', hash: '0xb1d9e002...', timestamp: Date.now() - 86400000 * 6.5, type: 'deposit', from: '0xbridge...', to: MOCK_WALLET, asset: 'WETH (from Ethereum)', amount: 0.42, chain: 'pulsechain', valueUsd: 1449, bridged: true, status: 'Confirmed' },
   { id: 'm3', hash: '0x789...', timestamp: Date.now() - 86400000 * 10, type: 'swap', from: MOCK_WALLET, to: MOCK_WALLET, asset: 'ETH', amount: 0.5, chain: 'ethereum', valueUsd: 1725, counterAsset: 'USDC', counterAmount: 1725 },
   { id: 'm4', hash: '0xabc...', timestamp: Date.now() - 86400000 * 15, type: 'deposit', from: '0xghi...', to: MOCK_WALLET, asset: 'ETH', amount: 2.0, chain: 'ethereum', valueUsd: 6800 },
   { id: 'm5', hash: '0xdef...', timestamp: Date.now() - 86400000 * 20, type: 'deposit', from: '0xjkl...', to: MOCK_WALLET, asset: 'USDC', amount: 5000, chain: 'ethereum', valueUsd: 5000 },
@@ -561,6 +563,7 @@ const EHEX_PULSECHAIN_ADDR = '0x57fde0a71132198bbec939b98976993d8d89d225';
 // Below this threshold (USD) we consider netInvestment effectively zero and hide the P&L %.
 // PulseChain-only wallets have no ETH/stable inflows so netInvestment stays near 0.
 const MIN_INVESTMENT_THRESHOLD = 100;
+const OPENPULSECHAIN_API_BASE = 'https://api.openpulsechain.com';
 
 export default function App() {
   // ── Formatting helpers (defined once here, used throughout) ────────────────
@@ -923,6 +926,54 @@ export default function App() {
         );
       } catch (e) {
         console.warn('DexScreener 24h change fetch failed:', e);
+      }
+
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000);
+        const openPulseRes = await fetch(`${OPENPULSECHAIN_API_BASE}/api/v1/tokens?limit=5000`, {
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        if (!openPulseRes.ok) throw new Error(`HTTP ${openPulseRes.status}`);
+        const openPulseData = await openPulseRes.json();
+        const openPulseTokens = Array.isArray(openPulseData)
+          ? openPulseData
+          : Array.isArray(openPulseData?.data)
+            ? openPulseData.data
+            : [];
+
+        openPulseTokens.forEach((token: any) => {
+          const address = String(token.address || '').toLowerCase();
+          const symbol = String(token.symbol || '').toUpperCase();
+          const price = Number(token.price_usd ?? token.priceUsd ?? 0);
+          if (!address || price <= 0) return;
+
+          const change24h = Number(token.price_change_24h_pct ?? token.priceChange24hPct ?? token.price_change_24h ?? NaN);
+          const priceKey = `pulsechain:${address}`;
+          const existing = fetchedPrices[priceKey] || {};
+          fetchedPrices[priceKey] = {
+            ...existing,
+            usd: existing.usd ?? price,
+            ...(Number.isFinite(change24h) && existing.usd_24h_change == null ? { usd_24h_change: change24h } : {}),
+          };
+
+          if (symbol === 'WPLS' || symbol === 'PLS') {
+            const existingPls = fetchedPrices.pulsechain || {};
+            fetchedPrices.pulsechain = {
+              ...existingPls,
+              usd: existingPls.usd ?? price,
+              ...(Number.isFinite(change24h) && existingPls.usd_24h_change == null ? { usd_24h_change: change24h } : {}),
+            };
+            fetchedPrices['pulsechain:native'] = {
+              ...(fetchedPrices['pulsechain:native'] || {}),
+              usd: fetchedPrices['pulsechain:native']?.usd ?? price,
+              ...(Number.isFinite(change24h) && fetchedPrices['pulsechain:native']?.usd_24h_change == null ? { usd_24h_change: change24h } : {}),
+            };
+          }
+        });
+      } catch (e) {
+        console.warn('OpenPulseChain token price fetch failed:', e);
       }
 
       // 1b. Fetch PulseChain prices from on-chain LP reserves (authoritative source per skill doc)

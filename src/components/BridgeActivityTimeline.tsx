@@ -71,12 +71,12 @@ function inferSourceChain(tx: Transaction): BridgeActivity['fromChain'] {
   if (/\(from\s+(ethereum|eth)\)/i.test(asset) || /liberty bridge/i.test(asset)) return 'ethereum';
   if (tx.chain === 'base' && tx.bridged) return 'ethereum';
   if (tx.chain === 'pulsechain' && tx.bridged) return 'ethereum';
-  if (tx.type === 'transfer_out') return tx.chain;
+  if (tx.type === 'withdraw') return tx.chain;
   return 'external';
 }
 
 function inferTargetChain(tx: Transaction, fromChain: BridgeActivity['fromChain']): BridgeActivity['toChain'] {
-  if (tx.type === 'transfer_out') return fromChain === tx.chain ? 'external' : tx.chain;
+  if (tx.type === 'withdraw') return fromChain === tx.chain ? 'external' : tx.chain;
   return tx.chain;
 }
 
@@ -91,7 +91,7 @@ export function getBridgeActivities(transactions: Transaction[]): BridgeActivity
         ...tx,
         fromChain,
         toChain,
-        fromAsset: tx.type === 'transfer_out' ? symbol : symbol,
+        fromAsset: symbol,
         toAsset: symbol,
       };
     })
