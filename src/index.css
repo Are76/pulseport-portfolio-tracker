@@ -1228,10 +1228,10 @@ textarea:focus-visible,
   border-color: rgba(180,0,200,0.18);
 }
 
-/* ── ASSET GRID 3-COLUMN RESPONSIVE ──────────────────────────────────── */
+/* ── ASSET GRID (auto-fit, fills row when there are fewer cards) ────── */
 .asset-grid-3col {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 20px;
 }
 @media (max-width: 900px) {
