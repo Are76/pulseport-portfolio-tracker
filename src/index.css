@@ -846,16 +846,10 @@ textarea:focus-visible,
   flex-direction: column;
 }
 
-/* Holdings items container — 2-col grid on desktop */
+/* Holdings items container — keep a single wide column so each row can show richer detail */
 .hero-holdings-items {
   display: grid;
   grid-template-columns: 1fr;
-}
-@media (min-width: 768px) {
-  .hero-holdings-items {
-    grid-template-columns: 1fr 1fr;
-    column-gap: 4px;
-  }
 }
 
 .hero-holding-row {
@@ -873,12 +867,6 @@ textarea:focus-visible,
 }
 .hero-holding-row:first-child {
   border-top: none;
-}
-@media (min-width: 768px) {
-  /* In 2-col grid the second item also starts a new visual row at the top */
-  .hero-holdings-items .hero-holding-row:nth-child(2) {
-    border-top: none;
-  }
 }
 .hero-holding-row:hover {
   background: rgba(0, 255, 159, 0.05);
