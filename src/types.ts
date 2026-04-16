@@ -155,4 +155,6 @@ export interface Transaction {
   counterAsset?: string;
   /** Amount of counterAsset spent. */
   counterAmount?: number;
+  bridged?: boolean;
+  status?: string;
 }
