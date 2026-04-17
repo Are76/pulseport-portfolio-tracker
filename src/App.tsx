@@ -5628,8 +5628,6 @@ export default function App() {
           { id: 'assets',   label: 'Holdings',           icon: Coins },
           { id: 'stakes',   label: 'HEX Stakes',         icon: Lock },
           { id: 'defi',     label: 'DeFi Positions',     icon: Droplets },
-          { id: 'history',  label: 'Bridge Activity',       icon: History },
-          { id: 'wallets',  label: 'Wallets',  icon: WalletIcon },
         ] as const).map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setActiveTab(id)}
             className="mobile-nav-tab-btn"
