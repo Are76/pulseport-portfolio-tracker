@@ -169,6 +169,8 @@ type BridgeTimelineEventProps = {
   plsPriceUsd: number;
   onSelect: (tx: Transaction, asset?: Asset) => void;
   onToggleHide: (id: string) => void;
+  onSyncSwaps?: () => void;
+  isSyncing?: boolean;
 };
 
 function BridgeTimelineEvent({
@@ -182,6 +184,8 @@ function BridgeTimelineEvent({
   plsPriceUsd,
   onSelect,
   onToggleHide,
+  onSyncSwaps,
+  isSyncing,
 }: BridgeTimelineEventProps) {
   const isDeposit = tx.type === 'deposit';
   const isSwap = tx.type === 'swap';
@@ -260,6 +264,8 @@ function BridgeTimelineEvent({
             priceUsd={matchedAsset.price ?? 0}
             plsPriceUsd={plsPriceUsd}
             logoUrl={logoUrl}
+            onSyncSwaps={onSyncSwaps}
+            isSyncing={isSyncing}
           />
         </div>
       )}
@@ -4745,9 +4751,10 @@ export default function App() {
                                     isSelected={selectedBridgeTxId === tx.id}
                                     tokenTransactions={tokenTransactions}
                                     plsPriceUsd={prices['pulsechain']?.usd ?? 0}
-                                    onSelect={(selectedTx, asset) => {
+                                    onSyncSwaps={fetchPortfolio}
+                                    isSyncing={isLoading}
+                                    onSelect={(selectedTx) => {
                                       setSelectedBridgeTxId((prev) => (prev === selectedTx.id ? null : selectedTx.id));
-                                      if (asset) setPnlAsset(asset);
                                     }}
                                     onToggleHide={(id) => setHiddenTxIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
                                   />
@@ -4909,7 +4916,7 @@ export default function App() {
               <div className="received-header tx-module-header" style={{ borderBottom: isCollapsed('received-assets') ? 'none' : '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
                   <ArrowDownLeft size={16} style={{ color: '#627EEA', flexShrink: 0 }} />
-                  <span style={{ fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}>Received Token History</span>
+                  <span style={{ fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}>MultiChain Transactions</span>
                   <select value={receivedChainFilter} onChange={e => setReceivedChainFilter(e.target.value)}
                     className="history-filter-select"
                     style={{ background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 6, color: 'var(--fg)', fontSize: 13, padding: '4px 8px', cursor: 'pointer', outline: 'none' }}>
@@ -5061,6 +5068,8 @@ export default function App() {
                     priceUsd={tokenPrice}
                     plsPriceUsd={plsPrice}
                     logoUrl={logoUrl}
+                    onSyncSwaps={fetchPortfolio}
+                    isSyncing={isLoading}
                   />
                 </>
               );

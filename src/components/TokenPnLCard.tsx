@@ -7,6 +7,7 @@ import {
   ExternalLink,
   ChevronDown,
   ChevronUp,
+  RefreshCcw,
 } from 'lucide-react';
 import type { Transaction, Asset } from '../types';
 
@@ -25,6 +26,10 @@ export interface TokenPnLCardProps {
   plsPriceUsd: number;
   /** Token logo URL (optional) */
   logoUrl?: string;
+  /** Optional action to refresh full swap/transaction data for more accurate P&L. */
+  onSyncSwaps?: () => void;
+  /** Loading state for the sync action. */
+  isSyncing?: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -100,6 +105,8 @@ export function TokenPnLCard({
   priceUsd,
   plsPriceUsd,
   logoUrl,
+  onSyncSwaps,
+  isSyncing,
 }: TokenPnLCardProps) {
   const [expanded, setExpanded] = useState(true);
 
@@ -263,6 +270,55 @@ export function TokenPnLCard({
       {/* ── Body (collapsible) ── */}
       {expanded && (
         <div style={{ padding: '16px 18px 14px' }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            marginBottom: 14,
+            padding: '12px 14px',
+            borderRadius: 12,
+            background: 'linear-gradient(135deg, rgba(0,255,159,0.08), rgba(139,92,246,0.08))',
+            border: '1px solid rgba(0,255,159,0.16)',
+          }}>
+            <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--fg)', letterSpacing: '.01em' }}>
+                Load all swaps for accurate P&L
+              </span>
+              <span style={{ fontSize: 11, color: 'var(--fg-muted)', lineHeight: 1.35 }}>
+                Sync transactions to include swaps, transfers, and bridge events before relying on realized profit.
+              </span>
+            </div>
+            {onSyncSwaps && (
+              <button
+                type="button"
+                disabled={isSyncing}
+                onClick={e => {
+                  e.stopPropagation();
+                  onSyncSwaps();
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  flexShrink: 0,
+                  minHeight: 30,
+                  padding: '7px 11px',
+                  borderRadius: 8,
+                  border: '1px solid rgba(0,255,159,0.32)',
+                  background: isSyncing ? 'rgba(0,255,159,0.10)' : 'rgba(0,255,159,0.16)',
+                  color: 'var(--accent)',
+                  fontSize: 11,
+                  fontWeight: 800,
+                  cursor: isSyncing ? 'default' : 'pointer',
+                  opacity: isSyncing ? 0.72 : 1,
+                }}>
+                <RefreshCcw size={12} className={isSyncing ? 'animate-spin' : ''} />
+                {isSyncing ? 'Syncing' : 'Sync swaps'}
+              </button>
+            )}
+          </div>
 
           {/* Two-column breakdown */}
           <div className="pnl-cols">
