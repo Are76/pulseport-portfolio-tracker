@@ -251,15 +251,17 @@ export function TransactionList({
                     onClick={e => { e.stopPropagation(); onFilterByAsset(tx.asset); }}
                     title={`Filter by ${tx.asset}`}
                     style={{
-                      width: 20, height: 20, borderRadius: '50%', overflow: 'hidden',
+                      width: 22, height: 22, minWidth: 22, minHeight: 22,
+                      borderRadius: '50%', overflow: 'hidden',
                       border: '1px solid var(--border)', background: 'var(--bg-elevated)',
                       flexShrink: 0, cursor: 'pointer', padding: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
                   >
                     <img
                       src={coinLogo}
                       alt={tx.asset}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                      style={{ width: 22, height: 22, objectFit: 'cover', borderRadius: '50%', display: 'block' }}
                       onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
                   </button>

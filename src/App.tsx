@@ -489,12 +489,13 @@ interface WalletSelectorProps {
   activeWallet: string | null;
   onSelect: (addr: string | null) => void;
   onAdd: () => void;
+  onRemove?: (addr: string) => void;
   walletLabels?: Record<string, string>;
 }
 
 const WALLET_DOT_COLORS = ['#00FF9F','#f739ff','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
 
-function WalletSelector({ wallets, activeWallet, onSelect, onAdd, walletLabels = {} }: WalletSelectorProps) {
+function WalletSelector({ wallets, activeWallet, onSelect, onAdd, onRemove, walletLabels = {} }: WalletSelectorProps) {
   if (wallets.length === 0) {
     return (
       <button onClick={onAdd} className="btn-ghost" style={{ fontSize: 12, gap: 6 }}>
@@ -506,17 +507,16 @@ function WalletSelector({ wallets, activeWallet, onSelect, onAdd, walletLabels =
     <div className="wallet-selector-bar">
       <button className={`wallet-pill${activeWallet === null ? ' active' : ''}`} onClick={() => onSelect(null)}>
         <span className="wallet-dot wallet-dot-multi" />
-        All ({wallets.length})
+        All
       </button>
       {wallets.map((addr, idx) => {
         const label = walletLabels[addr] ?? shortenAddr(addr);
         const dotColor = WALLET_DOT_COLORS[idx % WALLET_DOT_COLORS.length];
         const isActive = activeWallet === addr;
         return (
-          <button
+          <span
             key={addr}
             className={`wallet-pill${isActive ? ' active' : ''}`}
-            onClick={() => onSelect(addr)}
             title={addr}
             style={isActive ? {
               background: `${dotColor}1a`,
@@ -524,22 +524,31 @@ function WalletSelector({ wallets, activeWallet, onSelect, onAdd, walletLabels =
               color: dotColor,
             } : undefined}
           >
-            <span className="wallet-dot" style={{ background: dotColor, boxShadow: `0 0 5px ${dotColor}bb` }} />
-            {label}
-          </button>
+            <span
+              onClick={() => onSelect(addr)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
+            >
+              <span className="wallet-dot" style={{ background: dotColor, boxShadow: `0 0 5px ${dotColor}bb` }} />
+              {label}
+            </span>
+            {onRemove && (
+              <button
+                className="wallet-pill-x"
+                onClick={e => { e.stopPropagation(); onRemove(addr); }}
+                title={`Remove ${label}`}
+                aria-label={`Remove ${label}`}
+              >
+                ×
+              </button>
+            )}
+          </span>
         );
       })}
       <button
+        className="wallet-pill-add"
         onClick={onAdd}
-        style={{
-          display: 'inline-flex', alignItems: 'center',
-          padding: '4px 10px', borderRadius: 999,
-          border: '1px dashed var(--border-strong)',
-          background: 'transparent', color: 'var(--fg-subtle)',
-          fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.14s',
-        }}
-        onMouseOver={e => { (e.currentTarget as HTMLElement).style.color = 'var(--fg)'; }}
-        onMouseOut={e => { (e.currentTarget as HTMLElement).style.color = 'var(--fg-subtle)'; }}
+        title="Add wallet"
+        aria-label="Add wallet"
       >
         ＋
       </button>
@@ -3373,6 +3382,7 @@ export default function App() {
               activeWallet={activeWallet}
               onSelect={setActiveWallet}
               onAdd={() => setIsAddingWallet(true)}
+              onRemove={addr => removeWallet(addr)}
               walletLabels={Object.fromEntries(wallets.filter(w => w.name).map(w => [w.address, w.name!]))}
             />
           </div>
@@ -3735,24 +3745,30 @@ export default function App() {
                   // pHEX liquid: native HEX on PulseChain (symbol HEX, same address as eHEX contract but on PLS chain)
                   const pHexLiquid = currentAssets.filter(a => a.chain === 'pulsechain' && (a as any).address?.toLowerCase() === HEX_ADDR_LC).reduce((s, a) => s + a.balance, 0);
                   // Staked = principal + accrued yield (recalculated at chain-specific rate, never from stale cache)
-                  const pHexStaked = currentStakes.filter(s => s.chain === 'pulsechain').reduce((s, st) => {
+                  let pHexPrincipal = 0, pHexYield = 0;
+                  currentStakes.filter(s => s.chain === 'pulsechain').forEach(st => {
                     const principal  = st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8;
                     const tSharesVal = st.tShares    ?? Number(st.stakeShares  ?? 0n) / 1e12;
                     const daysStaked = Math.max(0, (st.stakedDays ?? 0) - (st.daysRemaining ?? 0));
                     const interest   = tSharesVal * daysStaked * PHEX_YIELD_PER_TSHARE;
-                    return s + principal + interest;
-                  }, 0);
+                    pHexPrincipal += principal;
+                    pHexYield     += interest;
+                  });
+                  const pHexStaked = pHexPrincipal + pHexYield;
                   // eHEX liquid: HEX on Ethereum + bridged eHEX on PulseChain
                   const eHexLiquidEth = currentAssets.filter(a => a.chain === 'ethereum' && (a as any).address?.toLowerCase() === HEX_ADDR_LC).reduce((s, a) => s + a.balance, 0);
                   const eHexLiquidPls = currentAssets.filter(a => a.chain === 'pulsechain' && a.symbol === 'eHEX').reduce((s, a) => s + a.balance, 0);
                   const eHexLiquid = eHexLiquidEth + eHexLiquidPls;
-                  const eHexStaked = currentStakes.filter(s => s.chain === 'ethereum').reduce((s, st) => {
+                  let eHexPrincipal = 0, eHexYield = 0;
+                  currentStakes.filter(s => s.chain === 'ethereum').forEach(st => {
                     const principal  = st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8;
                     const tSharesVal = st.tShares    ?? Number(st.stakeShares  ?? 0n) / 1e12;
                     const daysStaked = Math.max(0, (st.stakedDays ?? 0) - (st.daysRemaining ?? 0));
                     const interest   = tSharesVal * daysStaked * EHEX_YIELD_PER_TSHARE;
-                    return s + principal + interest;
-                  }, 0);
+                    eHexPrincipal += principal;
+                    eHexYield     += interest;
+                  });
+                  const eHexStaked = eHexPrincipal + eHexYield;
                   const pHexTotal = pHexLiquid + pHexStaked;
                   const eHexTotal = eHexLiquid + eHexStaked;
                   // Space-separated thousands: 148 000 000
@@ -3773,6 +3789,7 @@ export default function App() {
                         </button>
                       </div>
                       {!isCollapsed('hex-boxes') && (
+                        <>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 0 }} className="max-sm:grid-cols-1">
                           {boxes.map(b => (
                             <div key={b.label} style={{ padding: 16, borderRight: `1px solid ${t.borderLight}` }}>
@@ -3786,6 +3803,41 @@ export default function App() {
                             </div>
                           ))}
                         </div>
+                        {/* ── Stake Principal + Yield Breakdown ── */}
+                        {(pHexPrincipal > 0 || eHexPrincipal > 0) && (
+                          <div style={{ borderTop: `1px solid ${t.borderLight}`, padding: '12px 16px' }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 10 }}>Stake Breakdown — Principal + Accrued Yield</div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }} className="max-sm:grid-cols-1">
+                              {[
+                                { label: 'pHEX Staked', principal: pHexPrincipal, yield: pHexYield, total: pHexStaked, color: '#fb923c', usdPrice: pHexPrice },
+                                { label: 'eHEX Staked', principal: eHexPrincipal, yield: eHexYield, total: eHexStaked, color: '#627EEA', usdPrice: eHexPrice },
+                              ].filter(r => r.principal > 0 || r.yield > 0).map(r => (
+                                <div key={r.label} style={{ background: theme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)', border: `1px solid ${t.borderLight}`, borderRadius: 10, padding: '12px 14px' }}>
+                                  <div style={{ fontSize: 11, fontWeight: 700, color: r.color, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>{r.label}</div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <span style={{ fontSize: 12, color: t.textMuted }}>Principal</span>
+                                      <span style={{ fontSize: 13, fontWeight: 700, color: t.text, fontFamily: 'JetBrains Mono, monospace' }}>{fmtBigNum(r.principal)}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <span style={{ fontSize: 12, color: t.textMuted }}>Accrued Yield</span>
+                                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', fontFamily: 'JetBrains Mono, monospace' }}>+{fmtBigNum(r.yield)}</span>
+                                    </div>
+                                    <div style={{ height: 1, background: t.borderLight, margin: '2px 0' }} />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <span style={{ fontSize: 12, fontWeight: 600, color: t.textSecondary }}>Total</span>
+                                      <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontSize: 14, fontWeight: 800, color: r.color, fontFamily: 'JetBrains Mono, monospace' }}>{fmtBigNum(r.total)}</div>
+                                        <div style={{ fontSize: 11, color: t.textMuted }}>${(r.total * r.usdPrice).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        </>
                       )}
                     </div>
                   );
