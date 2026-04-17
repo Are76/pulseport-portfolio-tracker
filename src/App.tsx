@@ -3614,8 +3614,22 @@ export default function App() {
                                                        <span hidden={!!logo}>{asset.symbol[0]}</span>
                                                      </div>
                                                      <div style={{ minWidth: 0 }}>
-                                                       <div title={asset.name || asset.symbol} style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
-                                                         {asset.name || asset.symbol}
+                                                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                                                         <div title={asset.name || asset.symbol} style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
+                                                           {asset.name || asset.symbol}
+                                                         </div>
+                                                         <button
+                                                           type="button"
+                                                           className="hero-holding-filter-btn"
+                                                           title={`Filter transactions by ${asset.symbol}`}
+                                                           onClick={(e) => {
+                                                             e.stopPropagation();
+                                                             setTxAssetFilter(asset.symbol);
+                                                             setActiveTab('assets');
+                                                           }}
+                                                         >
+                                                           <Filter size={10} />
+                                                         </button>
                                                        </div>
                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
                                                          <div style={{ width: 5, height: 5, borderRadius: '50%', background: CHAIN_COLORS[asset.chain] || '#555', flexShrink: 0 }} />
@@ -4734,7 +4748,6 @@ export default function App() {
                                     onSelect={(selectedTx, asset) => {
                                       setSelectedBridgeTxId((prev) => (prev === selectedTx.id ? null : selectedTx.id));
                                       if (asset) setPnlAsset(asset);
-                                      else setTxAssetFilter(selectedTx.asset);
                                     }}
                                     onToggleHide={(id) => setHiddenTxIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
                                   />
@@ -4985,7 +4998,6 @@ export default function App() {
                     hideIds={hiddenTxIds}
                     onToggleHide={id => setHiddenTxIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
                     showHidden={showHiddenTxs}
-                    onFilterByAsset={symbol => setTxAssetFilter(symbol)}
                     emptyMessage="No received token transactions found for these filters."
                   />
                 )}
@@ -5576,7 +5588,6 @@ export default function App() {
                           hideIds={hiddenTxIds}
                           onToggleHide={id => setHiddenTxIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
                           showHidden={showHiddenTxs}
-                          onFilterByAsset={symbol => setTxAssetFilter(symbol)}
                           emptyMessage="No transactions found for these filters."
                         />
                       </div>
