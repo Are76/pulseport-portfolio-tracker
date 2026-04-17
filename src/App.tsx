@@ -3505,7 +3505,9 @@ export default function App() {
                            </button>
                          </div>
                           </div>{/* end hero-grid-top */}
-                         {/* Live prices + holdings — full width below stats */}
+                       </div>{/* end hero-grid */}
+                     </div>{/* end hero card */}
+                     {/* ── MY HOLDINGS + LIVE PRICES — outside hero card ── */}
                          {(() => {
                            const MAX_HERO_HOLDINGS = 7;
                            const holdingAssets = [...currentAssets].sort((a, b) => b.value - a.value).slice(0, MAX_HERO_HOLDINGS);
@@ -3701,8 +3703,6 @@ export default function App() {
                              </div>
                            );
                          })()}
-                       </div>
-                     </div>
                      </>
                    );
                  })()}
@@ -3718,6 +3718,7 @@ export default function App() {
                   </div>
                 )}
 
+                <div className="overview-bottom-grid">
                 {/* ── HEX TOTALS + ETH BOXES ── */}
                 {(() => {
                   const HEX_ADDR = '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39';
@@ -3898,6 +3899,7 @@ export default function App() {
                     </div>
                   );
                 })()}
+                </div>{/* end overview-bottom-grid */}
               </motion.div>
             )}
 

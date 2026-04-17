@@ -837,10 +837,19 @@ textarea:focus-visible,
   min-width: 0;
 }
 
-/* My Holdings panel — full-width below stats row */
+/* My Holdings + Live Prices — stacked full-width panels */
 .hero-holdings-wrap {
   display: grid;
-  gap: 14px;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+/* HEX Holdings + Performance — side-by-side below hero */
+.overview-bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
 }
 
 .hero-live-prices-panel {
@@ -886,7 +895,7 @@ textarea:focus-visible,
 }
 
 .hero-live-prices-grid {
-  margin-top: 22px;
+  margin-top: 16px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
@@ -1070,9 +1079,7 @@ textarea:focus-visible,
 
 .hero-holdings-panel {
   min-width: 0;
-  max-width: 1080px;
   width: 100%;
-  margin: 0 auto;
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -1145,6 +1152,9 @@ textarea:focus-visible,
 }
 
 @media (max-width: 1080px) {
+  .overview-bottom-grid {
+    grid-template-columns: 1fr;
+  }
   .hero-live-prices-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -1155,7 +1165,7 @@ textarea:focus-visible,
 
 @media (max-width: 640px) {
   .hero-live-prices-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .hero-holding-metrics {
     grid-template-columns: 1fr;
