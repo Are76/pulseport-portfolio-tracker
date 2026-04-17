@@ -69,6 +69,8 @@ import { StakesSection } from './components/StakesSection';
 import { TokenCardModal } from './components/TokenCardModal';
 import { MarketWatchModal } from './components/MarketWatchModal';
 import { TransactionList } from './components/TransactionList';
+import { HoldingsTable } from './components/HoldingsTable';
+import type { HoldingDisplayAsset, HoldingSortField } from './components/HoldingsTable';
 import { normalizeTransactions } from './utils/normalizeTransactions';
 
 const ERC20_ABI = [
@@ -2486,6 +2488,28 @@ export default function App() {
     const key = activeWallet?.toLowerCase() ?? null;
     return key ? realStakes.filter(s => s.walletAddress === key) : realStakes;
   }, [wallets.length, realStakes, activeWallet]);
+
+  const normalizeHoldingAssets = useMemo(() => {
+    const plsUsdPrice = prices['pulsechain']?.usd || 0;
+    const leagueSymbols = new Set(['PLS', 'PLSX', 'HEX', 'EHEX', 'INC', 'PRVX']);
+    return (assets: Asset[]): HoldingDisplayAsset[] =>
+      assets.map(asset => {
+        const symbolUpper = asset.symbol.toUpperCase();
+        const isLeagueSupported = leagueSymbols.has(symbolUpper);
+        return {
+          ...asset,
+          priceUsd: asset.price,
+          pricePls: plsUsdPrice > 0 ? asset.price / plsUsdPrice : 0,
+          valueUsd: asset.value,
+          valuePls: plsUsdPrice > 0 ? asset.value / plsUsdPrice : 0,
+          leagueLabel: isLeagueSupported ? 'League' : '-',
+          leagueRank: null,
+          leagueSource: isLeagueSupported ? 'OpenPulseChain' : null,
+          entryPls: manualEntries[asset.id] || 0,
+        };
+      });
+  }, [manualEntries, prices]);
+
   const currentHistory = wallets.length > 0 ? history : MOCK_HISTORY;
   const currentTransactions = useMemo(() => {
     const baseTransactions = wallets.length > 0 ? transactions : MOCK_TRANSACTIONS;
@@ -3685,6 +3709,7 @@ export default function App() {
                          {(() => {
                            const MAX_HERO_HOLDINGS = 7;
                            const holdingAssets = [...currentAssets].sort((a, b) => b.value - a.value).slice(0, MAX_HERO_HOLDINGS);
+                           const holdingDisplayAssets = normalizeHoldingAssets(holdingAssets);
                            const fmtBal = (b: number) =>
                              b >= 1e9 ? `${(b/1e9).toFixed(2)}B` :
                              b >= 1e6 ? `${(b/1e6).toFixed(2)}M` :
@@ -3706,7 +3731,10 @@ export default function App() {
                                <div className="hero-holdings-panel">
                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                                     <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>My Holdings</span>
+                                     <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>Top 7 Holdings</span>
+                                     {wallets.length > 0 && currentAssets.length > 0 && (
+                                       <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Showing {holdingAssets.length} of {currentAssets.length}</span>
+                                     )}
                                      {wallets.length > 0 && summary.liquidValue > 0 && (
                                        <span style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>
                                          · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
@@ -3720,7 +3748,41 @@ export default function App() {
                                    </button>
                                  </div>
 
-                                 {holdingAssets.length === 0 ? (
+                                 <HoldingsTable
+                                   assets={holdingDisplayAssets}
+                                   allAssets={currentAssets}
+                                   wallets={wallets}
+                                   totalValueUsd={summary.totalValue}
+                                   plsUsdPrice={prices['pulsechain']?.usd || 0}
+                                   priceChangePeriod="24h"
+                                   sortField={assetSortField as HoldingSortField}
+                                   sortDir={assetSortDir}
+                                   expandedIds={expandedAssetIds}
+                                   tokenLogos={tokenLogos}
+                                   emptyMessage="Add wallets to see holdings"
+                                   currentTransactions={currentTransactions}
+                                   manualEntries={manualEntries}
+                                   chainColors={CHAIN_COLORS}
+                                   tokenMarketData={tokenMarketData}
+                                   staticLogos={STATIC_LOGOS}
+                                   getTokenLogoUrl={getTokenLogoUrl}
+                                   explorerUrl={explorerUrl}
+                                   dexScreenerUrl={dexScreenerUrl}
+                                   onSort={(field) => {
+                                     if (assetSortField === field) setAssetSortDir(d => d === 'desc' ? 'asc' : 'desc');
+                                     else { setAssetSortField(field); setAssetSortDir('desc'); }
+                                   }}
+                                   onToggleExpanded={(id) => setExpandedAssetIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; })}
+                                   onOpenPnl={asset => setPnlAsset(asset)}
+                                   onHide={id => setHiddenTokens(prev => [...prev, id])}
+                                   onSetEntry={(id, value) => setManualEntries(prev => ({ ...prev, [id]: value }))}
+                                   onClearEntry={(id) => setManualEntries(prev => { const n = { ...prev }; delete n[id]; return n; })}
+                                   onFilterByAsset={symbol => { setTxAssetFilter(symbol); setActiveTab('assets'); }}
+                                   footerLabel="TOP HOLDINGS"
+                                   footerValueUsd={holdingAssets.reduce((sum, asset) => sum + asset.value, 0)}
+                                   shareBaseUsd={summary.totalValue}
+                                 />
+                                 {false && (holdingAssets.length === 0 ? (
                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '28px 0', color: 'var(--fg-subtle)' }}>
                                      <WalletIcon size={28} style={{ opacity: 0.35 }} />
                                      <span style={{ fontSize: 13 }}>Add wallets to see holdings</span>
@@ -3841,7 +3903,7 @@ export default function App() {
                                      </div>
                                    </div>
                                    );
-                                 })()}
+                                 })())}
 
                 {/* ── MY HEX HOLDINGS ── */}
                 {(() => {
@@ -4170,6 +4232,7 @@ export default function App() {
               <motion.div key="assets" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
                 {(() => {
                   const chainAssets = walletChainFilter === 'all' ? currentAssets : currentAssets.filter(a => a.chain === walletChainFilter);
+                  const chainDisplayAssets = normalizeHoldingAssets(chainAssets);
                   return (<>
 
                 {/* ── All Wallets hero banner ── */}
@@ -4365,7 +4428,41 @@ export default function App() {
                     </button>
                   </div>
                   {!isCollapsed('assets-table') && (<>
-                  <div className="data-table-scroll">
+                  <HoldingsTable
+                    assets={chainDisplayAssets}
+                    allAssets={currentAssets}
+                    wallets={wallets}
+                    totalValueUsd={summary.totalValue}
+                    plsUsdPrice={prices['pulsechain']?.usd || 0}
+                    priceChangePeriod={priceChangePeriod}
+                    sortField={assetSortField as HoldingSortField}
+                    sortDir={assetSortDir}
+                    expandedIds={expandedAssetIds}
+                    tokenLogos={tokenLogos}
+                    emptyMessage="No holdings found - add wallets to get started"
+                    currentTransactions={currentTransactions}
+                    manualEntries={manualEntries}
+                    chainColors={CHAIN_COLORS}
+                    tokenMarketData={tokenMarketData}
+                    staticLogos={STATIC_LOGOS}
+                    getTokenLogoUrl={getTokenLogoUrl}
+                    explorerUrl={explorerUrl}
+                    dexScreenerUrl={dexScreenerUrl}
+                    onSort={(field) => {
+                      if (assetSortField === field) setAssetSortDir(d => d === 'desc' ? 'asc' : 'desc');
+                      else { setAssetSortField(field); setAssetSortDir('desc'); }
+                    }}
+                    onToggleExpanded={(id) => setExpandedAssetIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; })}
+                    onOpenPnl={asset => setPnlAsset(asset)}
+                    onHide={id => setHiddenTokens(prev => [...prev, id])}
+                    onSetEntry={(id, value) => setManualEntries(prev => ({ ...prev, [id]: value }))}
+                    onClearEntry={(id) => setManualEntries(prev => { const n = { ...prev }; delete n[id]; return n; })}
+                    onFilterByAsset={symbol => { setTxAssetFilter(symbol); setActiveTab('assets'); }}
+                    showSkeleton={isLoading && wallets.length > 0 && currentAssets.length === 0}
+                    footerValueUsd={chainAssets.reduce((sum, asset) => sum + asset.value, 0)}
+                    shareBaseUsd={summary.totalValue}
+                  />
+                  {false && <div className="data-table-scroll">
                     <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                       <thead>
                         <tr style={{ borderBottom: `1px solid ${t.border}` }}>
@@ -4756,7 +4853,7 @@ export default function App() {
                         </tfoot>
                       )}
                     </table>
-                  </div>
+                  </div>}
                   {unpricedCount > 0 && (
                     <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', fontSize: 13, color: 'var(--fg-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
                       <Activity size={12} /> {unpricedCount} token{unpricedCount !== 1 ? 's' : ''} with no price data omitted
@@ -5298,6 +5395,7 @@ export default function App() {
             : currentStakes.filter(s => s.walletAddress === selectedWalletAddr);
 
           const filteredViewAssets = walletChainFilter === 'all' ? viewAssets : viewAssets.filter(a => a.chain === walletChainFilter);
+          const filteredDisplayAssets = normalizeHoldingAssets(filteredViewAssets);
 
           const walletUsdValue = viewAssets.reduce((s, a) => s + a.value, 0);
           // Recalculate staking value from first principles using live prices + accrued yield
@@ -5401,7 +5499,40 @@ export default function App() {
                   </div>
                 </div>
                 {!isCollapsed('wallet-holdings') && (<>
-                <div className="data-table-scroll">
+                <HoldingsTable
+                  assets={filteredDisplayAssets}
+                  allAssets={currentAssets}
+                  wallets={wallets}
+                  totalValueUsd={totalUsdValue}
+                  plsUsdPrice={prices['pulsechain']?.usd || 0}
+                  priceChangePeriod={priceChangePeriod}
+                  sortField={assetSortField as HoldingSortField}
+                  sortDir={assetSortDir}
+                  expandedIds={expandedWalletAssetIds}
+                  tokenLogos={tokenLogos}
+                  emptyMessage="No holdings found for this wallet"
+                  currentTransactions={currentTransactions}
+                  manualEntries={manualEntries}
+                  chainColors={CHAIN_COLORS}
+                  tokenMarketData={tokenMarketData}
+                  staticLogos={STATIC_LOGOS}
+                  getTokenLogoUrl={getTokenLogoUrl}
+                  explorerUrl={explorerUrl}
+                  dexScreenerUrl={dexScreenerUrl}
+                  onSort={(field) => {
+                    if (assetSortField === field) setAssetSortDir(d => d === 'desc' ? 'asc' : 'desc');
+                    else { setAssetSortField(field); setAssetSortDir('desc'); }
+                  }}
+                  onToggleExpanded={(id) => setExpandedWalletAssetIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; })}
+                  onOpenPnl={asset => setPnlAsset(asset)}
+                  onHide={id => setHiddenTokens(prev => [...prev, id])}
+                  onSetEntry={(id, value) => setManualEntries(prev => ({ ...prev, [id]: value }))}
+                  onClearEntry={(id) => setManualEntries(prev => { const n = { ...prev }; delete n[id]; return n; })}
+                  onFilterByAsset={symbol => { setTxAssetFilter(symbol); setActiveTab('assets'); }}
+                  footerValueUsd={filteredViewAssets.reduce((sum, asset) => sum + asset.value, 0)}
+                  shareBaseUsd={walletUsdValue}
+                />
+                {false && <div className="data-table-scroll">
                   <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ borderBottom: '1px solid var(--border)' }}>
@@ -5713,7 +5844,7 @@ export default function App() {
                       </tfoot>
                     )}
                   </table>
-                </div>
+                </div>}
                 </>)}
               </div>
 

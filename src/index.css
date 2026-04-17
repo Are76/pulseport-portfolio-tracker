@@ -3981,6 +3981,16 @@ textarea:focus-visible,
   /* Minimum touch target height on rows */
   .data-table tbody tr { min-height: 54px; }
 
+  /* Unified holdings keeps USD + PLS values visible on mobile. */
+  .holdings-unified-table th:nth-child(6),
+  .holdings-unified-table td:nth-child(6) { display: table-cell; }
+  .holdings-unified-table th:nth-child(7),
+  .holdings-unified-table td:nth-child(7),
+  .holdings-unified-table th:nth-child(8),
+  .holdings-unified-table td:nth-child(8) { display: none; }
+  .holdings-unified-table td:nth-child(9),
+  .holdings-unified-table th:nth-child(9) { padding: 8px 8px !important; }
+
   /* Mini (wallets inner) table: show all 4 columns */
   .data-table-mini th,
   .data-table-mini td {
