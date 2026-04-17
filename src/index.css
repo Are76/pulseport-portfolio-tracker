@@ -2121,21 +2121,11 @@ textarea:focus-visible,
 .mobile-bottom-nav-inner {
   display: flex;
   align-items: stretch;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
   width: 100%;
-}
-.mobile-bottom-nav-inner::-webkit-scrollbar {
-  display: none;
 }
 .mobile-bottom-nav-inner > * {
   flex: 1 1 0;
-  min-width: 46px;
-  max-width: 80px;
-  scroll-snap-align: start;
+  min-width: 0;
 }
 
 /* ── PnLModal: bottom-sheet on small screens ────────────────────────────────── */
@@ -3414,14 +3404,28 @@ textarea:focus-visible,
   align-items: center;
   justify-content: center;
   flex: 1 1 0;
-  min-width: 46px;
-  min-height: 56px;
-  padding: 6px 2px;
+  min-width: 0;
+  min-height: clamp(50px, 14vw, 62px);
+  padding: clamp(5px, 1.5vw, 8px) clamp(2px, 1vw, 6px);
   background: none;
   border: none;
   cursor: pointer;
   transition: color .15s;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+/* Scale icons responsively */
+.mobile-nav-tab-btn svg {
+  width: clamp(16px, 4.8vw, 21px);
+  height: clamp(16px, 4.8vw, 21px);
+}
+/* Scale labels responsively */
+.mobile-nav-tab-btn span {
+  font-size: clamp(7px, 2.2vw, 10px) !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
