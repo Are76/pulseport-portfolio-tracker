@@ -576,6 +576,14 @@ const STATIC_LOGOS: Record<string, string> = {
 const EHEX_PULSECHAIN_ADDR = '0x57fde0a71132198bbec939b98976993d8d89d225';
 const ETH_HEX_ADDR = '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39';
 
+const normalizeAssetSymbol = (symbol: string, chain?: string): string => {
+  const upper = (symbol || '').toUpperCase();
+  return chain === 'pulsechain' && upper === 'WPLS' ? 'PLS' : upper;
+};
+
+const sameAssetSymbol = (left: string, right: string, chain?: string): boolean =>
+  normalizeAssetSymbol(left, chain) === normalizeAssetSymbol(right, chain);
+
 // Below this threshold (USD) we consider netInvestment effectively zero and hide the P&L %.
 // PulseChain-only wallets have no ETH/stable inflows so netInvestment stays near 0.
 const MIN_INVESTMENT_THRESHOLD = 100;
@@ -2364,7 +2372,14 @@ export default function App() {
     return key ? realStakes.filter(s => s.walletAddress === key) : realStakes;
   }, [wallets.length, realStakes, activeWallet]);
   const currentHistory = wallets.length > 0 ? history : MOCK_HISTORY;
-  const currentTransactions = wallets.length > 0 ? transactions : MOCK_TRANSACTIONS;
+  const currentTransactions = useMemo(() => {
+    const baseTransactions = wallets.length > 0 ? transactions : MOCK_TRANSACTIONS;
+    return baseTransactions.map(tx => ({
+      ...tx,
+      asset: normalizeAssetSymbol(tx.asset, tx.chain),
+      counterAsset: tx.counterAsset ? normalizeAssetSymbol(tx.counterAsset, tx.chain) : tx.counterAsset,
+    }));
+  }, [wallets.length, transactions]);
 
   const unpricedCount = useMemo(() => {
     return currentAssets.filter(a => a.price === 0).length;
@@ -2373,7 +2388,7 @@ export default function App() {
   const filteredTransactions = useMemo(() => {
     return currentTransactions.filter(tx => {
       const matchesType = txTypeFilter === 'all' || tx.type === txTypeFilter;
-      const matchesAsset = txAssetFilter === 'all' || tx.asset === txAssetFilter;
+      const matchesAsset = txAssetFilter === 'all' || sameAssetSymbol(tx.asset, txAssetFilter, tx.chain);
       const matchesChain = txChainFilter === 'all' || tx.chain === txChainFilter;
       // Year filter
       const txYear = new Date(tx.timestamp).getFullYear().toString();
@@ -3183,7 +3198,7 @@ export default function App() {
             { id: 'assets',   label: 'Holdings',           icon: Coins },
             { id: 'stakes',   label: 'HEX Stakes',         icon: Lock },
             { id: 'defi',     label: 'DeFi Positions',     icon: Droplets },
-            { id: 'history',  label: 'Activity', icon: History },
+            { id: 'history',  label: 'Bridge Activity', icon: History },
             { id: 'wallets',  label: 'Wallets',  icon: WalletIcon },
           ] as const).map(({ id, label, icon: Icon }) => {
             const isDefi = id === 'defi';
@@ -4662,7 +4677,7 @@ export default function App() {
                   <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, overflow: 'hidden' }} className="md-elevation-1">
                     <div style={{ padding: '14px 18px', borderBottom: isCollapsed('holdings-txs') ? 'none' : `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: 14, fontWeight: 600, color: t.text }}>Activity</span>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: t.text }}>Bridge Activity</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent-border)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
                           <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', display: 'inline-block', animation: 'pulse 2s infinite' }} />
                           Live
@@ -4758,7 +4773,7 @@ export default function App() {
                                   ? (STATIC_LOGOS[(matchedAsset as any).address?.toLowerCase?.()] || (matchedAsset as any).logoUrl || tokenLogos[(matchedAsset as any).address?.toLowerCase?.()])
                                   : undefined;
                                 const tokenTransactions = currentTransactions.filter(
-                                  (eventTx) => eventTx.asset.toUpperCase() === tx.asset.toUpperCase() || (eventTx.counterAsset ?? '').toUpperCase() === tx.asset.toUpperCase(),
+                                  (eventTx) => sameAssetSymbol(eventTx.asset, tx.asset, eventTx.chain) || sameAssetSymbol(eventTx.counterAsset ?? '', tx.asset, eventTx.chain),
                                 );
 
                                 return (
@@ -4842,7 +4857,7 @@ export default function App() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)', marginBottom: 2 }}>Activity</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)', marginBottom: 2 }}>Bridge Activity</div>
                   <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Cross-chain activity &amp; performance tracking</div>
                 </div>
               </div>
@@ -5036,7 +5051,7 @@ export default function App() {
             {/* ── TOKEN P&L SUMMARY CARD — shown when a specific asset filter is active ── */}
             {txAssetFilter !== 'all' && (() => {
               const filteredAsset = currentAssets.find(a =>
-                a.symbol.toUpperCase() === txAssetFilter.toUpperCase()
+                sameAssetSymbol(a.symbol, txAssetFilter, a.chain)
               );
               const tokenPrice = filteredAsset?.price ?? 0;
               const plsPrice   = prices['pulsechain']?.usd ?? 0;
@@ -5044,8 +5059,8 @@ export default function App() {
               // Collect ALL transactions for this symbol across type filters so the card
               // always shows the full picture regardless of txTypeFilter
               const allTokenTxs = currentTransactions.filter(tx =>
-                tx.asset.toUpperCase() === txAssetFilter.toUpperCase() ||
-                (tx.counterAsset ?? '').toUpperCase() === txAssetFilter.toUpperCase()
+                sameAssetSymbol(tx.asset, txAssetFilter, tx.chain) ||
+                sameAssetSymbol(tx.counterAsset ?? '', txAssetFilter, tx.chain)
               );
               return (
                 <>

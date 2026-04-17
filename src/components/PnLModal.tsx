@@ -78,6 +78,10 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
   if (chainKey === 'pulsechain' && sym.startsWith('P') && sym.length > 1) {
     symAliases.add(sym.slice(1)); // 'PDAI' → also try 'DAI'
   }
+  if (chainKey === 'pulsechain' && (sym === 'PLS' || sym === 'WPLS')) {
+    symAliases.add('PLS');
+    symAliases.add('WPLS');
+  }
   const symMatch = (s: string) => {
     const u = s.toUpperCase();
     return [...symAliases].some(alias => u === alias || u.startsWith(alias + ' '));

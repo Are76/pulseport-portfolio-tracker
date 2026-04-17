@@ -49,6 +49,11 @@ const CHAIN_LABEL: Record<string, string> = {
   base:       'BASE',
 };
 
+const normalizeSymbol = (symbol: string, chain?: string): string => {
+  const upper = (symbol || '').toUpperCase();
+  return chain === 'pulsechain' && upper === 'WPLS' ? 'PLS' : upper;
+};
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function shortAddr(addr: string): string {
   if (!addr || addr.length < 10) return addr;
@@ -147,7 +152,7 @@ export function TransactionList({
 
   const findAsset = useCallback(
     (symbol: string, chain: string): Asset | undefined =>
-      assets.find(a => a.symbol.toUpperCase() === symbol.toUpperCase() && a.chain === chain),
+      assets.find(a => normalizeSymbol(a.symbol, a.chain) === normalizeSymbol(symbol, chain) && a.chain === chain),
     [assets],
   );
 

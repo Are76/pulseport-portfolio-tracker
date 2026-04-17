@@ -50,6 +50,13 @@ function formatSign(n: number): string { return n >= 0 ? '+' : '−'; }
 function getProfitLossColor(n: number): string {
   return n >= 0 ? 'var(--positive)' : 'var(--negative)';
 }
+function normalizeSymbol(symbol: string): string {
+  const upper = (symbol || '').toUpperCase();
+  return upper === 'WPLS' ? 'PLS' : upper;
+}
+function sameSymbol(left: string, right: string): boolean {
+  return normalizeSymbol(left) === normalizeSymbol(right);
+}
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 function StatRow({
@@ -132,11 +139,11 @@ export function TokenPnLCard({
 
       if (tx.type === 'swap') {
         swapCount++;
-        if (tx.asset.toUpperCase() === symbol.toUpperCase()) {
+        if (sameSymbol(tx.asset, symbol)) {
           // Received symbol (bought it) — usd is what we got
           totalCost += usd;
           buyCount++;
-        } else if ((tx.counterAsset ?? '').toUpperCase() === symbol.toUpperCase()) {
+        } else if (sameSymbol(tx.counterAsset ?? '', symbol)) {
           // Spent symbol (sold it) — usd is what we received back
           totalProceeds += usd;
           sellCount++;
