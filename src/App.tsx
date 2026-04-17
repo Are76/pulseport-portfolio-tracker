@@ -3039,33 +3039,74 @@ export default function App() {
     name: string;
     price: number;
     change24h: number | null;
+    marketCap?: number | null;
+    volume24h?: number | null;
+    accent?: string;
     logo?: string;
     href?: string;
   };
 
   const coreLiveTokens = useMemo(() => ([
-    { id: 'PLS', symbol: 'PLS', name: 'PulseChain', priceKey: 'pulsechain', changeKey: 'pulsechain:native', logo: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png', href: 'https://dexscreener.com/pulsechain/' },
-    { id: 'PLSX', symbol: 'PLSX', name: 'PulseX', priceKey: 'pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab', logo: 'https://tokens.app.pulsex.com/images/tokens/0x95B303987A60C71504D99Aa1b13B4DA07b0790ab.png', href: 'https://dexscreener.com/pulsechain/0x1b45b9148791d3a104184cd5dfe5ce57193a3ee9' },
-    { id: 'INC', symbol: 'INC', name: 'Incentive', priceKey: 'pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d', logo: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png', href: 'https://dexscreener.com/pulsechain/0xf808bb6265e9ca27002c0a04562bf50d4fe37eaa' },
-    { id: 'HEX', symbol: 'HEX', name: 'pHEX', priceKey: 'pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39', logo: 'https://tokens.app.pulsex.com/images/tokens/0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39.png', href: 'https://dexscreener.com/pulsechain/0xf1f4ee610b2babb05c635f726ef8b0c568c8dc65' },
-    { id: 'PRVX', symbol: 'PRVX', name: 'PrivacyX', priceKey: 'pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11', logo: 'https://cdn.dexscreener.com/cms/images/ODHYYN7yppDHnd6u?width=64&height=64&fit=crop&quality=95&format=auto', href: 'https://dexscreener.com/pulsechain/0x7f681a5ad615238357ba148c281e2eaefd2de55a' },
-    { id: 'eHEX', symbol: 'eHEX', name: 'Ethereum HEX', priceKey: 'ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39', logo: 'https://cdn.dexscreener.com/cms/images/a46bd12940d8501c2aacdd10ad4780e818bdedaba1ec8eb46b52e4d8313d4a93?width=64&height=64&fit=crop&quality=95&format=auto', href: 'https://dexscreener.com/pulsechain/0xf0ea3efe42c11c8819948ec2d3179f4084863d3f' },
+    { id: 'PLS',  symbol: 'PLS',  name: 'PulseChain',    priceKey: 'pulsechain',                                                    changeKey: 'pulsechain:native', accent: 'linear-gradient(90deg,#00ff9f,#00cfff)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png', href: 'https://dexscreener.com/pulsechain/' },
+    { id: 'PLSX', symbol: 'PLSX', name: 'PulseX',        priceKey: 'pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab',            accent: 'linear-gradient(90deg,#ff00bf,#7b00ff)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x95B303987A60C71504D99Aa1b13B4DA07b0790ab.png', href: 'https://dexscreener.com/pulsechain/0x1b45b9148791d3a104184cd5dfe5ce57193a3ee9' },
+    { id: 'INC',  symbol: 'INC',  name: 'Incentive',     priceKey: 'pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d',            accent: 'linear-gradient(90deg,#39ff14,#00ff9f)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png', href: 'https://dexscreener.com/pulsechain/0xf808bb6265e9ca27002c0a04562bf50d4fe37eaa' },
+    { id: 'HEX',  symbol: 'HEX',  name: 'pHEX',          priceKey: 'pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39',            accent: 'linear-gradient(90deg,#ff6b35,#f7931a)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39.png', href: 'https://dexscreener.com/pulsechain/0xf1f4ee610b2babb05c635f726ef8b0c568c8dc65' },
+    { id: 'PRVX', symbol: 'PRVX', name: 'PrivacyX',      priceKey: 'pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11',            accent: 'linear-gradient(90deg,#6c3ce1,#b044ff)',                                              logo: 'https://cdn.dexscreener.com/cms/images/ODHYYN7yppDHnd6u?width=64&height=64&fit=crop&quality=95&format=auto', href: 'https://dexscreener.com/pulsechain/0x7f681a5ad615238357ba148c281e2eaefd2de55a' },
+    { id: 'eHEX', symbol: 'eHEX', name: 'Ethereum HEX',  priceKey: 'ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39',              accent: 'linear-gradient(90deg,#ff0080,#ff6b35,#ffeb3b,#00ff9f,#00cfff,#7b00ff)',             logo: 'https://cdn.dexscreener.com/cms/images/a46bd12940d8501c2aacdd10ad4780e818bdedaba1ec8eb46b52e4d8313d4a93?width=64&height=64&fit=crop&quality=95&format=auto', href: 'https://dexscreener.com/pulsechain/0xf0ea3efe42c11c8819948ec2d3179f4084863d3f' },
   ]), []);
+
+  useEffect(() => {
+    if (activeTab !== 'overview') return;
+    const missing = coreLiveTokens.filter(token => !tokenMarketData[`live:${token.id}`]);
+    if (missing.length === 0) return;
+    const WPLS = '0xa1077a294dde1b09bb078844df40758a5d0f9a27';
+    missing.forEach(async (token) => {
+      const rawAddr = token.priceKey === 'pulsechain' ? WPLS : token.priceKey.includes(':') ? token.priceKey.split(':')[1] : null;
+      if (!rawAddr) return;
+      try {
+        const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${rawAddr.toLowerCase()}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const pairs: any[] = data.pairs || [];
+        if (pairs.length === 0) return;
+        const sorted = [...pairs].sort((a: any, b: any) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0));
+        const top = sorted[0];
+        setTokenMarketData(prev => ({
+          ...prev,
+          [`live:${token.id}`]: {
+            volume24h: sorted.reduce((s: number, p: any) => s + (p.volume?.h24 || 0), 0),
+            marketCap: top?.marketCap || null,
+            fdv: top?.fdv || null,
+            priceChange24h: top?.priceChange?.h24 ?? null,
+          },
+        }));
+      } catch { /* ignore */ }
+    });
+  }, [activeTab, coreLiveTokens]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const topHoldingCards = useMemo<PortfolioPriceCard[]>(() => {
     return coreLiveTokens.map(token => {
       const md = prices[token.priceKey] || prices[token.changeKey ?? ''];
+      const tokenAddress = token.priceKey.includes(':') ? token.priceKey.split(':')[1]?.toLowerCase() : '';
+      const heldAsset = currentAssets.find(asset =>
+        (tokenAddress && (asset as any).address?.toLowerCase?.() === tokenAddress) ||
+        asset.symbol.toUpperCase() === token.symbol.toUpperCase()
+      );
+      const liveMarketData = tokenMarketData[`live:${token.id}`] || (heldAsset ? tokenMarketData[heldAsset.id] : null);
       return {
         id: token.id,
         symbol: token.symbol,
         name: token.name,
-        price: md?.usd || 0,
-        change24h: md?.usd_24h_change ?? null,
+        price: md?.usd || heldAsset?.price || 0,
+        change24h: liveMarketData?.priceChange24h ?? md?.usd_24h_change ?? heldAsset?.priceChange24h ?? null,
+        marketCap: liveMarketData?.marketCap ?? liveMarketData?.fdv ?? null,
+        volume24h: liveMarketData?.volume24h ?? null,
+        accent: token.accent,
         logo: token.logo,
         href: token.href
       };
     });
-  }, [coreLiveTokens, prices]);
+  }, [coreLiveTokens, currentAssets, prices, tokenMarketData]);
 
   return (
     <div className="min-h-screen font-sans flex" style={{ fontSize: 14, background: 'var(--bg-void)', color: 'var(--fg)' }}>
@@ -3477,32 +3518,66 @@ export default function App() {
                              v >= 1e6 ? `$${(v/1e6).toFixed(2)}M` :
                              v >= 1e3 ? `$${(v/1e3).toFixed(2)}K` :
                              `$${v.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+                           const fmtMarket = (v?: number | null) =>
+                             v == null ? '—' :
+                             v >= 1e12 ? `$${(v/1e12).toFixed(2)}T` :
+                             v >= 1e9 ? `$${(v/1e9).toFixed(2)}B` :
+                             v >= 1e6 ? `$${(v/1e6).toFixed(2)}M` :
+                             v >= 1e3 ? `$${(v/1e3).toFixed(1)}K` :
+                             `$${v.toFixed(0)}`;
                            return (
                              <div className="hero-holdings-wrap">
                                <div className="hero-live-prices-panel">
-                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                                   <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>Live Prices</span>
-                                   <span style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>Core market snapshot</span>
+                                 <div className="hero-live-prices-head">
+                                   <div>
+                                     <div className="hero-live-prices-title">Live Prices</div>
+                                     <div className="hero-live-prices-subtitle">Core PulseChain tokens · live market data</div>
+                                   </div>
+                                   <button className="hero-live-holdings-link" onClick={() => setActiveTab('assets')}>
+                                     My Holdings <ChevronRight size={12} />
+                                   </button>
                                  </div>
                                  <div className="hero-live-prices-grid">
                                    {topHoldingCards.map((token) => {
                                      const change = token.change24h ?? 0;
-                                     const changeColor = token.change24h == null ? 'var(--fg-subtle)' : (change >= 0 ? t.green : t.red);
-                                     const Wrapper = token.href ? 'a' : 'div';
-                                     const wrapperProps = token.href ? { href: token.href, target: '_blank', rel: 'noopener noreferrer' } : {};
+                                     const isUp = change >= 0;
                                      return (
-                                       <Wrapper key={token.id} {...wrapperProps as any} className="hero-live-price-item" style={{ textDecoration: 'none', color: 'inherit' }}>
-                                         <div style={{ width: 24, height: 24, borderRadius: '50%', overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--bg-elevated)', flexShrink: 0 }}>
-                                           {token.logo ? <img src={token.logo} alt={token.symbol} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
+                                       <button key={token.id} type="button" className="hero-live-price-item" onClick={() => setShowMarketWatch(true)}>
+                                         {token.accent && <div className="hero-live-accent-bar" style={{ background: token.accent }} />}
+                                         <div className="hero-live-price-top">
+                                           <div className="hero-live-token-lockup">
+                                             <div className="hero-live-token-logo">
+                                               {token.logo ? <img src={token.logo} alt={token.symbol} /> : token.symbol.slice(0, 1)}
+                                             </div>
+                                             <div className="hero-live-token-copy">
+                                               <div className="hero-live-symbol">{token.symbol}</div>
+                                               <div className="hero-live-name">{token.name}</div>
+                                             </div>
+                                           </div>
+                                           {token.change24h != null && (
+                                             <span className={isUp ? 'hero-live-change-pill up' : 'hero-live-change-pill down'}>
+                                               {isUp ? '+' : ''}{change.toFixed(1)}%
+                                             </span>
+                                           )}
                                          </div>
-                                         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg)' }}>{token.symbol}</span>
-                                         <span style={{ fontSize: 11, fontFamily: 'JetBrains Mono, monospace', color: 'var(--fg-subtle)' }}>{fmtPrice(token.price)}</span>
+                                         <div className="hero-live-price-label">Price</div>
+                                         <div className="hero-live-price-number">{fmtPrice(token.price)}</div>
                                          {token.change24h != null && (
-                                           <span style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 700, color: changeColor }}>
-                                             {change >= 0 ? '+' : ''}{change.toFixed(1)}%
-                                           </span>
+                                           <div className={isUp ? 'hero-live-change-line up' : 'hero-live-change-line down'}>
+                                             {isUp ? '▲' : '▼'} {Math.abs(change).toFixed(2)}% <span>24h</span>
+                                           </div>
                                          )}
-                                       </Wrapper>
+                                         <div className="hero-live-market-row">
+                                           <div>
+                                             <span>Market Cap</span>
+                                             <strong>{fmtMarket(token.marketCap)}</strong>
+                                           </div>
+                                           <div>
+                                             <span>Volume 24h</span>
+                                             <strong>{fmtMarket(token.volume24h)}</strong>
+                                           </div>
+                                         </div>
+                                       </button>
                                      );
                                    })}
                                  </div>
