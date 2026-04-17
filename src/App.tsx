@@ -596,6 +596,7 @@ export default function App() {
   const fmtBigNum = (n: number) => Math.round(n).toLocaleString('en-US').replace(/,/g, ' ');
   const fmtDec = (n: number, dp = 2) => n.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp });
   const fmtTok = (n: number) => n > 1e6 ? `${(n/1e6).toFixed(2)}M` : n > 1000 ? `${(n/1000).toFixed(2)}K` : n.toLocaleString(undefined, { maximumFractionDigits: 4 });
+  const fmtCompact = (n: number) => n >= 1e9 ? `${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : n.toLocaleString(undefined, { maximumFractionDigits: 0 });
 
   // ── CSV Export helper ──────────────────────────────────────────────────────
   const exportCSV = (filename: string, headers: string[], rows: (string | number)[][]) => {
@@ -644,7 +645,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeWallet, setActiveWallet] = useState<string | null>(null);
   const isFetchingRef = useRef(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'assets' | 'stakes' | 'history' | 'tracker' | 'wallets' | 'defi'>('overview');
+  const [activeTab, setActiveTab] = useState<'home' | 'overview' | 'assets' | 'stakes' | 'history' | 'tracker' | 'wallets' | 'defi'>('home');
   const [selectedWalletAddr, setSelectedWalletAddr] = useState<string>('all');
   const [walletAssets, setWalletAssets] = useState<Record<string, Asset[]>>(() => tryReadCache<Record<string, Asset[]>>('pulseport_cache_wallet_assets') ?? {});
   const [walletChainFilter, setWalletChainFilter] = useState<'all' | 'pulsechain' | 'ethereum' | 'base'>('all');
@@ -3252,7 +3253,7 @@ export default function App() {
   ]), []);
 
   useEffect(() => {
-    if (activeTab !== 'overview') return;
+    if (activeTab !== 'overview' && activeTab !== 'home') return;
     const missing = coreLiveTokens.filter(token => !tokenMarketData[`live:${token.id}`]);
     if (missing.length === 0) return;
     const WPLS = '0xa1077a294dde1b09bb078844df40758a5d0f9a27';
@@ -3305,6 +3306,61 @@ export default function App() {
     });
   }, [coreLiveTokens, currentAssets, prices, tokenMarketData]);
 
+  const frontPagePortfolioRows = useMemo(() => {
+    const assets = currentAssets.length > 0 ? currentAssets : MOCK_ASSETS;
+    return assets
+      .filter(asset => asset.value > 0)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+  }, [currentAssets]);
+
+  const frontPageChainRows = useMemo(() => {
+    const entries = Object.entries(summary.chainDistribution)
+      .map(([chain, value]) => ({ chain, value: value as number }))
+      .filter(row => row.value > 0)
+      .sort((a, b) => b.value - a.value);
+    if (entries.length > 0) return entries;
+    return [
+      { chain: 'pulsechain', value: 74 },
+      { chain: 'ethereum', value: 18 },
+      { chain: 'base', value: 8 },
+    ];
+  }, [summary.chainDistribution]);
+
+  const frontPageMarketStats = useMemo(() => {
+    const totalVolume = topHoldingCards.reduce((sum, token) => sum + (token.volume24h || 0), 0);
+    const pulseCoins = topHoldingCards.filter(token => token.id !== 'eHEX');
+    const strongest = [...topHoldingCards]
+      .filter(token => token.change24h != null)
+      .sort((a, b) => (b.change24h ?? -Infinity) - (a.change24h ?? -Infinity))[0];
+    const weakest = [...topHoldingCards]
+      .filter(token => token.change24h != null)
+      .sort((a, b) => (a.change24h ?? Infinity) - (b.change24h ?? Infinity))[0];
+
+    return [
+      {
+        label: 'Core Pulse assets',
+        value: `${pulseCoins.length}`,
+        detail: 'PLS, PLSX, HEX, INC, PRVX',
+      },
+      {
+        label: 'Tracked 24h volume',
+        value: totalVolume > 0 ? `$${fmtCompact(totalVolume)}` : 'Syncing',
+        detail: 'Across live core pairs',
+      },
+      {
+        label: 'Strongest today',
+        value: strongest ? strongest.symbol : 'Live',
+        detail: strongest?.change24h != null ? `${strongest.change24h >= 0 ? '+' : ''}${strongest.change24h.toFixed(2)}%` : 'Waiting for market data',
+      },
+      {
+        label: 'Needs attention',
+        value: weakest ? weakest.symbol : 'Wallet',
+        detail: weakest?.change24h != null ? `${weakest.change24h >= 0 ? '+' : ''}${weakest.change24h.toFixed(2)}%` : 'Paste one address to start',
+      },
+    ];
+  }, [topHoldingCards]);
+
   return (
     <div className="min-h-screen font-sans flex" style={{ fontSize: 14, background: 'var(--bg-void)', color: 'var(--fg)' }}>
       {/* ── SIDEBAR BACKDROP (mobile) ── */}
@@ -3333,6 +3389,7 @@ export default function App() {
         {/* Nav */}
         <nav style={{ padding: '10px 8px' }} className="flex flex-col gap-0.5">
           {([
+            { id: 'home', label: 'Home', icon: Activity },
             { id: 'overview', label: 'Overview', icon: LayoutDashboard },
             { id: 'assets',   label: 'Holdings',           icon: Coins },
             { id: 'stakes',   label: 'HEX Stakes',         icon: Lock },
@@ -3556,7 +3613,7 @@ export default function App() {
         </header>
 
         {/* ── Wallet Selector Bar (sticky sub-header, all tabs except Wallets which has its own) ── */}
-        {wallets.length > 0 && activeTab !== 'wallets' && (
+        {wallets.length > 0 && activeTab !== 'wallets' && activeTab !== 'home' && (
           <div className="wallet-selector-subheader">
             <WalletSelector
               wallets={wallets.map(w => w.address)}
@@ -3573,6 +3630,171 @@ export default function App() {
           <div style={{ maxWidth: 1400, margin: '0 auto' }} className="space-y-5 px-3 py-4 sm:px-5 sm:py-6">
 
           <AnimatePresence mode="wait">
+            {activeTab === 'home' && (
+              <motion.div key="home" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="front-page">
+                <section className="front-hero">
+                  <div className="front-data-field" aria-hidden="true">
+                    {Array.from({ length: 18 }).map((_, i) => (
+                      <span key={i} style={{ ['--i' as any]: i }} />
+                    ))}
+                  </div>
+
+                  <div className="front-hero-copy">
+                    <div className="front-eyebrow">
+                      <span className="status-dot status-dot-live" />
+                      Live PulseChain radar
+                    </div>
+                    <h1>PulseChain market data up front. Portfolio truth one click deeper.</h1>
+                    <p>
+                      Track core coins, wallet value, HEX stakes, liquidity positions, bridge moves, and chain exposure from one fast PulseChain command center.
+                    </p>
+                    <div className="front-actions">
+                      <button className="btn-primary front-primary-action" onClick={() => wallets.length > 0 ? setActiveTab('overview') : setIsAddingWallet(true)}>
+                        {wallets.length > 0 ? 'Open portfolio' : 'Track wallet'} <ArrowRight size={15} />
+                      </button>
+                      <button className="btn-ghost front-secondary-action" onClick={() => setShowMarketWatch(true)}>
+                        Market watch <Activity size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="front-market-board">
+                    <div className="front-board-head">
+                      <div>
+                        <span>Core pulse</span>
+                        <strong>{lastUpdated ? `${timeSinceLastUpdate}s ago` : 'Live sync'}</strong>
+                      </div>
+                      <button onClick={fetchPortfolio} className="front-refresh-btn">
+                        <RefreshCcw size={13} className={isLoading ? 'animate-spin' : ''} />
+                        Refresh
+                      </button>
+                    </div>
+                    <div className="front-token-grid">
+                      {topHoldingCards.slice(0, 6).map((token, i) => (
+                        <button
+                          key={token.id}
+                          className="front-token-tile"
+                          onClick={() => setShowMarketWatch(true)}
+                          style={{ animationDelay: `${i * 55}ms` }}
+                        >
+                          <span className="front-token-accent" style={{ background: token.accent }} />
+                          <span className="front-token-logo">
+                            {token.logo ? <img src={token.logo} alt={token.symbol} /> : token.symbol.slice(0, 1)}
+                          </span>
+                          <span className="front-token-meta">
+                            <strong>{token.symbol}</strong>
+                            <small>{token.name}</small>
+                          </span>
+                          <span className="front-token-price">
+                            <strong>{fmtPrice(token.price)}</strong>
+                            <small className={(token.change24h ?? 0) >= 0 ? 'is-up' : 'is-down'}>
+                              {token.change24h == null ? 'Live' : `${token.change24h >= 0 ? '+' : ''}${token.change24h.toFixed(2)}%`}
+                            </small>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+
+                <section className="front-section front-section-tight">
+                  <div className="front-section-head">
+                    <span>Market pulse</span>
+                    <h2>Read the chain before you open a wallet.</h2>
+                  </div>
+                  <div className="front-stat-strip">
+                    {frontPageMarketStats.map(stat => (
+                      <div className="front-stat" key={stat.label}>
+                        <span>{stat.label}</span>
+                        <strong>{stat.value}</strong>
+                        <small>{stat.detail}</small>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="front-split-section">
+                  <div className="front-portfolio-preview">
+                    <div className="front-section-head">
+                      <span>Your wallet</span>
+                      <h2>{wallets.length > 0 ? 'Your portfolio is ready.' : 'Paste a wallet. See the full picture.'}</h2>
+                    </div>
+                    <div className="front-value-row">
+                      <div>
+                        <span>Total value</span>
+                        <strong>${summary.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong>
+                      </div>
+                      <div>
+                        <span>24h move</span>
+                        <strong className={summary.pnl24h >= 0 ? 'is-up' : 'is-down'}>
+                          {summary.pnl24h >= 0 ? '+' : '-'}${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        </strong>
+                      </div>
+                    </div>
+                    <div className="front-holding-list">
+                      {frontPagePortfolioRows.map(asset => {
+                        const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()] || (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()] || getTokenLogoUrl(asset);
+                        return (
+                          <button key={asset.id} className="front-holding-row" onClick={() => { setActiveTab('assets'); setOverviewTokenSearch(asset.symbol); }}>
+                            <span className="front-holding-logo">{logo ? <img src={logo} alt={asset.symbol} /> : asset.symbol.slice(0, 1)}</span>
+                            <span>
+                              <strong>{asset.symbol}</strong>
+                              <small>{asset.chain}</small>
+                            </span>
+                            <span>
+                              <strong>${asset.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong>
+                              <small className={(asset.pnl24h ?? asset.priceChange24h ?? 0) >= 0 ? 'is-up' : 'is-down'}>
+                                {(asset.pnl24h ?? asset.priceChange24h ?? 0) >= 0 ? '+' : ''}{(asset.pnl24h ?? asset.priceChange24h ?? 0).toFixed(2)}%
+                              </small>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <button className="front-inline-link" onClick={() => wallets.length > 0 ? setActiveTab('overview') : setIsAddingWallet(true)}>
+                      {wallets.length > 0 ? 'Open the full portfolio' : 'Add your first wallet'} <ChevronRight size={14} />
+                    </button>
+                  </div>
+
+                  <div className="front-intel-panel">
+                    <div className="front-section-head">
+                      <span>Portfolio intel</span>
+                      <h2>Holdings, stakes, liquidity, and bridge moves stay connected.</h2>
+                    </div>
+                    <div className="front-chain-stack">
+                      {frontPageChainRows.map(row => {
+                        const pct = summary.totalValue > 0 ? (row.value / summary.totalValue) * 100 : row.value;
+                        const chainColor = CHAIN_COLORS[row.chain] || 'var(--accent)';
+                        return (
+                          <div className="front-chain-row" key={row.chain}>
+                            <div>
+                              <span style={{ background: chainColor }} />
+                              <strong>{row.chain.charAt(0).toUpperCase() + row.chain.slice(1)}</strong>
+                            </div>
+                            <small>{Math.max(0, pct).toFixed(1)}%</small>
+                            <em><i style={{ width: `${Math.min(100, Math.max(4, pct))}%`, background: chainColor }} /></em>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="front-intel-links">
+                      {[
+                        { label: 'HEX stakes', tab: 'stakes' as const, icon: Lock },
+                        { label: 'DeFi positions', tab: 'defi' as const, icon: Droplets },
+                        { label: 'Bridge activity', tab: 'history' as const, icon: History },
+                        { label: 'Wallets', tab: 'wallets' as const, icon: WalletIcon },
+                      ].map(({ label, tab, icon: Icon }) => (
+                        <button key={label} onClick={() => setActiveTab(tab)}>
+                          <Icon size={15} />
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+              </motion.div>
+            )}
+
             {activeTab === 'overview' && (
               <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
 
@@ -5932,10 +6154,11 @@ export default function App() {
         }}>
         <div className="mobile-bottom-nav-inner">
         {([
-          { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+          { id: 'home',     label: 'Home',              icon: Activity },
+          { id: 'overview', label: 'Portfolio',         icon: LayoutDashboard },
           { id: 'assets',   label: 'Holdings',           icon: Coins },
-          { id: 'stakes',   label: 'HEX Stakes',         icon: Lock },
-          { id: 'defi',     label: 'DeFi Positions',     icon: Droplets },
+          { id: 'stakes',   label: 'Stakes',            icon: Lock },
+          { id: 'defi',     label: 'DeFi',              icon: Droplets },
         ] as const).map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setActiveTab(id)}
             className="mobile-nav-tab-btn"
