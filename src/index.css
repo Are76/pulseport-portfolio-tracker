@@ -1171,6 +1171,43 @@ textarea:focus-visible,
     grid-template-columns: 1fr;
     gap: 4px;
   }
+  /* Profit Planner drops below stats on mobile */
+  .hero-grid-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  /* Reduce hero card padding on small screens */
+  .hero-card {
+    padding: 18px 16px !important;
+    border-radius: 14px !important;
+  }
+  /* Compact live price cards on mobile */
+  .hero-live-price-item {
+    padding: 10px;
+    min-height: 0;
+  }
+  .hero-live-prices-panel {
+    padding: 12px 12px 16px;
+  }
+}
+
+@media (max-width: 380px) {
+  /* Single column live prices on very small phones */
+  .hero-live-prices-grid {
+    grid-template-columns: 1fr;
+  }
+  /* Extra compact hero card */
+  .hero-card {
+    padding: 14px 12px !important;
+  }
+}
+
+/* Delete/edit buttons always visible on touch-only devices */
+@media (hover: none) {
+  .touch-visible-actions {
+    opacity: 1 !important;
+  }
 }
 
 /* ── VALUE HERO ──────────────────────────────────────────────────────── */
@@ -1833,6 +1870,8 @@ textarea:focus-visible,
   /* hide scrollbar on all platforms for a clean look */
   scrollbar-width: none;
   -ms-overflow-style: none;
+  /* allow horizontal panning; pills use manipulation to register taps */
+  touch-action: pan-x;
 }
 .wallet-selector-bar::-webkit-scrollbar {
   display: none;
@@ -1857,6 +1896,7 @@ textarea:focus-visible,
   cursor: pointer;
   transition: all 0.14s var(--ease-spring);
   white-space: nowrap;
+  touch-action: manipulation;
   user-select: none;
 }
 .wallet-pill:hover {

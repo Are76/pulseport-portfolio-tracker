@@ -3219,7 +3219,7 @@ export default function App() {
                           <code style={{ fontSize: 10, color: 'var(--fg-muted)' }}>{w.address.slice(0,6)}…{w.address.slice(-4)}</code>
                         </div>
                       </div>
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                      <div className="touch-visible-actions opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                         <button onClick={e => { e.stopPropagation(); setEditingWalletAddress(w.address); setEditWalletName(w.name); }}
                           style={{ color: 'var(--fg-muted)', padding: 3, cursor: 'pointer', border: 'none', background: 'none', borderRadius: 4 }}
                           onMouseOver={e => (e.currentTarget.style.color = 'var(--accent)')}
@@ -3358,8 +3358,8 @@ export default function App() {
           </div>
         </header>
 
-        {/* ── Wallet Selector Bar (sticky sub-header, all tabs) ── */}
-        {wallets.length > 0 && (
+        {/* ── Wallet Selector Bar (sticky sub-header, all tabs except Wallets which has its own) ── */}
+        {wallets.length > 0 && activeTab !== 'wallets' && (
           <div className="wallet-selector-subheader">
             <WalletSelector
               wallets={wallets.map(w => w.address)}
@@ -3414,7 +3414,7 @@ export default function App() {
                 {(() => {
                    return (
                      <>
-                     <div className={theme === 'dark' ? 'hero-bg-dark' : 'hero-bg-light'} style={{
+                     <div className={`hero-card ${theme === 'dark' ? 'hero-bg-dark' : 'hero-bg-light'}`} style={{
                        border: `1px solid rgba(0,255,159,0.12)`, borderRadius: 20, padding: '28px 28px', position: 'relative', overflow: 'hidden',
                        boxShadow: '0 0 0 1px rgba(0,255,159,0.04), 0 8px 40px rgba(0,0,0,0.5)'
                      }}>
