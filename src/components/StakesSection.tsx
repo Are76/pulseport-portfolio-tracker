@@ -14,11 +14,14 @@ export interface StakesSectionProps {
   hexUsdPrice: number;
   phexUsdPrice: number;
   ehexUsdPrice: number;
+  liquidPHex?: number;
+  liquidEHex?: number;
   walletAddresses?: string[];
   walletLabels?: Record<string, string>;
 }
 
 type StakeFilter = 'all' | 'phex' | 'ehex' | 'ending-soon' | 'matured';
+type StakeChain = 'pulsechain' | 'ethereum';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -35,6 +38,14 @@ function fmtUsd(n: number): string {
   return '$' + n.toLocaleString(undefined, { maximumFractionDigits: 0 });
 }
 
+function fmtHexExact(n: number): string {
+  return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtUsdExact(n: number): string {
+  return '$' + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 function shortenAddr(addr: string): string {
   return addr.slice(0, 6) + '…' + addr.slice(-4);
 }
@@ -43,6 +54,14 @@ function stakeMaturityHex(st: HexStake): number {
   const tS = st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12;
   const rate = st.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
   return (st.stakedHex ?? 0) + tS * (st.stakedDays ?? 0) * rate;
+}
+
+function stakeAccruedYieldHex(st: HexStake): number {
+  const tS = st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12;
+  const rate = st.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
+  const daysLeft = Math.max(0, st.daysRemaining ?? 0);
+  const daysStakedSoFar = Math.max(0, (st.stakedDays ?? 0) - daysLeft);
+  return tS * daysStakedSoFar * rate;
 }
 
 // ── StakingPie sub-component ──────────────────────────────────────────────────
@@ -192,6 +211,8 @@ export function StakesSection({
   hexUsdPrice,
   phexUsdPrice,
   ehexUsdPrice,
+  liquidPHex = 0,
+  liquidEHex = 0,
   walletLabels = {},
 }: StakesSectionProps) {
   const [stakeFilter, setStakeFilter] = useState<StakeFilter>('all');
@@ -226,6 +247,36 @@ export function StakesSection({
   const totalMaturityValueUsd = stakes.reduce((s, st) => s + (st.totalValueUsd ?? st.estimatedValueUsd ?? 0), 0);
   const totalMaturityHex = stakes.reduce((s, st) => s + stakeMaturityHex(st), 0);
   const totalTShares = stakes.reduce((s, st) => s + (st.tShares ?? 0), 0);
+
+  const chainPerformance = ([
+    { chain: 'pulsechain' as StakeChain, label: 'PulseChain', token: 'pHEX', price: phexUsdPrice, color: 'var(--chain-pulse)', stakes: pHexStakes, liquidHex: liquidPHex },
+    { chain: 'ethereum' as StakeChain, label: 'Ethereum', token: 'eHEX', price: ehexUsdPrice, color: 'var(--chain-eth)', stakes: eHexStakes, liquidHex: liquidEHex },
+  ]).map(({ chain, label, token, price, color, stakes: chainStakes, liquidHex }) => {
+    const active = chainStakes.filter(s => (s.daysRemaining ?? 0) > 0);
+    const matured = chainStakes.filter(s => (s.daysRemaining ?? 0) <= 0);
+    const stakedHex = chainStakes.reduce((sum, st) => sum + (st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8), 0);
+    const tShares = chainStakes.reduce((sum, st) => sum + (st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12), 0);
+    const rate = chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
+    const dailyHex = active.reduce((sum, st) => sum + (st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12) * rate, 0);
+    const yieldToDateHex = active.reduce((sum, st) => sum + stakeAccruedYieldHex(st), 0);
+    const totalActiveHex = liquidHex + stakedHex + yieldToDateHex;
+
+    return {
+      chain,
+      label,
+      token,
+      price,
+      color,
+      activeCount: active.length,
+      maturedCount: matured.length,
+      liquidHex,
+      stakedHex,
+      tShares,
+      dailyHex,
+      yieldToDateHex,
+      totalActiveHex,
+    };
+  });
 
   // ── Filter stakes ───────────────────────────────────────────────────────────
 
@@ -346,6 +397,43 @@ export function StakesSection({
       </div>
 
       {/* ── 2. HEX Totals ────────────────────────────────────────────────── */}
+      <div className="stakes-performance-grid">
+        {chainPerformance.map(chain => (
+          <div key={chain.chain} className="stakes-performance-card" style={{ ['--stake-chain-color' as string]: chain.color }}>
+            <div className="stakes-performance-head">
+              <div>
+                <div className="stakes-performance-kicker">{chain.label} · {chain.token}</div>
+                <div className="stakes-performance-title">{chain.activeCount} active stakes</div>
+              </div>
+              <div className="stakes-performance-tshares">
+                <strong>{chain.tShares.toLocaleString(undefined, { maximumFractionDigits: 6 })}</strong>
+                <span>T-Shares</span>
+              </div>
+            </div>
+
+            <div className="stakes-performance-main">
+              {[
+                { label: 'Liquid', hex: chain.liquidHex, tone: 'muted' },
+                { label: 'Staked', hex: chain.stakedHex, tone: 'base' },
+                { label: 'Active Yield', hex: chain.yieldToDateHex, tone: 'positive' },
+                { label: 'Total', hex: chain.totalActiveHex, tone: 'strong' },
+              ].map(item => (
+                <div key={item.label} className={`stakes-balance-row ${item.tone}`}>
+                  <span>{item.label}</span>
+                  <strong>{fmtHexExact(item.hex)}</strong>
+                  <small>{fmtUsdExact(item.hex * chain.price)}</small>
+                </div>
+              ))}
+            </div>
+
+            <div className="stakes-performance-footer">
+              <span>Daily yield ~{fmtHex(chain.dailyHex)} {chain.token}/day</span>
+              <span>{fmtUsd(chain.dailyHex * chain.price)} · {chain.maturedCount} inactive</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
       <div className="stakes-totals-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         {/* pHEX */}
         <div className="stakes-metric-card">

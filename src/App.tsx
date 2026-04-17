@@ -3994,10 +3994,7 @@ export default function App() {
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {(['all', 'pulsechain', 'ethereum', 'base'] as const).map(c => (
                       <button key={c} onClick={() => setWalletChainFilter(c)}
-                        style={{ padding: '5px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: '1px solid', transition: 'all .12s',
-                          background: walletChainFilter === c ? 'var(--fg)' : 'transparent',
-                          color: walletChainFilter === c ? 'var(--bg-surface)' : 'var(--fg-muted)',
-                          borderColor: walletChainFilter === c ? 'var(--fg)' : 'var(--border)' }}>
+                        className={`filter-pill${walletChainFilter === c ? ' active' : ''}`}>
                         {c === 'all' ? 'All' : c === 'pulsechain' ? 'PulseChain' : c === 'ethereum' ? 'Ethereum' : 'Base'}
                       </button>
                     ))}
@@ -4585,13 +4582,7 @@ export default function App() {
                     ] as { value: string; label: string }[]).map(({ value, label }) => (
                       <button key={value}
                         onClick={() => setTxTypeFilter(value)}
-                        style={{
-                          padding: '5px 16px', borderRadius: 999, fontSize: 12, fontWeight: 700,
-                          cursor: 'pointer', transition: 'all .12s',
-                          background: txTypeFilter === value ? 'var(--fg)' : 'transparent',
-                          color: txTypeFilter === value ? 'var(--bg)' : 'var(--fg-muted)',
-                          border: `1px solid ${txTypeFilter === value ? 'var(--fg)' : 'var(--border)'}`,
-                        }}>
+                        className={`filter-pill${txTypeFilter === value ? ' active' : ''}`}>
                         {label}
                       </button>
                     ))}
@@ -4775,14 +4766,30 @@ export default function App() {
 
             {activeTab === 'stakes' && (
               <motion.div key="stakes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                {(() => {
+                  const HEX_ADDR = '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39';
+                  const pHexLiquid = currentAssets
+                    .filter(a => a.chain === 'pulsechain' && (a as any).address?.toLowerCase() === HEX_ADDR)
+                    .reduce((sum, asset) => sum + asset.balance, 0);
+                  const eHexLiquid = currentAssets
+                    .filter(a =>
+                      (a.chain === 'ethereum' && (a as any).address?.toLowerCase() === HEX_ADDR) ||
+                      (a.chain === 'pulsechain' && a.symbol.toLowerCase() === 'ehex')
+                    )
+                    .reduce((sum, asset) => sum + asset.balance, 0);
+                  return (
                 <StakesSection
                   stakes={currentStakes}
                   hexUsdPrice={prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0}
                   phexUsdPrice={prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0}
                   ehexUsdPrice={prices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['hex']?.usd || 0}
+                  liquidPHex={pHexLiquid}
+                  liquidEHex={eHexLiquid}
                   walletAddresses={wallets.map(w => w.address)}
                   walletLabels={Object.fromEntries(wallets.filter(w => w.name).map(w => [w.address, w.name!]))}
                 />
+                  );
+                })()}
               </motion.div>
             )}
 
@@ -4926,19 +4933,19 @@ export default function App() {
               </div>
               {!isCollapsed('received-assets') && (<>
               {receivedAssetsData.list.length > 0 && (
-                <div tabIndex={0} style={{ display: 'flex', gap: 1, borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)', overflowX: 'auto' }} className="custom-scrollbar">
+                <div tabIndex={0} className="received-asset-summary-row custom-scrollbar">
                   {(Object.entries(receivedAssetsData.byAsset) as [string, { amount: number; valueUsd: number }][]).map(([sym, data]) => (
-                    <div key={sym} style={{ flex: '1 0 100px', padding: '10px 16px', borderRight: '1px solid var(--border)' }}>
-                      <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 4, fontWeight: 700, letterSpacing: '.5px' }}>{sym}</div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>
+                    <div key={sym} className="received-asset-summary-card">
+                      <div className="received-asset-symbol">{sym}</div>
+                      <div className="received-asset-amount">
                         {sym === 'ETH' ? data.amount.toLocaleString(undefined, { maximumFractionDigits: 4 }) : data.amount.toLocaleString(undefined, { maximumFractionDigits: 0 })} {sym}
                       </div>
-                      <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>${data.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                      <div className="received-asset-value">${data.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                     </div>
                   ))}
                 </div>
               )}
-              <div style={{ maxHeight: 480, overflowY: 'auto' }} className="custom-scrollbar">
+              <div className="received-history-list custom-scrollbar">
                 {receivedAssetsData.list.length === 0 ? (
                   <div style={{ padding: '48px 20px', textAlign: 'center', color: 'var(--fg-muted)', fontSize: 13 }}>
                     {wallets.length === 0
@@ -5184,10 +5191,7 @@ export default function App() {
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   {(['all', 'pulsechain', 'ethereum', 'base'] as const).map(c => (
                     <button key={c} onClick={() => setWalletChainFilter(c)}
-                      style={{ padding: '5px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: '1px solid', transition: 'all .12s',
-                        background: walletChainFilter === c ? 'var(--fg)' : 'transparent',
-                        color: walletChainFilter === c ? 'var(--bg-surface)' : 'var(--fg-muted)',
-                        borderColor: walletChainFilter === c ? 'var(--fg)' : 'var(--border)' }}>
+                      className={`filter-pill${walletChainFilter === c ? ' active' : ''}`}>
                       {c === 'all' ? 'All' : c === 'pulsechain' ? 'PulseChain' : c === 'ethereum' ? 'Ethereum' : 'Base'}
                     </button>
                   ))}
