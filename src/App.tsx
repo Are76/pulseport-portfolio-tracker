@@ -3610,7 +3610,17 @@ export default function App() {
                                      <WalletIcon size={28} style={{ opacity: 0.35 }} />
                                      <span style={{ fontSize: 13 }}>Add wallets to see holdings</span>
                                    </div>
-                                 ) : (
+                                 ) : (() => {
+                                   const plsPriceUsd = prices['pulsechain']?.usd || 0;
+                                   const ethPriceUsd = prices['ethereum']?.usd || 0;
+                                   const fmtNative = (n: number) =>
+                                     n >= 1e9 ? `${(n/1e9).toFixed(2)}B` :
+                                     n >= 1e6 ? `${(n/1e6).toFixed(2)}M` :
+                                     n >= 1e3 ? `${(n/1e3).toFixed(1)}K` :
+                                     n >= 1 ? n.toFixed(2) :
+                                     n >= 0.01 ? n.toFixed(4) :
+                                     n.toFixed(6);
+                                   return (
                                    <div className="hero-holdings-items">
                                      <div className="data-table-scroll">
                                        <table className="data-table hero-holdings-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -3638,6 +3648,10 @@ export default function App() {
                                              const lowerAddress = asset.address?.toLowerCase?.() ?? '';
                                              const logo = STATIC_LOGOS[lowerAddress] || asset.logoUrl || tokenLogos[lowerAddress] || getTokenLogoUrl(asset);
                                              const share = ((asset.value / (summary.totalValue || 1)) * 100);
+                                             const isEthChain = asset.chain === 'ethereum' || asset.chain === 'base';
+                                             const nativePriceUsd = isEthChain ? ethPriceUsd : plsPriceUsd;
+                                             const nativeSymbol = isEthChain ? 'ETH' : 'PLS';
+                                             const nativePrice = asset.price > 0 && nativePriceUsd > 0 ? asset.price / nativePriceUsd : null;
                                              return (
                                                <tr
                                                  key={asset.id}
@@ -3676,7 +3690,16 @@ export default function App() {
                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
                                                          <div style={{ width: 5, height: 5, borderRadius: '50%', background: CHAIN_COLORS[asset.chain] || '#555', flexShrink: 0 }} />
                                                          <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>
-                                                           {asset.symbol}{asset.price > 0 && <> · <PriceDisplay price={asset.price} /></>}
+                                                           {asset.symbol}
+                                                           {asset.price > 0 && (
+                                                             <>
+                                                               {' · '}
+                                                               <PriceDisplay price={asset.price} />
+                                                               {nativePrice !== null && (
+                                                                 <span style={{ color: 'var(--fg-muted)' }}> / {fmtNative(nativePrice)} {nativeSymbol}</span>
+                                                               )}
+                                                             </>
+                                                           )}
                                                          </span>
                                                        </div>
                                                      </div>
@@ -3702,7 +3725,8 @@ export default function App() {
                                        </table>
                                      </div>
                                    </div>
-                                 )}
+                                   );
+                                 })()}
 
                 {/* ── MY HEX HOLDINGS ── */}
                 {(() => {
