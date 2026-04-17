@@ -3527,75 +3527,6 @@ export default function App() {
                              `$${v.toFixed(0)}`;
                            return (
                              <div className="hero-holdings-wrap">
-                               <div className="hero-live-prices-panel">
-                                 <div className="hero-live-prices-head">
-                                   <div>
-                                     <div className="hero-live-prices-title">Live Prices</div>
-                                     <div className="hero-live-prices-subtitle">Core PulseChain tokens · live market data</div>
-                                   </div>
-                                   <button className="hero-live-holdings-link" onClick={() => setActiveTab('assets')}>
-                                     My Holdings <ChevronRight size={12} />
-                                   </button>
-                                 </div>
-                                 <div className="hero-live-prices-grid">
-                                   {topHoldingCards.map((token) => {
-                                     const change = token.change24h ?? 0;
-                                     const isUp = change >= 0;
-                                     return (
-                                       <button key={token.id} type="button" className="hero-live-price-item" onClick={() => setShowMarketWatch(true)}>
-                                         {token.accent && <div className="hero-live-accent-bar" style={{ background: token.accent }} />}
-                                         <div className="hero-live-price-top">
-                                           <div className="hero-live-token-lockup">
-                                             <div className="hero-live-token-logo">
-                                               {token.logo ? (
-                                                 <>
-                                                   <img
-                                                     src={token.logo}
-                                                     alt={token.symbol}
-                                                     onError={(e) => {
-                                                       e.currentTarget.style.display = 'none';
-                                                       const fallback = e.currentTarget.nextElementSibling as HTMLElement | null;
-                                                       if (fallback) fallback.style.display = 'inline';
-                                                     }}
-                                                   />
-                                                   <span style={{ display: 'none' }}>{token.symbol.slice(0, 1)}</span>
-                                                 </>
-                                               ) : token.symbol.slice(0, 1)}
-                                             </div>
-                                             <div className="hero-live-token-copy">
-                                               <div className="hero-live-symbol">{token.symbol}</div>
-                                               <div className="hero-live-name">{token.name}</div>
-                                             </div>
-                                           </div>
-                                           {token.change24h != null && (
-                                             <span className={isUp ? 'hero-live-change-pill up' : 'hero-live-change-pill down'}>
-                                               {isUp ? '+' : ''}{change.toFixed(1)}%
-                                             </span>
-                                           )}
-                                         </div>
-                                         <div className="hero-live-price-label">Price</div>
-                                         <div className="hero-live-price-number">{fmtPrice(token.price)}</div>
-                                         {token.change24h != null && (
-                                           <div className={isUp ? 'hero-live-change-line up' : 'hero-live-change-line down'}>
-                                             {isUp ? '▲' : '▼'} {Math.abs(change).toFixed(2)}% <span>24h</span>
-                                           </div>
-                                         )}
-                                         <div className="hero-live-market-row">
-                                           <div>
-                                             <span>Market Cap</span>
-                                             <strong>{fmtMarket(token.marketCap)}</strong>
-                                           </div>
-                                           <div>
-                                             <span>Volume 24h</span>
-                                             <strong>{fmtMarket(token.volume24h)}</strong>
-                                           </div>
-                                         </div>
-                                       </button>
-                                     );
-                                   })}
-                                 </div>
-                               </div>
-
                                <div className="hero-holdings-panel">
                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
@@ -3697,6 +3628,75 @@ export default function App() {
                                      </div>
                                    </div>
                                  )}
+                               </div>
+
+                               <div className="hero-live-prices-panel">
+                                 <div className="hero-live-prices-head">
+                                   <div>
+                                     <div className="hero-live-prices-title">Live Prices</div>
+                                     <div className="hero-live-prices-subtitle">Core PulseChain tokens · live market data</div>
+                                   </div>
+                                   <button className="hero-live-holdings-link" onClick={() => setActiveTab('assets')}>
+                                     My Holdings <ChevronRight size={12} />
+                                   </button>
+                                 </div>
+                                 <div className="hero-live-prices-grid">
+                                   {topHoldingCards.map((token) => {
+                                     const change = token.change24h ?? 0;
+                                     const isUp = change >= 0;
+                                     return (
+                                       <button key={token.id} type="button" className="hero-live-price-item" onClick={() => setShowMarketWatch(true)}>
+                                         {token.accent && <div className="hero-live-accent-bar" style={{ background: token.accent }} />}
+                                         <div className="hero-live-price-top">
+                                           <div className="hero-live-token-lockup">
+                                             <div className="hero-live-token-logo">
+                                               {token.logo ? (
+                                                 <>
+                                                   <img
+                                                     src={token.logo}
+                                                     alt={token.symbol}
+                                                     onError={(e) => {
+                                                       e.currentTarget.style.display = 'none';
+                                                       const fallback = e.currentTarget.nextElementSibling as HTMLElement | null;
+                                                       if (fallback) fallback.style.display = 'inline';
+                                                     }}
+                                                   />
+                                                   <span style={{ display: 'none' }}>{token.symbol.slice(0, 1)}</span>
+                                                 </>
+                                               ) : token.symbol.slice(0, 1)}
+                                             </div>
+                                             <div className="hero-live-token-copy">
+                                               <div className="hero-live-symbol">{token.symbol}</div>
+                                               <div className="hero-live-name">{token.name}</div>
+                                             </div>
+                                           </div>
+                                           {token.change24h != null && (
+                                             <span className={isUp ? 'hero-live-change-pill up' : 'hero-live-change-pill down'}>
+                                               {isUp ? '+' : ''}{change.toFixed(1)}%
+                                             </span>
+                                           )}
+                                         </div>
+                                         <div className="hero-live-price-label">Price</div>
+                                         <div className="hero-live-price-number">{fmtPrice(token.price)}</div>
+                                         {token.change24h != null && (
+                                           <div className={isUp ? 'hero-live-change-line up' : 'hero-live-change-line down'}>
+                                             {isUp ? '▲' : '▼'} {Math.abs(change).toFixed(2)}% <span>24h</span>
+                                           </div>
+                                         )}
+                                         <div className="hero-live-market-row">
+                                           <div>
+                                             <span>Market Cap</span>
+                                             <strong>{fmtMarket(token.marketCap)}</strong>
+                                           </div>
+                                           <div>
+                                             <span>Volume 24h</span>
+                                             <strong>{fmtMarket(token.volume24h)}</strong>
+                                           </div>
+                                         </div>
+                                       </button>
+                                     );
+                                   })}
+                                 </div>
                                </div>
                              </div>
                            );
