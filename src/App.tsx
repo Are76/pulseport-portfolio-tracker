@@ -574,6 +574,7 @@ const STATIC_LOGOS: Record<string, string> = {
 
 // Bridged HEX (eHEX) on PulseChain — no on-chain WPLS LP, falls back to CoinGecko 'hex'
 const EHEX_PULSECHAIN_ADDR = '0x57fde0a71132198bbec939b98976993d8d89d225';
+const ETH_HEX_ADDR = '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39';
 
 // Below this threshold (USD) we consider netInvestment effectively zero and hide the P&L %.
 // PulseChain-only wallets have no ETH/stable inflows so netInvestment stays near 0.
@@ -1069,35 +1070,35 @@ export default function App() {
           const [hexR0, hexR1] = parseRes(batchData[lpKeys.indexOf('PHEX_WPLS')].result);
           if (hexR0 > 0 && hexR1 > 0) {
             const pHexUSD = ((hexR1 / 1e18) / (hexR0 / 1e8)) * wplsUSD;
-            setTokenPrice('0x2b591e99afe9f32eaa6214f7b7629768c40eeb39', pHexUSD, 'hex');
+            setTokenPrice(ETH_HEX_ADDR, pHexUSD, 'hex');
             fetchedPrices['pulsechain:hex'] = { usd: pHexUSD };
-            // eHEX (bridged HEX, 0x57fde0a7...) has no on-chain WPLS LP; use CoinGecko 'hex'
-            // price when available, otherwise fall back to pHEX on-chain price so holdings
-            // are never shown as $0 when CoinGecko is rate-limited.
-            if (!fetchedPrices[`pulsechain:${EHEX_PULSECHAIN_ADDR}`]?.usd) {
-              const ehexUsd = fetchedPrices['hex']?.usd || pHexUSD;
+            // eHEX must stay tied to the Ethereum HEX market. Do not fall back to
+            // pHEX here, otherwise the first render shows the PulseChain HEX price
+            // until the Ethereum/CoinGecko price corrects it.
+            const ehexPriceData = fetchedPrices['hex'] || prices['hex'];
+            if (ehexPriceData?.usd) {
+              const ehexUsd = ehexPriceData.usd;
               fetchedPrices[`pulsechain:${EHEX_PULSECHAIN_ADDR}`] = {
                 usd: ehexUsd,
-                usd_24h_change: fetchedPrices['hex']?.usd_24h_change,
+                usd_24h_change: ehexPriceData.usd_24h_change,
+                usd_1h_change: ehexPriceData.usd_1h_change,
+                usd_7d_change: ehexPriceData.usd_7d_change,
               };
-            }
-            // Also set the ethereum chain key so eHEX held on Ethereum mainnet never shows $0.
-            // Uses CoinGecko 'hex' price when available; falls back to on-chain pHEX LP price
-            // — the same fallback strategy used for eHEX on PulseChain above.
-            if (!fetchedPrices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd) {
-              fetchedPrices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39'] = {
-                usd: fetchedPrices['hex']?.usd || pHexUSD,
-                usd_24h_change: fetchedPrices['hex']?.usd_24h_change,
+              fetchedPrices[`ethereum:${ETH_HEX_ADDR}`] = {
+                usd: ehexUsd,
+                usd_24h_change: ehexPriceData.usd_24h_change,
+                usd_1h_change: ehexPriceData.usd_1h_change,
+                usd_7d_change: ehexPriceData.usd_7d_change,
               };
             }
           } else {
             // On-chain LP failed — fall back to CoinGecko for both HEX variants
             const cgHex = fetchedPrices['hex']?.usd;
             if (cgHex) {
-              fetchedPrices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39'] = { usd: cgHex, usd_24h_change: fetchedPrices['hex']?.usd_24h_change };
+              fetchedPrices[`pulsechain:${ETH_HEX_ADDR}`] = { usd: cgHex, usd_24h_change: fetchedPrices['hex']?.usd_24h_change };
               fetchedPrices['pulsechain:hex'] = { usd: cgHex };
               fetchedPrices[`pulsechain:${EHEX_PULSECHAIN_ADDR}`] = { usd: cgHex, usd_24h_change: fetchedPrices['hex']?.usd_24h_change };
-              fetchedPrices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39'] = { usd: cgHex, usd_24h_change: fetchedPrices['hex']?.usd_24h_change };
+              fetchedPrices[`ethereum:${ETH_HEX_ADDR}`] = { usd: cgHex, usd_24h_change: fetchedPrices['hex']?.usd_24h_change };
             }
           }
 
@@ -2331,11 +2332,31 @@ export default function App() {
       .filter(a => !hiddenTokens.includes(a.id))
       .filter(a => !hideDust || a.value >= 1 || (a.balance > 0 && a.price === 0))
       .filter(a => !hideSpam || (!(a as any).isSpam && !spamTokenIds.includes(a.id)))
-      .map(a => ({
-        ...a,
-        entryPls: manualEntries[a.id] || 0
-      }));
-  }, [wallets.length, realAssets, walletAssets, activeWallet, manualEntries, hiddenTokens, hideDust, customCoins, hideSpam, spamTokenIds]);
+      .map(a => {
+        const addr = (a as any).address?.toLowerCase?.();
+        const isEHex = (a.chain === 'ethereum' && addr === ETH_HEX_ADDR) || (a.chain === 'pulsechain' && addr === EHEX_PULSECHAIN_ADDR);
+        if (isEHex) {
+          const ehexPriceData = prices['hex'] || prices[`ethereum:${ETH_HEX_ADDR}`];
+          if (ehexPriceData?.usd) {
+            const price = ehexPriceData.usd;
+            return {
+              ...a,
+              price,
+              value: a.balance * price,
+              priceChange24h: ehexPriceData.usd_24h_change ?? a.priceChange24h,
+              priceChange1h: ehexPriceData.usd_1h_change ?? a.priceChange1h,
+              priceChange7d: ehexPriceData.usd_7d_change ?? a.priceChange7d,
+              pnl24h: ehexPriceData.usd_24h_change ?? a.pnl24h,
+              entryPls: manualEntries[a.id] || 0
+            };
+          }
+        }
+        return {
+          ...a,
+          entryPls: manualEntries[a.id] || 0
+        };
+      });
+  }, [wallets.length, realAssets, walletAssets, activeWallet, manualEntries, hiddenTokens, hideDust, customCoins, hideSpam, spamTokenIds, prices]);
 
   const currentStakes = useMemo(() => {
     if (wallets.length === 0) return MOCK_STAKES;
@@ -3162,7 +3183,7 @@ export default function App() {
             { id: 'assets',   label: 'Holdings',           icon: Coins },
             { id: 'stakes',   label: 'HEX Stakes',         icon: Lock },
             { id: 'defi',     label: 'DeFi Positions',     icon: Droplets },
-            { id: 'history',  label: 'Bridge Activity', icon: History },
+            { id: 'history',  label: 'Activity', icon: History },
             { id: 'wallets',  label: 'Wallets',  icon: WalletIcon },
           ] as const).map(({ id, label, icon: Icon }) => {
             const isDefi = id === 'defi';
@@ -3600,7 +3621,7 @@ export default function App() {
                                            {holdingAssets.map((asset) => {
                                              const pct = asset.priceChange24h ?? asset.pnl24h ?? null;
                                              const lowerAddress = asset.address?.toLowerCase?.() ?? '';
-                                             const logo = STATIC_LOGOS[lowerAddress] || asset.logoUrl || tokenLogos[lowerAddress];
+                                             const logo = STATIC_LOGOS[lowerAddress] || asset.logoUrl || tokenLogos[lowerAddress] || getTokenLogoUrl(asset);
                                              const share = ((asset.value / (summary.totalValue || 1)) * 100);
                                              return (
                                                <tr
@@ -4641,7 +4662,7 @@ export default function App() {
                   <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, overflow: 'hidden' }} className="md-elevation-1">
                     <div style={{ padding: '14px 18px', borderBottom: isCollapsed('holdings-txs') ? 'none' : `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: 14, fontWeight: 600, color: t.text }}>Bridge Activity</span>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: t.text }}>Activity</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent-border)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
                           <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', display: 'inline-block', animation: 'pulse 2s infinite' }} />
                           Live
@@ -4821,7 +4842,7 @@ export default function App() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)', marginBottom: 2 }}>Bridge Activity</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)', marginBottom: 2 }}>Activity</div>
                   <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Cross-chain activity &amp; performance tracking</div>
                 </div>
               </div>
