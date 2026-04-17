@@ -1201,9 +1201,21 @@ textarea:focus-visible,
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 16px 16px 8px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
+}
+
+.hero-hex-holdings-section {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.hero-hex-holdings-section > div:first-child {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
 /* Holdings items container — keep a single wide column so each row can show richer detail */
@@ -2302,6 +2314,38 @@ textarea:focus-visible,
   box-shadow: 0 2px 16px rgba(99,70,255,0.06), 0 1px 4px rgba(0,0,0,0.06);
 }
 
+.stakes-hero-mini-stats {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 660px;
+}
+
+.stakes-hero-mini-card {
+  min-width: 104px;
+  flex: 1 1 104px;
+  padding: 14px 16px;
+  border: 1px solid var(--accent-purple-border);
+  border-radius: 8px;
+  background: linear-gradient(145deg, rgba(99,70,255,0.12), rgba(99,70,255,0.045));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.045);
+}
+
+.stakes-hero-mini-card.maturity {
+  min-width: 136px;
+  border-color: rgba(0,255,159,0.24);
+  background: linear-gradient(145deg, rgba(0,255,159,0.09), rgba(99,70,255,0.045));
+}
+
+[data-theme="light"] .stakes-hero-mini-card {
+  background: rgba(99,70,255,0.055);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.75);
+}
+
+[data-theme="light"] .stakes-hero-mini-card.maturity {
+  background: linear-gradient(145deg, rgba(0,122,77,0.07), rgba(99,70,255,0.035));
+  border-color: rgba(0,122,77,0.20);
+}
+
 .stakes-metric-card {
   background: var(--bg-surface);
   border: 1px solid var(--border);
@@ -2517,9 +2561,15 @@ textarea:focus-visible,
 
 .stakes-filter-tabs {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   overflow-x: auto;
-  padding-bottom: 2px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--border) 74%, rgba(255,255,255,0.14));
+  border-radius: 8px;
+  background: linear-gradient(145deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 10px 30px rgba(0,0,0,0.10);
   scrollbar-width: none;
 }
 .stakes-filter-tabs::-webkit-scrollbar { display: none; }
@@ -2529,45 +2579,53 @@ textarea:focus-visible,
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 32px;
-  padding: 6px 15px;
+  min-height: 34px;
+  padding: 7px 14px;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 800;
   line-height: 1;
-  letter-spacing: .01em;
-  border: 1px solid var(--border);
-  background: linear-gradient(145deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015));
-  color: var(--fg-muted);
+  letter-spacing: .02em;
+  border: 1px solid transparent;
+  background: transparent;
+  color: color-mix(in srgb, var(--fg-muted) 88%, var(--fg));
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+  box-shadow: none;
   transition: color .14s var(--ease-spring), border-color .14s var(--ease-spring), background .14s var(--ease-spring), box-shadow .14s var(--ease-spring), transform .14s var(--ease-spring);
   flex-shrink: 0;
 }
 .stake-filter-pill:hover {
   color: var(--fg);
-  border-color: rgba(0,255,159,0.28);
-  background: rgba(0,255,159,0.055);
-  transform: translateY(-1px);
+  border-color: rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.045);
 }
 .stake-filter-pill.active {
-  background: linear-gradient(135deg, #00ff9f 0%, #70ffd0 100%);
-  border-color: rgba(0,255,159,0.72);
-  color: #04120d;
-  box-shadow: 0 0 0 1px rgba(0,255,159,0.18), 0 10px 28px rgba(0,255,159,0.16), inset 0 1px 0 rgba(255,255,255,0.35);
+  background: linear-gradient(145deg, rgba(0,255,159,0.20), rgba(0,255,159,0.09));
+  border-color: rgba(0,255,159,0.36);
+  color: #d8fff0;
+  box-shadow: 0 0 0 1px rgba(0,255,159,0.08), 0 10px 24px rgba(0,255,159,0.10), inset 0 1px 0 rgba(255,255,255,0.12);
+}
+.stake-filter-pill.active span {
+  color: #00ff9f;
+  opacity: 1 !important;
+}
+[data-theme="light"] .stakes-filter-tabs {
+  background: #f5f7f8;
+  border-color: rgba(0,0,0,0.08);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 8px 20px rgba(0,0,0,0.05);
 }
 [data-theme="light"] .stake-filter-pill {
-  background: #f5f7f8;
-  border-color: rgba(0,0,0,0.10);
+  background: transparent;
+  border-color: transparent;
   color: var(--fg-muted);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.85);
+  box-shadow: none;
 }
 [data-theme="light"] .stake-filter-pill.active {
-  background: linear-gradient(135deg, #007a4d 0%, #00a86b 100%);
-  border-color: #007a4d;
-  color: #fff;
-  box-shadow: 0 10px 24px rgba(0,122,77,0.16), inset 0 1px 0 rgba(255,255,255,0.18);
+  background: #ffffff;
+  border-color: rgba(0,122,77,0.18);
+  color: #007a4d;
+  box-shadow: 0 8px 18px rgba(0,122,77,0.10), inset 0 1px 0 rgba(255,255,255,0.9);
 }
 
 .stakes-table {
@@ -4700,3 +4758,4 @@ textarea:focus-visible,
     margin-left: 0;
   }
 }
+

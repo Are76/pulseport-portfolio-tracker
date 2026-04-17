@@ -3,7 +3,7 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer,
   Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from 'recharts';
-import { Zap, Lock, TrendingUp, Activity, Layers, Filter } from 'lucide-react';
+import { Zap, Lock, Activity, Layers, Filter } from 'lucide-react';
 import type { HexStake } from '../types';
 import { PHEX_YIELD_PER_TSHARE, EHEX_YIELD_PER_TSHARE } from '../constants';
 
@@ -378,19 +378,18 @@ export function StakesSection({
         {/* Right: Weekly / Monthly / Annual mini-stats */}
         <div className="stakes-hero-mini-stats" style={{ display: 'flex', gap: 14, flexShrink: 0 }}>
           {[
-            { label: 'Weekly', hex: dailyYieldHex * 7, usd: dailyYieldUsd * 7 },
-            { label: 'Monthly', hex: dailyYieldHex * 30, usd: dailyYieldUsd * 30 },
-            { label: 'Annual', hex: dailyYieldHex * 365, usd: dailyYieldUsd * 365 },
-          ].map(({ label, hex, usd }) => (
-            <div key={label} style={{
-              background: 'rgba(99,70,255,0.10)', border: '1px solid var(--accent-purple-border)',
-              borderRadius: 14, padding: '14px 18px', minWidth: 96,
-            }}>
+            { label: 'Weekly', value: fmtHex(dailyYieldHex * 7), sub: fmtUsd(dailyYieldUsd * 7), tone: 'yield' },
+            { label: 'Monthly', value: fmtHex(dailyYieldHex * 30), sub: fmtUsd(dailyYieldUsd * 30), tone: 'yield' },
+            { label: 'Annual', value: fmtHex(dailyYieldHex * 365), sub: fmtUsd(dailyYieldUsd * 365), tone: 'yield' },
+            { label: 'Maturity', value: `${fmtHex(totalMaturityHex)} HEX`, sub: `${fmtUsd(totalMaturityValueUsd)} projected`, tone: 'maturity' },
+            { label: 'Total Yield', value: `+${fmtHex(Math.max(0, totalMaturityHex - totalHexStaked))}`, sub: totalHexStaked > 0 ? `${((totalMaturityHex / totalHexStaked - 1) * 100).toFixed(1)}% yield` : 'waiting for stakes', tone: 'maturity' },
+          ].map(({ label, value, sub, tone }) => (
+            <div key={label} className={`stakes-hero-mini-card ${tone}`}>
               <div style={{ fontSize: 10, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>{label}</div>
               <div className="tabular-nums" style={{ fontSize: 17, fontWeight: 800, color: 'var(--positive)', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-0.02em' }}>
-                {fmtHex(hex)}
+                {value}
               </div>
-              <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 3 }}>{fmtUsd(usd)}</div>
+              <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 3 }}>{sub}</div>
             </div>
           ))}
         </div>
@@ -504,47 +503,6 @@ export function StakesSection({
         </div>
       </div>
 
-      {/* Row B: Value at Maturity — full-width highlight card */}
-      <div className="stakes-metric-card stakes-maturity-highlight" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20, padding: '28px 32px' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-            <TrendingUp size={16} style={{ color: 'var(--positive)' }} />
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--positive)', textTransform: 'uppercase', letterSpacing: '.10em' }}>Value at Maturity</div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, flexWrap: 'wrap' }}>
-            <div className="tabular-nums" style={{
-              fontSize: 40, fontWeight: 900, color: 'var(--positive)',
-              fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-0.04em', lineHeight: 1,
-              textShadow: '0 0 24px rgba(0,255,159,0.20)',
-            }}>
-              {fmtHex(totalMaturityHex)} HEX
-            </div>
-            {totalHexStaked > 0 && totalMaturityHex > totalHexStaked && (
-              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--positive)', fontFamily: "'JetBrains Mono', monospace" }}>
-                +{fmtHex(totalMaturityHex - totalHexStaked)}
-                {' '}
-                <span style={{ fontSize: 13, fontWeight: 600, opacity: 0.75 }}>
-                  ({((totalMaturityHex / totalHexStaked - 1) * 100).toFixed(1)}% yield)
-                </span>
-              </div>
-            )}
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 8 }}>projected at full maturity · current staked: {fmtHex(totalHexStaked)} HEX · {fmtUsd(totalCurrentValueUsd)}</div>
-        </div>
-        <div style={{ display: 'flex', gap: 14 }}>
-          {[
-            { label: 'HEX + Yield', val: fmtHex(totalMaturityHex), color: '#fb923c' },
-            { label: 'Total Yield', val: `+${fmtHex(totalMaturityHex - totalHexStaked)}`, color: 'var(--positive)' },
-          ].map(({ label, val, color }) => (
-            <div key={label} style={{ background: 'rgba(0,255,159,0.06)', border: '1px solid rgba(0,255,159,0.20)', borderRadius: 12, padding: '12px 18px', minWidth: 120 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>{label}</div>
-              <div className="tabular-nums" style={{ fontSize: 16, fontWeight: 800, color, fontFamily: "'JetBrains Mono', monospace" }}>{val}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── 4. Charts ────────────────────────────────────────────────────── */}
       <div className="stakes-charts-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <StakingPie stakes={activeStakes.length > 0 ? activeStakes : stakes} hexUsdPrice={hexUsdPrice} />
         <StakingLadder stakes={activeStakes.length > 0 ? activeStakes : stakes} />
