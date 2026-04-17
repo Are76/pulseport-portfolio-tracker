@@ -4892,8 +4892,8 @@ export default function App() {
             </div>
 
             {/* Received Assets History */}
-            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
-              <div className="received-header" style={{ padding: '14px 18px', borderBottom: isCollapsed('received-assets') ? 'none' : '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+            <div className="tx-module-card received-token-module">
+              <div className="received-header tx-module-header" style={{ borderBottom: isCollapsed('received-assets') ? 'none' : '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
                   <ArrowDownLeft size={16} style={{ color: '#627EEA', flexShrink: 0 }} />
                   <span style={{ fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}>Received Token History</span>
@@ -4945,7 +4945,7 @@ export default function App() {
                   ))}
                 </div>
               )}
-              <div className="received-history-list custom-scrollbar">
+              <div className="received-history-list custom-scrollbar tx-module-list">
                 {receivedAssetsData.list.length === 0 ? (
                   <div style={{ padding: '48px 20px', textAlign: 'center', color: 'var(--fg-muted)', fontSize: 13 }}>
                     {wallets.length === 0
@@ -4962,54 +4962,33 @@ export default function App() {
                         </span>
                       : 'No ETH or stablecoin inbound transfers found since 2021.'}
                   </div>
-                ) : receivedAssetsData.list.map((tx) => {
-                  const assetUp = tx.asset.toUpperCase();
-                  const isEth = assetUp === 'ETH';
-                  const isPls = assetUp === 'PLS';
-                  const displayUsd = tx.valueUsd || (
-                    isEth ? tx.amount * (prices['ethereum']?.usd || 3400) :
-                    isPls ? tx.amount * (prices['pulsechain']?.usd || 0.00005) :
-                    assetUp.includes('USDT') || assetUp.includes('TETHER') ? tx.amount * (prices['tether']?.usd || 1) :
-                    assetUp.includes('DAI') ? tx.amount * (prices['dai']?.usd || 1) :
-                    tx.amount * (prices['usd-coin']?.usd || 1)
-                  );
-                  return (
-                    <div key={tx.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', borderBottom: '1px solid var(--border)', transition: 'background .1s' }}
-                      onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
-                      onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: 8,
-                          background: tx.chain === 'pulsechain' ? 'rgba(247,57,255,.08)' : isEth ? 'rgba(99,102,241,.1)' : 'rgba(0,82,255,.1)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <ArrowDownLeft size={15} style={{ color: tx.chain === 'pulsechain' ? '#f739ff' : isEth ? '#627EEA' : '#60a5fa' }} />
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>
-                            +{(isEth || isPls) ? tx.amount.toLocaleString(undefined, { maximumFractionDigits: 6 }) : tx.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })} {tx.asset}
-                            <span style={{ fontSize: 13, marginLeft: 8, padding: '1px 6px', borderRadius: 3, fontWeight: 600,
-                              background: tx.chain === 'pulsechain' ? 'rgba(247,57,255,.1)' : tx.chain === 'ethereum' ? 'rgba(99,102,241,.12)' : 'rgba(0,82,255,.12)',
-                              color: tx.chain === 'pulsechain' ? '#f739ff' : tx.chain === 'ethereum' ? '#818cf8' : '#60a5fa' }}>
-                              {tx.chain === 'pulsechain' ? 'PLS' : tx.chain === 'ethereum' ? 'ETH' : 'BASE'}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: 13, color: 'var(--fg-muted)', fontFamily: 'monospace', marginTop: 1 }}>
-                            {format(new Date(tx.timestamp), 'MMM d, yyyy')} · {tx.from.slice(0, 6)}…{tx.from.slice(-4)}
-                          </div>
-                        </div>
-                      </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 16 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>${displayUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
-                        <a href={`${tx.chain === 'pulsechain' ? 'https://scan.pulsechain.com' : tx.chain === 'ethereum' ? 'https://etherscan.io' : 'https://basescan.org'}/tx/${tx.hash}`}
-                          target="_blank" rel="noopener noreferrer"
-                          style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none', fontFamily: 'monospace' }}
-                          onMouseOver={e => (e.currentTarget.style.color = '#627EEA')}
-                          onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
-                          {tx.hash.slice(0, 10)}…
-                        </a>
-                      </div>
-                    </div>
-                  );
-                })}
+                ) : (
+                  <TransactionList
+                    transactions={receivedAssetsData.list.map(tx => {
+                      const assetUp = tx.asset.toUpperCase();
+                      const isEth = assetUp === 'ETH';
+                      const isPls = assetUp === 'PLS';
+                      const displayUsd = tx.valueUsd || (
+                        isEth ? tx.amount * (prices['ethereum']?.usd || 3400) :
+                        isPls ? tx.amount * (prices['pulsechain']?.usd || 0.00005) :
+                        assetUp.includes('USDT') || assetUp.includes('TETHER') ? tx.amount * (prices['tether']?.usd || 1) :
+                        assetUp.includes('DAI') ? tx.amount * (prices['dai']?.usd || 1) :
+                        tx.amount * (prices['usd-coin']?.usd || 1)
+                      );
+                      return { ...tx, valueUsd: displayUsd };
+                    })}
+                    viewAsYou={viewAsYou}
+                    wallets={wallets}
+                    assets={currentAssets}
+                    getTokenLogoUrl={getTokenLogoUrl}
+                    tokenLogos={tokenLogos}
+                    hideIds={hiddenTxIds}
+                    onToggleHide={id => setHiddenTxIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
+                    showHidden={showHiddenTxs}
+                    onFilterByAsset={symbol => setTxAssetFilter(symbol)}
+                    emptyMessage="No received token transactions found for these filters."
+                  />
+                )}
               </div>
               </>)}
             </div>
@@ -5557,8 +5536,8 @@ export default function App() {
                 });
                 if (baseTxs.length === 0) return null;
                 return (
-                  <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
-                    <div style={{ padding: '14px 18px', borderBottom: isCollapsed('wallet-txs') ? 'none' : '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                  <div className="tx-module-card wallet-tx-module">
+                    <div className="tx-module-header" style={{ borderBottom: isCollapsed('wallet-txs') ? 'none' : '1px solid var(--border)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: 14, fontWeight: 600 }}>Transactions</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent-border)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
@@ -5586,12 +5565,11 @@ export default function App() {
                       </div>
                     </div>
                     {!isCollapsed('wallet-txs') && (
-                      <div style={{ maxHeight: 520, overflowY: 'auto' }} className="custom-scrollbar">
+                      <div className="custom-scrollbar tx-module-list wallet-tx-list">
                         <TransactionList
                           transactions={filtered}
                           viewAsYou={viewAsYou}
                           wallets={wallets}
-                          compact
                           assets={currentAssets}
                           getTokenLogoUrl={getTokenLogoUrl}
                           tokenLogos={tokenLogos}
@@ -5913,4 +5891,5 @@ export default function App() {
     </div>
   );
 }
+
 
