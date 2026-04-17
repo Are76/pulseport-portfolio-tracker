@@ -1874,6 +1874,9 @@ textarea:focus-visible,
   top: 56px;
   z-index: 40;
 }
+@media (max-width: 767px) {
+  .wallet-selector-subheader { display: none; }
+}
 [data-theme="light"] .wallet-selector-subheader {
   background: rgba(244,244,248,0.96);
   border-bottom-color: rgba(0,0,0,0.10);
