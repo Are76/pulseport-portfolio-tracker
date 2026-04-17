@@ -2293,7 +2293,10 @@ export default function App() {
   };
 
   const currentAssets = useMemo(() => {
-    const baseAssets = wallets.length > 0 ? realAssets : MOCK_ASSETS;
+    const activeWalletKey = activeWallet?.toLowerCase() ?? null;
+    const baseAssets = wallets.length > 0
+      ? (activeWalletKey ? (walletAssets[activeWalletKey] || []) : realAssets)
+      : MOCK_ASSETS;
     const assetsWithCustom = [...baseAssets];
     
     customCoins.forEach(coin => {
@@ -2317,9 +2320,13 @@ export default function App() {
         ...a,
         entryPls: manualEntries[a.id] || 0
       }));
-  }, [wallets.length, realAssets, manualEntries, hiddenTokens, hideDust, customCoins, hideSpam, spamTokenIds]);
+  }, [wallets.length, realAssets, walletAssets, activeWallet, manualEntries, hiddenTokens, hideDust, customCoins, hideSpam, spamTokenIds]);
 
-  const currentStakes = wallets.length > 0 ? realStakes : MOCK_STAKES;
+  const currentStakes = useMemo(() => {
+    if (wallets.length === 0) return MOCK_STAKES;
+    const key = activeWallet?.toLowerCase() ?? null;
+    return key ? realStakes.filter(s => s.walletAddress === key) : realStakes;
+  }, [wallets.length, realStakes, activeWallet]);
   const currentHistory = wallets.length > 0 ? history : MOCK_HISTORY;
   const currentTransactions = wallets.length > 0 ? transactions : MOCK_TRANSACTIONS;
 
@@ -5092,7 +5099,7 @@ export default function App() {
             <motion.div key="wallets" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
 
               {/* ── Visual Wallet Selector ── */}
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'stretch' }}>
+              <div className="wallet-visual-selector" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'stretch' }}>
                 {/* All Wallets card */}
                 <button
                   onClick={() => setSelectedWalletAddr('all')}

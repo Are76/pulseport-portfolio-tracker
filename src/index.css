@@ -1210,6 +1210,28 @@ textarea:focus-visible,
   }
 }
 
+/* ── WALLET VISUAL SELECTOR (Wallets tab) ───────────────────────────────── */
+.wallet-visual-selector {
+  /* inherits flex/gap/wrap from inline style */
+}
+@media (max-width: 640px) {
+  /* Horizontal scroll on mobile so cards don't stack into huge rows */
+  .wallet-visual-selector {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    touch-action: pan-x;
+  }
+  .wallet-visual-selector::-webkit-scrollbar { display: none; }
+  /* Wallet pill sub-header: smaller pills on mobile */
+  .wallet-pill {
+    font-size: 11px;
+    padding: 4px 9px 4px 7px;
+  }
+}
+
 /* ── VALUE HERO ──────────────────────────────────────────────────────── */
 /* Single canonical class — use with .gradient-text-green for neon color */
 .value-hero {
