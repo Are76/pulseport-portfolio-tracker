@@ -1258,6 +1258,15 @@ export default function App() {
                 return results;
               };
 
+              const fetchPcTokenBalances = async (): Promise<any[]> => {
+                try {
+                  return await fetchPcV2Pages(`/addresses/${address}/tokens?type=ERC-20`, 20);
+                } catch (e) {
+                  console.warn(`[pulsechain] token balance discovery failed for ${address}:`, e);
+                  return [];
+                }
+              };
+
               // Etherscan-compat base — same proxy logic as above
               const esBase = isElectron
                 ? 'https://api.scan.pulsechain.com/api'
@@ -1285,8 +1294,9 @@ export default function App() {
                 }
               };
 
-              const [bsTxs, esTokenArrays] = await Promise.all([
+              const [bsTxs, bsTokenBalances, esTokenArrays] = await Promise.all([
                 fetchPcV2Pages(`/addresses/${address}/transactions`),
+                fetchPcTokenBalances(),
                 Promise.all(pcTokenContracts.map(t => fetchEsTokenTx(t.address)))
               ]);
 
@@ -1347,6 +1357,47 @@ export default function App() {
                 '0x41527c4d9d47ef03f00f77d794c87ba94832700b': { name: 'USDC (from Base)', id: 'usd-coin' }
               };
 
+              const addDiscoveredPulseToken = (tokenInfo: any, markNoMarketAsSpam = false) => {
+                const contractAddr = (tokenInfo?.address || '').toLowerCase();
+                if (!contractAddr) return;
+
+                const chainTokens = TOKENS['pulsechain'] || [];
+                const isHardcoded = chainTokens.some((t: any) => t.address !== 'native' && t.address.toLowerCase() === contractAddr);
+                const isAlreadyDiscovered = discoveredTokens.some(t => t.address.toLowerCase() === contractAddr);
+                if (isHardcoded || isAlreadyDiscovered) return;
+
+                const symbol = String(tokenInfo?.symbol || 'TOKEN');
+                const mapped = pulseBridgeMap[contractAddr];
+                const name = mapped?.name || String(tokenInfo?.name || symbol);
+                const decimals = Number(tokenInfo?.decimals) || 18;
+                const exchangeRate = Number(tokenInfo?.exchange_rate ?? tokenInfo?.exchangeRate ?? NaN);
+                const priceKey = `pulsechain:${contractAddr}`;
+                if (Number.isFinite(exchangeRate) && exchangeRate > 0 && !fetchedPrices[priceKey]?.usd) {
+                  fetchedPrices[priceKey] = { ...(fetchedPrices[priceKey] || {}), usd: exchangeRate };
+                }
+
+                const hasUrlPattern = /\.(io|com|net|org|xyz|finance|app|pro|gg|gd)\b/i.test(`${name} ${symbol}`);
+                const hasNoMarket = !tokenInfo?.exchange_rate && !tokenInfo?.circulating_market_cap && !tokenInfo?.volume_24h;
+                const isSpam = hasUrlPattern || (markNoMarketAsSpam && hasNoMarket && !mapped);
+
+                discoveredTokens.push({
+                  symbol,
+                  name,
+                  address: tokenInfo.address || contractAddr,
+                  decimals,
+                  coinGeckoId: mapped?.id || symbol.toLowerCase(),
+                  bridged: !!mapped,
+                  isSpam,
+                  isDiscovered: true
+                });
+              };
+
+              bsTokenBalances.forEach((item: any) => {
+                const tokenInfo = item?.token || item;
+                const rawValue = BigInt(item?.value || '0');
+                if (rawValue > 0n) addDiscoveredPulseToken(tokenInfo);
+              });
+
               bsTokenTxs.forEach((tx: any) => {
                 const isOut = (tx.from?.hash || '').toLowerCase() === address.toLowerCase();
                 const symbol = tx.token?.symbol || 'TOKEN';
@@ -1378,23 +1429,7 @@ export default function App() {
                   fee: 0
                 });
 
-                const chainTokens = TOKENS['pulsechain'] || [];
-                const isHardcoded = chainTokens.some((t: any) => t.address.toLowerCase() === contractAddr);
-                const isAlreadyDiscovered = discoveredTokens.some(t => t.address.toLowerCase() === contractAddr);
-                if (!isHardcoded && !isAlreadyDiscovered && contractAddr) {
-                  const isBatchAirdrop = tx.method === 'batchTransfer' || tx.method === 'multiSend';
-                  const hasNoMarket = !tx.token?.exchange_rate && !tx.token?.circulating_market_cap && !tx.token?.volume_24h;
-                  const isSpam = !isOut && (isBatchAirdrop || (hasNoMarket && !mapped));
-                  discoveredTokens.push({
-                    symbol,
-                    name: assetName,
-                    address: tx.token?.address || contractAddr,
-                    decimals,
-                    coinGeckoId,
-                    bridged: !!mapped,
-                    isSpam
-                  });
-                }
+                addDiscoveredPulseToken(tx.token, !isOut);
               });
 
             } else if (chainKey === 'base') {
@@ -1661,6 +1696,81 @@ export default function App() {
             console.warn(`Could not fetch transactions for ${address} on ${chainKey}:`, e);
           }
 
+          // 2a. Fetch DexScreener prices for discovered PulseChain wallet tokens.
+          // DexScreener covers many actively traded PulseChain coins that are not in
+          // the static list or OpenPulseChain's top-token response.
+          if (chainKey === 'pulsechain' && discoveredTokens.length > 0) {
+            try {
+              const discoveredByAddr = new Map(
+                discoveredTokens
+                  .filter(t => t.address && t.address !== 'native')
+                  .map(t => [t.address.toLowerCase(), t])
+              );
+              const unpricedAddrs = Array.from(discoveredByAddr.keys())
+                .filter(addr => !fetchedPrices[`pulsechain:${addr}`]?.usd);
+
+              const chunks: string[][] = [];
+              for (let i = 0; i < unpricedAddrs.length; i += 30) {
+                chunks.push(unpricedAddrs.slice(i, i + 30));
+              }
+
+              const bestPairs = new Map<string, any>();
+              await Promise.all(chunks.map(async (chunk) => {
+                const res = await fetch(`https://api.dexscreener.com/tokens/v1/pulsechain/${chunk.join(',')}`);
+                if (!res.ok) return;
+                const pairs = await res.json();
+                if (!Array.isArray(pairs)) return;
+
+                pairs.forEach((pair: any) => {
+                  const baseAddr = pair?.baseToken?.address?.toLowerCase?.();
+                  const quoteAddr = pair?.quoteToken?.address?.toLowerCase?.();
+                  const matchedAddr = discoveredByAddr.has(baseAddr) ? baseAddr : discoveredByAddr.has(quoteAddr) ? quoteAddr : null;
+                  if (!matchedAddr) return;
+
+                  const current = bestPairs.get(matchedAddr);
+                  const currentLiquidity = Number(current?.liquidity?.usd ?? 0);
+                  const nextLiquidity = Number(pair?.liquidity?.usd ?? 0);
+                  if (!current || nextLiquidity > currentLiquidity) bestPairs.set(matchedAddr, pair);
+                });
+              }));
+
+              const newLogos: Record<string, string> = {};
+              bestPairs.forEach((pair, addr) => {
+                const token = discoveredByAddr.get(addr);
+                if (!token) return;
+
+                const baseAddr = pair?.baseToken?.address?.toLowerCase?.();
+                const baseUsd = Number(pair?.priceUsd);
+                const priceNative = Number(pair?.priceNative);
+                const priceUsd = baseAddr === addr
+                  ? baseUsd
+                  : priceNative > 0
+                    ? baseUsd / priceNative
+                    : 0;
+                if (Number.isFinite(priceUsd) && priceUsd > 0) {
+                  fetchedPrices[`pulsechain:${addr}`] = {
+                    ...(fetchedPrices[`pulsechain:${addr}`] || {}),
+                    usd: priceUsd,
+                    usd_24h_change: pair?.priceChange?.h24,
+                    usd_1h_change: pair?.priceChange?.h1,
+                    image: pair?.info?.imageUrl,
+                  };
+                }
+
+                const pairToken = baseAddr === addr ? pair?.baseToken : pair?.quoteToken;
+                if (pairToken?.symbol && token.symbol === 'TOKEN') token.symbol = pairToken.symbol;
+                if (pairToken?.name && (!token.name || token.name === token.symbol)) token.name = pairToken.name;
+                if (pair?.info?.imageUrl) newLogos[addr] = pair.info.imageUrl;
+              });
+
+              if (Object.keys(newLogos).length > 0) {
+                setTokenLogos(prev => ({ ...prev, ...newLogos }));
+              }
+            } catch (e) {
+              console.warn('DexScreener PulseChain token lookup failed:', e);
+            }
+          }
+
           // 2a. Fetch DeFi Llama prices for discovered Ethereum tokens without a known price
           if (chainKey === 'ethereum' && discoveredTokens.length > 0) {
             try {
@@ -1724,7 +1834,12 @@ export default function App() {
               // Merge it into the 'pulsechain-PLS' bucket so users see one unified PLS entry.
               // LP pair internals still reference WPLS by address — only wallet holdings are merged.
               const isWplsMerge = chainKey === 'pulsechain' && token.symbol === 'WPLS';
-              const assetKey = isWplsMerge ? 'pulsechain-PLS' : `${chainKey}-${token.symbol}`;
+              const isAddressKeyedDiscovery = Boolean((token as any).isDiscovered && token.address !== 'native');
+              const assetKey = isWplsMerge
+                ? 'pulsechain-PLS'
+                : isAddressKeyedDiscovery
+                  ? `${chainKey}-${token.address.toLowerCase()}`
+                  : `${chainKey}-${token.symbol}`;
 
               if (assetMap[assetKey]) {
                 assetMap[assetKey].balance += balanceNum;
