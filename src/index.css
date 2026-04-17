@@ -26,6 +26,8 @@
   --accent-glow: rgba(0,255,159,0.20);
   --accent-dim: rgba(0,255,159,0.10);
   --accent-border: rgba(0,255,159,0.25);
+  --negative-dim: rgba(244,63,94,0.08);
+  --negative-border: rgba(244,63,94,0.28);
 
   /* Chain colors — all 4.5:1+ on dark backgrounds */
   --chain-pulse: #f739ff;      /* PulseChain magenta  — 6.6:1 ✅ */
@@ -107,6 +109,8 @@
   --accent-glow: rgba(0,122,77,0.15);
   --accent-dim: rgba(0,122,77,0.08);
   --accent-border: rgba(0,122,77,0.22);
+  --negative-dim: rgba(220,38,38,0.08);
+  --negative-border: rgba(220,38,38,0.22);
   /* Inset panel backgrounds — invert alpha on light bg */
   --bg-inset: rgba(0,0,0,0.05);
   --border-inset: rgba(0,0,0,0.13);
@@ -871,8 +875,8 @@ textarea:focus-visible,
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  border: 1px solid rgba(0,255,159,0.28);
-  background: rgba(0,255,159,0.08);
+  border: 1px solid var(--accent-border);
+  background: var(--accent-dim);
   color: var(--accent);
   border-radius: 8px;
   padding: 8px 13px;
@@ -975,8 +979,8 @@ textarea:focus-visible,
 }
 
 .hero-live-change-pill {
-  border: 1px solid rgba(0,255,159,0.24);
-  background: rgba(0,255,159,0.08);
+  border: 1px solid var(--accent-border);
+  background: var(--accent-dim);
   color: var(--accent);
   border-radius: 999px;
   padding: 4px 10px;
@@ -986,9 +990,9 @@ textarea:focus-visible,
 }
 
 .hero-live-change-pill.down {
-  border-color: rgba(244,63,94,0.28);
-  background: rgba(244,63,94,0.08);
-  color: #f43f5e;
+  border-color: var(--negative-border);
+  background: var(--negative-dim);
+  color: var(--negative-text);
 }
 
 .hero-live-price-label {
@@ -1018,7 +1022,7 @@ textarea:focus-visible,
 }
 
 .hero-live-change-line.down {
-  color: #f43f5e;
+  color: var(--negative-text);
 }
 
 .hero-live-change-line span {
