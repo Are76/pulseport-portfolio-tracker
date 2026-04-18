@@ -531,7 +531,7 @@ export function ProfitPlannerModal({ open, onClose, assets, totalValue }: Profit
 
                 {/* Bar chart */}
                 <div className="pp-chart-wrap" style={{ height: 180 }}>
-                  <ResponsiveContainer width="100%" height={180}>
+                  <ResponsiveContainer width="100%" height={180} minWidth={0} minHeight={1}>
                     <BarChart
                       data={calc.coinCalcs.map(c => ({
                         name: c.symbol.slice(0, 8),

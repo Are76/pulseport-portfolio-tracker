@@ -114,7 +114,7 @@ function Sparkline({ data, w, h, id }: {
   const color = isPositive ? '#00FF9F' : '#f43f5e';
   return (
     <div style={{ width: w ?? '100%', height: h, flexShrink: 0 }}>
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={1}>
         <AreaChart data={data} margin={{ top: 2, right: 0, bottom: 2, left: 0 }}>
           <defs>
             <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">

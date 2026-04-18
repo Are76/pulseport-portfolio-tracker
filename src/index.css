@@ -1,5 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Exo+2:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
+@source "../index.html";
+@source ".";
+@source not "../.claude";
+@source not "../.playwright-cli";
+@source not "../dist";
+@source not "../node_modules";
+@source not "../vendor";
 
 @theme {
   --font-sans: 'Exo 2', ui-sans-serif, system-ui, -apple-system, sans-serif;

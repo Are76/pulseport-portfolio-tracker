@@ -125,7 +125,7 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
           {' · '}<span style={{ color: '#fb923c' }}>{fmtHex(totalHex)} HEX</span>
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={240}>
+      <ResponsiveContainer width="100%" height={240} minWidth={0} minHeight={1}>
         <PieChart>
           <Pie data={chartData} cx="50%" cy="50%" innerRadius={60} outerRadius={85} dataKey="tShares"
             activeIndex={activeIndex} activeShape={renderActiveShape}
@@ -178,7 +178,7 @@ function StakingLadder({ stakes }: { stakes: HexStake[] }) {
       <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.6px' }}>
         Staking Ladder
       </div>
-      <ResponsiveContainer width="100%" height={220}>
+      <ResponsiveContainer width="100%" height={220} minWidth={0} minHeight={1}>
         <BarChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 24 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis dataKey="daysRemaining" tick={{ fill: 'var(--fg-subtle)', fontSize: 12 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false}
