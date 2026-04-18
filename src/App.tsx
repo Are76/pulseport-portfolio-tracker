@@ -592,12 +592,13 @@ const MIN_INVESTMENT_THRESHOLD = 100;
 const OPENPULSECHAIN_API_BASE = 'https://api.openpulsechain.com';
 
 type ActiveTab = 'home' | 'overview' | 'assets' | 'stakes' | 'history' | 'tracker' | 'wallets' | 'defi';
-const ACTIVE_TABS: ActiveTab[] = ['home', 'overview', 'assets', 'stakes', 'history', 'tracker', 'wallets', 'defi'];
+const ACTIVE_TABS: ActiveTab[] = ['home', 'overview', 'assets', 'stakes', 'history', 'tracker', 'defi'];
 const ACTIVE_TAB_STORAGE_KEY = 'pulseport_active_tab';
 
 const readStoredActiveTab = (): ActiveTab => {
   if (typeof window === 'undefined') return 'home';
   const saved = window.localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
+  if (saved === 'wallets') return 'assets';
   return ACTIVE_TABS.includes(saved as ActiveTab) ? (saved as ActiveTab) : 'home';
 };
 
@@ -696,6 +697,7 @@ export default function App() {
     return readStoredJSON<string[]>('pulseport_hidden_tokens', []);
   });
   const [showHiddenCoins, setShowHiddenCoins] = useState(false);
+  const [coinVisibilityMenuOpen, setCoinVisibilityMenuOpen] = useState(false);
   const [priceChangePeriod, setPriceChangePeriod] = useState<'1h' | '6h' | '24h' | '7d'>('24h');
   const [assetSortField, setAssetSortField] = useState<'value' | 'change'>('value');
   const [assetSortDir, setAssetSortDir] = useState<'desc' | 'asc'>('desc');
@@ -750,6 +752,15 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, activeTab);
   }, [activeTab]);
+
+  useEffect(() => {
+    if (selectedWalletAddr === 'all') return;
+    const stillExists = wallets.some(w => w.address.toLowerCase() === selectedWalletAddr);
+    if (!stillExists) {
+      setSelectedWalletAddr('all');
+      setActiveWallet(null);
+    }
+  }, [selectedWalletAddr, wallets]);
 
   // Apply theme to document
   useEffect(() => {
@@ -2581,6 +2592,11 @@ export default function App() {
 
   const filteredTransactions = useMemo(() => {
     return currentTransactions.filter(tx => {
+      const walletKey = selectedWalletAddr.toLowerCase();
+      const matchesWallet = walletKey === 'all' ||
+        tx.from?.toLowerCase() === walletKey ||
+        tx.to?.toLowerCase() === walletKey ||
+        (tx as any).walletAddress?.toLowerCase?.() === walletKey;
       const matchesType = txTypeFilter === 'all' || tx.type === txTypeFilter;
       const matchesAsset = txAssetFilter === 'all' ||
         sameAssetSymbol(tx.asset, txAssetFilter, tx.chain) ||
@@ -2604,9 +2620,9 @@ export default function App() {
       } else if (txCoinCategory === 'bridged') {
         matchesCoin = !!(tx as any).bridged;
       }
-      return matchesType && matchesAsset && matchesChain && matchesYear && matchesCoin;
+      return matchesWallet && matchesType && matchesAsset && matchesChain && matchesYear && matchesCoin;
     });
-  }, [currentTransactions, txTypeFilter, txAssetFilter, txChainFilter, txYearFilter, txCoinCategory]);
+  }, [currentTransactions, selectedWalletAddr, txTypeFilter, txAssetFilter, txChainFilter, txYearFilter, txCoinCategory]);
 
   const summary = useMemo(() => {
     const assets = currentAssets;
@@ -3529,7 +3545,6 @@ export default function App() {
             { id: 'stakes',   label: 'HEX Stakes',         icon: Lock },
             { id: 'defi',     label: 'DeFi Positions',     icon: Droplets },
             { id: 'history',  label: 'Bridge Activity', icon: History },
-            { id: 'wallets',  label: 'Wallets',  icon: WalletIcon },
           ] as const).map(({ id, label, icon: Icon }) => {
             const isDefi = id === 'defi';
             const isActive = activeTab === id;
@@ -3586,10 +3601,10 @@ export default function App() {
               <div className="overflow-y-auto custom-scrollbar" style={{ maxHeight: 180, padding: '2px 0', display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {wallets.map((w, wIdx) => {
                   const dotColors = ['#00FF9F','#f739ff','#627EEA','#f97316','#a855f7','#f59e0b'];
-                  const isActive = selectedWalletAddr === w.address.toLowerCase() && activeTab === 'wallets';
+                  const isActive = selectedWalletAddr === w.address.toLowerCase() && activeTab === 'assets';
                   return (
                     <div key={w.address}
-                      onClick={() => { setSelectedWalletAddr(w.address.toLowerCase()); setActiveTab('wallets'); }}
+                      onClick={() => { setSelectedWalletAddr(w.address.toLowerCase()); setActiveWallet(w.address); setActiveTab('assets'); }}
                       style={{
                         padding: '7px 10px', borderRadius: 8,
                         background: isActive ? 'var(--accent-dim)' : 'transparent',
@@ -3748,12 +3763,12 @@ export default function App() {
         </header>
 
         {/* -- Wallet Selector Bar (sticky sub-header, all tabs except Wallets which has its own) -- */}
-        {wallets.length > 0 && activeTab !== 'wallets' && activeTab !== 'home' && (
+        {wallets.length > 0 && activeTab !== 'home' && (
           <div className="wallet-selector-subheader">
             <WalletSelector
               wallets={wallets.map(w => w.address)}
               activeWallet={activeWallet}
-              onSelect={setActiveWallet}
+              onSelect={(addr) => { setActiveWallet(addr); setSelectedWalletAddr(addr ? addr.toLowerCase() : 'all'); }}
               onAdd={() => setIsAddingWallet(true)}
               onRemove={addr => removeWallet(addr)}
               walletLabels={Object.fromEntries(wallets.filter(w => w.name).map(w => [w.address, w.name!]))}
@@ -3961,7 +3976,7 @@ export default function App() {
                         { label: 'HEX stakes', tab: 'stakes' as const, icon: Lock },
                         { label: 'DeFi positions', tab: 'defi' as const, icon: Droplets },
                         { label: 'Bridge activity', tab: 'history' as const, icon: History },
-                        { label: 'Wallets', tab: 'wallets' as const, icon: WalletIcon },
+                        { label: 'Wallets', tab: 'assets' as const, icon: WalletIcon },
                       ].map(({ label, tab, icon: Icon }) => (
                         <button key={label} onClick={() => setActiveTab(tab)}>
                           <Icon size={15} />
@@ -4592,24 +4607,96 @@ export default function App() {
             {activeTab === 'assets' && (
               <motion.div key="assets" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
                 {(() => {
+                  const selectedScope = selectedWalletAddr === 'all' ? null : wallets.find(w => w.address.toLowerCase() === selectedWalletAddr);
+                  const visibleWalletAssets = selectedScope ? (walletAssets[selectedWalletAddr] || []) : currentAssets;
+                  const selectedWalletStakes = selectedScope ? currentStakes.filter(s => s.walletAddress === selectedWalletAddr) : currentStakes;
+                  const selectedLiquidUsd = visibleWalletAssets.reduce((sum, asset) => sum + asset.value, 0);
+                  const selectedStakingUsd = selectedWalletStakes.reduce((sum, st) => {
+                    const hexPriceKey = `${st.chain}:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39`;
+                    const chainHexFallback = st.chain === 'pulsechain' ? prices['pulsechain:hex']?.usd : prices['hex']?.usd;
+                    const hexPrice = prices[hexPriceKey]?.usd || chainHexFallback || 0;
+                    const stakedHex = st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8;
+                    const tShares = st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12;
+                    const daysStaked = Math.max(0, (st.stakedDays ?? 0) - (st.daysRemaining ?? 0));
+                    const rate = st.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
+                    return sum + (stakedHex + tShares * daysStaked * rate) * hexPrice;
+                  }, 0);
+                  const selectedTotalUsd = selectedLiquidUsd + selectedStakingUsd;
                   const chainAssets = walletChainFilter === 'all' ? currentAssets : currentAssets.filter(a => a.chain === walletChainFilter);
                   const chainDisplayAssets = normalizeHoldingAssets(chainAssets);
                   const hiddenChainAssets = walletChainFilter === 'all' ? hiddenAssetRows : hiddenAssetRows.filter(a => a.chain === walletChainFilter);
                   return (<>
 
-                {/* -- All Wallets hero banner -- */}
+                {/* -- Wallet scope + management banner -- */}
                 <div style={{ background: 'var(--bg-elevated)', borderRadius: 16, padding: '24px', border: '1px solid var(--accent-border)' }}>
-                  <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 8 }}>All Wallets</div>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
+                    <div>
+                      <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 8 }}>
+                        {selectedScope ? selectedScope.name : 'All Wallets'}
+                      </div>
+                      {selectedScope && (
+                        <div style={{ fontSize: 12, color: 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace' }}>
+                          {selectedScope.address.slice(0, 10)}...{selectedScope.address.slice(-8)}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      {selectedScope && (
+                        <>
+                          <button className="btn-ghost" style={{ fontSize: 12, padding: '7px 10px' }} onClick={() => navigator.clipboard.writeText(selectedScope.address)}>
+                            <Copy size={13} /> Copy
+                          </button>
+                          <button className="btn-ghost" style={{ fontSize: 12, padding: '7px 10px' }} onClick={() => { setEditingWalletAddress(selectedScope.address); setEditWalletName(selectedScope.name); }}>
+                            <Pencil size={13} /> Rename
+                          </button>
+                        </>
+                      )}
+                      <button className="btn-primary" style={{ fontSize: 12, padding: '7px 12px' }} onClick={() => setIsAddingWallet(true)}>
+                        <Plus size={13} /> Add Wallet
+                      </button>
+                    </div>
+                  </div>
                   <div style={{ fontSize: 36, fontWeight: 800, color: 'var(--fg)', marginBottom: 16 }}>
-                    ${summary.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    ${(selectedScope ? selectedTotalUsd : summary.totalValue).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </div>
                   <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
                     <span className="wallet-stat-pill-green">
-                      Wallet ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      Liquid ${(selectedScope ? selectedLiquidUsd : summary.liquidValue).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </span>
                     <span style={{ background: 'rgba(239,68,68,0.12)', color: t.red, padding: '4px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: '1px solid rgba(239,68,68,0.20)' }}>
-                      Staking ${summary.stakingValueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      Staking ${(selectedScope ? selectedStakingUsd : summary.stakingValueUsd).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </span>
+                    <span style={{ background: 'var(--bg-surface)', color: 'var(--fg-muted)', padding: '4px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: '1px solid var(--border)' }}>
+                      {visibleWalletAssets.length} token{visibleWalletAssets.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <div className="wallet-selector-bar" style={{ marginBottom: 14 }}>
+                    <button
+                      className={`wallet-pill${selectedWalletAddr === 'all' ? ' active' : ''}`}
+                      onClick={() => { setSelectedWalletAddr('all'); setActiveWallet(null); }}
+                    >
+                      <span className="wallet-dot wallet-dot-multi" />
+                      All
+                    </button>
+                    {wallets.map((wallet, idx) => {
+                      const walletKey = wallet.address.toLowerCase();
+                      const isWalletActive = selectedWalletAddr === walletKey;
+                      const dotColor = WALLET_DOT_COLORS[idx % WALLET_DOT_COLORS.length];
+                      const walletValue = (walletAssets[walletKey] || []).reduce((sum, asset) => sum + asset.value, 0);
+                      return (
+                        <button
+                          key={wallet.address}
+                          className={`wallet-pill${isWalletActive ? ' active' : ''}`}
+                          title={wallet.address}
+                          onClick={() => { setSelectedWalletAddr(walletKey); setActiveWallet(wallet.address); }}
+                          style={isWalletActive ? { background: `${dotColor}1a`, borderColor: `${dotColor}55`, color: dotColor } : undefined}
+                        >
+                          <span className="wallet-dot" style={{ background: dotColor, boxShadow: `0 0 5px ${dotColor}bb` }} />
+                          <span>{wallet.name || shortenAddr(wallet.address)}</span>
+                          <span style={{ color: 'var(--fg-subtle)', fontSize: 11 }}>${walletValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {(['all', 'pulsechain', 'ethereum', 'base'] as const).map(c => (
@@ -4640,13 +4727,10 @@ export default function App() {
                       <RefreshCcw size={13} className={isLoading ? 'animate-spin' : ''} />
                       Refresh / detect
                     </button>
-                    <button type="button" onClick={() => { setShowHiddenCoins(true); setHiddenTokens([]); }} disabled={hiddenTokens.length === 0}>
+                    <button type="button" onClick={() => setShowHiddenCoins(v => !v)}>
                       <Eye size={13} />
-                      Unhide all
-                    </button>
-                    <button type="button" onClick={() => { setHideDust(false); setHideSpam(false); setShowHiddenCoins(true); }}>
-                      <EyeOff size={13} />
-                      Show all coins
+                      Hidden coins
+                      {hiddenTokens.length > 0 && <span className="hidden-coins-count">{hiddenTokens.length}</span>}
                     </button>
                     <button type="button" className="coin-visibility-primary" onClick={() => setIsCustomCoinsModalOpen(true)}>
                       <Plus size={13} />
@@ -4672,32 +4756,45 @@ export default function App() {
                         </button>
                       ))}
                     </div>
-                    <button onClick={() => setHideDust(!hideDust)}
-                      style={{ padding: '6px 14px', borderRadius: 8, border: `1px solid ${t.border}`,
-                        background: hideDust ? 'var(--accent)' : t.cardHigh, color: hideDust ? (theme === 'dark' ? '#000' : '#fff') : t.textSecondary,
-                        fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all .12s' }}>
-                      Hide Dust
-                    </button>
-                    <button onClick={() => setHideSpam(!hideSpam)}
-                      style={{ padding: '6px 14px', borderRadius: 8,
-                        background: hideSpam ? '#f739ff22' : t.cardHigh, color: hideSpam ? '#f739ff' : t.textSecondary,
-                        fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all .12s',
-                        border: hideSpam ? '1px solid #f739ff44' : `1px solid ${t.border}` }}>
-                      Hide Spam
-                    </button>
-                    <button onClick={() => setShowHiddenCoins(v => !v)}
-                      style={{ padding: '6px 14px', borderRadius: 8,
-                        background: showHiddenCoins ? 'var(--accent-dim)' : t.cardHigh,
-                        color: showHiddenCoins ? 'var(--accent)' : t.textSecondary,
-                        fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all .12s',
-                        border: showHiddenCoins ? '1px solid var(--accent-border)' : `1px solid ${t.border}`,
-                        display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <Eye size={13} />
-                      Hidden Coins
-                      {hiddenTokens.length > 0 && (
-                        <span className="hidden-coins-count">{hiddenTokens.length}</span>
+                    <div className="coin-visibility-menu-wrap">
+                      <button
+                        onClick={() => setCoinVisibilityMenuOpen(v => !v)}
+                        style={{ padding: '6px 14px', borderRadius: 8,
+                          background: coinVisibilityMenuOpen ? 'var(--accent-dim)' : t.cardHigh,
+                          color: coinVisibilityMenuOpen ? 'var(--accent)' : t.textSecondary,
+                          fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all .12s',
+                          border: coinVisibilityMenuOpen ? '1px solid var(--accent-border)' : `1px solid ${t.border}`,
+                          display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Eye size={13} />
+                        Hide / unhide
+                        {hiddenTokens.length > 0 && <span className="hidden-coins-count">{hiddenTokens.length}</span>}
+                        <ChevronDown size={13} />
+                      </button>
+                      {coinVisibilityMenuOpen && (
+                        <div className="coin-visibility-dropdown">
+                          <button type="button" onClick={() => setHideDust(v => !v)}>
+                            <span>{hideDust ? 'Show dust coins' : 'Hide dust coins'}</span>
+                            <small>{hideDust ? 'Dust filter is on' : 'Dust filter is off'}</small>
+                          </button>
+                          <button type="button" onClick={() => setHideSpam(v => !v)}>
+                            <span>{hideSpam ? 'Show spam coins' : 'Hide spam coins'}</span>
+                            <small>{hideSpam ? 'Spam filter is on' : 'Spam filter is off'}</small>
+                          </button>
+                          <button type="button" onClick={() => { setShowHiddenCoins(v => !v); setCoinVisibilityMenuOpen(false); }}>
+                            <span>{showHiddenCoins ? 'Close hidden coins' : 'Open hidden coins'}</span>
+                            <small>{hiddenTokens.length} manually hidden</small>
+                          </button>
+                          <button type="button" disabled={hiddenTokens.length === 0} onClick={() => { setHiddenTokens([]); setShowHiddenCoins(false); setCoinVisibilityMenuOpen(false); }}>
+                            <span>Unhide all manual coins</span>
+                            <small>Restore every hidden coin</small>
+                          </button>
+                          <button type="button" onClick={() => { setHideDust(false); setHideSpam(false); setShowHiddenCoins(true); setCoinVisibilityMenuOpen(false); }}>
+                            <span>Show everything</span>
+                            <small>Turn off filters and open hidden list</small>
+                          </button>
+                        </div>
                       )}
-                    </button>
+                    </div>
                     <button onClick={scanForSpam} disabled={isScanning || wallets.length === 0}
                       style={{ padding: '6px 14px', borderRadius: 8, border: `1px solid ${t.border}`,
                         background: t.cardHigh, color: isScanning ? t.textMuted : t.textSecondary,
@@ -4734,87 +4831,28 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* -- Allocation panel -- */}
-                {showHiddenCoins && (
-                  <div className="hidden-coins-panel">
-                    <div className="hidden-coins-panel-header">
-                      <div>
-                        <div className="hidden-coins-title">Hidden Coins</div>
-                        <div className="hidden-coins-subtitle">
-                          {hiddenTokens.length === 0
-                            ? 'Nothing is manually hidden. New buys can still be affected by Dust or Spam filters.'
-                            : `${hiddenTokens.length} hidden token${hiddenTokens.length !== 1 ? 's' : ''}. Unhide anything that was hidden by mistake.`}
-                        </div>
-                      </div>
-                      <div className="hidden-coins-actions">
-                        <button
-                          type="button"
-                          className="hidden-coins-soft-btn"
-                          onClick={() => { setHideDust(false); setHideSpam(false); }}
-                        >
-                          Show all filters
-                        </button>
-                        {hiddenTokens.length > 0 && (
-                          <button
-                            type="button"
-                            className="hidden-coins-soft-btn hidden-coins-danger-btn"
-                            onClick={() => setHiddenTokens([])}
-                          >
-                            Unhide all
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    {hiddenChainAssets.length > 0 ? (
-                      <div className="hidden-coins-list">
-                        {hiddenChainAssets.map(asset => {
-                          const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()] || (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()] || getTokenLogoUrl(asset);
-                          return (
-                            <div key={asset.id} className="hidden-coin-row">
-                              <div className="hidden-coin-identity">
-                                <span className="hidden-coin-logo">{logo ? <img src={logo} alt={asset.symbol} /> : asset.symbol.slice(0, 1)}</span>
-                                <span>
-                                  <span className="hidden-coin-name">{asset.symbol}</span>
-                                  <span className="hidden-coin-meta">{asset.name} - {asset.chain}</span>
-                                </span>
-                              </div>
-                              <div className="hidden-coin-side">
-                                <span className="hidden-coin-value">${asset.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
-                                <button type="button" className="hidden-coins-unhide-btn" onClick={() => unhideToken(asset.id)}>
-                                  Unhide
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="hidden-coins-empty">
-                        {walletChainFilter === 'all' ? 'No manually hidden coins.' : `No hidden coins on ${walletChainFilter}.`}
-                      </div>
-                    )}
-                  </div>
-                )}
-
                 {allocWheelOpen && (() => {
                   const ALLOC_COLORS_P = ['#00FF9F','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
                   const alloc = assetAllocation.length > 0 ? assetAllocation : [];
-                  const emptyData = [{ name: '', value: 1 }];
                   return (
                     <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, padding: '16px 20px', display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap', transition: 'all .2s ease' }}>
                       {!allocationCalculatorOpen ? (
                         <>
-                          <div style={{ width: 130, height: 130, flexShrink: 0 }}>
-                            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={1} debounce={50}>
-                              <PieChart>
-                                <Pie data={alloc.length > 0 ? alloc : emptyData} cx="50%" cy="50%" innerRadius={38} outerRadius={58} paddingAngle={alloc.length > 0 ? 3 : 0} dataKey="value" strokeWidth={0}>
-                                  {(alloc.length > 0 ? alloc : emptyData).map((_, i) => (
-                                    <Cell key={i} fill={alloc.length > 0 ? ALLOC_COLORS_P[i % ALLOC_COLORS_P.length] : 'var(--border)'} />
-                                  ))}
-                                </Pie>
-                                <RechartsTooltip contentStyle={{ background: 'var(--bg-surface)', border: '1px solid rgba(0,255,159,0.15)', borderRadius: 10, fontSize: 12, color: 'var(--fg)', boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }} />
-                              </PieChart>
-                            </ResponsiveContainer>
+                          <div style={{ width: 130, height: 130, flexShrink: 0, display: 'grid', placeItems: 'center' }}>
+                            {alloc.length > 0 ? (
+                              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={1} debounce={50}>
+                                <PieChart>
+                                  <Pie data={alloc} cx="50%" cy="50%" innerRadius={38} outerRadius={58} paddingAngle={3} dataKey="value" strokeWidth={0}>
+                                    {alloc.map((_, i) => (
+                                      <Cell key={i} fill={ALLOC_COLORS_P[i % ALLOC_COLORS_P.length]} />
+                                    ))}
+                                  </Pie>
+                                  <RechartsTooltip contentStyle={{ background: 'var(--bg-surface)', border: '1px solid rgba(0,255,159,0.15)', borderRadius: 10, fontSize: 12, color: 'var(--fg)', boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }} />
+                                </PieChart>
+                              </ResponsiveContainer>
+                            ) : (
+                              <div style={{ width: 98, height: 98, borderRadius: '50%', border: `12px solid ${t.border}`, opacity: 0.8 }} aria-hidden="true" />
+                            )}
                           </div>
                           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 7, minWidth: 160 }}>
                             {alloc.length > 0 ? alloc.map((a, i) => {
@@ -5332,6 +5370,76 @@ export default function App() {
                   </>)}
                 </div>
 
+                <div className="hidden-coins-bottom">
+                  <button type="button" className="hidden-coins-bottom-trigger" onClick={() => setShowHiddenCoins(v => !v)}>
+                    <span>
+                      Hidden coins
+                      {hiddenTokens.length > 0 && <span className="hidden-coins-count">{hiddenTokens.length}</span>}
+                    </span>
+                    <ChevronDown size={14} style={{ transform: showHiddenCoins ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }} />
+                  </button>
+                  {showHiddenCoins && (
+                    <div className="hidden-coins-panel">
+                      <div className="hidden-coins-panel-header">
+                        <div>
+                          <div className="hidden-coins-title">Hidden Coins</div>
+                          <div className="hidden-coins-subtitle">
+                            {hiddenTokens.length === 0
+                              ? 'Nothing is manually hidden. New buys can still be affected by Dust or Spam filters.'
+                              : `${hiddenTokens.length} hidden token${hiddenTokens.length !== 1 ? 's' : ''}. Unhide anything that was hidden by mistake.`}
+                          </div>
+                        </div>
+                        <div className="hidden-coins-actions">
+                          <button
+                            type="button"
+                            className="hidden-coins-soft-btn"
+                            onClick={() => { setHideDust(false); setHideSpam(false); }}
+                          >
+                            Show all filters
+                          </button>
+                          {hiddenTokens.length > 0 && (
+                            <button
+                              type="button"
+                              className="hidden-coins-soft-btn hidden-coins-danger-btn"
+                              onClick={() => setHiddenTokens([])}
+                            >
+                              Unhide all
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      {hiddenChainAssets.length > 0 ? (
+                        <div className="hidden-coins-list">
+                          {hiddenChainAssets.map(asset => {
+                            const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()] || (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()] || getTokenLogoUrl(asset);
+                            return (
+                              <div key={asset.id} className="hidden-coin-row">
+                                <div className="hidden-coin-identity">
+                                  <span className="hidden-coin-logo">{logo ? <img src={logo} alt={asset.symbol} /> : asset.symbol.slice(0, 1)}</span>
+                                  <span>
+                                    <span className="hidden-coin-name">{asset.symbol}</span>
+                                    <span className="hidden-coin-meta">{asset.name} - {asset.chain}</span>
+                                  </span>
+                                </div>
+                                <div className="hidden-coin-side">
+                                  <span className="hidden-coin-value">${asset.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                                  <button type="button" className="hidden-coins-unhide-btn" onClick={() => unhideToken(asset.id)}>
+                                    Unhide
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="hidden-coins-empty">
+                          {walletChainFilter === 'all' ? 'No manually hidden coins.' : `No hidden coins on ${walletChainFilter}.`}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {/* -- Transactions -- */}
                 <div style={{ marginTop: 8 }}>
                   {/* Type filter pills + active filter chips */}
@@ -5383,7 +5491,7 @@ export default function App() {
                   <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, overflow: 'hidden' }} className="md-elevation-1">
                     <div style={{ padding: '14px 18px', borderBottom: isCollapsed('holdings-txs') ? 'none' : `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: 14, fontWeight: 600, color: t.text }}>Bridge Activity</span>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: t.text }}>Transactions</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent-border)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
                           <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', display: 'inline-block', animation: 'pulse 2s infinite' }} />
                           Live
@@ -5455,57 +5563,22 @@ export default function App() {
                         <button onClick={() => { setTxTypeFilter('all'); setTxAssetFilter('all'); setTxChainFilter('all'); setTxYearFilter('all'); setTxCoinCategory('all'); }} style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', textDecoration: 'underline', marginLeft: 4 }}>Clear all</button>
                       </div>
                     )}
-                    {/* -- Timeline -- */}
-                    <div style={{ maxHeight: 700, overflowY: 'auto', padding: '14px 18px' }} className="custom-scrollbar">
-                      {filteredTransactions.length === 0 ? (
-                        <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 13 }}>
-                          No activity found for these filters.
-                        </div>
-                      ) : Object.entries(groupByDate(filteredTransactions)).map(([date, items]) => {
-                        const visibleItems = showHiddenTxs ? items : items.filter(tx => !hiddenTxIds.includes(tx.id));
-                        if (visibleItems.length === 0) return null;
-                        return (
-                          <div key={date} className="bridge-timeline-date-group">
-                            <div className="bridge-timeline-date-label">
-                              <span>{date}</span>
-                              <span className="bridge-timeline-date-count">{visibleItems.length}</span>
-                            </div>
-                            <div className="bridge-timeline-track">
-                              {visibleItems.map((tx) => {
-                                const matchedAsset = currentAssets.find(
-                                  (a) => a.symbol.toUpperCase() === tx.asset.toUpperCase() && (txChainFilter === 'all' || a.chain === tx.chain),
-                                );
-                                const logo = matchedAsset
-                                  ? (STATIC_LOGOS[(matchedAsset as any).address?.toLowerCase?.()] || (matchedAsset as any).logoUrl || tokenLogos[(matchedAsset as any).address?.toLowerCase?.()])
-                                  : undefined;
-                                const tokenTransactions = currentTransactions.filter(
-                                  (eventTx) => sameAssetSymbol(eventTx.asset, tx.asset, eventTx.chain) || sameAssetSymbol(eventTx.counterAsset ?? '', tx.asset, eventTx.chain),
-                                );
-
-                                return (
-                                  <BridgeTimelineEvent
-                                    key={tx.id}
-                                    tx={tx}
-                                    matchedAsset={matchedAsset}
-                                    logoUrl={logo}
-                                    themeCardColor={t.card}
-                                    hidden={hiddenTxIds.includes(tx.id)}
-                                    isSelected={selectedBridgeTxId === tx.id}
-                                    tokenTransactions={tokenTransactions}
-                                    plsPriceUsd={prices['pulsechain']?.usd ?? 0}
-                                    onSyncSwaps={fetchPortfolio}
-                                    isSyncing={isLoading}
-                                    onSelect={(selectedTx) => {
-                                      setSelectedBridgeTxId((prev) => (prev === selectedTx.id ? null : selectedTx.id));
-                                    }}
-                                    onToggleHide={(id) => setHiddenTxIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
-                                  />
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      })}
+                    {/* -- Wallet-style transaction cards -- */}
+                    <div className="custom-scrollbar tx-module-list wallet-tx-list">
+                      <TransactionList
+                        transactions={filteredTransactions}
+                        viewAsYou={viewAsYou}
+                        wallets={wallets}
+                        compact={txCompact}
+                        assets={currentAssets}
+                        getTokenLogoUrl={getTokenLogoUrl}
+                        tokenLogos={tokenLogos}
+                        hideIds={hiddenTxIds}
+                        onToggleHide={id => setHiddenTxIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
+                        showHidden={showHiddenTxs}
+                        onFilterByAsset={symbol => setTxAssetFilter(symbol)}
+                        emptyMessage="No transactions found for these filters."
+                      />
                       {/* Hidden transactions bar */}
                       {hiddenTxIds.length > 0 && (
                         <div style={{ marginTop: 8, padding: '8px 0', borderTop: `1px solid ${t.borderLight}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

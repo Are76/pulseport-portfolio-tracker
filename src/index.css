@@ -4444,6 +4444,51 @@ textarea:focus-visible,
   color: #000;
 }
 
+.coin-visibility-menu-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.coin-visibility-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  width: min(320px, calc(100vw - 32px));
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  box-shadow: 0 18px 44px rgba(0,0,0,0.32);
+}
+
+.coin-visibility-dropdown button {
+  width: 100%;
+  justify-content: flex-start;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 2px;
+  border: 0;
+  background: transparent;
+  color: var(--fg);
+  padding: 9px 10px;
+  text-align: left;
+}
+
+.coin-visibility-dropdown button:hover {
+  background: var(--bg-surface);
+}
+
+.coin-visibility-dropdown button:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+.coin-visibility-dropdown small {
+  color: var(--fg-subtle);
+  font-size: 11px;
+}
+
 .custom-coin-modal {
   position: relative;
   width: 100%;
@@ -4737,6 +4782,33 @@ textarea:focus-visible,
   padding: 16px;
   display: grid;
   gap: 14px;
+}
+
+.hidden-coins-bottom {
+  display: grid;
+  gap: 8px;
+}
+
+.hidden-coins-bottom-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  color: var(--fg);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.hidden-coins-bottom-trigger span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .hidden-coins-panel-header {
