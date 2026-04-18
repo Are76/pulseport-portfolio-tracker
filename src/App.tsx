@@ -2582,7 +2582,9 @@ export default function App() {
   const filteredTransactions = useMemo(() => {
     return currentTransactions.filter(tx => {
       const matchesType = txTypeFilter === 'all' || tx.type === txTypeFilter;
-      const matchesAsset = txAssetFilter === 'all' || sameAssetSymbol(tx.asset, txAssetFilter, tx.chain);
+      const matchesAsset = txAssetFilter === 'all' ||
+        sameAssetSymbol(tx.asset, txAssetFilter, tx.chain) ||
+        sameAssetSymbol(tx.counterAsset ?? '', txAssetFilter, tx.chain);
       const matchesChain = txChainFilter === 'all' || tx.chain === txChainFilter;
       // Year filter
       const txYear = new Date(tx.timestamp).getFullYear().toString();
@@ -2748,37 +2750,32 @@ export default function App() {
     );
 
     sortedTxs.forEach(tx => {
-      const assetKey = `${tx.chain}:${tx.asset}`;
-      
-      if (tx.type === 'deposit' || (tx.type === 'swap' && tx.counterAsset)) {
-        // Buying or receiving asset
-        const amount = tx.amount;
-        const value = tx.valueUsd || 0;
-        
-        if (!costBasisMap[assetKey]) {
-          costBasisMap[assetKey] = { amount: 0, totalCost: 0 };
-        }
+      const addCost = (symbol: string, amount: number, value: number) => {
+        const assetKey = `${tx.chain}:${symbol}`;
+        if (!costBasisMap[assetKey]) costBasisMap[assetKey] = { amount: 0, totalCost: 0 };
         costBasisMap[assetKey].amount += amount;
         costBasisMap[assetKey].totalCost += value;
-      } else if (tx.type === 'withdraw' || tx.type === 'swap') {
-        // Selling or sending asset
-        const amount = tx.amount;
-        const value = tx.valueUsd || 0;
-        
-        if (costBasisMap[assetKey] && costBasisMap[assetKey].amount > 0) {
-          const avgCost = costBasisMap[assetKey].totalCost / costBasisMap[assetKey].amount;
-          const costOfSold = amount * avgCost;
-          const profit = value - costOfSold;
-          
-          // Only count as realized PNL if it's a swap/trade (intentional exit)
-          if (tx.type === 'swap' || tx.type === 'trade') {
-            realizedPnl += profit;
-          }
-          
-          // Update remaining cost basis
-          costBasisMap[assetKey].amount -= amount;
-          costBasisMap[assetKey].totalCost -= costOfSold;
+      };
+
+      const realizeSale = (symbol: string, amount: number, value: number, countProfit: boolean) => {
+        const assetKey = `${tx.chain}:${symbol}`;
+        if (!costBasisMap[assetKey] || costBasisMap[assetKey].amount <= 0) return;
+        const avgCost = costBasisMap[assetKey].totalCost / costBasisMap[assetKey].amount;
+        const costOfSold = Math.min(costBasisMap[assetKey].totalCost, amount * avgCost);
+        if (countProfit) realizedPnl += value - costOfSold;
+        costBasisMap[assetKey].amount = Math.max(0, costBasisMap[assetKey].amount - amount);
+        costBasisMap[assetKey].totalCost = Math.max(0, costBasisMap[assetKey].totalCost - costOfSold);
+      };
+
+      if (tx.type === 'deposit') {
+        addCost(tx.asset, tx.amount, tx.valueUsd || 0);
+      } else if (tx.type === 'withdraw') {
+        realizeSale(tx.asset, tx.amount, tx.valueUsd || 0, false);
+      } else if (tx.type === 'swap') {
+        if (tx.counterAsset && tx.counterAmount) {
+          realizeSale(tx.counterAsset, tx.counterAmount, tx.valueUsd || 0, true);
         }
+        addCost(tx.asset, tx.amount, tx.valueUsd || 0);
       }
     });
 
@@ -4096,9 +4093,9 @@ export default function App() {
                            <div style={{ height: 1, background: 'var(--border)', margin: '16px 0 14px' }} />
                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }} className="max-sm:grid-cols-1">
                              {[
-                               { label: 'Total Invested', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : 'â€”', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? 'ETH + stablecoin inflows' : 'No ETH/stable inflows found', color: t.text,
+                               { label: 'Total Invested', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '-', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? 'ETH + stablecoin inflows' : 'No ETH/stable inflows found', color: t.text,
                                  icon: <TrendingUp size={14} color={t.textMuted} />, iconBg: t.cardHigh, link: true },
-                               { label: 'Total P&L', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : 'â€”', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}${((summary.unifiedPnl / summary.netInvestment) * 100).toFixed(1)}% vs invested` : 'P&L % needs ETH/stable history', color: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? t.green : t.red) : t.text,
+                               { label: 'Total P&L', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '-', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}${((summary.unifiedPnl / summary.netInvestment) * 100).toFixed(1)}% vs invested` : 'P&L % needs ETH/stable history', color: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? t.green : t.red) : t.text,
                                  icon: <ArrowUpRight size={14} color={summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? t.green : t.red) : t.textMuted} />, iconBg: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? 'rgba(0,255,159,0.1)' : 'rgba(244,63,94,0.1)') : t.cardHigh, link: false },
                              ].map(({ label, val, sub, color, icon, iconBg, link }) => (
                                <div key={label} className="stat-card" onClick={link ? () => setActiveTab('history') : undefined}
@@ -5436,7 +5433,7 @@ export default function App() {
                     <div className="tx-filter-row history-filter-row" style={{ padding: '8px 18px', borderBottom: `1px solid ${t.border}`, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                       {[
                         { value: txChainFilter, onChange: setTxChainFilter, options: [['all','All Chains'],['pulsechain','PulseChain'],['ethereum','Ethereum'],['base','Base']] as [string,string][] },
-                        { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Tokens'], ...Array.from(new Set(currentTransactions.map(tx => tx.asset))).sort().map(a => [a,a])] as [string,string][] },
+                        { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Tokens'], ...Array.from(new Set(currentTransactions.flatMap(tx => [tx.asset, tx.counterAsset].filter(Boolean) as string[]))).sort().map(a => [a,a])] as [string,string][] },
                         { value: txYearFilter, onChange: setTxYearFilter, options: [['all','All Years'],['2026','2026'],['2025','2025'],['2024','2024'],['2023','2023'],['2022','2022'],['2021','2021']] as [string,string][] },
                         { value: txCoinCategory, onChange: setTxCoinCategory, options: [['all','All Coins'],['stablecoins','Stablecoins'],['eth_weth','ETH/WETH'],['hex','HEX/eHEX'],['pls_wpls','PLS/WPLS'],['bridged','Bridged']] as [string,string][] },
                       ].map(({ value, onChange, options }, i) => (
@@ -5575,8 +5572,8 @@ export default function App() {
             {/* Stats grid */}
             <div className="stat-grid-4">
               {[
-                { label: 'Total Invested', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : 'â€”', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? 'ETH + stablecoin inflows' : 'No ETH/stable inflows found', color: 'var(--fg)' },
-                { label: 'Total P&L', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : 'â€”', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}${((summary.unifiedPnl / summary.netInvestment) * 100).toFixed(1)}% vs invested` : 'P&L % needs ETH/stable history', color: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? t.green : t.red) : 'var(--fg)' },
+                { label: 'Total Invested', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '-', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? 'ETH + stablecoin inflows' : 'No ETH/stable inflows found', color: 'var(--fg)' },
+                { label: 'Total P&L', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '-', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}${((summary.unifiedPnl / summary.netInvestment) * 100).toFixed(1)}% vs invested` : 'P&L % needs ETH/stable history', color: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? t.green : t.red) : 'var(--fg)' },
                 { label: 'Realized P&L', val: `${summary.realizedPnl >= 0 ? '+' : ''}$${Math.abs(summary.realizedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Closed trade profit', color: summary.realizedPnl >= 0 ? t.green : t.red },
                 { label: 'Unrealized P&L', val: `${summary.pnl24h >= 0 ? '+' : ''}$${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: "Today's portfolio change", color: summary.pnl24h >= 0 ? t.green : t.red },
               ].map(({ label, val, sub, color }) => (
@@ -6331,7 +6328,10 @@ export default function App() {
                 const filtered = baseTxs.filter(tx => {
                   if (txTypeFilter !== 'all' && tx.type !== txTypeFilter) return false;
                   if (walletChainFilter !== 'all' && tx.chain !== walletChainFilter) return false;
-                  if (txAssetFilter !== 'all' && tx.asset !== txAssetFilter) return false;
+                  if (txAssetFilter !== 'all' &&
+                    !sameAssetSymbol(tx.asset, txAssetFilter, tx.chain) &&
+                    !sameAssetSymbol(tx.counterAsset ?? '', txAssetFilter, tx.chain)
+                  ) return false;
                   return true;
                 });
                 if (baseTxs.length === 0) return null;
@@ -6348,7 +6348,7 @@ export default function App() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {!isCollapsed('wallet-txs') && [
                           { value: txTypeFilter, onChange: setTxTypeFilter, options: [['all','All Types'],['deposit','Received'],['withdraw','Sent'],['swap','Swaps']] as [string,string][] },
-                          { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Tokens'], ...Array.from(new Set(baseTxs.map(tx => tx.asset))).sort().map(a => [a,a])] as [string,string][] },
+                          { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Tokens'], ...Array.from(new Set(baseTxs.flatMap(tx => [tx.asset, tx.counterAsset].filter(Boolean) as string[]))).sort().map(a => [a,a])] as [string,string][] },
                         ].map(({ value, onChange, options }, i) => (
                           <select key={i} value={value} onChange={e => onChange(e.target.value)}
                             className="history-filter-select"

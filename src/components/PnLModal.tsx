@@ -130,16 +130,18 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
   // (both are priced at most-recent data refresh — historical prices are unavailable)
   const costUsd         = filteredBuys.reduce((s, tx) => s + (tx.valueUsd ?? 0), 0);
   const proceedsUsd     = filteredSells.reduce((s, tx) => s + (tx.valueUsd ?? 0), 0);
-  const soldFraction    = totalBought > 0 ? Math.min(totalSold / totalBought, 1) : 0;
-  const realizedCostUsd = costUsd * soldFraction;
+  const avgCostUsd      = totalBought > 0 ? costUsd / totalBought : 0;
+  const realizedCostUsd = Math.min(costUsd, totalSold * avgCostUsd);
   const realizedPnl     = proceedsUsd - realizedCostUsd;
+  const remainingCostUsd = Math.max(0, costUsd - realizedCostUsd);
 
   const gasNative = filteredRows.reduce((s, r) => s + (r.tx.fee ?? 0), 0);
   const gasUsd    = gasNative * nativePrice;
 
   const holdingsBal = asset.balance;
   const holdingsUsd = asset.value;
-  const totalPnl    = realizedPnl + holdingsUsd;
+  const unrealizedPnl = holdingsUsd - remainingCostUsd;
+  const totalPnl    = realizedPnl + unrealizedPnl - gasUsd;
 
   const realPct = costUsd > 0 ? (realizedPnl / costUsd) * 100 : null;
 

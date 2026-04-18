@@ -155,6 +155,10 @@ export interface Transaction {
   counterAsset?: string;
   /** Amount of counterAsset spent. */
   counterAmount?: number;
+  /** Estimated USD price per received asset at swap time or last sync. */
+  assetPriceUsdAtTx?: number;
+  /** Estimated USD price per spent asset at swap time or last sync. */
+  counterPriceUsdAtTx?: number;
   bridged?: boolean;
   status?: string;
 }

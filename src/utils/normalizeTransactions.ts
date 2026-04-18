@@ -49,12 +49,23 @@ export function normalizeTransactions(
 
       // In + Out on the same hash → this is a swap
       if (outs.length > 0 && ins.length > 0) {
-        // Prefer a non-zero ERC-20 transfer over a zero-amount native-token router call
+        const txUsd = (t: Transaction) => t.valueUsd ?? 0;
+
+        // Prefer the leg with real economic value. Amount alone is misleading
+        // when routers hop through tokens with very different decimal scales.
         const pickBest = (arr: Transaction[]): Transaction => {
           const tokens = arr.filter(t => !isNativeTx(t) && t.amount > 0);
-          if (tokens.length) return tokens.reduce((b, t) => t.amount > b.amount ? t : b);
+          if (tokens.length) return tokens.reduce((b, t) => {
+            const tScore = txUsd(t) > 0 ? txUsd(t) : t.amount;
+            const bScore = txUsd(b) > 0 ? txUsd(b) : b.amount;
+            return tScore > bScore ? t : b;
+          });
           const nonZero = arr.filter(t => t.amount > 0);
-          if (nonZero.length) return nonZero.reduce((b, t) => t.amount > b.amount ? t : b);
+          if (nonZero.length) return nonZero.reduce((b, t) => {
+            const tScore = txUsd(t) > 0 ? txUsd(t) : t.amount;
+            const bScore = txUsd(b) > 0 ? txUsd(b) : b.amount;
+            return tScore > bScore ? t : b;
+          });
           return arr[0];
         };
 
@@ -68,8 +79,13 @@ export function normalizeTransactions(
             ...inTx,
             id,
             type: 'swap',
+            from: outTx.from,
+            to: outTx.to || inTx.from,
+            valueUsd: inTx.valueUsd || outTx.valueUsd,
             counterAsset: outTx.asset,
             counterAmount: outTx.amount,
+            assetPriceUsdAtTx: inTx.amount > 0 && inTx.valueUsd != null ? inTx.valueUsd / inTx.amount : undefined,
+            counterPriceUsdAtTx: outTx.amount > 0 && outTx.valueUsd != null ? outTx.valueUsd / outTx.amount : undefined,
           });
         }
         return;

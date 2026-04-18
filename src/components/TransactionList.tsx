@@ -192,12 +192,11 @@ export function TransactionList({
         const { Icon, bg, color, label } = txVisual(tx.type);
 
         const coinAsset = findAsset(tx.asset, tx.chain);
+        const counterAsset = tx.counterAsset ? findAsset(tx.counterAsset, tx.chain) : undefined;
         const coinLogo  = getLogoUrl(tx.asset, tx.chain);
         const explorerBase = EXPLORER[tx.chain] ?? 'https://scan.pulsechain.com';
-
-        const typeLabel = isSwap && viewAsYou
-          ? `Swap \u00b7 ${displayAddr(tx.from)} \u2192 ${displayAddr(tx.to)}`
-          : label;
+        const fromLabel = displayAddr(tx.from);
+        const toLabel = displayAddr(tx.to);
 
         return (
           <div
@@ -221,12 +220,25 @@ export function TransactionList({
                 <div className="tx-card__meta">
                   {/* Badges row: type pill + chain dot + chain label + date */}
                   <div className="tx-card__badges">
-                    <span className="tx-card__type-badge" style={{ background: bg, color }}>{typeLabel}</span>
+                    <span className="tx-card__type-badge" style={{ background: bg, color }}>{label}</span>
                     <span className="tx-chain-dot" style={{ background: CHAIN_DOT[tx.chain] ?? 'var(--fg-subtle)' }} title={tx.chain} />
                     <span className="tx-chain-label" style={{ color: CHAIN_DOT[tx.chain] ?? 'var(--fg-subtle)' }}>
                       {CHAIN_LABEL[tx.chain] ?? tx.chain.toUpperCase()}
                     </span>
                     <span className="tx-card__date">{format(tx.timestamp, 'MMM d, yyyy')}</span>
+                  </div>
+
+                  <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                    <span>{isSwap ? 'from' : isDeposit ? 'from' : 'to'}</span>
+                    <strong style={{ color: isOwn(isSwap || isDeposit ? tx.from : tx.to) ? 'var(--accent)' : 'var(--fg-muted)' }}>
+                      {isSwap || isDeposit ? fromLabel : toLabel}
+                    </strong>
+                    {isSwap && (
+                      <>
+                        <span>to</span>
+                        <strong style={{ color: isOwn(tx.to) ? 'var(--accent)' : 'var(--fg-muted)' }}>{toLabel}</strong>
+                      </>
+                    )}
                   </div>
 
                   {/* Amount row */}
@@ -237,7 +249,7 @@ export function TransactionList({
                     >
                       {isDeposit ? '+' : isWithdraw ? '\u2212' : ''}
                       {isSwap && tx.counterAsset
-                        ? `${(tx.counterAmount ?? 0).toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.counterAsset} \u2192 ${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`
+                        ? `Paid ${(tx.counterAmount ?? 0).toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.counterAsset} \u2192 Got ${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`
                         : `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`}
                       {!compact && tx.valueUsd != null && (
                         <span className="tx-card__usd">
@@ -290,7 +302,7 @@ export function TransactionList({
             {isExpanded && (
               <div style={{ padding: '0 18px 14px', background: 'var(--bg-inset, var(--bg-elevated))' }}>
                 {isSwap
-                  ? <SwapDetail tx={tx} coinAsset={coinAsset} coinLogo={coinLogo} getLogoUrl={getLogoUrl} displayAddr={displayAddr} isOwn={isOwn} explorerBase={explorerBase} onFilterByAsset={onFilterByAsset} />
+                  ? <SwapDetail tx={tx} coinAsset={coinAsset} counterAsset={counterAsset} coinLogo={coinLogo} getLogoUrl={getLogoUrl} displayAddr={displayAddr} isOwn={isOwn} explorerBase={explorerBase} onFilterByAsset={onFilterByAsset} />
                   : <TransferDetail tx={tx} isDeposit={isDeposit} coinAsset={coinAsset} displayAddr={displayAddr} isOwn={isOwn} explorerBase={explorerBase} />
                 }
               </div>
@@ -306,6 +318,7 @@ export function TransactionList({
 interface SwapDetailProps {
   tx: Transaction;
   coinAsset: Asset | undefined;
+  counterAsset: Asset | undefined;
   coinLogo: string;
   getLogoUrl: (symbol: string, chain: string) => string;
   displayAddr: (addr: string | undefined) => string;
@@ -314,13 +327,14 @@ interface SwapDetailProps {
   onFilterByAsset?: (symbol: string) => void;
 }
 
-function SwapDetail({ tx, coinAsset, coinLogo, getLogoUrl, displayAddr, isOwn, explorerBase, onFilterByAsset }: SwapDetailProps) {
+function SwapDetail({ tx, coinAsset, counterAsset, coinLogo, getLogoUrl, displayAddr, isOwn, explorerBase, onFilterByAsset }: SwapDetailProps) {
   const counterLogo = tx.counterAsset ? getLogoUrl(tx.counterAsset, tx.chain) : '';
 
   // Performance tracking
   const nowPriceReceived = coinAsset?.price ?? 0;
-  const thenPriceReceived = tx.valueUsd && tx.amount > 0 ? tx.valueUsd / tx.amount : 0;
-  const thenPriceSpent    = tx.valueUsd && tx.counterAmount && tx.counterAmount > 0 ? tx.valueUsd / tx.counterAmount : 0;
+  const nowPriceSpent = counterAsset?.price ?? 0;
+  const thenPriceReceived = tx.assetPriceUsdAtTx ?? (tx.valueUsd && tx.amount > 0 ? tx.valueUsd / tx.amount : 0);
+  const thenPriceSpent = tx.counterPriceUsdAtTx ?? (tx.valueUsd && tx.counterAmount && tx.counterAmount > 0 ? tx.valueUsd / tx.counterAmount : 0);
 
   // P&L: dollar value of received tokens at current price vs entry cost
   const dollarPnl = tx.valueUsd != null && nowPriceReceived > 0
@@ -374,6 +388,9 @@ function SwapDetail({ tx, coinAsset, coinLogo, getLogoUrl, displayAddr, isOwn, e
       )}
 
       {/* Received leg */}
+      <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.55px', marginBottom: 5 }}>
+        Got
+      </div>
       <TokenLeg
         logo={coinLogo}
         symbol={tx.asset}
@@ -389,6 +406,9 @@ function SwapDetail({ tx, coinAsset, coinLogo, getLogoUrl, displayAddr, isOwn, e
       {/* Spent leg */}
       {tx.counterAsset != null && tx.counterAmount != null && (
         <div style={{ marginTop: 6 }}>
+          <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.55px', marginBottom: 5 }}>
+            Paid
+          </div>
           <TokenLeg
             logo={counterLogo}
             symbol={tx.counterAsset}
@@ -396,7 +416,7 @@ function SwapDetail({ tx, coinAsset, coinLogo, getLogoUrl, displayAddr, isOwn, e
             sign="\u2212"
             color="#ef4444"
             thenPrice={thenPriceSpent}
-            nowPrice={0}
+            nowPrice={nowPriceSpent}
             explorerUrl={`${explorerBase}/tx/${tx.hash}`}
             onFilter={onFilterByAsset && tx.counterAsset ? () => onFilterByAsset(tx.counterAsset as string) : undefined}
           />

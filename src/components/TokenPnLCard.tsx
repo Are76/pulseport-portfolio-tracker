@@ -119,7 +119,7 @@ export function TokenPnLCard({
 
   // ── Compute P&L ─────────────────────────────────────────────────────────────
   const {
-    totalCost, totalProceeds, realizedPnl,
+    totalCost: _legacyTotalCost, totalProceeds: _legacyTotalProceeds, realizedPnl: _legacyRealizedPnl,
     buyCount, sellCount, transferInCount, transferOutCount,
     gasFeePls, gasFeeUsd,
     swapCount,
@@ -173,8 +173,50 @@ export function TokenPnLCard({
   const currentBalance = asset?.balance ?? 0;
   const currentValue   = currentBalance * priceUsd;
 
-  // Total P&L = realized + current unrealized
-  const totalPnl = realizedPnl + currentValue;
+  const pnl = useMemo(() => {
+    let cost = 0;
+    let proceeds = 0;
+    let bought = 0;
+    let sold = 0;
+
+    transactions.forEach(tx => {
+      const usd = tx.valueUsd ?? 0;
+      const assetMatches = sameSymbol(tx.asset, symbol);
+      const counterMatches = sameSymbol(tx.counterAsset ?? '', symbol);
+
+      if (tx.type === 'swap') {
+        if (assetMatches) {
+          bought += tx.amount;
+          cost += usd;
+        }
+        if (counterMatches) {
+          sold += tx.counterAmount ?? 0;
+          proceeds += usd;
+        }
+      } else if (tx.type === 'deposit' && assetMatches) {
+        bought += tx.amount;
+        cost += usd;
+      } else if (tx.type === 'withdraw' && assetMatches) {
+        sold += tx.amount;
+        proceeds += usd;
+      }
+    });
+
+    const avgCost = bought > 0 ? cost / bought : 0;
+    const realizedCost = Math.min(cost, sold * avgCost);
+    const realized = proceeds - realizedCost;
+    const remainingCost = Math.max(0, cost - realizedCost);
+    const unrealized = currentValue - remainingCost;
+    const total = realized + unrealized - gasFeeUsd;
+    const pct = cost > 0 ? (total / cost) * 100 : null;
+
+    return { cost, proceeds, realized, remainingCost, unrealized, total, pct };
+  }, [transactions, symbol, currentValue, gasFeeUsd]);
+
+  const totalCost = pnl.cost;
+  const totalProceeds = pnl.proceeds;
+  const realizedPnl = pnl.realized;
+  const totalPnl = pnl.total;
 
   const txCount = transactions.length;
 
@@ -188,10 +230,9 @@ export function TokenPnLCard({
     : `${txCount} transactions`;
 
   const totalPnlColor = getProfitLossColor(totalPnl);
-  const realPnlColor  = getProfitLossColor(realizedPnl);
+  const realPnlColor  = getProfitLossColor(pnl.realized);
 
-  // Pct return (realized only, vs cost)
-  const realPct = totalCost > 0 ? (realizedPnl / totalCost) * 100 : null;
+  const realPct = pnl.pct;
 
   return (
     <div style={{
@@ -434,17 +475,17 @@ export function TokenPnLCard({
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '10px 12px', borderRadius: 10,
-                background: currentValue >= 0 ? 'rgba(247,57,255,0.04)' : 'rgba(244,63,94,0.04)',
+                background: pnl.unrealized >= 0 ? 'rgba(0,255,159,0.05)' : 'rgba(244,63,94,0.05)',
                 border: '1px solid rgba(247,57,255,0.12)',
               }}>
                 <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.55px' }}>
                   Unrealized
                 </span>
                 <span style={{
-                  fontSize: 15, fontWeight: 800, color: currentValue > 0 ? 'var(--chain-pulse)' : 'var(--fg-subtle)',
+                  fontSize: 15, fontWeight: 800, color: pnl.unrealized >= 0 ? 'var(--positive)' : 'var(--negative)',
                   fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.03em',
                 }}>
-                  {currentValue > 0 ? `+${fmtUsd(currentValue)}` : '—'}
+                  {formatSign(pnl.unrealized)}{fmtUsd(Math.abs(pnl.unrealized))}
                 </span>
               </div>
             </div>
@@ -505,3 +546,4 @@ export function TokenPnLCard({
     </div>
   );
 }
+
