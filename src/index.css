@@ -4114,6 +4114,26 @@ textarea:focus-visible,
 .mwm-body::-webkit-scrollbar-track { background: transparent; }
 .mwm-body::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.25); border-radius: 2px; }
 
+.mwm-search-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 14px 0;
+  padding: 9px 12px;
+  border: 1px solid var(--accent-border);
+  border-radius: 8px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.mwm-search-status-error {
+  border-color: var(--negative-border);
+  background: var(--negative-dim);
+  color: var(--negative-text);
+}
+
 .mwm-state-center {
   display: flex;
   flex-direction: column;

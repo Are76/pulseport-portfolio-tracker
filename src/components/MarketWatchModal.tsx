@@ -23,17 +23,18 @@ function fmtUsd(v: number | null | undefined): string {
 
 // ── core PulseChain token addresses to seed the watchlist ────────────────────
 
-const CORE_ADDRESSES = [
-  '0xa1077a294dde1b09bb078844df40758a5d0f9a27', // WPLS
-  '0x95b303987a60c71504d99aa1b13b4da07b0790ab', // PLSX
-  '0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d', // INC
-  '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39', // pHEX
-  '0x57fde0a71132198bbec939b98976993d8d89d225', // eHEX
-  '0x02dcdd04e3f455d838cd1249292c58f3b79e3c3c', // pWETH
-  '0xb17d901469b9208b17d916112988a3fed19b5ca1', // pWBTC
-  '0xefd766ccb38eaf1dfd701853bfce31359239f305', // pDAI
-  '0x15d38573d2feeb82e7ad5187ab8c1d52810b1f07', // pUSDC
+const CORE_TOKENS = [
+  { address: '0xa1077a294dde1b09bb078844df40758a5d0f9a27', symbol: 'PLS',  name: 'PulseChain' },
+  { address: '0x95b303987a60c71504d99aa1b13b4da07b0790ab', symbol: 'PLSX', name: 'PulseX' },
+  { address: '0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d', symbol: 'INC',  name: 'Incentive' },
+  { address: '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39', symbol: 'HEX',  name: 'HEX' },
+  { address: '0xf6f8db0aba00007681f8faf16a0fda1c9b030b11', symbol: 'PRVX', name: 'PrivacyX' },
+  { address: '0x02dcdd04e3f455d838cd1249292c58f3b79e3c3c', symbol: 'WETH', name: 'Wrapped Ether from Ethereum' },
+  { address: '0xb17d901469b9208b17d916112988a3fed19b5ca1', symbol: 'WBTC', name: 'Wrapped BTC from Ethereum' },
 ];
+
+const CORE_ADDRESSES = CORE_TOKENS.map(t => t.address);
+const CORE_TOKEN_BY_ADDRESS = new Map(CORE_TOKENS.map(t => [t.address, t]));
 
 // ── types ─────────────────────────────────────────────────────────────────────
 
@@ -178,6 +179,9 @@ export function MarketWatchModal({ theme, onClose }: Props) {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
   const [search, setSearch]     = useState('');
+  const [searchPairs, setSearchPairs] = useState<WatchPair[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [sortBy, setSortBy]     = useState<SortKey>('volume');
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
@@ -192,79 +196,101 @@ export function MarketWatchModal({ theme, onClose }: Props) {
   const green = theme === 'dark' ? '#00FF9F' : '#059669';
   const red   = theme === 'dark' ? '#f43f5e' : '#dc2626';
 
+  function tokenAddress(token?: { address?: string } | null) {
+    return token?.address?.toLowerCase?.() ?? '';
+  }
+
+  function rawPairToWatchPair(p: any, trackedAddress?: string): WatchPair {
+    const tracked = trackedAddress ? CORE_TOKEN_BY_ADDRESS.get(trackedAddress.toLowerCase()) : null;
+    const baseToken = {
+      address: p.baseToken?.address,
+      symbol: tracked?.symbol ?? p.baseToken?.symbol ?? 'TOKEN',
+      name: tracked?.name ?? p.baseToken?.name ?? 'Unknown token',
+    };
+
+    return {
+      pairAddress: p.pairAddress,
+      baseToken,
+      quoteToken: p.quoteToken,
+      priceUsd: p.priceUsd ?? null,
+      priceChange: {
+        h1:  p.priceChange?.h1  ?? null,
+        h24: p.priceChange?.h24 ?? null,
+      },
+      volume24h:    p.volume?.h24 ?? 0,
+      liquidityUsd: p.liquidity?.usd ?? 0,
+      marketCap:    p.marketCap ?? p.fdv ?? null,
+      fdv:          p.fdv ?? null,
+      txns24h:      (p.txns?.h24?.buys ?? 0) + (p.txns?.h24?.sells ?? 0),
+      imageUrl:     p.info?.imageUrl ?? null,
+      dexScreenerUrl: p.url ?? `https://dexscreener.com/${p.chainId ?? 'pulsechain'}/${p.pairAddress}`,
+    };
+  }
+
+  function bestCorePairs(rawPairs: any[]): WatchPair[] {
+    const selected = new Map<string, any>();
+    const trackedAddrs = new Set(CORE_ADDRESSES);
+
+    for (const p of rawPairs) {
+      if (p.chainId !== 'pulsechain' || !p.pairAddress) continue;
+      const baseAddress = tokenAddress(p.baseToken);
+      if (!trackedAddrs.has(baseAddress)) continue;
+
+      const current = selected.get(baseAddress);
+      const score = (p.liquidity?.usd ?? 0) + ((p.volume?.h24 ?? 0) * 0.35);
+      const currentScore = current ? (current.liquidity?.usd ?? 0) + ((current.volume?.h24 ?? 0) * 0.35) : -1;
+      if (!current || score > currentScore) {
+        selected.set(baseAddress, p);
+      }
+    }
+
+    return CORE_ADDRESSES
+      .map(address => {
+        const raw = selected.get(address);
+        return raw ? rawPairToWatchPair(raw, address) : null;
+      })
+      .filter((pair): pair is WatchPair => Boolean(pair));
+  }
+
+  async function fetchDexTokenPairs(addresses: string[]): Promise<any[]> {
+    const raw: any[] = [];
+    for (let i = 0; i < addresses.length; i += 30) {
+      const chunk = addresses.slice(i, i + 30);
+      const tokenV1 = await fetch(`https://api.dexscreener.com/tokens/v1/pulsechain/${chunk.join(',')}`);
+      if (tokenV1.ok) {
+        const data = await tokenV1.json();
+        if (Array.isArray(data)) {
+          raw.push(...data);
+          continue;
+        }
+        if (Array.isArray(data.pairs)) {
+          raw.push(...data.pairs);
+          continue;
+        }
+      }
+
+      const legacy = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${chunk.join(',')}`);
+      if (legacy.ok) {
+        const data = await legacy.json();
+        if (Array.isArray(data.pairs)) raw.push(...data.pairs);
+      }
+    }
+    return raw;
+  }
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       // DexScreener silently truncates results at 30 tokens per request.
       // Chunk CORE_ADDRESSES into groups of ≤30 and fan out in parallel.
-      const DEXSCREENER_LIMIT = 30;
-      const addrChunks: string[][] = [];
-      for (let i = 0; i < CORE_ADDRESSES.length; i += DEXSCREENER_LIMIT) {
-        addrChunks.push(CORE_ADDRESSES.slice(i, i + DEXSCREENER_LIMIT));
-      }
-
-      const chunkFetches = addrChunks.map(chunk =>
-        fetch(`https://api.dexscreener.com/latest/dex/tokens/${chunk.join(',')}`),
-      );
-
-      const [searchResult, ...chunkResults] = await Promise.allSettled([
-        fetch('https://api.dexscreener.com/latest/dex/search?q=PLSX'),
-        ...chunkFetches,
-      ]);
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const rawPairs: any[] = [];
-
-      for (const res of chunkResults) {
-        if (res.status === 'fulfilled' && res.value.ok) {
-          const d = await res.value.json();
-          if (d.pairs) rawPairs.push(...d.pairs);
-        }
-      }
-      if (searchResult.status === 'fulfilled' && searchResult.value.ok) {
-        const d = await searchResult.value.json();
-        if (d.pairs) rawPairs.push(...d.pairs);
-      }
-
-      // Keep only PulseChain pairs
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const plsPairs = rawPairs.filter((p: any) => p.chainId === 'pulsechain');
-
-      // Deduplicate by pairAddress, pick best (highest liquidity) per base token symbol
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const bySymbol = new Map<string, any>();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      for (const p of plsPairs) {
-        const sym = p.baseToken?.symbol?.toUpperCase() ?? '';
-        if (!sym || sym === 'WPLS') continue; // skip WPLS-as-base (it's always the quote)
-        const existing = bySymbol.get(sym);
-        if (!existing || (p.liquidity?.usd ?? 0) > (existing.liquidity?.usd ?? 0)) {
-          bySymbol.set(sym, p);
-        }
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result: WatchPair[] = Array.from(bySymbol.values()).map((p: any) => ({
-        pairAddress: p.pairAddress,
-        baseToken: p.baseToken,
-        quoteToken: p.quoteToken,
-        priceUsd: p.priceUsd ?? null,
-        priceChange: {
-          h1:  p.priceChange?.h1  ?? null,
-          h24: p.priceChange?.h24 ?? null,
-        },
-        volume24h:    p.volume?.h24 ?? 0,
-        liquidityUsd: p.liquidity?.usd ?? 0,
-        marketCap:    p.marketCap ?? p.fdv ?? null,
-        fdv:          p.fdv ?? null,
-        txns24h:      (p.txns?.h24?.buys ?? 0) + (p.txns?.h24?.sells ?? 0),
-        imageUrl:     p.info?.imageUrl ?? null,
-        dexScreenerUrl: `https://dexscreener.com/pulsechain/${p.pairAddress}`,
-      }));
-
+      const rawPairs = await fetchDexTokenPairs(CORE_ADDRESSES);
+      const result = bestCorePairs(rawPairs);
       setPairs(result);
       setLastRefresh(new Date());
+      if (result.length === 0) {
+        setError('DexScreener returned no PulseChain core pairs.');
+      }
     } catch (e) {
       setError('Failed to load market data. Please try again.');
     } finally {
@@ -273,6 +299,55 @@ export function MarketWatchModal({ theme, onClose }: Props) {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  useEffect(() => {
+    const q = search.trim();
+    if (q.length < 2 || watchlistPairs) {
+      setSearchPairs([]);
+      setSearchLoading(false);
+      setSearchError(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setSearchLoading(true);
+      setSearchError(null);
+      try {
+        const res = await fetch(`https://api.dexscreener.com/latest/dex/search?q=${encodeURIComponent(q)}`, {
+          signal: controller.signal,
+        });
+        if (!res.ok) throw new Error(`DexScreener HTTP ${res.status}`);
+        const data = await res.json();
+        const pulsePairs = (Array.isArray(data.pairs) ? data.pairs : [])
+          .filter((p: any) => p.chainId === 'pulsechain' && p.pairAddress && p.baseToken?.symbol)
+          .sort((a: any, b: any) => ((b.liquidity?.usd ?? 0) + (b.volume?.h24 ?? 0) * 0.35) - ((a.liquidity?.usd ?? 0) + (a.volume?.h24 ?? 0) * 0.35));
+
+        const seenTokens = new Set<string>();
+        const normalized: WatchPair[] = [];
+        for (const pair of pulsePairs) {
+          const key = tokenAddress(pair.baseToken) || pair.baseToken.symbol;
+          if (seenTokens.has(key)) continue;
+          seenTokens.add(key);
+          normalized.push(rawPairToWatchPair(pair));
+          if (normalized.length >= 25) break;
+        }
+        setSearchPairs(normalized);
+      } catch (err: any) {
+        if (err?.name !== 'AbortError') {
+          setSearchPairs([]);
+          setSearchError('Search failed. Try again in a moment.');
+        }
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [search, watchlistPairs]);
 
   // Keyboard close
   useEffect(() => {
@@ -288,23 +363,6 @@ export function MarketWatchModal({ theme, onClose }: Props) {
   }, []);
 
   // ── Import a shared DexScreener watchlist ───────────────────────────────────
-  function rawPairToWatchPair(p: any): WatchPair {
-    return {
-      pairAddress: p.pairAddress,
-      baseToken:   p.baseToken,
-      quoteToken:  p.quoteToken,
-      priceUsd:    p.priceUsd ?? null,
-      priceChange: { h1: p.priceChange?.h1 ?? null, h24: p.priceChange?.h24 ?? null },
-      volume24h:    p.volume?.h24  ?? 0,
-      liquidityUsd: p.liquidity?.usd ?? 0,
-      marketCap:    p.marketCap ?? p.fdv ?? null,
-      fdv:          p.fdv ?? null,
-      txns24h:      (p.txns?.h24?.buys ?? 0) + (p.txns?.h24?.sells ?? 0),
-      imageUrl:     p.info?.imageUrl ?? null,
-      dexScreenerUrl: `https://dexscreener.com/${p.chainId ?? 'pulsechain'}/${p.pairAddress}`,
-    };
-  }
-
   // Core import logic — accepts the URL string directly so it can be called
   // both by the button click handler and by the onPaste auto-submit.
   const runImport = useCallback(async (urlStr: string) => {
@@ -387,7 +445,7 @@ export function MarketWatchModal({ theme, onClose }: Props) {
         return;
       }
 
-      setWatchlistPairs(raw.map(rawPairToWatchPair));
+      setWatchlistPairs(raw.map(p => rawPairToWatchPair(p)));
 
       if (failedChains.length > 0) {
         const unique = [...new Set(failedChains)].join(', ');
@@ -413,12 +471,12 @@ export function MarketWatchModal({ theme, onClose }: Props) {
   }
 
   // Source list — either the imported watchlist or the default PulseChain pairs
-  const activePairs = watchlistPairs ?? pairs;
+  const activePairs = watchlistPairs ?? (search.trim().length >= 2 ? searchPairs : pairs);
 
   // Filter + sort
   const displayed = React.useMemo(() => {
     let list = activePairs;
-    if (search.trim()) {
+    if (search.trim() && (watchlistPairs || search.trim().length < 2)) {
       const q = search.trim().toUpperCase();
       list = list.filter(p =>
         p.baseToken.symbol.toUpperCase().includes(q) ||
@@ -432,7 +490,7 @@ export function MarketWatchModal({ theme, onClose }: Props) {
       if (sortBy === 'change24h') return (b.priceChange.h24 ?? -Infinity) - (a.priceChange.h24 ?? -Infinity);
       return 0;
     });
-  }, [activePairs, search, sortBy]);
+  }, [activePairs, search, sortBy, watchlistPairs]);
 
   const SORT_OPTS: { key: SortKey; label: string }[] = [
     { key: 'volume',    label: 'Volume' },
@@ -607,6 +665,19 @@ export function MarketWatchModal({ theme, onClose }: Props) {
 
         {/* ── Body ── */}
         <div className="mwm-body">
+          {searchLoading && !watchlistPairs && (
+            <div className="mwm-search-status">
+              <div className="mwm-spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />
+              <span>Searching PulseChain pairs...</span>
+            </div>
+          )}
+
+          {searchError && !searchLoading && !watchlistPairs && (
+            <div className="mwm-search-status mwm-search-status-error">
+              {searchError}
+            </div>
+          )}
+
           {loading && !watchlistPairs && pairs.length === 0 && (
             <div className="mwm-state-center">
               <div className="mwm-spinner" />
