@@ -58,6 +58,7 @@ interface WatchPair {
 interface Props {
   theme: 'dark' | 'light';
   onClose: () => void;
+  initialSearch?: string;
 }
 
 type SortKey = 'volume' | 'liquidity' | 'mcap' | 'change24h';
@@ -174,11 +175,11 @@ async function fetchByShareId(shareId: string): Promise<{ chainId: string; pairA
   throw Object.assign(new Error('ds-share-unavailable'), { code: 'DS_SHARE_UNAVAILABLE' });
 }
 
-export function MarketWatchModal({ theme, onClose }: Props) {
+export function MarketWatchModal({ theme, onClose, initialSearch = '' }: Props) {
   const [pairs, setPairs]       = useState<WatchPair[]>([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
-  const [search, setSearch]     = useState('');
+  const [search, setSearch]     = useState(initialSearch);
   const [searchPairs, setSearchPairs] = useState<WatchPair[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -323,15 +324,17 @@ export function MarketWatchModal({ theme, onClose }: Props) {
           .filter((p: any) => p.chainId === 'pulsechain' && p.pairAddress && p.baseToken?.symbol)
           .sort((a: any, b: any) => ((b.liquidity?.usd ?? 0) + (b.volume?.h24 ?? 0) * 0.35) - ((a.liquidity?.usd ?? 0) + (a.volume?.h24 ?? 0) * 0.35));
 
-        const seenTokens = new Set<string>();
-        const normalized: WatchPair[] = [];
-        for (const pair of pulsePairs) {
-          const key = tokenAddress(pair.baseToken) || pair.baseToken.symbol;
-          if (seenTokens.has(key)) continue;
-          seenTokens.add(key);
-          normalized.push(rawPairToWatchPair(pair));
-          if (normalized.length >= 25) break;
-        }
+        const qLower = q.toLowerCase();
+        const normalized: WatchPair[] = pulsePairs
+          .filter((pair: any) => {
+            const baseSymbol = pair.baseToken?.symbol?.toLowerCase?.() ?? '';
+            const baseName = pair.baseToken?.name?.toLowerCase?.() ?? '';
+            const quoteSymbol = pair.quoteToken?.symbol?.toLowerCase?.() ?? '';
+            const pairLabel = `${baseSymbol}/${quoteSymbol}`;
+            return baseSymbol.includes(qLower) || baseName.includes(qLower) || pairLabel.includes(qLower);
+          })
+          .slice(0, 50)
+          .map((pair: any) => rawPairToWatchPair(pair));
         setSearchPairs(normalized);
       } catch (err: any) {
         if (err?.name !== 'AbortError') {
@@ -599,18 +602,18 @@ export function MarketWatchModal({ theme, onClose }: Props) {
               <div style={{ fontSize: 11, color: red, marginTop: 6, lineHeight: 1.5 }}>{importError}</div>
             )}
             {importError === 'DS_SHARE_UNAVAILABLE' && (
-              <div style={{ marginTop: 8, padding: '10px 12px', background: 'rgba(244,63,94,0.08)', border: `1px solid rgba(244,63,94,0.2)`, borderRadius: 8 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: red, marginBottom: 6 }}>
-                  Can't load watchlist in the browser
+              <div className="mwm-import-help">
+                <div className="mwm-import-help-title">
+                  Browser import is blocked
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--fg-muted)', lineHeight: 1.6, marginBottom: 8 }}>
-                  DexScreener's share-link API is blocked from browsers (CORS). Open the watchlist directly on DexScreener instead.
+                <div className="mwm-import-help-text">
+                  DexScreener does not allow apps to read private share links from the browser. Open it there, or paste an export link with pair addresses.
                 </div>
                 <a
                   href={`https://dexscreener.com/watchlist/${importShareId}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: 'var(--accent)', textDecoration: 'none' }}
+                  className="mwm-import-help-link"
                 >
                   <ExternalLink size={12} /> Open watchlist on DexScreener
                 </a>
@@ -752,6 +755,7 @@ export function MarketWatchModal({ theme, onClose }: Props) {
                         <a href={p.dexScreenerUrl} target="_blank" rel="noopener noreferrer"
                           className="mwm-ds-link" title="Open on DexScreener">
                           <ExternalLink size={13} />
+                          <span>Dex</span>
                         </a>
                       </td>
                     </tr>

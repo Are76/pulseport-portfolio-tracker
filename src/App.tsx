@@ -125,7 +125,7 @@ const MOCK_HISTORY: HistoryPoint[] = Array.from({ length: 30 }, (_, i) => {
   };
 });
 
-// ─── Bridge Activity helpers ──────────────────────────────────────────────────
+// â”€â”€â”€ Bridge Activity helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 /** Groups bridge activities by calendar date (e.g. "Apr 12, 2026"), newest date first. */
 function groupByDate(bridgeActivities: Transaction[]): Record<string, Transaction[]> {
   const groups = new Map<string, Transaction[]>();
@@ -227,7 +227,7 @@ function BridgeTimelineEvent({
           <div className="bridge-event-flow-row">
             <span className="bridge-event-flow-label">Asset</span>
             <span className="bridge-event-flow-value">
-              {isSwap ? `${fmtTxAmt(tx.counterAmount ?? 0)} ${tx.counterAsset} → ${fmtTxAmt(tx.amount)} ${tx.asset}` : `${isDeposit ? '+' : '−'}${fmtTxAmt(tx.amount)} ${tx.asset}`}
+              {isSwap ? `${fmtTxAmt(tx.counterAmount ?? 0)} ${tx.counterAsset} â†’ ${fmtTxAmt(tx.amount)} ${tx.asset}` : `${isDeposit ? '+' : 'âˆ’'}${fmtTxAmt(tx.amount)} ${tx.asset}`}
             </span>
           </div>
         </div>
@@ -323,7 +323,7 @@ const PriceDisplay = ({ price, className }: { price: number, className?: string 
   );
 };
 
-// ── localStorage cache helpers (BigInt-safe) ──────────────────────────────────
+// â”€â”€ localStorage cache helpers (BigInt-safe) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const bigIntReplacer = (_key: string, value: unknown) =>
   typeof value === 'bigint' ? `__bi__${value.toString()}` : value;
 const bigIntReviver = (_key: string, value: unknown) =>
@@ -351,7 +351,7 @@ function readStoredJSON<T>(key: string, fallback: T): T {
   }
 }
 
-// ── StakingLadder ─────────────────────────────────────────────────────────────
+// â”€â”€ StakingLadder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Bar chart showing stake distribution by 30-day end-date buckets (from pulsechain-dashboard)
 function StakingLadder({ stakes }: { stakes: HexStake[] }) {
   if (!stakes || stakes.length === 0) return null;
@@ -402,7 +402,7 @@ function StakingLadder({ stakes }: { stakes: HexStake[] }) {
   );
 }
 
-// ── StakingPie ─────────────────────────────────────────────────────────────────
+// â”€â”€ StakingPie â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Donut chart showing HEX stake distribution grouped by wallet (from pulsechain-dashboard)
 function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: number }) {
   const [activeIndex, setActiveIndex] = React.useState(0);
@@ -459,8 +459,8 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.6px' }}>Stake Distribution</div>
         <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>
           <span style={{ color: 'var(--fg)', fontWeight: 700 }}>${fmtK(totalUsd)}</span>
-          {' · '}<span style={{ color: '#fb923c' }}>{fmtK(totalHex)} HEX</span>
-          {' · '}<span style={{ color: 'var(--accent)' }}>{fmtK(totalTShares)} T-Shares</span>
+          {' Â· '}<span style={{ color: '#fb923c' }}>{fmtK(totalHex)} HEX</span>
+          {' Â· '}<span style={{ color: 'var(--accent)' }}>{fmtK(totalTShares)} T-Shares</span>
         </div>
       </div>
       <ResponsiveContainer width="100%" height={240}>
@@ -470,7 +470,7 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
             onMouseEnter={(_, i) => setActiveIndex(i)}>
             {chartData.map((_, i) => <Cell key={i} fill={getColor(i)} />)}
           </Pie>
-          <RechartsTooltip formatter={(val: any, _: any, entry: any) => [`${fmtK(Number(val))} T-Shares · $${fmtK(entry.payload.totalUsd)}`, entry.payload.label]} />
+          <RechartsTooltip formatter={(val: any, _: any, entry: any) => [`${fmtK(Number(val))} T-Shares Â· $${fmtK(entry.payload.totalUsd)}`, entry.payload.label]} />
         </PieChart>
       </ResponsiveContainer>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px', marginTop: 4 }}>
@@ -486,10 +486,10 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
   );
 }
 
-// ── Wallet Selector ─────────────────────────────────────────────────────────
+// â”€â”€ Wallet Selector â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function shortenAddr(addr: string): string {
   if (!addr || addr.length < 10) return addr;
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+  return `${addr.slice(0, 6)}â€¦${addr.slice(-4)}`;
 }
 
 interface WalletSelectorProps {
@@ -507,7 +507,7 @@ function WalletSelector({ wallets, activeWallet, onSelect, onAdd, onRemove, wall
   if (wallets.length === 0) {
     return (
       <button onClick={onAdd} className="btn-ghost" style={{ fontSize: 12, gap: 6 }}>
-        <span style={{ fontSize: 14 }}>＋</span> Add Wallet
+        <span style={{ fontSize: 14 }}>ï¼‹</span> Add Wallet
       </button>
     );
   }
@@ -546,7 +546,7 @@ function WalletSelector({ wallets, activeWallet, onSelect, onAdd, onRemove, wall
                 title={`Remove ${label}`}
                 aria-label={`Remove ${label}`}
               >
-                ×
+                Ã—
               </button>
             )}
           </span>
@@ -558,23 +558,23 @@ function WalletSelector({ wallets, activeWallet, onSelect, onAdd, onRemove, wall
         title="Add wallet"
         aria-label="Add wallet"
       >
-        ＋
+        ï¼‹
       </button>
     </div>
   );
 }
 
-// ── Module-level logo overrides — these always win over CoinGecko / DexScreener ─
+// â”€â”€ Module-level logo overrides â€” these always win over CoinGecko / DexScreener â”€
 // Keyed by lowercase contract address on PulseChain.
 // Nothing may ever overwrite these entries in tokenLogos or asset.logoUrl.
 const STATIC_LOGOS: Record<string, string> = {
   '0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d': 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png', // INC
   '0xf6f8db0aba00007681f8faf16a0fda1c9b030b11': 'https://cdn.dexscreener.com/cms/images/ODHYYN7yppDHnd6u?width=64&height=64&fit=crop&quality=95&format=auto', // PRVX
-  '0xefd766ccb38eaf1dfd701853bfce31359239f305': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png', // pDAI (bridged DAI) — never use golden CoinGecko DAI coin here
-  '0x6b175474e89094c44da98b954eedeac495271d0f': 'https://tokens.app.pulsex.com/images/tokens/0x6B175474E89094C44Da98b954EedeAC495271d0F.png', // pDAI system copy (fork of Ethereum DAI) — prevents CoinGecko golden-coin from replacing this on reload
+  '0xefd766ccb38eaf1dfd701853bfce31359239f305': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png', // pDAI (bridged DAI) â€” never use golden CoinGecko DAI coin here
+  '0x6b175474e89094c44da98b954eedeac495271d0f': 'https://tokens.app.pulsex.com/images/tokens/0x6B175474E89094C44Da98b954EedeAC495271d0F.png', // pDAI system copy (fork of Ethereum DAI) â€” prevents CoinGecko golden-coin from replacing this on reload
 };
 
-// Bridged HEX (eHEX) on PulseChain — no on-chain WPLS LP, falls back to CoinGecko 'hex'
+// Bridged HEX (eHEX) on PulseChain â€” no on-chain WPLS LP, falls back to CoinGecko 'hex'
 const EHEX_PULSECHAIN_ADDR = '0x57fde0a71132198bbec939b98976993d8d89d225';
 const ETH_HEX_ADDR = '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39';
 
@@ -591,14 +591,24 @@ const sameAssetSymbol = (left: string, right: string, chain?: string): boolean =
 const MIN_INVESTMENT_THRESHOLD = 100;
 const OPENPULSECHAIN_API_BASE = 'https://api.openpulsechain.com';
 
+type ActiveTab = 'home' | 'overview' | 'assets' | 'stakes' | 'history' | 'tracker' | 'wallets' | 'defi';
+const ACTIVE_TABS: ActiveTab[] = ['home', 'overview', 'assets', 'stakes', 'history', 'tracker', 'wallets', 'defi'];
+const ACTIVE_TAB_STORAGE_KEY = 'pulseport_active_tab';
+
+const readStoredActiveTab = (): ActiveTab => {
+  if (typeof window === 'undefined') return 'home';
+  const saved = window.localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
+  return ACTIVE_TABS.includes(saved as ActiveTab) ? (saved as ActiveTab) : 'home';
+};
+
 export default function App() {
-  // ── Formatting helpers (defined once here, used throughout) ────────────────
+  // â”€â”€ Formatting helpers (defined once here, used throughout) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const fmtBigNum = (n: number) => Math.round(n).toLocaleString('en-US').replace(/,/g, ' ');
   const fmtDec = (n: number, dp = 2) => n.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp });
   const fmtTok = (n: number) => n > 1e6 ? `${(n/1e6).toFixed(2)}M` : n > 1000 ? `${(n/1000).toFixed(2)}K` : n.toLocaleString(undefined, { maximumFractionDigits: 4 });
   const fmtCompact = (n: number) => n >= 1e9 ? `${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : n.toLocaleString(undefined, { maximumFractionDigits: 0 });
 
-  // ── CSV Export helper ──────────────────────────────────────────────────────
+  // â”€â”€ CSV Export helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const exportCSV = (filename: string, headers: string[], rows: (string | number)[][]) => {
     const escCell = (c: string | number) => {
       const s = String(c);
@@ -628,6 +638,7 @@ export default function App() {
   const [editWalletName, setEditWalletName] = useState('');
   const [isCustomCoinsModalOpen, setIsCustomCoinsModalOpen] = useState(false);
   const [customCoins, setCustomCoins] = useState<any[]>(() => readStoredJSON<any[]>('custom_coins', []));
+  const [customCoinDraft, setCustomCoinDraft] = useState({ symbol: '', name: '', balance: '', price: '' });
 
   useEffect(() => {
     localStorage.setItem('custom_coins', JSON.stringify(customCoins));
@@ -640,12 +651,24 @@ export default function App() {
   const removeCustomCoin = (id: string) => {
     setCustomCoins(customCoins.filter(c => c.id !== id));
   };
+
+  const submitCustomCoin = () => {
+    const symbol = customCoinDraft.symbol.trim().toUpperCase();
+    const name = customCoinDraft.name.trim() || symbol;
+    const balance = Number(customCoinDraft.balance);
+    const price = Number(customCoinDraft.price || 0);
+    if (!symbol || !Number.isFinite(balance) || balance <= 0 || !Number.isFinite(price) || price < 0) return;
+    addCustomCoin({ symbol, name, balance, price });
+    setCustomCoinDraft({ symbol: '', name: '', balance: '', price: '' });
+    setIsCustomCoinsModalOpen(false);
+    setActiveTab('assets');
+  };
   const [sidebarWalletsOpen, setSidebarWalletsOpen] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activeWallet, setActiveWallet] = useState<string | null>(null);
   const isFetchingRef = useRef(false);
-  const [activeTab, setActiveTab] = useState<'home' | 'overview' | 'assets' | 'stakes' | 'history' | 'tracker' | 'wallets' | 'defi'>('home');
+  const [activeTab, setActiveTab] = useState<ActiveTab>(readStoredActiveTab);
   const [selectedWalletAddr, setSelectedWalletAddr] = useState<string>('all');
   const [walletAssets, setWalletAssets] = useState<Record<string, Asset[]>>(() => tryReadCache<Record<string, Asset[]>>('pulseport_cache_wallet_assets') ?? {});
   const [walletChainFilter, setWalletChainFilter] = useState<'all' | 'pulsechain' | 'ethereum' | 'base'>('all');
@@ -674,6 +697,7 @@ export default function App() {
   const [hiddenTokens, setHiddenTokens] = useState<string[]>(() => {
     return readStoredJSON<string[]>('pulseport_hidden_tokens', []);
   });
+  const [showHiddenCoins, setShowHiddenCoins] = useState(false);
   const [priceChangePeriod, setPriceChangePeriod] = useState<'1h' | '6h' | '24h' | '7d'>('24h');
   const [assetSortField, setAssetSortField] = useState<'value' | 'change'>('value');
   const [assetSortDir, setAssetSortDir] = useState<'desc' | 'asc'>('desc');
@@ -717,11 +741,17 @@ export default function App() {
   const [tokenCardModal, setTokenCardModal] = useState<Asset | null>(null);
   const [tokenCardModalLoading, setTokenCardModalLoading] = useState(false);
   const [showMarketWatch, setShowMarketWatch] = useState(false);
+  const [marketWatchInitialSearch, setMarketWatchInitialSearch] = useState('');
+  const [homeSearch, setHomeSearch] = useState('');
   const [expandedWalletAssetIds, setExpandedWalletAssetIds] = useState<Set<string>>(new Set());
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     const saved = localStorage.getItem('pulseport_theme');
     return (saved === 'light') ? 'light' : 'dark';
   });
+
+  useEffect(() => {
+    localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, activeTab);
+  }, [activeTab]);
 
   // Apply theme to document
   useEffect(() => {
@@ -746,7 +776,7 @@ export default function App() {
     };
   }, [sidebarOpen]);
 
-  // Theme-aware color helpers — CSS variable-backed for automatic light/dark theming
+  // Theme-aware color helpers â€” CSS variable-backed for automatic light/dark theming
   const t = useMemo(() => ({
     surface: 'var(--bg-void)',
     card: 'var(--bg-surface)',
@@ -755,9 +785,9 @@ export default function App() {
     border: 'var(--border)',
     borderLight: 'var(--border)',
     text: 'var(--fg)',
-    textSecondary: 'var(--fg-muted)',    /* labels, prices, % values — 7.2:1 contrast ✅ */
-    textMuted: 'var(--fg-subtle)',       /* icons, separators — 5.4:1 contrast ✅ */
-    textTertiary: 'var(--fg-subtle)',    /* helper text — 5.4:1 contrast ✅ */
+    textSecondary: 'var(--fg-muted)',    /* labels, prices, % values â€” 7.2:1 contrast âœ… */
+    textMuted: 'var(--fg-subtle)',       /* icons, separators â€” 5.4:1 contrast âœ… */
+    textTertiary: 'var(--fg-subtle)',    /* helper text â€” 5.4:1 contrast âœ… */
     sidebar: 'var(--bg-sidebar)',
     header: 'var(--bg-header)',
     hoverBg: 'var(--bg-elevated)',
@@ -780,7 +810,7 @@ export default function App() {
   const toggleSection = (id: string) => setCollapsedSections(prev => ({ ...prev, [id]: !prev[id] }));
   const isCollapsed = (id: string) => !!collapsedSections[id];
 
-  // ── Portfolio cache persistence (prevents blank screen on reload) ──────────
+  // â”€â”€ Portfolio cache persistence (prevents blank screen on reload) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     if (realAssets.length > 0) {
       try { localStorage.setItem('pulseport_cache_assets', JSON.stringify(realAssets)); } catch {}
@@ -926,7 +956,7 @@ export default function App() {
       }
       
       // 1a2. Fetch DexScreener 24h % change for PulseChain tokens (INC, PRVX, etc.)
-      // Use specific pair addresses (pairs endpoint) — more reliable than the token endpoint
+      // Use specific pair addresses (pairs endpoint) â€” more reliable than the token endpoint
       // which requires chainId filtering that can fail when DexScreener rate-limits or changes format.
       const dexScreenerChanges: Record<string, number> = {};
       try {
@@ -942,7 +972,7 @@ export default function App() {
             fetch(`https://api.dexscreener.com/latest/dex/pairs/pulsechain/${pairAddr}`)
               .then(r => r.ok ? r.json() : null)
               .then(data => {
-                // Pair endpoint returns { pairs: [...] } — use first entry directly
+                // Pair endpoint returns { pairs: [...] } â€” use first entry directly
                 const pair = data?.pairs?.[0] ?? data?.pair ?? (Array.isArray(data) ? data[0] : null);
                 const change = pair?.priceChange?.h24;
                 if (change != null) {
@@ -1004,7 +1034,7 @@ export default function App() {
       }
 
       // 1b. Fetch PulseChain prices from on-chain LP reserves (authoritative source per skill doc)
-      // Uses getReserves() on PulseX V2 LP pairs — more reliable than subgraph which can lag/rate-limit
+      // Uses getReserves() on PulseX V2 LP pairs â€” more reliable than subgraph which can lag/rate-limit
       try {
         const GET_RESERVES = '0x0902f1ac';
         const pcRpc = CHAINS.pulsechain.rpc;
@@ -1028,7 +1058,7 @@ export default function App() {
         const parseRes = (hex: string): [number, number] => {
           if (!hex || hex === '0x') return [0, 0];
           const d = hex.replace('0x', '').padStart(192, '0');
-          // Use parseFloat on hex to avoid BigInt → Number precision loss on large reserves
+          // Use parseFloat on hex to avoid BigInt â†’ Number precision loss on large reserves
           // Division normalises the magnitude before conversion
           const r0 = parseInt(d.slice(0, 64), 16);
           const r1 = parseInt(d.slice(64, 128), 16);
@@ -1040,12 +1070,12 @@ export default function App() {
         const [usdcR0, usdcR1] = parseRes(batchData[lpKeys.indexOf('WPLS_USDC')].result);
         const [usdtR0, usdtR1] = parseRes(batchData[lpKeys.indexOf('WPLS_USDT')].result);
 
-        // WPLS/USDC: token0=pUSDC(6dec), token1=WPLS(18dec) → plsPrice = (usdcR0/1e6) / (usdcR1/1e18)
+        // WPLS/USDC: token0=pUSDC(6dec), token1=WPLS(18dec) â†’ plsPrice = (usdcR0/1e6) / (usdcR1/1e18)
         const plsFromUSDC = usdcR0 > 0 && usdcR1 > 0 ? (usdcR0 / 1e6) / (usdcR1 / 1e18)    : 0;
         // WPLS/USDT: same layout as USDC
         const plsFromUSDT = usdtR0 > 0 && usdtR1 > 0 ? (usdtR0 / 1e6) / (usdtR1 / 1e18)    : 0;
 
-        // DO NOT use the DAI pair for WPLS oracle — pDAI trades far below $1 on PulseChain.
+        // DO NOT use the DAI pair for WPLS oracle â€” pDAI trades far below $1 on PulseChain.
         // plsFromDAI would be "pDAI per WPLS" (not USD per WPLS), which is much larger than
         // the true USD price and would dominate Math.max(), inflating wplsUSD ~35x.
         // Use only USDC + USDT which stay close to $1.
@@ -1067,17 +1097,17 @@ export default function App() {
             fetchedPrices[`pulsechain:${addrLower}`] = { ...existing, usd: priceUSD, ...(change24h != null ? { usd_24h_change: change24h } : {}) };
           };
 
-          // PLSX/WPLS — token0=PLSX(18), token1=WPLS(18)
+          // PLSX/WPLS â€” token0=PLSX(18), token1=WPLS(18)
           const [plsxR0, plsxR1] = parseRes(batchData[lpKeys.indexOf('PLSX_WPLS')].result);
           if (plsxR0 > 0 && plsxR1 > 0)
             setTokenPrice('0x95b303987a60c71504d99aa1b13b4da07b0790ab', (plsxR1 / plsxR0) * wplsUSD, 'pulsex');
 
-          // INC/WPLS — token0=INC(18), token1=WPLS(18)
+          // INC/WPLS â€” token0=INC(18), token1=WPLS(18)
           const [incR0, incR1] = parseRes(batchData[lpKeys.indexOf('INC_WPLS')].result);
           if (incR0 > 0 && incR1 > 0)
             setTokenPrice('0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d', (incR1 / incR0) * wplsUSD, 'incentive');
 
-          // pHEX/WPLS — token0=pHEX(8dec), token1=WPLS(18dec)
+          // pHEX/WPLS â€” token0=pHEX(8dec), token1=WPLS(18dec)
           const [hexR0, hexR1] = parseRes(batchData[lpKeys.indexOf('PHEX_WPLS')].result);
           if (hexR0 > 0 && hexR1 > 0) {
             const pHexUSD = ((hexR1 / 1e18) / (hexR0 / 1e8)) * wplsUSD;
@@ -1103,7 +1133,7 @@ export default function App() {
               };
             }
           } else {
-            // On-chain LP failed — fall back to CoinGecko for both HEX variants
+            // On-chain LP failed â€” fall back to CoinGecko for both HEX variants
             const cgHex = fetchedPrices['hex']?.usd;
             if (cgHex) {
               fetchedPrices[`pulsechain:${ETH_HEX_ADDR}`] = { usd: cgHex, usd_24h_change: fetchedPrices['hex']?.usd_24h_change };
@@ -1113,7 +1143,7 @@ export default function App() {
             }
           }
 
-          // pWETH/WPLS — token0=pWETH(18), token1=WPLS(18)
+          // pWETH/WPLS â€” token0=pWETH(18), token1=WPLS(18)
           const [wethR0, wethR1] = parseRes(batchData[lpKeys.indexOf('PWETH_WPLS')].result);
           if (wethR0 > 0 && wethR1 > 0) {
             const ethFromLp = (wethR1 / wethR0) * wplsUSD;
@@ -1132,28 +1162,28 @@ export default function App() {
             }
           }
 
-          // pWBTC/WPLS — REVERSED: token0=WPLS(18), token1=pWBTC(8)
+          // pWBTC/WPLS â€” REVERSED: token0=WPLS(18), token1=pWBTC(8)
           const [wbtcR0, wbtcR1] = parseRes(batchData[lpKeys.indexOf('PWBTC_WPLS')].result);
           if (wbtcR0 > 0 && wbtcR1 > 0)
             setTokenPrice('0xb17d901469b9208b17d916112988a3fed19b5ca1', ((wbtcR0 / 1e18) / (wbtcR1 / 1e8)) * wplsUSD, 'wrapped-bitcoin');
 
-          // Bridged stablecoin prices derived from LP — these do NOT trade at $1 on PulseChain
-          // WPLS/DAI: token0=WPLS(18), token1=pDAI(18) → pDAI_USD = (daiR0/daiR1) * wplsUSD
+          // Bridged stablecoin prices derived from LP â€” these do NOT trade at $1 on PulseChain
+          // WPLS/DAI: token0=WPLS(18), token1=pDAI(18) â†’ pDAI_USD = (daiR0/daiR1) * wplsUSD
           if (daiR0 > 0 && daiR1 > 0)
             setTokenPrice('0xefd766ccb38eaf1dfd701853bfce31359239f305', (daiR0 / daiR1) * wplsUSD);
-          // WPLS/USDC: token0=pUSDC(6dec), token1=WPLS(18dec) → pUSDC_USD = (usdcR1/1e18)/(usdcR0/1e6) * wplsUSD
+          // WPLS/USDC: token0=pUSDC(6dec), token1=WPLS(18dec) â†’ pUSDC_USD = (usdcR1/1e18)/(usdcR0/1e6) * wplsUSD
           if (usdcR0 > 0 && usdcR1 > 0)
             setTokenPrice('0x15d38573d2feeb82e7ad5187ab8c1d52810b1f07', (usdcR1 / 1e18) / (usdcR0 / 1e6) * wplsUSD);
-          // WPLS/USDT: token0=pUSDT(6dec), token1=WPLS(18dec) → pUSDT_USD = (usdtR1/1e18)/(usdtR0/1e6) * wplsUSD
+          // WPLS/USDT: token0=pUSDT(6dec), token1=WPLS(18dec) â†’ pUSDT_USD = (usdtR1/1e18)/(usdtR0/1e6) * wplsUSD
           if (usdtR0 > 0 && usdtR1 > 0)
             setTokenPrice('0x0cb6f5a34ad42ec934882a05265a7d5f59b51a2f', (usdtR1 / 1e18) / (usdtR0 / 1e6) * wplsUSD);
-          // System copy pDAI (0x6b175474... — Ethereum's DAI address, fork-copied)
-          // token0=pDAI_sys(18dec), token1=WPLS(18dec) → pDAI_sys_USD = (sysR1/sysR0) * wplsUSD
+          // System copy pDAI (0x6b175474... â€” Ethereum's DAI address, fork-copied)
+          // token0=pDAI_sys(18dec), token1=WPLS(18dec) â†’ pDAI_sys_USD = (sysR1/sysR0) * wplsUSD
           const [sysR0, sysR1] = parseRes(batchData[lpKeys.indexOf('PDAI_SYS_WPLS')].result);
           if (sysR0 > 0 && sysR1 > 0)
             setTokenPrice('0x6b175474e89094c44da98b954eedeac495271d0f', (sysR1 / sysR0) * wplsUSD);
-          // PRVX: use high-liquidity USDC pair ($1M) — token0=pUSDC(6dec), token1=PRVX(18dec)
-          // Direct stablecoin price — no WPLS conversion needed
+          // PRVX: use high-liquidity USDC pair ($1M) â€” token0=pUSDC(6dec), token1=PRVX(18dec)
+          // Direct stablecoin price â€” no WPLS conversion needed
           const [prvxR0, prvxR1] = parseRes(batchData[lpKeys.indexOf('PRVX_USDC')].result);
           if (prvxR0 > 0 && prvxR1 > 0)
             setTokenPrice('0xf6f8db0aba00007681f8faf16a0fda1c9b030b11', (prvxR0 / 1e6) / (prvxR1 / 1e18));
@@ -1242,12 +1272,12 @@ export default function App() {
                   try {
                     res = await fetch(`${bsBase}${endpoint}${paramStr}`, { signal: controller.signal });
                   } catch {
-                    console.warn(`[pulsechain] ${endpoint} → timeout/network error`);
+                    console.warn(`[pulsechain] ${endpoint} â†’ timeout/network error`);
                     break;
                   } finally {
                     clearTimeout(timeout);
                   }
-                  if (!res.ok) { console.warn(`[pulsechain] ${endpoint} → HTTP ${res.status}`); break; }
+                  if (!res.ok) { console.warn(`[pulsechain] ${endpoint} â†’ HTTP ${res.status}`); break; }
                   const data = await res.json();
                   if (data.items && Array.isArray(data.items)) {
                     results.push(...data.items);
@@ -1270,7 +1300,7 @@ export default function App() {
                 }
               };
 
-              // Etherscan-compat base — same proxy logic as above
+              // Etherscan-compat base â€” same proxy logic as above
               const esBase = isElectron
                 ? 'https://api.scan.pulsechain.com/api'
                 : '/proxy/pulsechain/api';
@@ -1626,8 +1656,8 @@ export default function App() {
                 
                 const assetName = symbol;
                 const isBridged = false;
-                // Look up coinGeckoId from the hardcoded TOKENS list first (e.g. USDC → 'usd-coin',
-                // USDT → 'tether') instead of blindly lowercasing the symbol which gives wrong keys.
+                // Look up coinGeckoId from the hardcoded TOKENS list first (e.g. USDC â†’ 'usd-coin',
+                // USDT â†’ 'tether') instead of blindly lowercasing the symbol which gives wrong keys.
                 const knownEthToken = TOKENS['ethereum'].find((t: any) => t.address.toLowerCase() === contractAddr);
                 const coinGeckoId = knownEthToken?.coinGeckoId || symbol.toLowerCase();
 
@@ -1654,7 +1684,7 @@ export default function App() {
                 const isAlreadyDiscovered = discoveredTokens.some(t => t.address.toLowerCase() === contractAddr);
                 
                 if (!isHardcoded && !isAlreadyDiscovered) {
-                  // Spam: URL in name/symbol, or tiny airdrop amount (≤10 tokens) with no price
+                  // Spam: URL in name/symbol, or tiny airdrop amount (â‰¤10 tokens) with no price
                   const hasUrlPattern = /\.(io|com|net|org|xyz|finance|app|pro|gg)\b/i.test(assetName + ' ' + symbol);
                   const isTinyAirdrop = !isOut && price === 0 && amount <= 10;
                   const isEthSpam = !isOut && (hasUrlPattern || isTinyAirdrop);
@@ -1671,7 +1701,7 @@ export default function App() {
               });
             }
 
-            // Internal ETH transfers — captures the ETH received/sent leg of token↔ETH swaps
+            // Internal ETH transfers â€” captures the ETH received/sent leg of tokenâ†”ETH swaps
             // (e.g. selling USDC for ETH: the ETH comes back via an internal call from the router)
             internalTxResults.forEach((tx: any, i: number) => {
               const isOut = (tx.from || '').toLowerCase() === address.toLowerCase();
@@ -1835,7 +1865,7 @@ export default function App() {
               const priceChange7d = priceData?.usd_7d_change ?? fetchedPrices[token.coinGeckoId]?.usd_7d_change ?? 0;
               // WPLS (wrapped native PLS) is economically equivalent to PLS.
               // Merge it into the 'pulsechain-PLS' bucket so users see one unified PLS entry.
-              // LP pair internals still reference WPLS by address — only wallet holdings are merged.
+              // LP pair internals still reference WPLS by address â€” only wallet holdings are merged.
               const isWplsMerge = chainKey === 'pulsechain' && token.symbol === 'WPLS';
               const isAddressKeyedDiscovery = Boolean((token as any).isDiscovered && token.address !== 'native');
               const assetKey = isWplsMerge
@@ -1849,12 +1879,12 @@ export default function App() {
                 assetMap[assetKey].value += balanceNum * price;
                 if (isWplsMerge) (assetMap[assetKey] as any).wrappedBalance = ((assetMap[assetKey] as any).wrappedBalance || 0) + balanceNum;
               } else {
-                // Logo priority: STATIC_LOGOS (highest) → CoinGecko/chain-CDN → PulseX CDN
-                // All CDN paths require EIP-55 checksummed addresses — use getAddress() to ensure that.
+                // Logo priority: STATIC_LOGOS (highest) â†’ CoinGecko/chain-CDN â†’ PulseX CDN
+                // All CDN paths require EIP-55 checksummed addresses â€” use getAddress() to ensure that.
                 // For WPLS merge: use the PLS/WPLS logo (same icon on PulseX CDN).
                 const effectiveAddress = isWplsMerge ? 'native' : token.address;
                 const addrLower = effectiveAddress === 'native' ? null : effectiveAddress.toLowerCase();
-                // STATIC_LOGOS always wins — prevents CoinGecko golden-coin from replacing hand-curated logos
+                // STATIC_LOGOS always wins â€” prevents CoinGecko golden-coin from replacing hand-curated logos
                 const staticLogoOverride = addrLower ? STATIC_LOGOS[addrLower] : null;
                 // Only fetch CoinGecko image if there's no static override (don't let coinGeckoId image pollute bridged tokens)
                 const cgLogo = staticLogoOverride ? null : (priceData?.image ?? null);
@@ -1917,13 +1947,13 @@ export default function App() {
               const hexAddr = getAddress(chainConfig.hexAddress);
 
               // Fetch stakeCount and currentDay in separate try/catch so one bad RPC
-              // call cannot kill the other — they are independent contract reads.
+              // call cannot kill the other â€” they are independent contract reads.
               try {
                 hexStakeCount = await withRetry(() => client.readContract({
                   address: hexAddr, abi: HEX_ABI, functionName: 'stakeCount', args: [address],
                 } as any)) as bigint;
               } catch (e: any) {
-                console.error(`[HEX stakes] stakeCount failed on ${chainKey} (${address.slice(0, 8)}…): ${e?.shortMessage ?? e?.message ?? String(e)}`);
+                console.error(`[HEX stakes] stakeCount failed on ${chainKey} (${address.slice(0, 8)}â€¦): ${e?.shortMessage ?? e?.message ?? String(e)}`);
               }
 
               try {
@@ -1964,7 +1994,7 @@ export default function App() {
 
                   if (stakeId === undefined) return;
 
-                  // Always coerce to BigInt — the ABI returns uint72 which viem gives as bigint,
+                  // Always coerce to BigInt â€” the ABI returns uint72 which viem gives as bigint,
                   // but defensive casting prevents precision loss if a non-bigint sneaks in.
                   const sharesBI     = BigInt(stakeShares  ?? 0);
                   const heartsBI     = BigInt(stakedHearts ?? 0);
@@ -1977,9 +2007,9 @@ export default function App() {
                   const daysRemaining = Math.max(0, (lockedDayN + stakedDaysN) - currentDayN);
 
                   // Yield rate: chain-specific HEX per T-Share per day.
-                  // BigInt formula: hearts = shares × days × BI_NUM / BI_DEN
-                  //   pHEX: 1e12 × 1 × 158 / 1_000_000 = 1.58×10^8 hearts = 1.58 HEX ✓
-                  //   eHEX: 1e12 × 1 × 170 / 1_000_000 = 1.70×10^8 hearts = 1.70 HEX ✓
+                  // BigInt formula: hearts = shares Ã— days Ã— BI_NUM / BI_DEN
+                  //   pHEX: 1e12 Ã— 1 Ã— 158 / 1_000_000 = 1.58Ã—10^8 hearts = 1.58 HEX âœ“
+                  //   eHEX: 1e12 Ã— 1 Ã— 170 / 1_000_000 = 1.70Ã—10^8 hearts = 1.70 HEX âœ“
                   const yieldBiNum = chainKey === 'pulsechain' ? PHEX_YIELD_BI_NUM : EHEX_YIELD_BI_NUM;
                   const yieldBiDen = chainKey === 'pulsechain' ? PHEX_YIELD_BI_DEN : EHEX_YIELD_BI_DEN;
                   const interestHearts  = (sharesBI * BigInt(daysStakedN) * yieldBiNum) / yieldBiDen;
@@ -2020,7 +2050,7 @@ export default function App() {
                 });
               }
             } catch (e: any) {
-              console.error(`[HEX stakes] Unexpected error on ${chainKey} for ${address.slice(0, 8)}…: ${e?.shortMessage ?? e?.message ?? String(e)}`);
+              console.error(`[HEX stakes] Unexpected error on ${chainKey} for ${address.slice(0, 8)}â€¦: ${e?.shortMessage ?? e?.message ?? String(e)}`);
             }
           }
         }));
@@ -2055,7 +2085,7 @@ export default function App() {
           plsEntry.balance += wplsEntry.balance;
           plsEntry.value   += wplsEntry.value;
         } else {
-          // No native PLS entry at all — promote WPLS to a PLS row
+          // No native PLS entry at all â€” promote WPLS to a PLS row
           assetMap['pulsechain-PLS'] = { ...wplsEntry, id: 'pulsechain-PLS', symbol: 'PLS' };
         }
         delete assetMap['pulsechain-WPLS'];
@@ -2071,7 +2101,7 @@ export default function App() {
       });
       setWalletAssets(newWalletAssets);
 
-      // ── LP Position Tracking ──────────────────────────────────────────────
+      // â”€â”€ LP Position Tracking â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       // Fetch LP token balances, reserves, and totalSupply for tracked PulseX pairs
       try {
         const pcRpc = CHAINS.pulsechain.rpc;
@@ -2178,7 +2208,7 @@ export default function App() {
         console.warn('LP position fetch failed:', e);
       }
 
-      // ── Farm Position Tracking (MasterChef / INC Rewards) ─────────────────
+      // â”€â”€ Farm Position Tracking (MasterChef / INC Rewards) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       try {
         const pcRpc = CHAINS.pulsechain.rpc;
         const MASTERCHEF = '0xb2ca4a66d3e57a5a9a12043b6bad28249fe302d4';
@@ -2199,7 +2229,7 @@ export default function App() {
         const padN = (n: number) => n.toString(16).padStart(64, '0');
         const padA = (a: string) => '000000000000000000000000' + a.replace('0x', '').toLowerCase();
 
-        // Batch: poolInfo for each pool + userInfo + pendingInc for each wallet×pool
+        // Batch: poolInfo for each pool + userInfo + pendingInc for each walletÃ—pool
         const farmBatch: any[] = [];
         let fId = 0;
         type FarmMeta = { type: 'pool'; poolIdx: number; id: number } | { type: 'user' | 'pending'; poolIdx: number; wallet: string; id: number };
@@ -2434,7 +2464,7 @@ export default function App() {
     setScanResult(detected);
   };
 
-  const currentAssets = useMemo(() => {
+  const assetUniverse = useMemo(() => {
     const activeWalletKey = activeWallet?.toLowerCase() ?? null;
     const baseAssets = wallets.length > 0
       ? (activeWalletKey ? (walletAssets[activeWalletKey] || []) : realAssets)
@@ -2454,7 +2484,33 @@ export default function App() {
       });
     });
 
-    return assetsWithCustom
+    return assetsWithCustom;
+  }, [wallets.length, realAssets, walletAssets, activeWallet, customCoins]);
+
+  const hiddenAssetRows = useMemo(() => {
+    const byId = new Map(assetUniverse.map(asset => [asset.id, asset]));
+    return hiddenTokens.map(id => byId.get(id) ?? {
+      id,
+      symbol: id.split(':').pop()?.slice(0, 12).toUpperCase() || 'TOKEN',
+      name: 'Hidden token',
+      balance: 0,
+      price: 0,
+      value: 0,
+      chain: 'pulsechain' as Chain,
+      pnl24h: 0,
+    });
+  }, [assetUniverse, hiddenTokens]);
+
+  const hideToken = (id: string) => {
+    setHiddenTokens(prev => prev.includes(id) ? prev : [...prev, id]);
+  };
+
+  const unhideToken = (id: string) => {
+    setHiddenTokens(prev => prev.filter(tokenId => tokenId !== id));
+  };
+
+  const currentAssets = useMemo(() => {
+    return assetUniverse
       .filter(a => !hiddenTokens.includes(a.id))
       .filter(a => !hideDust || a.value >= 1 || (a.balance > 0 && a.price === 0))
       .filter(a => !hideSpam || (!(a as any).isSpam && !spamTokenIds.includes(a.id)))
@@ -2482,7 +2538,7 @@ export default function App() {
           entryPls: manualEntries[a.id] || 0
         };
       });
-  }, [wallets.length, realAssets, walletAssets, activeWallet, manualEntries, hiddenTokens, hideDust, customCoins, hideSpam, spamTokenIds, prices]);
+  }, [assetUniverse, manualEntries, hiddenTokens, hideDust, hideSpam, spamTokenIds, prices]);
 
   const currentStakes = useMemo(() => {
     if (wallets.length === 0) return MOCK_STAKES;
@@ -2557,7 +2613,7 @@ export default function App() {
     const liquidValue = assets.reduce((acc, curr) => acc + curr.value, 0);
 
     // Add HEX staking value so the grand total reflects everything the user owns.
-    // Recalculate accrued yield from tShares × daysStaked × chain-specific rate so
+    // Recalculate accrued yield from tShares Ã— daysStaked Ã— chain-specific rate so
     // stale cached interestHearts never corrupt the total.
     const stakingValueUsd = currentStakes.reduce((acc, s) => {
       const hexPriceKey = `${s.chain}:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39`;
@@ -2632,7 +2688,7 @@ export default function App() {
       return true;
     }).sort((a, b) => a.timestamp - b.timestamp); // oldest first
 
-    // Use the live prices state as a fallback for ETH valueUsd — this handles the case where
+    // Use the live prices state as a fallback for ETH valueUsd â€” this handles the case where
     // transactions were fetched before CoinGecko prices loaded (valueUsd would be 0 at that point).
     // Also try the pWETH LP-derived price (stored under 'ethereum:native') so the fallback
     // works even when CoinGecko is rate-limited.
@@ -2644,7 +2700,7 @@ export default function App() {
     const txUsdValue = (tx: { asset: string; valueUsd: number; amount: number }) => {
       if (tx.valueUsd > 0) return tx.valueUsd;
       if (tx.asset.toUpperCase() === 'ETH') return tx.amount * ethPriceFallback;
-      return tx.amount; // stablecoins: amount ≈ USD
+      return tx.amount; // stablecoins: amount â‰ˆ USD
     };
 
     // Bridge-echo deduplication:
@@ -2908,7 +2964,7 @@ export default function App() {
       return true;
     });
 
-    // Sort oldest first — shows the full history chronologically
+    // Sort oldest first â€” shows the full history chronologically
     const list = [...coinFiltered].sort((a, b) => a.timestamp - b.timestamp);
 
     // Per-asset totals
@@ -2944,7 +3000,7 @@ export default function App() {
     return { list, totalValue, byAsset };
   }, [currentTransactions, prices, receivedCoinFilter, receivedChainFilter]);
 
-  // PLS/WPLS Movement Tracker — includes all PLS/WPLS transfers (in/out) and swaps on PulseChain
+  // PLS/WPLS Movement Tracker â€” includes all PLS/WPLS transfers (in/out) and swaps on PulseChain
   // This works even when PulseChain transactions are typed as 'transfer_in'/'transfer_out'
   // because Blockscout does not tag on-chain swaps as type='swap'.
   const plsSwapData = useMemo(() => {
@@ -3029,14 +3085,14 @@ export default function App() {
     fetchMarketData();
   }, [expandedAssetIds]); // intentionally omits tokenMarketData (cache check) and currentAssets (stable ref) to avoid re-fetching on unrelated renders
 
-  // ── Fetch market data when token card modal opens ────────────────────────
+  // â”€â”€ Fetch market data when token card modal opens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // For native PLS, use the WPLS contract address since DexScreener tracks WPLS pairs.
   const WPLS_ADDR = '0xa1077a294dde1b09bb078844df40758a5d0f9a27';
   useEffect(() => {
     if (!tokenCardModal) return;
     const id   = tokenCardModal.id;
     const rawAddr = (tokenCardModal as any).address as string | undefined;
-    // PLS is native — fall back to WPLS so we can show DexScreener market data
+    // PLS is native â€” fall back to WPLS so we can show DexScreener market data
     const isNativePls = (!rawAddr || rawAddr === 'native') && tokenCardModal.chain === 'pulsechain';
     const addr = isNativePls ? WPLS_ADDR : rawAddr;
     if (!addr || addr === 'native') return;
@@ -3088,7 +3144,7 @@ export default function App() {
     })();
   }, [tokenCardModal?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Auto-fetch market data for top 9 overview assets when Overview tab is active ──
+  // â”€â”€ Auto-fetch market data for top 9 overview assets when Overview tab is active â”€â”€
   // This ensures all cards show live market data (mcap, liquidity, vol) without requiring
   // the user to click each card individually.
   useEffect(() => {
@@ -3140,14 +3196,14 @@ export default function App() {
             ...(holders != null ? { holders } : {}),
           },
         }));
-        // Cache DexScreener image into tokenLogos — but never overwrite STATIC_LOGOS entries
+        // Cache DexScreener image into tokenLogos â€” but never overwrite STATIC_LOGOS entries
         const dsImg = top?.info?.imageUrl;
         if (dsImg && !STATIC_LOGOS[addr.toLowerCase()]) setTokenLogos(prev => ({ ...prev, [addr.toLowerCase()]: dsImg }));
       } catch { /* ignore */ }
     }));
   }, [activeTab, currentAssets.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── tokenPrices: symbol → USD price map for LP hook ─────────────────────
+  // â”€â”€ tokenPrices: symbol â†’ USD price map for LP hook â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const tokenPrices = useMemo<Record<string, number>>(() => {
     const p = prices;
     const wplsUsd = p['pulsechain']?.usd ?? p['pulsechain:native']?.usd ?? 0;
@@ -3186,7 +3242,7 @@ export default function App() {
   };
 
   const getTokenLogoUrl = (asset: Asset): string => {
-    // 0. STATIC_LOGOS always wins — curated logos that must never be overwritten by any remote source
+    // 0. STATIC_LOGOS always wins â€” curated logos that must never be overwritten by any remote source
     const addrKey0 = (asset as any).address?.toLowerCase?.() as string | undefined;
     if (addrKey0 && STATIC_LOGOS[addrKey0]) return STATIC_LOGOS[addrKey0];
     // 1. Use any logo already fetched and stored on the asset (CoinGecko / DeFi Llama)
@@ -3194,7 +3250,7 @@ export default function App() {
     // 2. Well-known native / base tokens
     if (asset.symbol === 'ETH') return 'https://assets.coingecko.com/coins/images/279/small/ethereum.png';
     if (asset.symbol === 'PLS' || asset.symbol === 'WPLS') return 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png';
-    // 3. PulseChain tokens via PulseX CDN (URL path is case-sensitive — must use checksummed address)
+    // 3. PulseChain tokens via PulseX CDN (URL path is case-sensitive â€” must use checksummed address)
     if (asset.chain === 'pulsechain') {
       const tokenConfig = TOKENS.pulsechain.find(t => t.symbol === asset.symbol);
       if (tokenConfig && tokenConfig.address !== 'native') {
@@ -3219,17 +3275,25 @@ export default function App() {
     return '';
   };
 
-  // ── RENDER ────────────────────────────────────────────────────────────────
+  // â”€â”€ RENDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  // Shared compact price formatter — used by both the header ticker and core-coins panel
+  // Shared compact price formatter â€” used by both the header ticker and core-coins panel
   const fmtPrice = (p: number) => {
-    if (p === 0) return '—';
+    if (p === 0) return 'â€”';
     if (p < 0.00001) return `$${p.toFixed(10)}`;
     if (p < 0.001)   return `$${p.toFixed(8)}`;
     if (p < 0.01)    return `$${p.toFixed(6)}`;
     if (p < 1)       return `$${p.toFixed(4)}`;
     return `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
   };
+
+  const fmtMarket = (v?: number | null) =>
+    v == null ? 'â€”' :
+    v >= 1e12 ? `$${(v/1e12).toFixed(2)}T` :
+    v >= 1e9 ? `$${(v/1e9).toFixed(2)}B` :
+    v >= 1e6 ? `$${(v/1e6).toFixed(2)}M` :
+    v >= 1e3 ? `$${(v/1e3).toFixed(1)}K` :
+    `$${v.toFixed(0)}`;
 
   type PortfolioPriceCard = {
     id: string;
@@ -3361,11 +3425,86 @@ export default function App() {
     ];
   }, [topHoldingCards]);
 
+  const frontInfoCards = useMemo(() => [
+    {
+      label: 'On / Offramp',
+      value: 'Move money in and out',
+      detail: 'Start with a tiny test. Use known routes, confirm the token contract, then scale once the bridge or swap lands.',
+      action: 'Bridge safely',
+      href: 'https://bridge.pulsechain.com/',
+      icon: ArrowLeftRight,
+    },
+    {
+      label: 'PulseX',
+      value: 'Swap and add liquidity',
+      detail: 'Use PulseX for core PulseChain swaps, then watch price, volume, liquidity, and pair depth before you size up.',
+      action: 'Open PulseX',
+      href: 'https://app.pulsex.com/',
+      icon: Droplets,
+    },
+    {
+      label: 'Liberty Swap',
+      value: 'Stablecoin routes',
+      detail: 'Good onboarding cards should explain which stablecoin path is easiest, what network it starts on, and what lands on PulseChain.',
+      action: 'Compare route',
+      href: null,
+      icon: ArrowRight,
+    },
+    {
+      label: 'Hyperlane',
+      value: 'Extra bridge paths',
+      detail: 'Useful for cross-chain assets beyond the official bridge. Keep the UI focused on route, token, fee, and arrival chain.',
+      action: 'Open Hyperlane',
+      href: 'https://hyperlane.xyz/',
+      icon: Layers,
+    },
+    {
+      label: 'Volume / TVL',
+      value: 'Liquidity context',
+      detail: 'Show 24h volume, TVL, liquidity by pair, and where depth is thin so the portfolio screen explains the market around the wallet.',
+      action: 'Pulse stats',
+      href: 'https://www.pulsechainstats.com/',
+      icon: BarChart2,
+    },
+    {
+      label: 'HEX staking',
+      value: 'Days, yield, shares',
+      detail: 'Make stake cards about days remaining, T-shares, accrued HEX, emergency end-stake risk, and current USD/PLS value.',
+      action: 'View stakes',
+      href: null,
+      icon: Lock,
+      tab: 'stakes' as ActiveTab,
+    },
+  ], []);
+
+  const openMarketWatch = (initialSearch = '') => {
+    setMarketWatchInitialSearch(initialSearch);
+    setShowMarketWatch(true);
+  };
+
+  const runHomeSearch = (raw: string) => {
+    const q = raw.trim();
+    if (!q) return;
+    if (/^\d+$/.test(q)) {
+      window.open(`https://scan.pulsechain.com/block/${q}`, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    if (/^0x[a-fA-F0-9]{64}$/.test(q)) {
+      window.open(`https://scan.pulsechain.com/tx/${q}`, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    if (/^0x[a-fA-F0-9]{40}$/.test(q)) {
+      window.open(`https://scan.pulsechain.com/address/${q}`, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    openMarketWatch(q);
+  };
+
   return (
     <div className="min-h-screen font-sans flex" style={{ fontSize: 14, background: 'var(--bg-void)', color: 'var(--fg)' }}>
-      {/* ── SIDEBAR BACKDROP (mobile) ── */}
+      {/* â”€â”€ SIDEBAR BACKDROP (mobile) â”€â”€ */}
       <div className={`sidebar-backdrop${sidebarOpen ? ' open' : ''}`} onClick={() => setSidebarOpen(false)} />
-      {/* ── SIDEBAR ── */}
+      {/* â”€â”€ SIDEBAR â”€â”€ */}
       <aside style={{
           width: 220, minWidth: 220,
           background: 'var(--bg-sidebar)',
@@ -3470,7 +3609,7 @@ export default function App() {
                         <div style={{ width: 7, height: 7, borderRadius: '50%', background: dotColors[wIdx % dotColors.length], flexShrink: 0 }} />
                         <div style={{ minWidth: 0 }}>
                           <div style={{ fontSize: 12, fontWeight: 600, color: isActive ? 'var(--accent)' : 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.name}</div>
-                          <code style={{ fontSize: 10, color: 'var(--fg-muted)' }}>{w.address.slice(0,6)}…{w.address.slice(-4)}</code>
+                          <code style={{ fontSize: 10, color: 'var(--fg-muted)' }}>{w.address.slice(0,6)}â€¦{w.address.slice(-4)}</code>
                         </div>
                       </div>
                       <div className="touch-visible-actions opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
@@ -3512,7 +3651,7 @@ export default function App() {
         </div>
       </aside>
 
-      {/* ── MAIN ── */}
+      {/* â”€â”€ MAIN â”€â”€ */}
       <main className="app-main flex-1 min-w-0 flex flex-col">
         {/* Top Nav / Header */}
         <header
@@ -3538,7 +3677,7 @@ export default function App() {
             <span className="logo-wordmark" style={{ fontSize: 14 }}>PULSEPORT</span>
           </div>
 
-          {/* Price ticker — desktop only */}
+          {/* Price ticker â€” desktop only */}
           {Object.keys(prices).length > 0 && (
             <div className="ticker-wrapper hidden sm:flex flex-1 mx-4" style={{ height: 56, alignItems: 'center', overflow: 'hidden' }}>
               <div className="ticker-track" style={{ gap: 0 }}>
@@ -3591,7 +3730,7 @@ export default function App() {
 
             {/* API Key */}
             <button onClick={() => { setApiKeyInput(etherscanApiKey); setBasescanApiKeyInput(basescanApiKey); setIsApiKeyModalOpen(true); }}
-              title={etherscanApiKey ? 'API key set ✓' : 'Set Etherscan API key'}
+              title={etherscanApiKey ? 'API key set âœ“' : 'Set Etherscan API key'}
               className="header-action-btn"
               style={etherscanApiKey ? {
                 background: 'var(--accent-dim)',
@@ -3599,7 +3738,7 @@ export default function App() {
                 color: 'var(--accent)',
               } : {}}>
               {etherscanApiKey ? <Check size={12} /> : <Settings size={12} />}
-              <span className="hidden sm:inline">{etherscanApiKey ? 'API ✓' : 'API Key'}</span>
+              <span className="hidden sm:inline">{etherscanApiKey ? 'API âœ“' : 'API Key'}</span>
             </button>
 
             {/* Refresh */}
@@ -3612,7 +3751,7 @@ export default function App() {
           </div>
         </header>
 
-        {/* ── Wallet Selector Bar (sticky sub-header, all tabs except Wallets which has its own) ── */}
+        {/* â”€â”€ Wallet Selector Bar (sticky sub-header, all tabs except Wallets which has its own) â”€â”€ */}
         {wallets.length > 0 && activeTab !== 'wallets' && activeTab !== 'home' && (
           <div className="wallet-selector-subheader">
             <WalletSelector
@@ -3639,60 +3778,104 @@ export default function App() {
                     ))}
                   </div>
 
-                  <div className="front-hero-copy">
-                    <div className="front-eyebrow">
-                      <span className="status-dot status-dot-live" />
-                      Live PulseChain radar
+                  <div className="front-market-board">
+                    <form
+                      className="front-search-shell"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        runHomeSearch(homeSearch);
+                      }}
+                    >
+                      <Search size={18} />
+                      <input
+                        value={homeSearch}
+                        onChange={(e) => setHomeSearch(e.target.value)}
+                        placeholder="Search by Coin / Block / Transaction"
+                      />
+                      <button type="submit">Search</button>
+                    </form>
+
+                    <div className="front-market-kicker">
+                      <strong>Day 1071</strong>
+                      <div className="front-time-tabs">
+                        {['5m', '1h', '6h', '24h', '7d', '30d', '90d', 'ATL'].map(label => (
+                          <span key={label} className={label === 'ATL' ? 'active' : ''}>{label}</span>
+                        ))}
+                      </div>
                     </div>
-                    <h1>PulseChain market data up front. Portfolio truth one click deeper.</h1>
-                    <p>
-                      Track core coins, wallet value, HEX stakes, liquidity positions, bridge moves, and chain exposure from one fast PulseChain command center.
-                    </p>
+
+                    {(() => {
+                      const plsToken = topHoldingCards.find(token => token.id === 'PLS') ?? topHoldingCards[0];
+                      const tileTokens = topHoldingCards.filter(token => token.id !== plsToken?.id).slice(0, 3);
+                      return (
+                        <>
+                          {plsToken && (
+                            <button className="front-feature-token" onClick={() => openMarketWatch(plsToken.symbol)}>
+                              <span className="front-feature-main">
+                                <span className="front-token-logo">
+                                  {plsToken.logo ? <img src={plsToken.logo} alt={plsToken.symbol} /> : plsToken.symbol.slice(0, 1)}
+                                </span>
+                                <span>
+                                  <strong>{plsToken.symbol}</strong>
+                                  <small>{plsToken.name}</small>
+                                </span>
+                              </span>
+                              <span className="front-feature-price">
+                                <strong>{fmtPrice(plsToken.price)}</strong>
+                                <small>Market Cap {fmtMarket(plsToken.marketCap)}</small>
+                              </span>
+                              <span className={(plsToken.change24h ?? 0) >= 0 ? 'front-feature-change is-up' : 'front-feature-change is-down'}>
+                                {plsToken.change24h == null ? 'Live' : `${plsToken.change24h >= 0 ? '+' : ''}${plsToken.change24h.toFixed(1)}%`}
+                              </span>
+                              <span className="front-feature-side">
+                                <small>Volume</small>
+                                <strong>{fmtMarket(plsToken.volume24h)}</strong>
+                              </span>
+                              <BarChart2 size={18} />
+                            </button>
+                          )}
+
+                          <div className="front-token-grid front-token-grid-cards">
+                            {tileTokens.map((token, i) => (
+                              <button
+                                key={token.id}
+                                className="front-token-tile"
+                                onClick={() => openMarketWatch(token.symbol)}
+                                style={{ animationDelay: `${i * 55}ms` }}
+                              >
+                                <span className="front-token-accent" style={{ background: token.accent }} />
+                                <span className="front-token-logo">
+                                  {token.logo ? <img src={token.logo} alt={token.symbol} /> : token.symbol.slice(0, 1)}
+                                </span>
+                                <span className="front-token-meta">
+                                  <strong>{token.symbol}</strong>
+                                  <small>{token.name}</small>
+                                </span>
+                                <span className="front-token-price">
+                                  <strong>{fmtPrice(token.price)}</strong>
+                                  <small className={(token.change24h ?? 0) >= 0 ? 'is-up' : 'is-down'}>
+                                    {token.change24h == null ? 'Live' : `${token.change24h >= 0 ? '+' : ''}${token.change24h.toFixed(2)}%`}
+                                  </small>
+                                </span>
+                                <ChevronRight size={18} />
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      );
+                    })()}
+
                     <div className="front-actions">
                       <button className="btn-primary front-primary-action" onClick={() => wallets.length > 0 ? setActiveTab('overview') : setIsAddingWallet(true)}>
                         {wallets.length > 0 ? 'Open portfolio' : 'Track wallet'} <ArrowRight size={15} />
                       </button>
-                      <button className="btn-ghost front-secondary-action" onClick={() => setShowMarketWatch(true)}>
+                      <button className="btn-ghost front-secondary-action" onClick={() => openMarketWatch('')}>
                         Market watch <Activity size={14} />
                       </button>
-                    </div>
-                  </div>
-
-                  <div className="front-market-board">
-                    <div className="front-board-head">
-                      <div>
-                        <span>Core pulse</span>
-                        <strong>{lastUpdated ? `${timeSinceLastUpdate}s ago` : 'Live sync'}</strong>
-                      </div>
                       <button onClick={fetchPortfolio} className="front-refresh-btn">
                         <RefreshCcw size={13} className={isLoading ? 'animate-spin' : ''} />
                         Refresh
                       </button>
-                    </div>
-                    <div className="front-token-grid">
-                      {topHoldingCards.slice(0, 6).map((token, i) => (
-                        <button
-                          key={token.id}
-                          className="front-token-tile"
-                          onClick={() => setShowMarketWatch(true)}
-                          style={{ animationDelay: `${i * 55}ms` }}
-                        >
-                          <span className="front-token-accent" style={{ background: token.accent }} />
-                          <span className="front-token-logo">
-                            {token.logo ? <img src={token.logo} alt={token.symbol} /> : token.symbol.slice(0, 1)}
-                          </span>
-                          <span className="front-token-meta">
-                            <strong>{token.symbol}</strong>
-                            <small>{token.name}</small>
-                          </span>
-                          <span className="front-token-price">
-                            <strong>{fmtPrice(token.price)}</strong>
-                            <small className={(token.change24h ?? 0) >= 0 ? 'is-up' : 'is-down'}>
-                              {token.change24h == null ? 'Live' : `${token.change24h >= 0 ? '+' : ''}${token.change24h.toFixed(2)}%`}
-                            </small>
-                          </span>
-                        </button>
-                      ))}
                     </div>
                   </div>
                 </section>
@@ -3792,13 +3975,41 @@ export default function App() {
                     </div>
                   </div>
                 </section>
+
+                <section className="front-section">
+                  <div className="front-section-head">
+                    <span>PulseChain guide</span>
+                    <h2>Make the dashboard teach the route, not just the price.</h2>
+                  </div>
+                  <div className="front-info-grid">
+                    {frontInfoCards.map(({ label, value, detail, action, href, icon: Icon, tab }) => (
+                      <button
+                        key={label}
+                        className="front-info-card"
+                        onClick={() => {
+                          if (tab) setActiveTab(tab);
+                          else if (href) window.open(href, '_blank', 'noopener,noreferrer');
+                        }}
+                        type="button"
+                      >
+                        <span className="front-info-icon"><Icon size={17} /></span>
+                        <span className="front-info-copy">
+                          <small>{label}</small>
+                          <strong>{value}</strong>
+                          <em>{detail}</em>
+                          <b>{action} {href && <ExternalLink size={12} />}</b>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
               </motion.div>
             )}
 
             {activeTab === 'overview' && (
               <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
 
-                {/* ── ONBOARDING ── */}
+                {/* â”€â”€ ONBOARDING â”€â”€ */}
                 {wallets.length === 0 && (
                   <div className={theme === 'dark' ? 'hero-bg-dark' : 'hero-bg-light'} style={{ border: '1px solid rgba(0,255,159,0.12)', borderRadius: 20, padding: '40px 32px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 0%, rgba(0,255,159,.10) 0%, transparent 55%), radial-gradient(ellipse at 80% 80%, rgba(99,70,255,.06) 0%, transparent 50%)', pointerEvents: 'none' }} />
@@ -3825,12 +4036,12 @@ export default function App() {
                     <button onClick={() => setIsAddingWallet(true)}
                       className="btn-primary"
                       style={{ padding: '14px 36px', fontSize: 15 }}>
-                      Add Your First Wallet →
+                      Add Your First Wallet â†’
                     </button>
                   </div>
                 )}
 
-                {/* ── HERO CARD (full width) with Allocation inside + STAT ROW ── */}
+                {/* â”€â”€ HERO CARD (full width) with Allocation inside + STAT ROW â”€â”€ */}
                 {(() => {
                    return (
                      <>
@@ -3862,9 +4073,9 @@ export default function App() {
                            <div style={{ height: 1, background: theme === 'dark' ? 'var(--border)' : 'rgba(0,0,0,.08)', margin: '18px 0 14px' }} />
                            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
                              <span style={{ fontSize: 12, color: t.textTertiary }}>Liquid: <span style={{ color: t.textSecondary, fontWeight: 600 }}>${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></span>
-                             <span style={{ fontSize: 12, color: t.textMuted }}>·</span>
+                             <span style={{ fontSize: 12, color: t.textMuted }}>Â·</span>
                              <span style={{ fontSize: 12, color: t.textTertiary }}>Staked: <span style={{ color: t.textSecondary, fontWeight: 600 }}>${summary.stakingValueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></span>
-                             <span style={{ fontSize: 12, color: t.textMuted }}>·</span>
+                             <span style={{ fontSize: 12, color: t.textMuted }}>Â·</span>
                              {wallets.length > 0 ? (() => {
                                const HEX_A = '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39';
                                const totalPHex = currentAssets.filter(a => a.chain === 'pulsechain' && (a as any).address?.toLowerCase() === HEX_A).reduce((s, a) => s + a.balance, 0)
@@ -3873,7 +4084,7 @@ export default function App() {
                                               + currentStakes.filter(s => s.chain === 'ethereum').reduce((s, st) => s + (st.stakedHex ?? 0), 0);
                                return <>
                                  <span style={{ fontSize: 12, color: t.textTertiary }}>pHEX: <span style={{ color: '#fb923c', fontWeight: 600 }}>{totalPHex >= 1e6 ? `${(totalPHex/1e6).toFixed(1)}M` : totalPHex >= 1e3 ? `${(totalPHex/1e3).toFixed(0)}K` : Math.round(totalPHex).toLocaleString('en-US')}</span></span>
-                                 <span style={{ fontSize: 12, color: t.textMuted }}>·</span>
+                                 <span style={{ fontSize: 12, color: t.textMuted }}>Â·</span>
                                  <span style={{ fontSize: 12, color: t.textTertiary }}>eHEX: <span style={{ color: '#627EEA', fontWeight: 600 }}>{totalEHex >= 1e6 ? `${(totalEHex/1e6).toFixed(1)}M` : totalEHex >= 1e3 ? `${(totalEHex/1e3).toFixed(0)}K` : Math.round(totalEHex).toLocaleString('en-US')}</span></span>
                                </>;
                              })() : (
@@ -3882,13 +4093,13 @@ export default function App() {
                                </button>
                              )}
                            </div>
-                           {/* Net Investment / Total P&L — 2-card row */}
+                           {/* Net Investment / Total P&L â€” 2-card row */}
                            <div style={{ height: 1, background: 'var(--border)', margin: '16px 0 14px' }} />
                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }} className="max-sm:grid-cols-1">
                              {[
-                               { label: 'Total Invested', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? 'ETH + stablecoin inflows' : 'No ETH/stable inflows found', color: t.text,
+                               { label: 'Total Invested', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : 'â€”', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? 'ETH + stablecoin inflows' : 'No ETH/stable inflows found', color: t.text,
                                  icon: <TrendingUp size={14} color={t.textMuted} />, iconBg: t.cardHigh, link: true },
-                               { label: 'Total P&L', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}${((summary.unifiedPnl / summary.netInvestment) * 100).toFixed(1)}% vs invested` : 'P&L % needs ETH/stable history', color: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? t.green : t.red) : t.text,
+                               { label: 'Total P&L', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : 'â€”', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}${((summary.unifiedPnl / summary.netInvestment) * 100).toFixed(1)}% vs invested` : 'P&L % needs ETH/stable history', color: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? t.green : t.red) : t.text,
                                  icon: <ArrowUpRight size={14} color={summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? t.green : t.red) : t.textMuted} />, iconBg: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? 'rgba(0,255,159,0.1)' : 'rgba(244,63,94,0.1)') : t.cardHigh, link: false },
                              ].map(({ label, val, sub, color, icon, iconBg, link }) => (
                                <div key={label} className="stat-card" onClick={link ? () => setActiveTab('history') : undefined}
@@ -3927,7 +4138,7 @@ export default function App() {
                           </div>{/* end hero-grid-top */}
                        </div>{/* end hero-grid */}
                      </div>{/* end hero card */}
-                     {/* ── MY HOLDINGS + LIVE PRICES — outside hero card ── */}
+                     {/* â”€â”€ MY HOLDINGS + LIVE PRICES â€” outside hero card â”€â”€ */}
                          {(() => {
                            const MAX_HERO_HOLDINGS = 7;
                            const holdingAssets = [...currentAssets].sort((a, b) => b.value - a.value).slice(0, MAX_HERO_HOLDINGS);
@@ -3942,7 +4153,7 @@ export default function App() {
                              v >= 1e3 ? `$${(v/1e3).toFixed(2)}K` :
                              `$${v.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
                            const fmtMarket = (v?: number | null) =>
-                             v == null ? '—' :
+                             v == null ? 'â€”' :
                              v >= 1e12 ? `$${(v/1e12).toFixed(2)}T` :
                              v >= 1e9 ? `$${(v/1e9).toFixed(2)}B` :
                              v >= 1e6 ? `$${(v/1e6).toFixed(2)}M` :
@@ -3959,7 +4170,7 @@ export default function App() {
                                      )}
                                      {wallets.length > 0 && summary.liquidValue > 0 && (
                                        <span style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>
-                                         · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                         Â· ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                        </span>
                                      )}
                                    </div>
@@ -3996,7 +4207,7 @@ export default function App() {
                                    }}
                                    onToggleExpanded={(id) => setExpandedAssetIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; })}
                                    onOpenPnl={asset => setPnlAsset(asset)}
-                                   onHide={id => setHiddenTokens(prev => [...prev, id])}
+                                  onHide={hideToken}
                                    onSetEntry={(id, value) => setManualEntries(prev => ({ ...prev, [id]: value }))}
                                    onClearEntry={(id) => setManualEntries(prev => { const n = { ...prev }; delete n[id]; return n; })}
                                    onFilterByAsset={symbol => { setTxAssetFilter(symbol); setActiveTab('assets'); }}
@@ -4092,7 +4303,7 @@ export default function App() {
                                                            {asset.symbol}
                                                            {asset.price > 0 && (
                                                              <>
-                                                               {' · '}
+                                                               {' Â· '}
                                                                <PriceDisplay price={asset.price} />
                                                                {nativePrice !== null && (
                                                                  <span style={{ color: 'var(--fg-muted)' }}> / {fmtNative(nativePrice)} {nativeSymbol}</span>
@@ -4105,7 +4316,7 @@ export default function App() {
                                                    </div>
                                                  </td>
                                                  <td style={{ padding: '10px 12px', textAlign: 'right', whiteSpace: 'nowrap', fontSize: 12, fontWeight: 700, color: (pct ?? 0) >= 0 ? t.green : t.red }}>
-                                                   {pct !== null ? `${pct >= 0 ? '▲' : '▼'} ${Math.abs(pct).toFixed(2)}%` : '—'}
+                                                   {pct !== null ? `${pct >= 0 ? 'â–²' : 'â–¼'} ${Math.abs(pct).toFixed(2)}%` : 'â€”'}
                                                  </td>
                                                  <td style={{ padding: '10px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                                                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>{fmtVal(asset.value)}</div>
@@ -4127,7 +4338,7 @@ export default function App() {
                                    );
                                  })())}
 
-                {/* ── MY HEX HOLDINGS ── */}
+                {/* â”€â”€ MY HEX HOLDINGS â”€â”€ */}
                 {(() => {
                   const HEX_ADDR = '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39';
                   const pHexPrice = prices[`pulsechain:${HEX_ADDR}`]?.usd || prices['pulsechain:hex']?.usd || 0;
@@ -4164,8 +4375,8 @@ export default function App() {
                   const eHexTotal = eHexLiquid + eHexStaked;
                   // Space-separated thousands: 148 000 000
                   const boxes = [
-                    { label: 'Total pHEX', sub: `${fmtBigNum(pHexLiquid)} liquid · ${fmtBigNum(pHexStaked)} staked`, val: fmtBigNum(pHexTotal), usd: pHexTotal * pHexPrice, color: '#fb923c', dot: '#fb923c' },
-                    { label: 'Total eHEX', sub: `${fmtBigNum(eHexLiquid)} liquid · ${fmtBigNum(eHexStaked)} staked`, val: fmtBigNum(eHexTotal), usd: eHexTotal * eHexPrice, color: '#627EEA', dot: '#627EEA' },
+                    { label: 'Total pHEX', sub: `${fmtBigNum(pHexLiquid)} liquid Â· ${fmtBigNum(pHexStaked)} staked`, val: fmtBigNum(pHexTotal), usd: pHexTotal * pHexPrice, color: '#fb923c', dot: '#fb923c' },
+                    { label: 'Total eHEX', sub: `${fmtBigNum(eHexLiquid)} liquid Â· ${fmtBigNum(eHexStaked)} staked`, val: fmtBigNum(eHexTotal), usd: eHexTotal * eHexPrice, color: '#627EEA', dot: '#627EEA' },
                   ];
                   return (
                     <div className="hero-hex-holdings-section">
@@ -4194,10 +4405,10 @@ export default function App() {
                             </div>
                           ))}
                         </div>
-                        {/* ── Stake Principal + Yield Breakdown ── */}
+                        {/* â”€â”€ Stake Principal + Yield Breakdown â”€â”€ */}
                         {(pHexPrincipal > 0 || eHexPrincipal > 0) && (
                           <div style={{ borderTop: `1px solid ${t.borderLight}`, padding: '12px 16px' }}>
-                            <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 10 }}>Stake Breakdown — Principal + Accrued Yield</div>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 10 }}>Stake Breakdown â€” Principal + Accrued Yield</div>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }} className="max-sm:grid-cols-1">
                               {[
                                 { label: 'pHEX Staked', principal: pHexPrincipal, yield: pHexYield, total: pHexStaked, color: '#fb923c', usdPrice: pHexPrice },
@@ -4235,7 +4446,7 @@ export default function App() {
                 })()}
                                </div>
 
-                {/* ── PORTFOLIO PERFORMANCE ── */}
+                {/* â”€â”€ PORTFOLIO PERFORMANCE â”€â”€ */}
                 {(() => {
                   const now = Date.now();
                   const cutoffs: Record<string, number> = {
@@ -4351,82 +4562,11 @@ export default function App() {
                   );
                 })()}
 
-                               <div className="hero-live-prices-panel">
-                                 <div className="hero-live-prices-head">
-                                   <div>
-                                     <div className="hero-live-prices-title">Live Prices</div>
-                                     <div className="hero-live-prices-subtitle">Core PulseChain tokens · live market data</div>
-                                   </div>
-                                   <button className="hero-live-holdings-link" onClick={() => setActiveTab('assets')}>
-                                     My Holdings <ChevronRight size={12} />
-                                   </button>
-                                 </div>
-                                 <div className="hero-live-prices-grid">
-                                   {topHoldingCards.map((token) => {
-                                     const change = token.change24h ?? 0;
-                                     const isUp = change >= 0;
-                                     return (
-                                       <button key={token.id} type="button" className="hero-live-price-item" onClick={() => setShowMarketWatch(true)}>
-                                         {token.accent && <div className="hero-live-accent-bar" style={{ background: token.accent }} />}
-                                         <div className="hero-live-price-top">
-                                           <div className="hero-live-token-lockup">
-                                             <div className="hero-live-token-logo">
-                                               {token.logo ? (
-                                                 <>
-                                                   <img
-                                                     src={token.logo}
-                                                     alt={token.symbol}
-                                                     onError={(e) => {
-                                                       e.currentTarget.style.display = 'none';
-                                                       const fallback = e.currentTarget.nextElementSibling as HTMLElement | null;
-                                                       if (fallback) fallback.style.display = 'inline';
-                                                     }}
-                                                   />
-                                                   <span style={{ display: 'none' }}>{token.symbol.slice(0, 1)}</span>
-                                                 </>
-                                               ) : token.symbol.slice(0, 1)}
-                                             </div>
-                                             <div className="hero-live-token-copy">
-                                               <div className="hero-live-symbol">{token.symbol}</div>
-                                               <div className="hero-live-name">{token.name}</div>
-                                             </div>
-                                           </div>
-                                           {token.change24h != null && (
-                                             <span className={isUp ? 'hero-live-change-pill up' : 'hero-live-change-pill down'}>
-                                               {isUp ? '+' : ''}{change.toFixed(1)}%
-                                             </span>
-                                           )}
-                                         </div>
-                                         <div className="hero-live-price-label">Price</div>
-                                         <div className="hero-live-price-number">{fmtPrice(token.price)}</div>
-                                         {token.change24h != null && (
-                                           <div className={isUp ? 'hero-live-change-line up' : 'hero-live-change-line down'}>
-                                             {isUp ? '▲' : '▼'} {Math.abs(change).toFixed(2)}% <span>24h</span>
-                                           </div>
-                                         )}
-                                         <div className="hero-live-market-row">
-                                           <div>
-                                             <span>Market Cap</span>
-                                             <strong>{fmtMarket(token.marketCap)}</strong>
-                                           </div>
-                                           <div>
-                                             <span>Volume 24h</span>
-                                             <strong>{fmtMarket(token.volume24h)}</strong>
-                                           </div>
-                                         </div>
-                                       </button>
-                                     );
-                                   })}
-                                 </div>
-                               </div>
-                             </div>
-                           );
-                         })()}
-                     </>
-                   );
-                 })()}
+                              </div>
+                            );
+                          })()}
 
-                {/* ── LIQUIDITY POSITIONS STRIP (overview) ── */}
+                {/* â”€â”€ LIQUIDITY POSITIONS STRIP (overview) â”€â”€ */}
                 {wallets.length > 0 && (
                   <div style={{ marginTop: 24 }}>
                     <LiquidityOverviewStrip
@@ -4437,6 +4577,9 @@ export default function App() {
                   </div>
                 )}
 
+                    </>
+                  );
+                })()}
 
               </motion.div>
             )}
@@ -4455,9 +4598,10 @@ export default function App() {
                 {(() => {
                   const chainAssets = walletChainFilter === 'all' ? currentAssets : currentAssets.filter(a => a.chain === walletChainFilter);
                   const chainDisplayAssets = normalizeHoldingAssets(chainAssets);
+                  const hiddenChainAssets = walletChainFilter === 'all' ? hiddenAssetRows : hiddenAssetRows.filter(a => a.chain === walletChainFilter);
                   return (<>
 
-                {/* ── All Wallets hero banner ── */}
+                {/* â”€â”€ All Wallets hero banner â”€â”€ */}
                 <div style={{ background: 'var(--bg-elevated)', borderRadius: 16, padding: '24px', border: '1px solid var(--accent-border)' }}>
                   <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 8 }}>All Wallets</div>
                   <div style={{ fontSize: 36, fontWeight: 800, color: 'var(--fg)', marginBottom: 16 }}>
@@ -4481,11 +4625,45 @@ export default function App() {
                   </div>
                 </div>
 
+                <div className="coin-visibility-panel">
+                  <div className="coin-visibility-copy">
+                    <span>Coin visibility</span>
+                    <strong>Wallet coins are auto-detected on refresh.</strong>
+                    <small>
+                      If a new buy is missing, refresh balances first. If it was hidden by accident, unhide it here or turn off Dust/Spam filters.
+                    </small>
+                  </div>
+                  <div className="coin-visibility-stats">
+                    <span>{hiddenTokens.length} hidden</span>
+                    <span>{customCoins.length} manual</span>
+                    <span>{hideDust ? 'Dust off' : 'Dust on'}</span>
+                    <span>{hideSpam ? 'Spam off' : 'Spam on'}</span>
+                  </div>
+                  <div className="coin-visibility-actions">
+                    <button type="button" onClick={fetchPortfolio}>
+                      <RefreshCcw size={13} className={isLoading ? 'animate-spin' : ''} />
+                      Refresh / detect
+                    </button>
+                    <button type="button" onClick={() => { setShowHiddenCoins(true); setHiddenTokens([]); }} disabled={hiddenTokens.length === 0}>
+                      <Eye size={13} />
+                      Unhide all
+                    </button>
+                    <button type="button" onClick={() => { setHideDust(false); setHideSpam(false); setShowHiddenCoins(true); }}>
+                      <EyeOff size={13} />
+                      Show all coins
+                    </button>
+                    <button type="button" className="coin-visibility-primary" onClick={() => setIsCustomCoinsModalOpen(true)}>
+                      <Plus size={13} />
+                      Add coin
+                    </button>
+                  </div>
+                </div>
+
                 {/* Header row */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                   <div>
                     <div style={{ fontSize: 18, fontWeight: 700, color: t.text, marginBottom: 2 }}>Holdings</div>
-                    <div style={{ fontSize: 13, color: t.textSecondary }}>{chainAssets.length} token{chainAssets.length !== 1 ? 's' : ''} · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} liquid</div>
+                    <div style={{ fontSize: 13, color: t.textSecondary }}>{chainAssets.length} token{chainAssets.length !== 1 ? 's' : ''} Â· ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} liquid</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', gap: 3, background: t.cardHigh, border: `1px solid ${t.border}`, borderRadius: 8, padding: 3 }}>
@@ -4511,16 +4689,29 @@ export default function App() {
                         border: hideSpam ? '1px solid #f739ff44' : `1px solid ${t.border}` }}>
                       Hide Spam
                     </button>
+                    <button onClick={() => setShowHiddenCoins(v => !v)}
+                      style={{ padding: '6px 14px', borderRadius: 8,
+                        background: showHiddenCoins ? 'var(--accent-dim)' : t.cardHigh,
+                        color: showHiddenCoins ? 'var(--accent)' : t.textSecondary,
+                        fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all .12s',
+                        border: showHiddenCoins ? '1px solid var(--accent-border)' : `1px solid ${t.border}`,
+                        display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Eye size={13} />
+                      Hidden Coins
+                      {hiddenTokens.length > 0 && (
+                        <span className="hidden-coins-count">{hiddenTokens.length}</span>
+                      )}
+                    </button>
                     <button onClick={scanForSpam} disabled={isScanning || wallets.length === 0}
                       style={{ padding: '6px 14px', borderRadius: 8, border: `1px solid ${t.border}`,
                         background: t.cardHigh, color: isScanning ? t.textMuted : t.textSecondary,
                         fontSize: 13, fontWeight: 600, cursor: isScanning || wallets.length === 0 ? 'default' : 'pointer',
                         transition: 'all .12s', display: 'flex', alignItems: 'center', gap: 5 }}>
-                      {isScanning ? '⟳ Scanning…' : 'Scan'}
+                      {isScanning ? 'âŸ³ Scanningâ€¦' : 'Scan'}
                       {scanResult !== null && !isScanning && (
                         <span style={{ background: scanResult > 0 ? '#f739ff33' : 'var(--accent-dim)', color: scanResult > 0 ? '#f739ff' : t.green,
                           borderRadius: 4, padding: '1px 5px', fontSize: 13 }}>
-                          {scanResult > 0 ? `+${scanResult} spam` : '✓ clean'}
+                          {scanResult > 0 ? `+${scanResult} spam` : 'âœ“ clean'}
                         </span>
                       )}
                     </button>
@@ -4547,7 +4738,68 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* ── Allocation panel ── */}
+                {/* â”€â”€ Allocation panel â”€â”€ */}
+                {showHiddenCoins && (
+                  <div className="hidden-coins-panel">
+                    <div className="hidden-coins-panel-header">
+                      <div>
+                        <div className="hidden-coins-title">Hidden Coins</div>
+                        <div className="hidden-coins-subtitle">
+                          {hiddenTokens.length === 0
+                            ? 'Nothing is manually hidden. New buys can still be affected by Dust or Spam filters.'
+                            : `${hiddenTokens.length} hidden token${hiddenTokens.length !== 1 ? 's' : ''}. Unhide anything that was hidden by mistake.`}
+                        </div>
+                      </div>
+                      <div className="hidden-coins-actions">
+                        <button
+                          type="button"
+                          className="hidden-coins-soft-btn"
+                          onClick={() => { setHideDust(false); setHideSpam(false); }}
+                        >
+                          Show all filters
+                        </button>
+                        {hiddenTokens.length > 0 && (
+                          <button
+                            type="button"
+                            className="hidden-coins-soft-btn hidden-coins-danger-btn"
+                            onClick={() => setHiddenTokens([])}
+                          >
+                            Unhide all
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    {hiddenChainAssets.length > 0 ? (
+                      <div className="hidden-coins-list">
+                        {hiddenChainAssets.map(asset => {
+                          const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()] || (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()] || getTokenLogoUrl(asset);
+                          return (
+                            <div key={asset.id} className="hidden-coin-row">
+                              <div className="hidden-coin-identity">
+                                <span className="hidden-coin-logo">{logo ? <img src={logo} alt={asset.symbol} /> : asset.symbol.slice(0, 1)}</span>
+                                <span>
+                                  <span className="hidden-coin-name">{asset.symbol}</span>
+                                  <span className="hidden-coin-meta">{asset.name} - {asset.chain}</span>
+                                </span>
+                              </div>
+                              <div className="hidden-coin-side">
+                                <span className="hidden-coin-value">${asset.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                                <button type="button" className="hidden-coins-unhide-btn" onClick={() => unhideToken(asset.id)}>
+                                  Unhide
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="hidden-coins-empty">
+                        {walletChainFilter === 'all' ? 'No manually hidden coins.' : `No hidden coins on ${walletChainFilter}.`}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {allocWheelOpen && (() => {
                   const ALLOC_COLORS_P = ['#00FF9F','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
                   const alloc = assetAllocation.length > 0 ? assetAllocation : [];
@@ -4639,7 +4891,7 @@ export default function App() {
                   <div style={{ padding: '14px 16px', borderBottom: isCollapsed('assets-table') ? 'none' : `1px solid ${t.borderLight}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
                       <div style={{ fontSize: 15, fontWeight: 700, color: t.text }}>Assets</div>
-                      <div style={{ fontSize: 13, color: t.textSecondary, marginTop: 2 }}>{chainAssets.length} tokens · ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                      <div style={{ fontSize: 13, color: t.textSecondary, marginTop: 2 }}>{chainAssets.length} tokens Â· ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                     </div>
                     <button onClick={() => toggleSection('assets-table')}
                       style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s' }}
@@ -4676,7 +4928,7 @@ export default function App() {
                     }}
                     onToggleExpanded={(id) => setExpandedAssetIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; })}
                     onOpenPnl={asset => setPnlAsset(asset)}
-                    onHide={id => setHiddenTokens(prev => [...prev, id])}
+                    onHide={hideToken}
                     onSetEntry={(id, value) => setManualEntries(prev => ({ ...prev, [id]: value }))}
                     onClearEntry={(id) => setManualEntries(prev => { const n = { ...prev }; delete n[id]; return n; })}
                     onFilterByAsset={symbol => { setTxAssetFilter(symbol); setActiveTab('assets'); }}
@@ -4704,7 +4956,7 @@ export default function App() {
                                 textTransform: 'uppercase', letterSpacing: '.5px',
                                 textAlign: align as any, whiteSpace: 'nowrap', background: t.card,
                                 cursor: field ? 'pointer' : 'default', userSelect: 'none' }}>
-                              {label}{field && assetSortField === field ? (assetSortDir === 'desc' ? ' ↓' : ' ↑') : ''}
+                              {label}{field && assetSortField === field ? (assetSortDir === 'desc' ? ' â†“' : ' â†‘') : ''}
                             </th>
                           ))}
                         </tr>
@@ -4731,7 +4983,7 @@ export default function App() {
                         {currentAssets.length === 0 ? (
                           <tr>
                             <td colSpan={5} style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 13 }}>
-                              No holdings found — add wallets to get started
+                              No holdings found â€” add wallets to get started
                             </td>
                           </tr>
                         ) : (
@@ -4777,7 +5029,7 @@ export default function App() {
                                 onClick={() => setExpandedAssetIds(prev => { const s = new Set(prev); s.has(asset.id) ? s.delete(asset.id) : s.add(asset.id); return s; })}
                                 onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
                                 onMouseOut={e => (e.currentTarget.style.background = isExpanded ? 'var(--bg-elevated)' : 'transparent')}>
-                                {/* ── Token cell ── */}
+                                {/* â”€â”€ Token cell â”€â”€ */}
                                 <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                     {/* Logo */}
@@ -4813,16 +5065,16 @@ export default function App() {
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3 }}>
                                         <div style={{ width: 5, height: 5, borderRadius: '50%', background: CHAIN_COLORS[asset.chain] || '#555', flexShrink: 0 }} />
                                         <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>
-                                          {asset.symbol}{asset.price > 0 && <> · <PriceDisplay price={asset.price} /></>}
+                                          {asset.symbol}{asset.price > 0 && <> Â· <PriceDisplay price={asset.price} /></>}
                                         </span>
                                       </div>
                                     </div>
                                   </div>
                                 </td>
-                                {/* ── Change cell ── */}
+                                {/* â”€â”€ Change cell â”€â”€ */}
                                 <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap',
                                   fontSize: 13, fontWeight: 600, color: pct >= 0 ? t.green : t.red }}>
-                                  {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%
+                                  {pct >= 0 ? 'â–²' : 'â–¼'} {Math.abs(pct).toFixed(2)}%
                                 </td>
                                 <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                                   <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>
@@ -4849,7 +5101,7 @@ export default function App() {
                                       onMouseOut={e => (e.currentTarget.style.color = pnlAsset?.id === asset.id ? '#a78bfa' : '#555')}>
                                       <Calculator size={13} />
                                     </button>
-                                    <button onClick={e => { e.stopPropagation(); setHiddenTokens([...hiddenTokens, asset.id]); }}
+                                    <button onClick={e => { e.stopPropagation(); hideToken(asset.id); }}
                                       style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s' }}
                                       onMouseOver={e => (e.currentTarget.style.color = '#ef4444')}
                                       onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}
@@ -4862,7 +5114,7 @@ export default function App() {
                                   </div>
                                 </td>
                               </motion.tr>
-                              {/* ── Expanded details row ── */}
+                              {/* â”€â”€ Expanded details row â”€â”€ */}
                               {isExpanded && (
                                 <tr style={{ borderBottom: `1px solid ${t.borderLight}`, borderLeft: `3px solid ${CHAIN_COLORS[asset.chain] || '#333'}`, background: t.expandedBg }}>
                                   <td colSpan={5} style={{ padding: '0 16px 14px 16px' }}>
@@ -4887,21 +5139,21 @@ export default function App() {
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                               <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>1H</span>
                                               <span style={{ fontSize: 12, fontWeight: 700, color: (asset.priceChange1h ?? 0) >= 0 ? t.green : t.red }}>
-                                                {(asset.priceChange1h ?? 0) >= 0 ? '▲' : '▼'} {Math.abs(asset.priceChange1h ?? 0).toFixed(2)}%
+                                                {(asset.priceChange1h ?? 0) >= 0 ? 'â–²' : 'â–¼'} {Math.abs(asset.priceChange1h ?? 0).toFixed(2)}%
                                               </span>
                                             </div>
                                           )}
                                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>24H</span>
                                             <span style={{ fontSize: 12, fontWeight: 700, color: (asset.priceChange24h ?? asset.pnl24h ?? 0) >= 0 ? t.green : t.red }}>
-                                              {(asset.priceChange24h ?? asset.pnl24h ?? 0) >= 0 ? '▲' : '▼'} {Math.abs(asset.priceChange24h ?? asset.pnl24h ?? 0).toFixed(2)}%
+                                              {(asset.priceChange24h ?? asset.pnl24h ?? 0) >= 0 ? 'â–²' : 'â–¼'} {Math.abs(asset.priceChange24h ?? asset.pnl24h ?? 0).toFixed(2)}%
                                             </span>
                                           </div>
                                           {(asset.priceChange7d ?? null) !== null && (
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                               <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>7D</span>
                                               <span style={{ fontSize: 12, fontWeight: 700, color: (asset.priceChange7d ?? 0) >= 0 ? t.green : t.red }}>
-                                                {(asset.priceChange7d ?? 0) >= 0 ? '▲' : '▼'} {Math.abs(asset.priceChange7d ?? 0).toFixed(2)}%
+                                                {(asset.priceChange7d ?? 0) >= 0 ? 'â–²' : 'â–¼'} {Math.abs(asset.priceChange7d ?? 0).toFixed(2)}%
                                               </span>
                                             </div>
                                           )}
@@ -4919,24 +5171,24 @@ export default function App() {
                                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                                   <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Native Price</span>
                                                   <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)', fontFamily: 'monospace' }}>
-                                                    {md?.nativePriceUsd ? `${parseFloat(md.nativePriceUsd).toFixed(4)}` : '—'}
+                                                    {md?.nativePriceUsd ? `${parseFloat(md.nativePriceUsd).toFixed(4)}` : 'â€”'}
                                                   </span>
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                                   <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Liquidity</span>
-                                                  <span style={{ fontSize: 13, fontWeight: 700, color: t.green }}>{md ? fmtNum(md.liquidity) : <span style={{ color: 'var(--fg-subtle)' }}>—</span>}</span>
+                                                  <span style={{ fontSize: 13, fontWeight: 700, color: t.green }}>{md ? fmtNum(md.liquidity) : <span style={{ color: 'var(--fg-subtle)' }}>â€”</span>}</span>
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                                   <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Volume 24h</span>
-                                                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>{md ? fmtNum(md.volume24h) : <span style={{ color: 'var(--fg-subtle)' }}>—</span>}</span>
+                                                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>{md ? fmtNum(md.volume24h) : <span style={{ color: 'var(--fg-subtle)' }}>â€”</span>}</span>
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                                   <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Pools</span>
-                                                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-muted)' }}>{md ? md.pools : <span style={{ color: 'var(--fg-subtle)' }}>—</span>}</span>
+                                                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-muted)' }}>{md ? md.pools : <span style={{ color: 'var(--fg-subtle)' }}>â€”</span>}</span>
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                                   <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Txns 24h</span>
-                                                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-muted)' }}>{md?.txns24h != null ? md.txns24h.toLocaleString() : <span style={{ color: 'var(--fg-subtle)' }}>—</span>}</span>
+                                                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-muted)' }}>{md?.txns24h != null ? md.txns24h.toLocaleString() : <span style={{ color: 'var(--fg-subtle)' }}>â€”</span>}</span>
                                                 </div>
                                               </>
                                             );
@@ -5020,7 +5272,7 @@ export default function App() {
                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
                                               <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Contract</span>
                                               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                                <span style={{ fontSize: 12, fontFamily: 'monospace', color: 'var(--fg-muted)' }}>{addr.slice(0,6)}…{addr.slice(-4)}</span>
+                                                <span style={{ fontSize: 12, fontFamily: 'monospace', color: 'var(--fg-muted)' }}>{addr.slice(0,6)}â€¦{addr.slice(-4)}</span>
                                                 <button onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(addr); }}
                                                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', padding: 2 }}
                                                   onMouseOver={e => (e.currentTarget.style.color = '#aaa')}
@@ -5084,7 +5336,7 @@ export default function App() {
                   </>)}
                 </div>
 
-                {/* ── Transactions ── */}
+                {/* â”€â”€ Transactions â”€â”€ */}
                 <div style={{ marginTop: 8 }}>
                   {/* Type filter pills + active filter chips */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
@@ -5105,22 +5357,22 @@ export default function App() {
                         <div style={{ width: 1, height: 18, background: 'var(--border)', flexShrink: 0 }} />
                         {txAssetFilter !== 'all' && (
                           <button className="filter-chip" onClick={() => setTxAssetFilter('all')}>
-                            {txAssetFilter}<span className="chip-x">✕</span>
+                            {txAssetFilter}<span className="chip-x">âœ•</span>
                           </button>
                         )}
                         {txChainFilter !== 'all' && (
                           <button className="filter-chip" onClick={() => setTxChainFilter('all')}>
-                            {txChainFilter === 'pulsechain' ? 'PulseChain' : txChainFilter === 'ethereum' ? 'Ethereum' : 'Base'}<span className="chip-x">✕</span>
+                            {txChainFilter === 'pulsechain' ? 'PulseChain' : txChainFilter === 'ethereum' ? 'Ethereum' : 'Base'}<span className="chip-x">âœ•</span>
                           </button>
                         )}
                         {txYearFilter !== 'all' && (
                           <button className="filter-chip" onClick={() => setTxYearFilter('all')}>
-                            {txYearFilter}<span className="chip-x">✕</span>
+                            {txYearFilter}<span className="chip-x">âœ•</span>
                           </button>
                         )}
                         {txCoinCategory !== 'all' && (
                           <button className="filter-chip" onClick={() => setTxCoinCategory('all')}>
-                            {txCoinCategory === 'stablecoins' ? 'Stablecoins' : txCoinCategory === 'eth_weth' ? 'ETH/WETH' : txCoinCategory === 'hex' ? 'HEX/eHEX' : txCoinCategory === 'pls_wpls' ? 'PLS/WPLS' : 'Bridged'}<span className="chip-x">✕</span>
+                            {txCoinCategory === 'stablecoins' ? 'Stablecoins' : txCoinCategory === 'eth_weth' ? 'ETH/WETH' : txCoinCategory === 'hex' ? 'HEX/eHEX' : txCoinCategory === 'pls_wpls' ? 'PLS/WPLS' : 'Bridged'}<span className="chip-x">âœ•</span>
                           </button>
                         )}
                         <button
@@ -5207,7 +5459,7 @@ export default function App() {
                         <button onClick={() => { setTxTypeFilter('all'); setTxAssetFilter('all'); setTxChainFilter('all'); setTxYearFilter('all'); setTxCoinCategory('all'); }} style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', textDecoration: 'underline', marginLeft: 4 }}>Clear all</button>
                       </div>
                     )}
-                    {/* ── Timeline ── */}
+                    {/* â”€â”€ Timeline â”€â”€ */}
                     <div style={{ maxHeight: 700, overflowY: 'auto', padding: '14px 18px' }} className="custom-scrollbar">
                       {filteredTransactions.length === 0 ? (
                         <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 13 }}>
@@ -5324,8 +5576,8 @@ export default function App() {
             {/* Stats grid */}
             <div className="stat-grid-4">
               {[
-                { label: 'Total Invested', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? 'ETH + stablecoin inflows' : 'No ETH/stable inflows found', color: 'var(--fg)' },
-                { label: 'Total P&L', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}${((summary.unifiedPnl / summary.netInvestment) * 100).toFixed(1)}% vs invested` : 'P&L % needs ETH/stable history', color: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? t.green : t.red) : 'var(--fg)' },
+                { label: 'Total Invested', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : 'â€”', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? 'ETH + stablecoin inflows' : 'No ETH/stable inflows found', color: 'var(--fg)' },
+                { label: 'Total P&L', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : 'â€”', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}${((summary.unifiedPnl / summary.netInvestment) * 100).toFixed(1)}% vs invested` : 'P&L % needs ETH/stable history', color: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? t.green : t.red) : 'var(--fg)' },
                 { label: 'Realized P&L', val: `${summary.realizedPnl >= 0 ? '+' : ''}$${Math.abs(summary.realizedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Closed trade profit', color: summary.realizedPnl >= 0 ? t.green : t.red },
                 { label: 'Unrealized P&L', val: `${summary.pnl24h >= 0 ? '+' : ''}$${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: "Today's portfolio change", color: summary.pnl24h >= 0 ? t.green : t.red },
               ].map(({ label, val, sub, color }) => (
@@ -5506,7 +5758,7 @@ export default function App() {
               </>)}
             </div>
 
-            {/* ── TOKEN P&L SUMMARY CARD — shown when a specific asset filter is active ── */}
+            {/* â”€â”€ TOKEN P&L SUMMARY CARD â€” shown when a specific asset filter is active â”€â”€ */}
             {txAssetFilter !== 'all' && (() => {
               const filteredAsset = currentAssets.find(a =>
                 sameAssetSymbol(a.symbol, txAssetFilter, a.chain)
@@ -5522,7 +5774,7 @@ export default function App() {
               );
               return (
                 <>
-                  {/* "Filtering by X" banner — PLSFolio style */}
+                  {/* "Filtering by X" banner â€” PLSFolio style */}
                   <div style={{
                     display: 'flex', alignItems: 'center', gap: 10,
                     padding: '10px 16px', borderRadius: 10,
@@ -5538,8 +5790,8 @@ export default function App() {
                     </span>
                     {filteredAsset && (
                       <span style={{ fontSize: 12, color: 'var(--fg-subtle)', marginLeft: 4 }}>
-                        · {filteredAsset.chain === 'pulsechain' ? 'PulseChain' : filteredAsset.chain === 'ethereum' ? 'Ethereum' : 'Base'}
-                        · ${tokenPrice < 0.001 ? tokenPrice.toExponential(2) : tokenPrice < 1 ? tokenPrice.toFixed(6) : tokenPrice.toFixed(2)} per token
+                        Â· {filteredAsset.chain === 'pulsechain' ? 'PulseChain' : filteredAsset.chain === 'ethereum' ? 'Ethereum' : 'Base'}
+                        Â· ${tokenPrice < 0.001 ? tokenPrice.toExponential(2) : tokenPrice < 1 ? tokenPrice.toFixed(6) : tokenPrice.toFixed(2)} per token
                       </span>
                     )}
                     <button
@@ -5570,7 +5822,7 @@ export default function App() {
             })()}
 
 
-            {/* ── PLS Flow Summary (merged from former tracker tab) ── */}
+            {/* â”€â”€ PLS Flow Summary (merged from former tracker tab) â”€â”€ */}
             {plsSwapData.rows.length > 0 && (
               <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, overflow: 'hidden' }}>
                 <div style={{ padding: '14px 18px', borderBottom: isCollapsed('history-pls') ? 'none' : `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -5667,7 +5919,7 @@ export default function App() {
                     Staking ${stakingUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </span>
                 </div>
-                {/* pHEX / eHEX totals — matches Overview hero */}
+                {/* pHEX / eHEX totals â€” matches Overview hero */}
                 {(walletPHex > 0 || walletEHex > 0) && (
                   <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
                     {walletPHex > 0 && (
@@ -5693,12 +5945,12 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Asset list — full Token Positions module */}
+              {/* Asset list â€” full Token Positions module */}
               <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
                 <div style={{ padding: '14px 16px', borderBottom: isCollapsed('wallet-holdings') ? 'none' : `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                   <div>
                     <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)' }}>Holdings</div>
-                    <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginTop: 2 }}>{filteredViewAssets.length} tokens · ${walletUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                    <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginTop: 2 }}>{filteredViewAssets.length} tokens Â· ${walletUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{ display: 'flex', gap: 3, background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 8, padding: 3 }}>
@@ -5747,7 +5999,7 @@ export default function App() {
                   }}
                   onToggleExpanded={(id) => setExpandedWalletAssetIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; })}
                   onOpenPnl={asset => setPnlAsset(asset)}
-                  onHide={id => setHiddenTokens(prev => [...prev, id])}
+                  onHide={hideToken}
                   onSetEntry={(id, value) => setManualEntries(prev => ({ ...prev, [id]: value }))}
                   onClearEntry={(id) => setManualEntries(prev => { const n = { ...prev }; delete n[id]; return n; })}
                   onFilterByAsset={symbol => { setTxAssetFilter(symbol); setActiveTab('assets'); }}
@@ -5776,7 +6028,7 @@ export default function App() {
                               textTransform: 'uppercase', letterSpacing: '.5px',
                               textAlign: align as any, whiteSpace: 'nowrap', background: 'var(--bg-surface)',
                               cursor: field ? 'pointer' : 'default', userSelect: 'none' }}>
-                            {label}{field && assetSortField === field ? (assetSortDir === 'desc' ? ' ↓' : ' ↑') : ''}
+                            {label}{field && assetSortField === field ? (assetSortDir === 'desc' ? ' â†“' : ' â†‘') : ''}
                           </th>
                         ))}
                       </tr>
@@ -5866,7 +6118,7 @@ export default function App() {
                               </td>
                               <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap',
                                 fontSize: 13, fontWeight: 600, color: pct >= 0 ? t.green : t.red }}>
-                                {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%
+                                {pct >= 0 ? 'â–²' : 'â–¼'} {Math.abs(pct).toFixed(2)}%
                               </td>
                               <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>
@@ -5896,7 +6148,7 @@ export default function App() {
                                     onMouseOut={e => (e.currentTarget.style.color = pnlAsset?.id === asset.id ? '#a78bfa' : '#555')}>
                                     <Calculator size={13} />
                                   </button>
-                                  <button onClick={e => { e.stopPropagation(); setHiddenTokens([...hiddenTokens, asset.id]); }}
+                                  <button onClick={e => { e.stopPropagation(); hideToken(asset.id); }}
                                     style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s' }}
                                     onMouseOver={e => (e.currentTarget.style.color = '#ef4444')}
                                     onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}
@@ -5928,7 +6180,7 @@ export default function App() {
                                           {wPriceInPls > 0 ? `${wPriceInPls >= 1000 ? `${(wPriceInPls/1000).toFixed(2)}K` : wPriceInPls.toFixed(4)} PLS` : ''}
                                         </div>
                                         <div style={{ fontSize: 12, fontWeight: 700, color: pct >= 0 ? t.green : t.red, marginTop: 4 }}>
-                                          {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}% (24h)
+                                          {pct >= 0 ? 'â–²' : 'â–¼'} {Math.abs(pct).toFixed(2)}% (24h)
                                         </div>
                                       </div>
                                       {/* Holdings card */}
@@ -5967,7 +6219,7 @@ export default function App() {
                                             <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 4, borderTop: '1px solid var(--border)', marginTop: 4 }}>
                                               <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg-subtle)' }}>Net P&L</span>
                                               <span style={{ fontSize: 14, fontWeight: 800, color: wPnlPls !== null && wPnlPls >= 0 ? t.green : t.red }}>
-                                                {wPnlPls !== null ? `${wPnlPls >= 0 ? '+' : ''}${wPnlPls.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS` : '—'}
+                                                {wPnlPls !== null ? `${wPnlPls >= 0 ? '+' : ''}${wPnlPls.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS` : 'â€”'}
                                               </span>
                                             </div>
                                           </>
@@ -5982,7 +6234,7 @@ export default function App() {
                                       </div>
                                     </div>
 
-                                     {/* ── Transactions & Realized P&L for this token ── */}
+                                     {/* â”€â”€ Transactions & Realized P&L for this token â”€â”€ */}
                                      {(() => {
                                        const sym = asset.symbol.toUpperCase();
                                        const tokenTxs = currentTransactions.filter(tx =>
@@ -6072,7 +6324,7 @@ export default function App() {
 
 
 
-              {/* ── WALLET TRANSACTIONS ── */}
+              {/* â”€â”€ WALLET TRANSACTIONS â”€â”€ */}
               {(() => {
                 const baseTxs = isAll
                   ? currentTransactions
@@ -6146,7 +6398,7 @@ export default function App() {
         </div>
       </main>
 
-      {/* ── MOBILE BOTTOM NAV ── */}
+      {/* â”€â”€ MOBILE BOTTOM NAV â”€â”€ */}
       <nav className="mobile-bottom-nav bottom-nav-blur md:hidden fixed bottom-0 left-0 right-0 z-50"
         style={{
           background: 'var(--bg-header)',
@@ -6341,7 +6593,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* ── P&L Modal ── */}
+      {/* â”€â”€ P&L Modal â”€â”€ */}
       {pnlAsset && (
         <PnLModal
           asset={pnlAsset}
@@ -6353,7 +6605,7 @@ export default function App() {
         />
       )}
 
-      {/* ── Token Card Detail Modal ── */}
+      {/* â”€â”€ Token Card Detail Modal â”€â”€ */}
       {tokenCardModal && (
         <TokenCardModal
           asset={tokenCardModal}
@@ -6368,15 +6620,67 @@ export default function App() {
         />
       )}
 
-      {/* ── Market Watch Modal ── */}
+      <AnimatePresence>
+        {isCustomCoinsModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsCustomCoinsModalOpen(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: '100%' }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: '100%' }}
+              transition={{ type: 'spring', damping: 22, stiffness: 120 }}
+              className="custom-coin-modal sm:rounded-[20px]"
+            >
+              <div className="custom-coin-modal-head">
+                <Plus size={18} />
+                <div>
+                  <strong>Add coin manually</strong>
+                  <span>Use this when a wallet token has no reliable price feed yet.</span>
+                </div>
+              </div>
+              <div className="custom-coin-grid">
+                <label>
+                  Symbol
+                  <input value={customCoinDraft.symbol} onChange={e => setCustomCoinDraft(prev => ({ ...prev, symbol: e.target.value }))} placeholder="GO" autoFocus />
+                </label>
+                <label>
+                  Name
+                  <input value={customCoinDraft.name} onChange={e => setCustomCoinDraft(prev => ({ ...prev, name: e.target.value }))} placeholder="GoPulse" />
+                </label>
+                <label>
+                  Balance
+                  <input type="number" min="0" step="any" value={customCoinDraft.balance} onChange={e => setCustomCoinDraft(prev => ({ ...prev, balance: e.target.value }))} placeholder="1000" />
+                </label>
+                <label>
+                  Price USD
+                  <input type="number" min="0" step="any" value={customCoinDraft.price} onChange={e => setCustomCoinDraft(prev => ({ ...prev, price: e.target.value }))} placeholder="0.001" onKeyDown={e => { if (e.key === 'Enter') submitCustomCoin(); }} />
+                </label>
+              </div>
+              <div className="custom-coin-actions">
+                <button type="button" onClick={() => setIsCustomCoinsModalOpen(false)}>Cancel</button>
+                <button type="button" className="custom-coin-submit" onClick={submitCustomCoin}>Add to portfolio</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* â”€â”€ Market Watch Modal â”€â”€ */}
       {showMarketWatch && (
         <MarketWatchModal
           theme={theme}
+          initialSearch={marketWatchInitialSearch}
           onClose={() => setShowMarketWatch(false)}
         />
       )}
 
-      {/* ── Profit Planner Modal ── */}
+      {/* â”€â”€ Profit Planner Modal â”€â”€ */}
       {profitPlannerOpen && (
         <ProfitPlannerModal
           open={profitPlannerOpen}
