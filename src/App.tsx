@@ -689,10 +689,8 @@ export default function App() {
   const [manualEntries, setManualEntries] = useState<Record<string, number>>(() => readStoredJSON<Record<string, number>>('pulseport_manual_entries', {}));
   const [prices, setPrices] = useState<Record<string, any>>(() => tryReadCache<Record<string, any>>('pulseport_cache_prices') ?? {});
   const [etherscanApiKey, setEtherscanApiKey] = useState<string>(() => localStorage.getItem('pulseport_etherscan_key') || '');
-  const [basescanApiKey, setBasescanApiKey] = useState<string>(() => localStorage.getItem('pulseport_basescan_key') || '');
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
-  const [basescanApiKeyInput, setBasescanApiKeyInput] = useState('');
   const [hideDust, setHideDust] = useState<boolean>(() => readStoredJSON<boolean>('pulseport_hide_dust', false));
   const [hiddenTokens, setHiddenTokens] = useState<string[]>(() => {
     return readStoredJSON<string[]>('pulseport_hidden_tokens', []);
@@ -3729,8 +3727,9 @@ export default function App() {
             </button>
 
             {/* API Key */}
-            <button onClick={() => { setApiKeyInput(etherscanApiKey); setBasescanApiKeyInput(basescanApiKey); setIsApiKeyModalOpen(true); }}
-              title={etherscanApiKey ? 'API key set âœ“' : 'Set Etherscan API key'}
+            <button onClick={() => { setApiKeyInput(etherscanApiKey); setIsApiKeyModalOpen(true); }}
+              title={etherscanApiKey ? 'API key set' : 'Set Etherscan API key'}
+              aria-label={etherscanApiKey ? 'API key set. Open API key settings' : 'Open API key settings'}
               className="header-action-btn"
               style={etherscanApiKey ? {
                 background: 'var(--accent-dim)',
@@ -3738,7 +3737,7 @@ export default function App() {
                 color: 'var(--accent)',
               } : {}}>
               {etherscanApiKey ? <Check size={12} /> : <Settings size={12} />}
-              <span className="hidden sm:inline">{etherscanApiKey ? 'API âœ“' : 'API Key'}</span>
+              <span>{etherscanApiKey ? 'API set' : 'API'}</span>
             </button>
 
             {/* Refresh */}
@@ -6693,46 +6692,63 @@ export default function App() {
       {/* API Key Modal */}
       <AnimatePresence>
         {isApiKeyModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+          <div className="api-key-backdrop fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-6">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setIsApiKeyModalOpen(false)}
               className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              style={{ position: 'relative', width: '100%', maxWidth: 480, background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 20, padding: 28 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-                <Settings size={18} style={{ color: 'var(--accent)' }} />
-                <span style={{ fontSize: 16, fontWeight: 700 }}>API Keys</span>
+            <motion.div initial={{ opacity: 0, scale: 0.98, y: 24 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: 24 }}
+              className="api-key-panel">
+              <div className="api-key-drag-handle" />
+              <div className="api-key-head">
+                <div className="api-key-head-icon">
+                  <Settings size={18} />
+                </div>
+                <div>
+                  <span>API Key</span>
+                  <small>Optional, but recommended for Ethereum history</small>
+                </div>
               </div>
-              <p style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 14, lineHeight: 1.6 }}>
-                One key covers both Ethereum and Base.<br/>
-                Get yours free at <span style={{ color: '#627EEA' }}>etherscan.io/myapikey</span>
-              </p>
-              <input type="text" placeholder="Paste your Etherscan API key..."
+              <div className="api-key-info-grid">
+                <div>
+                  <strong>Who provides it?</strong>
+                  <span>Etherscan. A free Etherscan V2 API key lets PulsePort read your public Ethereum transactions more reliably.</span>
+                </div>
+                <div>
+                  <strong>Why is it here?</strong>
+                  <span>It improves ETH deposits, stablecoin inflows, transaction history, and invested/P&L calculations. Your key is saved only in this browser.</span>
+                </div>
+                <div>
+                  <strong>What still works without it?</strong>
+                  <span>PulseChain balances, PulseChain transactions, Base via Blockscout, prices, Market Watch, and manual coins still work.</span>
+                </div>
+              </div>
+              <a className="api-key-link" href="https://etherscan.io/myapikey" target="_blank" rel="noopener noreferrer">
+                Get a free key from Etherscan <ExternalLink size={12} />
+              </a>
+              <label className="api-key-input-label">
+                Etherscan API key
+                <input type="text" placeholder="Paste your Etherscan API key..."
                 value={apiKeyInput} onChange={e => setApiKeyInput(e.target.value)}
-                style={{ width: '100%', background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 8,
-                  color: 'var(--fg)', fontSize: 13, padding: '10px 14px', outline: 'none',
-                  fontFamily: 'monospace', boxSizing: 'border-box', marginBottom: 20 }} />
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button onClick={() => setIsApiKeyModalOpen(false)}
-                  style={{ flex: 1, padding: '10px 0', borderRadius: 10, background: 'var(--border)',
-                    border: '1px solid var(--border)', color: 'var(--fg)', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                />
+              </label>
+              <div className="api-key-actions">
+                <button type="button" onClick={() => setIsApiKeyModalOpen(false)}>
                   Cancel
                 </button>
-                <button onClick={() => {
+                <button type="button" onClick={() => {
                   const ethKey = apiKeyInput.trim();
-                  const baseKey = basescanApiKeyInput.trim();
                   setEtherscanApiKey(ethKey);
-                  setBasescanApiKey(baseKey);
                   if (ethKey) localStorage.setItem('pulseport_etherscan_key', ethKey);
                   else localStorage.removeItem('pulseport_etherscan_key');
-                  if (baseKey) localStorage.setItem('pulseport_basescan_key', baseKey);
-                  else localStorage.removeItem('pulseport_basescan_key');
+                  localStorage.removeItem('pulseport_basescan_key');
                   setIsApiKeyModalOpen(false);
                   setTimeout(fetchPortfolio, 100);
                 }}
-                  style={{ flex: 1, padding: '10px 0', borderRadius: 10, background: 'var(--accent)',
-                    border: 'none', color: '#000', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                  className="api-key-save">
                   Save &amp; Refresh
                 </button>
               </div>
