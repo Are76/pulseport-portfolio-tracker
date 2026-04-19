@@ -25,6 +25,7 @@ import {
   ExternalLink, EyeOff, Eye,
   ChevronDown, ChevronUp,
   Filter, TrendingUp, TrendingDown,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import type { Transaction } from '../types';
@@ -105,6 +106,67 @@ export interface TransactionListProps {
   onFilterByAsset?: (symbol: string) => void;
   /** Shown when the list is empty */
   emptyMessage?: string;
+}
+
+// ── Liberty Swap chain names ──────────────────────────────────────────────────
+const LS_CHAIN_NAMES: Record<number, string> = {
+  1:     'Ethereum',
+  56:    'BNB Chain',
+  137:   'Polygon',
+  369:   'PulseChain',
+  8453:  'Base',
+  42161: 'Arbitrum',
+  10:    'Optimism',
+};
+
+function LibertySwapPanel({ dstChainId, orderId }: { dstChainId: number; orderId: string }) {
+  const dstChainName = LS_CHAIN_NAMES[dstChainId] ?? `Chain ${dstChainId}`;
+  const shortOrder = orderId.length > 14 ? `${orderId.slice(0, 8)}…${orderId.slice(-6)}` : orderId;
+
+  return (
+    <div style={{
+      marginTop: 10,
+      background: 'rgba(98,126,234,0.06)',
+      border: '1px solid rgba(98,126,234,0.22)',
+      borderRadius: 10,
+      padding: '10px 14px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
+        <div style={{
+          width: 22, height: 22, borderRadius: 6,
+          background: 'rgba(98,126,234,0.15)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        }}>
+          <ArrowLeftRight size={12} color="#627EEA" />
+        </div>
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#627EEA' }}>Liberty Swap Bridge</span>
+        <a
+          href="https://libertyswap.finance"
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={e => e.stopPropagation()}
+          style={{ marginLeft: 'auto', color: 'var(--fg-subtle)', display: 'flex', alignItems: 'center' }}
+        >
+          <ExternalLink size={11} />
+        </a>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <div style={{ background: 'var(--bg-elevated)', borderRadius: 7, padding: '7px 10px' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 3 }}>Destination</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>{dstChainName}</div>
+        </div>
+        <div style={{ background: 'var(--bg-elevated)', borderRadius: 7, padding: '7px 10px' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 3 }}>Order ID</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--fg-muted)', fontFamily: 'JetBrains Mono, monospace' }}>{shortOrder}</div>
+        </div>
+      </div>
+
+      <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 8, lineHeight: 1.5 }}>
+        Intent-based cross-chain swap via Liberty Swap. Records deleted after 48 hrs.
+      </div>
+    </div>
+  );
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -226,6 +288,16 @@ export function TransactionList({
                       {CHAIN_LABEL[tx.chain] ?? tx.chain.toUpperCase()}
                     </span>
                     <span className="tx-card__date">{format(tx.timestamp, 'MMM d, yyyy')}</span>
+                    {tx.libertySwap && (
+                      <span style={{
+                        fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 100,
+                        background: 'rgba(98,126,234,0.12)', color: '#627EEA',
+                        border: '1px solid rgba(98,126,234,0.3)', letterSpacing: '.4px',
+                        display: 'inline-flex', alignItems: 'center', gap: 3,
+                      }}>
+                        <ArrowLeftRight size={8} /> LIBERTY SWAP
+                      </span>
+                    )}
                   </div>
 
                   <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
@@ -422,6 +494,10 @@ function SwapDetail({ tx, coinAsset, counterAsset, coinLogo, getLogoUrl, display
           />
         </div>
       )}
+
+      {tx.libertySwap && (
+        <LibertySwapPanel dstChainId={tx.libertySwap.dstChainId} orderId={tx.libertySwap.orderId} />
+      )}
     </div>
   );
 }
@@ -569,6 +645,10 @@ function TransferDetail({ tx, isDeposit, coinAsset, displayAddr, isOwn, explorer
           <ExternalLink size={11} /> View on Explorer
         </a>
       </div>
+
+      {tx.libertySwap && (
+        <LibertySwapPanel dstChainId={tx.libertySwap.dstChainId} orderId={tx.libertySwap.orderId} />
+      )}
     </div>
   );
 }

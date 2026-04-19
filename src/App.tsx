@@ -593,6 +593,27 @@ const sameAssetSymbol = (left: string, right: string, chain?: string): boolean =
 const MIN_INVESTMENT_THRESHOLD = 100;
 const OPENPULSECHAIN_API_BASE = 'https://api.openpulsechain.com';
 
+// Liberty Swap cross-chain bridge detection
+const LIBERTY_SWAP_ROUTERS: Record<string, string> = {
+  base: '0xcf3d89aedd07ee94e5c45037581744e2d9f0b9fc',
+};
+const LIBERTY_SWAP_SELECTOR = 'dc655e26';
+
+function decodeLibertySwapInput(input: string): { dstChainId: number; orderId: string } | null {
+  try {
+    const hex = input.startsWith('0x') ? input.slice(2) : input;
+    if (!hex.startsWith(LIBERTY_SWAP_SELECTOR)) return null;
+    if (hex.length < 8 + 13 * 64) return null;
+    const word = (n: number) => hex.slice(8 + n * 64, 8 + (n + 1) * 64);
+    const dstChainId = parseInt(word(12), 16);
+    const orderId = '0x' + word(11);
+    if (!dstChainId || isNaN(dstChainId)) return null;
+    return { dstChainId, orderId };
+  } catch {
+    return null;
+  }
+}
+
 type ActiveTab = 'home' | 'overview' | 'assets' | 'stakes' | 'history' | 'tracker' | 'wallets' | 'defi' | 'pulsechain-official' | 'pulsechain-community';
 const ACTIVE_TABS: ActiveTab[] = ['home', 'overview', 'assets', 'stakes', 'history', 'tracker', 'defi', 'pulsechain-official', 'pulsechain-community'];
 const ACTIVE_TAB_STORAGE_KEY = 'pulseport_active_tab';
@@ -1508,11 +1529,23 @@ export default function App() {
 
               const nativePrice = fetchedPrices['ethereum']?.usd || 0;
 
+              // Build Liberty Swap metadata map: tx hash → bridge data
+              const libertySwapMap = new Map<string, { dstChainId: number; orderId: string }>();
+
               bsTxs.forEach((tx: any) => {
                 const isOut = (tx.from?.hash || '').toLowerCase() === address.toLowerCase();
                 const amount = Number(formatUnits(BigInt(tx.value || '0'), 18));
                 const valueUsd = amount * nativePrice;
                 const ts = tx.timestamp ? new Date(tx.timestamp).getTime() : 0;
+                const toAddr = (tx.to?.hash || '').toLowerCase();
+
+                // Detect Liberty Swap: outbound tx to the Liberty Swap Router on Base
+                if (isOut && toAddr === LIBERTY_SWAP_ROUTERS.base) {
+                  const rawInput = tx.raw_input || tx.input || '';
+                  const lsData = decodeLibertySwapInput(rawInput);
+                  if (lsData) libertySwapMap.set(tx.hash.toLowerCase(), lsData);
+                }
+
                 allTransactions.push({
                   id: tx.hash,
                   hash: tx.hash,
@@ -1543,6 +1576,7 @@ export default function App() {
                 const contractAddr = (tx.token?.address || '').toLowerCase();
                 const amount = Number(formatUnits(BigInt(tx.total?.value || '0'), decimals));
                 const ts = tx.timestamp ? new Date(tx.timestamp).getTime() : 0;
+                const txHash = (tx.transaction_hash || tx.hash || '').toLowerCase();
 
                 const mapped = baseBridgeMap[contractAddr];
                 const assetName = mapped ? mapped.name : symbol;
@@ -1550,6 +1584,8 @@ export default function App() {
                 const price = fetchedPrices[coinGeckoId]?.usd ||
                               fetchedPrices[contractAddr]?.usd || 0;
                 const valueUsd = amount * price;
+
+                const lsData = libertySwapMap.get(txHash);
 
                 allTransactions.push({
                   id: `${tx.transaction_hash}-${tx.log_index || Math.random()}`,
@@ -1562,7 +1598,8 @@ export default function App() {
                   amount,
                   chain: 'base',
                   valueUsd,
-                  fee: 0
+                  fee: 0,
+                  ...(lsData ? { libertySwap: lsData } : {}),
                 });
 
                 const chainTokens = TOKENS['base'] || [];
