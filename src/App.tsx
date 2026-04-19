@@ -3381,6 +3381,38 @@ export default function App() {
     });
   }, [coreLiveTokens, currentAssets, prices, tokenMarketData]);
 
+  const frontPageGridTokens = useMemo<PortfolioPriceCard[]>(() => {
+    const cards = new Map<string, PortfolioPriceCard>();
+    const add = (card: PortfolioPriceCard) => {
+      const key = card.symbol.toUpperCase();
+      if (!cards.has(key)) cards.set(key, card);
+    };
+
+    topHoldingCards.forEach(add);
+
+    const sourceAssets = currentAssets.length > 0 ? currentAssets : MOCK_ASSETS;
+    [...sourceAssets]
+      .filter(asset => asset.value > 0)
+      .sort((a, b) => b.value - a.value)
+      .forEach(asset => {
+        const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()] || (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()] || getTokenLogoUrl(asset);
+        const chainColor = CHAIN_COLORS[asset.chain] || '#00FF9F';
+        add({
+          id: `${asset.chain}:${asset.symbol}`,
+          symbol: asset.symbol,
+          name: asset.name || asset.chain,
+          price: asset.price,
+          change24h: asset.priceChange24h ?? asset.pnl24h ?? null,
+          marketCap: tokenMarketData[asset.id]?.marketCap ?? tokenMarketData[asset.id]?.fdv ?? null,
+          volume24h: tokenMarketData[asset.id]?.volume24h ?? null,
+          accent: `linear-gradient(90deg, ${chainColor}, rgba(0,255,159,0.85))`,
+          logo,
+        });
+      });
+
+    return [...cards.values()].slice(0, 9);
+  }, [topHoldingCards, currentAssets, tokenMarketData, tokenLogos]);
+
   const frontPagePortfolioRows = useMemo(() => {
     const assets = currentAssets.length > 0 ? currentAssets : MOCK_ASSETS;
     return assets
@@ -3808,66 +3840,47 @@ export default function App() {
                       </div>
                     </div>
 
-                    {(() => {
-                      const plsToken = topHoldingCards.find(token => token.id === 'PLS') ?? topHoldingCards[0];
-                      const tileTokens = topHoldingCards.filter(token => token.id !== plsToken?.id).slice(0, 3);
-                      return (
-                        <>
-                          {plsToken && (
-                            <button className="front-feature-token" onClick={() => openMarketWatch(plsToken.symbol)}>
-                              <span className="front-feature-main">
-                                <span className="front-token-logo">
-                                  {plsToken.logo ? <img src={plsToken.logo} alt={plsToken.symbol} /> : plsToken.symbol.slice(0, 1)}
-                                </span>
-                                <span>
-                                  <strong>{plsToken.symbol}</strong>
-                                  <small>{plsToken.name}</small>
-                                </span>
-                              </span>
-                              <span className="front-feature-price">
-                                <strong>{fmtPrice(plsToken.price)}</strong>
-                                <small>Market Cap {fmtMarket(plsToken.marketCap)}</small>
-                              </span>
-                              <span className={(plsToken.change24h ?? 0) >= 0 ? 'front-feature-change is-up' : 'front-feature-change is-down'}>
-                                {plsToken.change24h == null ? 'Live' : `${plsToken.change24h >= 0 ? '+' : ''}${plsToken.change24h.toFixed(1)}%`}
-                              </span>
-                              <span className="front-feature-side">
-                                <small>Volume</small>
-                                <strong>{fmtMarket(plsToken.volume24h)}</strong>
-                              </span>
-                              <BarChart2 size={18} />
-                            </button>
-                          )}
+                    <div className="front-price-board-head">
+                      <div>
+                        <span>Live prices</span>
+                        <strong>PulseChain market grid</strong>
+                      </div>
+                      <button type="button" onClick={() => openMarketWatch('')}>
+                        Open market watch <Activity size={14} />
+                      </button>
+                    </div>
 
-                          <div className="front-token-grid front-token-grid-cards">
-                            {tileTokens.map((token, i) => (
-                              <button
-                                key={token.id}
-                                className="front-token-tile"
-                                onClick={() => openMarketWatch(token.symbol)}
-                                style={{ animationDelay: `${i * 55}ms` }}
-                              >
-                                <span className="front-token-accent" style={{ background: token.accent }} />
-                                <span className="front-token-logo">
-                                  {token.logo ? <img src={token.logo} alt={token.symbol} /> : token.symbol.slice(0, 1)}
-                                </span>
-                                <span className="front-token-meta">
-                                  <strong>{token.symbol}</strong>
-                                  <small>{token.name}</small>
-                                </span>
-                                <span className="front-token-price">
-                                  <strong>{fmtPrice(token.price)}</strong>
-                                  <small className={(token.change24h ?? 0) >= 0 ? 'is-up' : 'is-down'}>
-                                    {token.change24h == null ? 'Live' : `${token.change24h >= 0 ? '+' : ''}${token.change24h.toFixed(2)}%`}
-                                  </small>
-                                </span>
-                                <ChevronRight size={18} />
-                              </button>
-                            ))}
-                          </div>
-                        </>
-                      );
-                    })()}
+                    <div className="front-price-grid">
+                      {frontPageGridTokens.map((token, i) => (
+                        <button
+                          key={`${token.id}-${i}`}
+                          className="front-price-box"
+                          onClick={() => openMarketWatch(token.symbol)}
+                          style={{ animationDelay: `${i * 38}ms` }}
+                        >
+                          <span className="front-price-accent" style={{ background: token.accent }} />
+                          <span className="front-price-topline">
+                            <span className="front-token-logo">
+                              {token.logo ? <img src={token.logo} alt={token.symbol} /> : token.symbol.slice(0, 1)}
+                            </span>
+                            <span>
+                              <strong>{token.symbol}</strong>
+                              <small>{token.name}</small>
+                            </span>
+                          </span>
+                          <span className="front-price-main">
+                            <strong>{fmtPrice(token.price)}</strong>
+                            <small className={(token.change24h ?? 0) >= 0 ? 'is-up' : 'is-down'}>
+                              {token.change24h == null ? 'Live' : `${token.change24h >= 0 ? '+' : ''}${token.change24h.toFixed(2)}% 24h`}
+                            </small>
+                          </span>
+                          <span className="front-price-footer">
+                            <span>Vol {fmtMarket(token.volume24h)}</span>
+                            <span>MCap {fmtMarket(token.marketCap)}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
 
                     <div className="front-actions">
                       <button className="btn-primary front-primary-action" onClick={() => wallets.length > 0 ? setActiveTab('overview') : setIsAddingWallet(true)}>
