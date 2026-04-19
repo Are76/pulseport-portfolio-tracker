@@ -58,6 +58,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import PulseChainOfficialPage from './components/PulseChainOfficialPage';
 import PulseChainCommunityPage from './components/PulseChainCommunityPage';
+import BridgeDashboardPage from './components/BridgeDashboardPage';
 import { format } from 'date-fns';
 import { createPublicClient, http, fallback, formatUnits, getAddress } from 'viem';
 import { cn } from './lib/utils';
@@ -614,8 +615,8 @@ function decodeLibertySwapInput(input: string): { dstChainId: number; orderId: s
   }
 }
 
-type ActiveTab = 'home' | 'overview' | 'assets' | 'stakes' | 'history' | 'tracker' | 'wallets' | 'defi' | 'pulsechain-official' | 'pulsechain-community';
-const ACTIVE_TABS: ActiveTab[] = ['home', 'overview', 'assets', 'stakes', 'history', 'tracker', 'defi', 'pulsechain-official', 'pulsechain-community'];
+type ActiveTab = 'home' | 'overview' | 'assets' | 'stakes' | 'history' | 'tracker' | 'wallets' | 'defi' | 'pulsechain-official' | 'pulsechain-community' | 'bridge';
+const ACTIVE_TABS: ActiveTab[] = ['home', 'overview', 'assets', 'stakes', 'history', 'tracker', 'defi', 'pulsechain-official', 'pulsechain-community', 'bridge'];
 const ACTIVE_TAB_STORAGE_KEY = 'pulseport_active_tab';
 
 const readStoredActiveTab = (): ActiveTab => {
@@ -3618,6 +3619,7 @@ export default function App() {
             { id: 'history',  label: 'Activity', icon: History },
             { id: 'pulsechain-official', label: 'PulseChain', icon: Zap },
             { id: 'pulsechain-community', label: 'Ecosystem', icon: Layers },
+            { id: 'bridge', label: 'Bridge', icon: ArrowLeftRight },
           ] as const).map(({ id, label, icon: Icon }) => {
             const isDefi = id === 'defi';
             const isActive = activeTab === id;
@@ -6668,6 +6670,12 @@ export default function App() {
         {activeTab === 'pulsechain-community' && (
           <motion.div key="pulsechain-community" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <PulseChainCommunityPage />
+          </motion.div>
+        )}
+
+        {activeTab === 'bridge' && (
+          <motion.div key="bridge" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <BridgeDashboardPage />
           </motion.div>
         )}
 
