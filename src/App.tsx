@@ -56,6 +56,8 @@ import {
   CartesianGrid
 } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
+import PulseChainOfficialPage from './components/PulseChainOfficialPage';
+import PulseChainCommunityPage from './components/PulseChainCommunityPage';
 import { format } from 'date-fns';
 import { createPublicClient, http, fallback, formatUnits, getAddress } from 'viem';
 import { cn } from './lib/utils';
@@ -591,8 +593,8 @@ const sameAssetSymbol = (left: string, right: string, chain?: string): boolean =
 const MIN_INVESTMENT_THRESHOLD = 100;
 const OPENPULSECHAIN_API_BASE = 'https://api.openpulsechain.com';
 
-type ActiveTab = 'home' | 'overview' | 'assets' | 'stakes' | 'history' | 'tracker' | 'wallets' | 'defi';
-const ACTIVE_TABS: ActiveTab[] = ['home', 'overview', 'assets', 'stakes', 'history', 'tracker', 'defi'];
+type ActiveTab = 'home' | 'overview' | 'assets' | 'stakes' | 'history' | 'tracker' | 'wallets' | 'defi' | 'pulsechain-official' | 'pulsechain-community';
+const ACTIVE_TABS: ActiveTab[] = ['home', 'overview', 'assets', 'stakes', 'history', 'tracker', 'defi', 'pulsechain-official', 'pulsechain-community'];
 const ACTIVE_TAB_STORAGE_KEY = 'pulseport_active_tab';
 
 const readStoredActiveTab = (): ActiveTab => {
@@ -3577,6 +3579,8 @@ export default function App() {
             { id: 'stakes',   label: 'HEX Stakes',         icon: Lock },
             { id: 'defi',     label: 'DeFi Positions',     icon: Droplets },
             { id: 'history',  label: 'Activity', icon: History },
+            { id: 'pulsechain-official', label: 'PulseChain', icon: Zap },
+            { id: 'pulsechain-community', label: 'Ecosystem', icon: Layers },
           ] as const).map(({ id, label, icon: Icon }) => {
             const isDefi = id === 'defi';
             const isActive = activeTab === id;
@@ -4020,6 +4024,158 @@ export default function App() {
                     ))}
                   </div>
                 </section>
+
+                {/* ── Explore guide pages ── */}
+                <section className="front-section front-section-tight">
+                  <div className="front-section-head">
+                    <span>PulseChain deep-dive</span>
+                    <h2>Everything you need to know, in two pages.</h2>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
+                    {[
+                      {
+                        tab: 'pulsechain-official' as ActiveTab,
+                        accent: 'var(--accent)',
+                        dim: 'var(--accent-dim)',
+                        border: 'var(--accent-border)',
+                        eyebrow: 'Official',
+                        title: 'PulseChain',
+                        desc: 'Network config, Richard Heart, core tokens, official projects (HEX, PulseX, ProveX, Bridge), IPFS-verified app hashes, and desktop node setup.',
+                        cta: 'Open guide',
+                        items: ['Chain ID 369 · ~10s blocks', 'PLS, PLSX, HEX, INC, PRVX', 'IPFS-verified app hashes', 'Richard Heart founder bio'],
+                      },
+                      {
+                        tab: 'pulsechain-community' as ActiveTab,
+                        accent: '#f739ff',
+                        dim: 'rgba(247,57,255,0.08)',
+                        border: 'rgba(247,57,255,0.25)',
+                        eyebrow: 'Ecosystem',
+                        title: 'Community & Projects',
+                        desc: '80+ verified projects across DEXs, DeFi protocols, bridges, analytics, wallets, NFTs, and on/off ramps. Includes LibertySwap, PulseChainStats, and more.',
+                        cta: 'Explore ecosystem',
+                        items: ['7+ DEXs including PulseX & 9INCH', 'LibertySwap ZK privacy bridge', 'PulseChainStats analytics suite', 'NFTs, gaming & developer tools'],
+                      },
+                    ].map(({ tab, accent, dim, border, eyebrow, title, desc, cta, items }) => (
+                      <button
+                        key={tab}
+                        type="button"
+                        onClick={() => setActiveTab(tab)}
+                        style={{
+                          background: dim, border: `1px solid ${border}`, borderRadius: 14,
+                          padding: '20px 20px', textAlign: 'left', cursor: 'pointer',
+                          transition: 'all .15s', display: 'flex', flexDirection: 'column', gap: 12,
+                        }}
+                        onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = `${accent}18`; }}
+                        onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = dim; }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: accent, background: `${accent}18`, border: `1px solid ${accent}33`, padding: '2px 8px', borderRadius: 100 }}>{eyebrow}</span>
+                          <ChevronRight size={14} color={accent} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--fg)', marginBottom: 6 }}>{title}</div>
+                          <div style={{ fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.6 }}>{desc}</div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          {items.map(item => (
+                            <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--fg-muted)' }}>
+                              <span style={{ color: accent, fontSize: 10 }}>✓</span>
+                              {item}
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: accent, display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                          {cta} <ArrowRight size={12} />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
+                {/* ── Ecosystem quick access ── */}
+                <section className="front-section front-section-tight">
+                  <div className="front-section-head">
+                    <span>Ecosystem directory</span>
+                    <h2>Key projects at a glance.</h2>
+                  </div>
+                  <div className="front-info-grid">
+                    {[
+                      {
+                        label: 'PulseX DEX',
+                        value: 'Swap & farm on PulseChain',
+                        detail: '0.29% fee — 76% to LPs, 21% burns PLSX. V1 and V2. Farm INC by staking LP tokens.',
+                        action: 'Open PulseX',
+                        href: 'https://app.pulsex.com/',
+                        icon: Droplets,
+                        tab: null,
+                      },
+                      {
+                        label: 'ProveX (PRVX)',
+                        value: "Richard Heart's latest project",
+                        detail: 'P2P crypto trading via ZK-proofs. Browser extension. No middlemen — every swap burns PRVX. Fixed supply.',
+                        action: 'Learn ProveX',
+                        href: null,
+                        icon: Zap,
+                        tab: 'pulsechain-official' as ActiveTab,
+                      },
+                      {
+                        label: 'LibertySwap',
+                        value: 'Privacy cross-chain bridge',
+                        detail: 'ZK-privacy bridge. Gasless mode. 0.3% fee, $10–$25K, ~2-3 min. Transaction data deleted after 48h.',
+                        action: 'Open LibertySwap',
+                        href: 'https://libertyswap.finance/',
+                        icon: ArrowLeftRight,
+                        tab: null,
+                      },
+                      {
+                        label: 'PulseChainStats',
+                        value: 'Full on-chain analytics',
+                        detail: 'Token intel, bridge stats, validator data, DEX volumes, HEX staking metrics, social intelligence. No paywall.',
+                        action: 'Open stats',
+                        href: 'https://pulsechainstats.com/',
+                        icon: BarChart2,
+                        tab: null,
+                      },
+                      {
+                        label: 'HEX Staking',
+                        value: 'Stake HEX, earn T-shares',
+                        detail: 'Lock HEX for 1–5555 days. T-shares earn daily pool interest. Longer + larger = more shares. Late stakes penalised.',
+                        action: 'View stakes',
+                        href: null,
+                        icon: Lock,
+                        tab: 'stakes' as ActiveTab,
+                      },
+                      {
+                        label: 'Ecosystem guide',
+                        value: '80+ verified projects',
+                        detail: 'DEXs, DeFi, bridges, wallets, NFT marketplaces, analytics tools, developer infrastructure, and community resources.',
+                        action: 'Explore ecosystem',
+                        href: null,
+                        icon: Layers,
+                        tab: 'pulsechain-community' as ActiveTab,
+                      },
+                    ].map(({ label, value, detail, action, href, icon: Icon, tab }) => (
+                      <button
+                        key={label}
+                        className="front-info-card"
+                        onClick={() => {
+                          if (tab) setActiveTab(tab);
+                          else if (href) window.open(href, '_blank', 'noopener,noreferrer');
+                        }}
+                        type="button"
+                      >
+                        <span className="front-info-icon"><Icon size={17} /></span>
+                        <span className="front-info-copy">
+                          <small>{label}</small>
+                          <strong>{value}</strong>
+                          <em>{detail}</em>
+                          <b>{action} {href && <ExternalLink size={12} />}</b>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
               </motion.div>
             )}
 
@@ -6465,6 +6621,18 @@ export default function App() {
             </motion.div>
           );
         })()}
+
+        {activeTab === 'pulsechain-official' && (
+          <motion.div key="pulsechain-official" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <PulseChainOfficialPage />
+          </motion.div>
+        )}
+
+        {activeTab === 'pulsechain-community' && (
+          <motion.div key="pulsechain-community" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <PulseChainCommunityPage />
+          </motion.div>
+        )}
 
               </AnimatePresence>
           </div>
