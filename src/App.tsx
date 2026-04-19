@@ -388,7 +388,7 @@ function StakingLadder({ stakes }: { stakes: HexStake[] }) {
   return (
     <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 18px 10px' }}>
       <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.6px' }}>Staking Ladder</div>
-      <ResponsiveContainer width="100%" height={220} minWidth={0} minHeight={1}>
+      <ResponsiveContainer width="100%" height={220} minWidth={1} minHeight={1}>
         <BarChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 24 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis dataKey="daysRemaining" tick={{ fill: 'var(--fg-subtle)', fontSize: 13 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false}
@@ -463,7 +463,7 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
           {'  -  '}<span style={{ color: 'var(--accent)' }}>{fmtK(totalTShares)} T-Shares</span>
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={240} minWidth={0} minHeight={1}>
+      <ResponsiveContainer width="100%" height={240} minWidth={1} minHeight={1}>
         <PieChart>
           <Pie data={chartData} cx="50%" cy="50%" innerRadius={60} outerRadius={85} dataKey="tShares"
             activeIndex={activeIndex} activeShape={renderActiveShape}
@@ -3512,7 +3512,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen font-sans flex" style={{ fontSize: 14, background: 'var(--bg-void)', color: 'var(--fg)' }}>
+    <div className="app-shell min-h-screen font-sans flex" style={{ fontSize: 14, color: 'var(--fg)' }}>
       {/* -- SIDEBAR BACKDROP (mobile) -- */}
       <div className={`sidebar-backdrop${sidebarOpen ? ' open' : ''}`} onClick={() => setSidebarOpen(false)} />
       {/* -- SIDEBAR -- */}
@@ -3553,7 +3553,7 @@ export default function App() {
             const defiLine  = '#f739ff';
             return (
               <button key={id} onClick={() => { setActiveTab(id); setSidebarOpen(false); }}
-                className={isActive ? 'nav-item-active' : ''}
+                className={`app-nav-item${isActive ? ' nav-item-active' : ''}`}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 10,
                   padding: '9px 12px', borderRadius: 8,
@@ -3575,7 +3575,7 @@ export default function App() {
         </nav>
 
         {/* Wallets section */}
-        <div style={{ padding: '8px 8px 0', borderTop: '1px solid var(--border)', marginTop: 'auto' }}>
+        <div className="sidebar-wallet-zone" style={{ padding: '10px 8px 0', marginTop: 'auto' }}>
           <button
             onClick={() => setSidebarWalletsOpen(v => !v)}
             style={{
@@ -3602,6 +3602,8 @@ export default function App() {
                 {wallets.map((w, wIdx) => {
                   const dotColors = ['#00FF9F','#f739ff','#627EEA','#f97316','#a855f7','#f59e0b'];
                   const isActive = selectedWalletAddr === w.address.toLowerCase() && activeTab === 'assets';
+                  const walletKey = w.address.toLowerCase();
+                  const walletValue = (walletAssets[walletKey] || []).reduce((sum, asset) => sum + asset.value, 0);
                   return (
                     <div key={w.address}
                       onClick={() => { setSelectedWalletAddr(w.address.toLowerCase()); setActiveWallet(w.address); setActiveTab('assets'); }}
@@ -3619,7 +3621,12 @@ export default function App() {
                         <div style={{ width: 7, height: 7, borderRadius: '50%', background: dotColors[wIdx % dotColors.length], flexShrink: 0 }} />
                         <div style={{ minWidth: 0 }}>
                           <div style={{ fontSize: 12, fontWeight: 600, color: isActive ? 'var(--accent)' : 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.name}</div>
-                          <code style={{ fontSize: 10, color: 'var(--fg-muted)' }}>{w.address.slice(0,6)}...{w.address.slice(-4)}</code>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                            <code style={{ fontSize: 10, color: 'var(--fg-muted)' }}>{w.address.slice(0,6)}...{w.address.slice(-4)}</code>
+                            <span style={{ fontSize: 10, color: isActive ? 'var(--accent)' : 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace', whiteSpace: 'nowrap' }}>
+                              {walletValue > 0 ? `$${walletValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '$0'}
+                            </span>
+                          </div>
                         </div>
                       </div>
                       <div className="touch-visible-actions opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
@@ -3761,20 +3768,6 @@ export default function App() {
             </button>
           </div>
         </header>
-
-        {/* -- Wallet Selector Bar (sticky sub-header, all tabs except Wallets which has its own) -- */}
-        {wallets.length > 0 && activeTab !== 'home' && (
-          <div className="wallet-selector-subheader">
-            <WalletSelector
-              wallets={wallets.map(w => w.address)}
-              activeWallet={activeWallet}
-              onSelect={(addr) => { setActiveWallet(addr); setSelectedWalletAddr(addr ? addr.toLowerCase() : 'all'); }}
-              onAdd={() => setIsAddingWallet(true)}
-              onRemove={addr => removeWallet(addr)}
-              walletLabels={Object.fromEntries(wallets.filter(w => w.name).map(w => [w.address, w.name!]))}
-            />
-          </div>
-        )}
 
         <div className="flex-1 overflow-y-auto custom-scrollbar pb-16 md:pb-0">
           <div style={{ maxWidth: 1400, margin: '0 auto' }} className="space-y-5 px-3 py-4 sm:px-5 sm:py-6">
@@ -4018,7 +4011,7 @@ export default function App() {
             )}
 
             {activeTab === 'overview' && (
-              <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+              <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4" style={{ width: '100%', minWidth: 1 }}>
 
                 {/* -- ONBOARDING -- */}
                 {wallets.length === 0 && (
@@ -4056,7 +4049,7 @@ export default function App() {
                 {(() => {
                    return (
                      <>
-                     <div className={`hero-card ${theme === 'dark' ? 'hero-bg-dark' : 'hero-bg-light'}`} style={{
+                     <div className={`hero-card overview-hero-card ${theme === 'dark' ? 'hero-bg-dark' : 'hero-bg-light'}`} style={{
                        border: `1px solid rgba(0,255,159,0.12)`, borderRadius: 20, padding: '28px 28px', position: 'relative', overflow: 'hidden',
                        boxShadow: '0 0 0 1px rgba(0,255,159,0.04), 0 8px 40px rgba(0,0,0,0.5)'
                      }}>
@@ -4068,13 +4061,13 @@ export default function App() {
                           <div className="hero-grid-top">
                          {/* Left: Portfolio Value + Stats */}
                          <div>
-                           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 6 }}>Total Portfolio Value</div>
+                           <div className="overview-kicker">Total Portfolio Value</div>
                            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap', marginBottom: 18 }}>
                              <div className="value-hero gradient-text-green">
                                ${summary.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                              </div>
                              <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingBottom: 6 }}>
-                               <div style={{ fontSize: 13, color: summary.pnl24h >= 0 ? t.green : t.red, fontWeight: 700 }}>
+                               <div className={`hero-change-pill ${summary.pnl24h >= 0 ? 'up' : 'down'}`}>
                                  {summary.pnl24h >= 0 ? '+' : '-'}${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })} / {summary.pnl24h >= 0 ? '+' : '-'}{summary.pnl24hPercent.toFixed(2)}%
                                </div>
                                <div style={{ fontSize: 13, color: t.textSecondary }}>{summary.nativeValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</div>
@@ -4119,11 +4112,11 @@ export default function App() {
                                    <div style={{ width: 26, height: 26, borderRadius: 8, background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                      {icon}
                                    </div>
-                                   <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.8px' }}>{label}</div>
+                                   <div className="stat-card-label">{label}</div>
                                    {link && <ExternalLink size={10} style={{ marginLeft: 'auto', color: 'var(--fg-subtle)', flexShrink: 0 }} />}
                                  </div>
-                                 <div style={{ fontSize: 20, fontWeight: 800, color, fontVariantNumeric: 'tabular-nums', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.02em' }}>{val}</div>
-                                 <div style={{ fontSize: 12, color: 'var(--fg-subtle)', marginTop: 3 }}>{sub}</div>
+                                 <div className="stat-card-value" style={{ color }}>{val}</div>
+                                 <div className="stat-card-sub">{sub}</div>
                                </div>
                              ))}
                            </div>
@@ -4172,10 +4165,10 @@ export default function App() {
                              `$${v.toFixed(0)}`;
                            return (
                              <div className="hero-holdings-wrap">
-                               <div className="hero-holdings-panel">
+                               <div className="hero-holdings-panel overview-section-card">
                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                                     <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>Top 7 Holdings</span>
+                                     <span className="overview-section-title">Top 7 Holdings</span>
                                      {wallets.length > 0 && currentAssets.length > 0 && (
                                        <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Showing {holdingAssets.length} of {currentAssets.length}</span>
                                      )}
@@ -4390,9 +4383,9 @@ export default function App() {
                     { label: 'Total eHEX', sub: `${fmtBigNum(eHexLiquid)} liquid  -  ${fmtBigNum(eHexStaked)} staked`, val: fmtBigNum(eHexTotal), usd: eHexTotal * eHexPrice, color: '#627EEA', dot: '#627EEA' },
                   ];
                   return (
-                    <div className="hero-hex-holdings-section">
+                    <div className="hero-hex-holdings-section overview-section-card">
                       <div style={{ padding: '12px 16px', borderBottom: isCollapsed('hex-boxes') ? 'none' : `1px solid ${t.borderLight}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: t.text }}>My HEX Holdings</div>
+                        <div className="overview-section-title">My HEX Holdings</div>
                         <button onClick={() => toggleSection('hex-boxes')}
                           style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: t.textMuted, transition: 'color .12s' }}
                           onMouseOver={e => (e.currentTarget.style.color = t.text)}
@@ -4511,10 +4504,10 @@ export default function App() {
                   const fmtYAxis = (v: number) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v.toFixed(0)}`;
 
                   return (
-                    <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, overflow: 'hidden' }}>
+                    <div className="overview-section-card" style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, overflow: 'hidden' }}>
                       <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, borderBottom: isCollapsed('perf-chart') ? 'none' : `1px solid ${t.borderLight}` }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: t.text }}>Portfolio Performance</div>
+                          <div className="overview-section-title">Portfolio Performance</div>
                           <div style={{ fontSize: 13, fontWeight: 700, color: periodChange >= 0 ? t.green : t.red }}>
                             {periodChange >= 0 ? '+' : ''}{periodChange.toFixed(2)}%
                           </div>
@@ -4546,8 +4539,8 @@ export default function App() {
                       </div>
                       {!isCollapsed('perf-chart') && (
                         <div style={{ padding: '10px 4px 10px 0' }}>
-                          <div style={{ height: 270 }}>
-                            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={1} debounce={50}>
+                          <div style={{ width: '100%', minWidth: 1, minHeight: 1, height: 270 }}>
+                            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} debounce={50}>
                               <AreaChart data={chartPoints} margin={{ top: 4, right: 18, left: 0, bottom: 0 }}>
                                 <defs>
                                   <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
@@ -4838,11 +4831,11 @@ export default function App() {
                     <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, padding: '16px 20px', display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap', transition: 'all .2s ease' }}>
                       {!allocationCalculatorOpen ? (
                         <>
-                          <div style={{ width: 130, height: 130, flexShrink: 0, display: 'grid', placeItems: 'center' }}>
+                          <div style={{ width: 146, height: 146, flexShrink: 0, display: 'grid', placeItems: 'center' }}>
                             {alloc.length > 0 ? (
-                              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={1} debounce={50}>
+                              <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} debounce={50}>
                                 <PieChart>
-                                  <Pie data={alloc} cx="50%" cy="50%" innerRadius={38} outerRadius={58} paddingAngle={3} dataKey="value" strokeWidth={0}>
+                                  <Pie data={alloc} cx="50%" cy="50%" innerRadius={43} outerRadius={66} paddingAngle={3} dataKey="value" strokeWidth={0}>
                                     {alloc.map((_, i) => (
                                       <Cell key={i} fill={ALLOC_COLORS_P[i % ALLOC_COLORS_P.length]} />
                                     ))}
@@ -4851,7 +4844,7 @@ export default function App() {
                                 </PieChart>
                               </ResponsiveContainer>
                             ) : (
-                              <div style={{ width: 98, height: 98, borderRadius: '50%', border: `12px solid ${t.border}`, opacity: 0.8 }} aria-hidden="true" />
+                              <div style={{ width: 112, height: 112, borderRadius: '50%', border: `14px solid ${t.border}`, opacity: 0.8 }} aria-hidden="true" />
                             )}
                           </div>
                           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 7, minWidth: 160 }}>
@@ -4861,9 +4854,9 @@ export default function App() {
                               return (
                                 <div key={a.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                   <div style={{ width: 8, height: 8, borderRadius: 2, background: ALLOC_COLORS_P[i % ALLOC_COLORS_P.length], flexShrink: 0, boxShadow: `0 0 6px ${ALLOC_COLORS_P[i % ALLOC_COLORS_P.length]}66` }} />
-                                  <span style={{ fontSize: 13, color: t.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</span>
-                                  <span style={{ fontSize: 13, fontWeight: 700, color: t.textSecondary, fontFamily: 'JetBrains Mono, monospace', fontVariantNumeric: 'tabular-nums', marginLeft: 4 }}>{pct.toFixed(1)}%</span>
-                                  <span style={{ fontSize: 12, color: t.textMuted, fontFamily: 'JetBrains Mono, monospace', minWidth: 52, textAlign: 'right' }}>{valFmt}</span>
+                                  <span style={{ fontSize: 14, color: t.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</span>
+                                  <span style={{ fontSize: 14, fontWeight: 800, color: t.textSecondary, fontFamily: 'JetBrains Mono, monospace', fontVariantNumeric: 'tabular-nums', marginLeft: 4 }}>{pct.toFixed(1)}%</span>
+                                  <span style={{ fontSize: 13, color: t.textMuted, fontFamily: 'JetBrains Mono, monospace', minWidth: 58, textAlign: 'right' }}>{valFmt}</span>
                                 </div>
                               );
                             }) : (
@@ -5703,7 +5696,7 @@ export default function App() {
                         ))}
                       </div>
                     </div>
-                    <ResponsiveContainer width="100%" height={230} minWidth={0} minHeight={1}>
+                    <ResponsiveContainer width="100%" height={230} minWidth={1} minHeight={1}>
                       <AreaChart data={histChartPoints} margin={{ top: 4, right: 18, left: 0, bottom: 0 }}>
                         <defs>
                           <linearGradient id="histColorValue" x1="0" y1="0" x2="0" y2="1">
