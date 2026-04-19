@@ -161,4 +161,9 @@ export interface Transaction {
   counterPriceUsdAtTx?: number;
   bridged?: boolean;
   status?: string;
+  /** Present when this transaction was routed via Liberty Swap cross-chain bridge. */
+  libertySwap?: {
+    dstChainId: number;
+    orderId: string;
+  };
 }
