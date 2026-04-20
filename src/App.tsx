@@ -75,6 +75,7 @@ import { TransactionList } from './components/TransactionList';
 import { HoldingsTable } from './components/HoldingsTable';
 import type { HoldingDisplayAsset, HoldingSortField } from './components/HoldingsTable';
 import { normalizeTransactions } from './utils/normalizeTransactions';
+import { scheduleLocalStorageWrite, resolveBlockscoutBase } from './utils/localStorageDebounce';
 
 const ERC20_ABI = [
   {
@@ -837,78 +838,79 @@ export default function App() {
   }), [theme]);
 
   useEffect(() => {
-    localStorage.setItem('pulseport_collapsed', JSON.stringify(collapsedSections));
+    scheduleLocalStorageWrite('pulseport_collapsed', JSON.stringify(collapsedSections));
   }, [collapsedSections]);
 
   const toggleSection = (id: string) => setCollapsedSections(prev => ({ ...prev, [id]: !prev[id] }));
   const isCollapsed = (id: string) => !!collapsedSections[id];
 
   // -- Portfolio cache persistence (prevents blank screen on reload) ----------
+  // Writes are debounced (500ms) so rapid price/asset updates don't block the main thread
+  // with large JSON.stringify + localStorage.setItem calls on every tick.
   useEffect(() => {
     if (realAssets.length > 0) {
-      try { localStorage.setItem('pulseport_cache_assets', JSON.stringify(realAssets)); } catch {}
+      scheduleLocalStorageWrite('pulseport_cache_assets', JSON.stringify(realAssets));
     }
   }, [realAssets]);
 
   useEffect(() => {
     if (realStakes.length > 0) {
-      try { localStorage.setItem('pulseport_cache_stakes', JSON.stringify(realStakes, bigIntReplacer)); } catch {}
+      scheduleLocalStorageWrite('pulseport_cache_stakes', JSON.stringify(realStakes, bigIntReplacer));
     }
   }, [realStakes]);
 
   useEffect(() => {
-    try { localStorage.setItem('pulseport_cache_lp', JSON.stringify(lpPositions)); } catch {}
+    scheduleLocalStorageWrite('pulseport_cache_lp', JSON.stringify(lpPositions));
   }, [lpPositions]);
 
   useEffect(() => {
-    try { localStorage.setItem('pulseport_cache_farms', JSON.stringify(farmPositions)); } catch {}
+    scheduleLocalStorageWrite('pulseport_cache_farms', JSON.stringify(farmPositions));
   }, [farmPositions]);
 
   useEffect(() => {
     if (transactions.length > 0) {
-      // Limit to 200 most recent to avoid localStorage quota issues
-      try { localStorage.setItem('pulseport_cache_txs', JSON.stringify(transactions.slice(0, 200))); } catch {}
+      scheduleLocalStorageWrite('pulseport_cache_txs', JSON.stringify(transactions.slice(0, 200)));
     }
   }, [transactions]);
 
   useEffect(() => {
     if (Object.keys(walletAssets).length > 0) {
-      try { localStorage.setItem('pulseport_cache_wallet_assets', JSON.stringify(walletAssets)); } catch {}
+      scheduleLocalStorageWrite('pulseport_cache_wallet_assets', JSON.stringify(walletAssets));
     }
   }, [walletAssets]);
 
   useEffect(() => {
     if (Object.keys(prices).length > 0) {
-      try { localStorage.setItem('pulseport_cache_prices', JSON.stringify(prices)); } catch {}
+      scheduleLocalStorageWrite('pulseport_cache_prices', JSON.stringify(prices));
     }
   }, [prices]);
 
   useEffect(() => {
-    localStorage.setItem('pulseport_hide_dust', JSON.stringify(hideDust));
+    scheduleLocalStorageWrite('pulseport_hide_dust', JSON.stringify(hideDust));
   }, [hideDust]);
 
   useEffect(() => {
-    localStorage.setItem('pulseport_hide_spam', JSON.stringify(hideSpam));
+    scheduleLocalStorageWrite('pulseport_hide_spam', JSON.stringify(hideSpam));
   }, [hideSpam]);
 
   useEffect(() => {
-    localStorage.setItem('pulseport_spam_tokens', JSON.stringify(spamTokenIds));
+    scheduleLocalStorageWrite('pulseport_spam_tokens', JSON.stringify(spamTokenIds));
   }, [spamTokenIds]);
 
   useEffect(() => {
-    localStorage.setItem('pulseport_hidden_tokens', JSON.stringify(hiddenTokens));
+    scheduleLocalStorageWrite('pulseport_hidden_tokens', JSON.stringify(hiddenTokens));
   }, [hiddenTokens]);
 
   useEffect(() => {
-    localStorage.setItem('pulseport_hidden_txs', JSON.stringify(hiddenTxIds));
+    scheduleLocalStorageWrite('pulseport_hidden_txs', JSON.stringify(hiddenTxIds));
   }, [hiddenTxIds]);
 
   useEffect(() => {
-    localStorage.setItem('pulseport_yield_unit', yieldUnit);
+    scheduleLocalStorageWrite('pulseport_yield_unit', yieldUnit);
   }, [yieldUnit]);
 
   useEffect(() => {
-    localStorage.setItem('pulseport_manual_entries', JSON.stringify(manualEntries));
+    scheduleLocalStorageWrite('pulseport_manual_entries', JSON.stringify(manualEntries));
   }, [manualEntries]);
 
   useEffect(() => {
@@ -1281,13 +1283,9 @@ export default function App() {
           // 1. Fetch Transactions and discovered tokens in parallel
           try {
             if (chainKey === 'pulsechain') {
-              // PulseChain uses Blockscout V2 API.
-              // scan.pulsechain.com has no CORS headers, so browsers need a proxy.
-              // Dev: Vite proxy | Electron: direct (webSecurity:false) | Vercel: vercel.json rewrite
-              const isElectron = /electron/i.test(navigator.userAgent);
-              const bsBase = isElectron
-                ? 'https://api.scan.pulsechain.com/api/v2'
-                : '/proxy/pulsechain/api/v2';
+              // Vite dev + Vercel production rewrite /proxy/pulsechain/* to api.scan.pulsechain.com.
+              // Electron and non-proxy hosts (custom domains, mobile PWAs, GitHub Pages) hit direct.
+              const bsBase = resolveBlockscoutBase();
               const nativePrice = fetchedPrices['pulsechain']?.usd || 0;
 
               const fetchPcV2Pages = async (endpoint: string, maxPages = 50): Promise<any[]> => {
