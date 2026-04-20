@@ -2,29 +2,29 @@ import React, { useEffect, useCallback } from 'react';
 import { X, Copy, ExternalLink, TrendingUp, TrendingDown, Globe, Twitter, Send } from 'lucide-react';
 import type { Asset } from '../types';
 
-// ── helpers ─────────────────────────────────────────────────────────────────
+// -- helpers -----------------------------------------------------------------
 
 function fmtPrice(p: number): string {
-  if (p <= 0) return '—';
+  if (p <= 0) return '-';
   if (p < 0.000001) return `$${p.toFixed(10)}`;
   if (p < 0.0001)   return `$${p.toFixed(8)}`;
   if (p < 0.01)     return `$${p.toFixed(6)}`;
   if (p < 1)        return `$${p.toFixed(4)}`;
-  return `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  return `$${p.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
 }
 
 function fmtUsd(v: number): string {
   if (v >= 1e9)  return `$${(v / 1e9).toFixed(2)}B`;
   if (v >= 1e6)  return `$${(v / 1e6).toFixed(2)}M`;
   if (v >= 1e3)  return `$${(v / 1e3).toFixed(1)}K`;
-  return `$${v.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  return `$${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 }
 
 function fmtBalance(b: number): string {
   if (b >= 1e9) return `${(b / 1e9).toFixed(3)}B`;
   if (b >= 1e6) return `${(b / 1e6).toFixed(3)}M`;
   if (b >= 1e3) return `${(b / 1e3).toFixed(2)}K`;
-  return b.toLocaleString(undefined, { maximumFractionDigits: 4 });
+  return b.toLocaleString('en-US', { maximumFractionDigits: 4 });
 }
 
 function ChangeRow({ label, pct, theme }: { label: string; pct: number | null | undefined; theme: 'dark' | 'light' }) {
@@ -32,7 +32,7 @@ function ChangeRow({ label, pct, theme }: { label: string; pct: number | null | 
     return (
       <div className="tcm-change-row">
         <span className="tcm-change-label">{label}</span>
-        <span className="tcm-change-na">—</span>
+        <span className="tcm-change-na">-</span>
       </div>
     );
   }
@@ -51,7 +51,7 @@ function ChangeRow({ label, pct, theme }: { label: string; pct: number | null | 
   );
 }
 
-// ── props ────────────────────────────────────────────────────────────────────
+// -- props --------------------------------------------------------------------
 
 interface Props {
   asset: Asset;
@@ -93,7 +93,7 @@ const CHAIN_COLORS: Record<string, string> = {
   base:       '#60a5fa',
 };
 
-// ── component ────────────────────────────────────────────────────────────────
+// -- component ----------------------------------------------------------------
 
 export function TokenCardModal({
   asset, portfolioTotal, logoUrl, marketData, isLoadingMarketData = false,
@@ -137,7 +137,7 @@ export function TokenCardModal({
   };
 
   const shortAddr = addr && addr !== 'native'
-    ? `${addr.slice(0, 6)}…${addr.slice(-4)}`
+    ? `${addr.slice(0, 6)}...${addr.slice(-4)}`
     : null;
 
   return (
@@ -145,9 +145,9 @@ export function TokenCardModal({
       className="tcm-backdrop"
       onClick={e => { if (e.target === e.currentTarget) handleClose(); }}
     >
-      <div className="tcm-panel" role="dialog" aria-modal="true" aria-label={`${asset.symbol} — Token Details`}>
+      <div className="tcm-panel" role="dialog" aria-modal="true" aria-label={`${asset.symbol} - Token Details`}>
 
-        {/* ── HEADER ── */}
+        {/* -- HEADER -- */}
         <div className="tcm-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
             {/* Logo */}
@@ -186,7 +186,7 @@ export function TokenCardModal({
           </button>
         </div>
 
-        {/* ── CA / LINKS ── */}
+        {/* -- CA / LINKS -- */}
         {shortAddr && (
           <div className="tcm-ca-row">
             <span style={{ fontSize: 12, color: 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace' }}>{shortAddr}</span>
@@ -210,10 +210,10 @@ export function TokenCardModal({
           </div>
         )}
 
-        {/* ── Scrollable body ── */}
+        {/* -- Scrollable body -- */}
         <div className="tcm-body">
 
-          {/* ── PRICE HERO ── */}
+          {/* -- PRICE HERO -- */}
           <div className="tcm-section tcm-price-hero">
             <div className="tcm-price-row" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
               <div>
@@ -235,7 +235,7 @@ export function TokenCardModal({
             </div>
           </div>
 
-          {/* ── PRICE CHANGES ── */}
+          {/* -- PRICE CHANGES -- */}
           <div className="tcm-section">
             <div className="tcm-section-title">Price Changes</div>
             <div className="tcm-changes-grid">
@@ -249,17 +249,17 @@ export function TokenCardModal({
             <div className="tcm-ath-atl-row">
               <div className="tcm-ath-cell">
                 <span className="tcm-ath-label">ATH</span>
-                <span className="tcm-ath-val">—</span>
+                <span className="tcm-ath-val">-</span>
               </div>
               <div className="tcm-ath-divider" />
               <div className="tcm-ath-cell">
                 <span className="tcm-ath-label">ATL</span>
-                <span className="tcm-ath-val">—</span>
+                <span className="tcm-ath-val">-</span>
               </div>
             </div>
           </div>
 
-          {/* ── YOUR HOLDINGS ── */}
+          {/* -- YOUR HOLDINGS -- */}
           <div className="tcm-section">
             <div className="tcm-section-title">Token Details</div>
             <div className="tcm-holdings-grid">
@@ -279,44 +279,44 @@ export function TokenCardModal({
                 <div className="tcm-stat-value">{share.toFixed(2)}%</div>
               </div>
               <div className="tcm-stat-cell">
-                <div className="tcm-stat-label">Price × Qty</div>
+                <div className="tcm-stat-label">Price x Qty</div>
                 <div className="tcm-stat-value" style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12 }}>
-                  {fmtPrice(asset.price)} × {fmtBalance(asset.balance)}
+                  {fmtPrice(asset.price)} x {fmtBalance(asset.balance)}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* ── MARKET DATA ── */}
+          {/* -- MARKET DATA -- */}
           <div className="tcm-section">
             <div className="tcm-section-title">
               Market Data
               {isLoadingMarketData && (
-                <span style={{ fontSize: 11, color: 'var(--fg-subtle)', marginLeft: 6, fontWeight: 400 }}>Loading…</span>
+                <span style={{ fontSize: 11, color: 'var(--fg-subtle)', marginLeft: 6, fontWeight: 400 }}>Loading...</span>
               )}
             </div>
             <div className="tcm-market-grid">
               <div className="tcm-stat-cell">
                 <div className="tcm-stat-label">Market Cap</div>
-                <div className="tcm-stat-value">{mcap ? fmtUsd(mcap) : '—'}</div>
+                <div className="tcm-stat-value">{mcap ? fmtUsd(mcap) : '-'}</div>
               </div>
               <div className="tcm-stat-cell">
                 <div className="tcm-stat-label">Liquidity</div>
                 <div className="tcm-stat-value" style={{ color: liq ? green : 'var(--fg-subtle)' }}>
-                  {liq ? fmtUsd(liq) : '—'}
+                  {liq ? fmtUsd(liq) : '-'}
                 </div>
               </div>
               <div className="tcm-stat-cell">
                 <div className="tcm-stat-label">Volume 24h</div>
-                <div className="tcm-stat-value">{vol24h ? fmtUsd(vol24h) : '—'}</div>
+                <div className="tcm-stat-value">{vol24h ? fmtUsd(vol24h) : '-'}</div>
               </div>
               <div className="tcm-stat-cell">
                 <div className="tcm-stat-label">Txns 24h</div>
-                <div className="tcm-stat-value">{txns24h != null ? txns24h.toLocaleString() : '—'}</div>
+                <div className="tcm-stat-value">{txns24h != null ? txns24h.toLocaleString() : '-'}</div>
               </div>
               <div className="tcm-stat-cell">
                 <div className="tcm-stat-label">Pools</div>
-                <div className="tcm-stat-value">{pools != null ? pools : '—'}</div>
+                <div className="tcm-stat-value">{pools != null ? pools : '-'}</div>
               </div>
               <div className="tcm-stat-cell">
                 <div className="tcm-stat-label">Holders</div>
@@ -327,21 +327,21 @@ export function TokenCardModal({
                       : marketData.holders >= 1e3
                         ? `${(marketData.holders / 1e3).toFixed(1)}K`
                         : marketData.holders.toLocaleString()
-                    : '—'}
+                    : '-'}
                 </div>
               </div>
               {marketData?.nativePriceUsd && (
                 <div className="tcm-stat-cell">
                   <div className="tcm-stat-label">Price in PLS</div>
                   <div className="tcm-stat-value" style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12 }}>
-                    {parseFloat(marketData.nativePriceUsd).toLocaleString(undefined, { maximumSignificantDigits: 5 })} PLS
+                    {parseFloat(marketData.nativePriceUsd).toLocaleString('en-US', { maximumSignificantDigits: 5 })} PLS
                   </div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* ── ABOUT ── */}
+          {/* -- ABOUT -- */}
           {(marketData?.description || (marketData?.websites?.length ?? 0) > 0 || (marketData?.socials?.length ?? 0) > 0) && (
             <div className="tcm-section">
               <div className="tcm-section-title">About</div>
@@ -375,7 +375,7 @@ export function TokenCardModal({
           )}
 
         </div>
-        {/* ── footer ── */}
+        {/* -- footer -- */}
         <div className="tcm-footer">
           <span style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>
             Data from DexScreener · prices update every ~60s

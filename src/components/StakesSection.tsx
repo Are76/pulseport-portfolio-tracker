@@ -7,7 +7,7 @@ import { Zap, Lock, Activity, Layers, Filter } from 'lucide-react';
 import type { HexStake } from '../types';
 import { PHEX_YIELD_PER_TSHARE, EHEX_YIELD_PER_TSHARE } from '../constants';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// -- Types ---------------------------------------------------------------------
 
 export interface StakesSectionProps {
   stakes: HexStake[];
@@ -23,31 +23,31 @@ export interface StakesSectionProps {
 type StakeFilter = 'all' | 'phex' | 'ehex' | 'ending-soon' | 'matured';
 type StakeChain = 'pulsechain' | 'ethereum';
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// -- Helpers -------------------------------------------------------------------
 
 function fmtHex(n: number): string {
   if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
   if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
   if (n >= 1e3) return (n / 1e3).toFixed(2) + 'K';
-  return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
 }
 
 function fmtUsd(n: number): string {
   if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
   if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
-  return '$' + n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 });
 }
 
 function fmtHexExact(n: number): string {
-  return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function fmtUsdExact(n: number): string {
-  return '$' + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function shortenAddr(addr: string): string {
-  return addr.slice(0, 6) + '…' + addr.slice(-4);
+  return addr.slice(0, 6) + '...' + addr.slice(-4);
 }
 
 function stakeMaturityHex(st: HexStake): number {
@@ -64,7 +64,7 @@ function stakeAccruedYieldHex(st: HexStake): number {
   return tS * daysStakedSoFar * rate;
 }
 
-// ── StakingPie sub-component ──────────────────────────────────────────────────
+// -- StakingPie sub-component --------------------------------------------------
 
 function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: number }) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -122,7 +122,7 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
         </div>
         <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>
           <span style={{ color: 'var(--fg)', fontWeight: 700 }}>{fmtUsd(totalUsd)}</span>
-          {' · '}<span style={{ color: '#fb923c' }}>{fmtHex(totalHex)} HEX</span>
+          {' - '}<span style={{ color: '#fb923c' }}>{fmtHex(totalHex)} HEX</span>
         </div>
       </div>
       <ResponsiveContainer width="100%" height={240} minWidth={0} minHeight={1}>
@@ -151,7 +151,7 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
   );
 }
 
-// ── StakingLadder sub-component ───────────────────────────────────────────────
+// -- StakingLadder sub-component -----------------------------------------------
 
 function StakingLadder({ stakes }: { stakes: HexStake[] }) {
   if (!stakes || stakes.length === 0) return null;
@@ -163,7 +163,7 @@ function StakingLadder({ stakes }: { stakes: HexStake[] }) {
     const bucketIdx = Math.floor(days / bucketSize);
     if (!buckets[bucketIdx]) {
       const start = bucketIdx * bucketSize;
-      buckets[bucketIdx] = { totalShares: 0, stakeCount: 0, bucketRange: `${start}–${start + bucketSize - 1}d` };
+      buckets[bucketIdx] = { totalShares: 0, stakeCount: 0, bucketRange: `${start}-${start + bucketSize - 1}d` };
     }
     buckets[bucketIdx].totalShares += (stake.tShares ?? 0);
     buckets[bucketIdx].stakeCount += 1;
@@ -204,7 +204,7 @@ function StakingLadder({ stakes }: { stakes: HexStake[] }) {
   );
 }
 
-// ── Main StakesSection component ──────────────────────────────────────────────
+// -- Main StakesSection component ----------------------------------------------
 
 export function StakesSection({
   stakes,
@@ -216,19 +216,32 @@ export function StakesSection({
   walletLabels = {},
 }: StakesSectionProps) {
   const [stakeFilter, setStakeFilter] = useState<StakeFilter>('all');
+  const [expandedStakeIds, setExpandedStakeIds] = useState<Set<string>>(() => new Set());
 
-  // ── Derived totals ──────────────────────────────────────────────────────────
+  const toggleStakeDetails = (stakeId: string) => {
+    setExpandedStakeIds(prev => {
+      const next = new Set(prev);
+      if (next.has(stakeId)) {
+        next.delete(stakeId);
+      } else {
+        next.add(stakeId);
+      }
+      return next;
+    });
+  };
+
+  // -- Derived totals ----------------------------------------------------------
 
   const activeStakes = stakes.filter(s => (s.daysRemaining ?? 0) > 0);
 
-  // Daily yield = sum of (tShares × chain-specific rate) across all active stakes.
-  // This is independent of days remaining — it's what accrues every single day.
+  // Daily yield = sum of (tShares x chain-specific rate) across all active stakes.
+  // This is independent of days remaining - it's what accrues every single day.
   const dailyYieldHex = activeStakes.reduce((sum, s) => {
     const tS = s.tShares ?? Number(s.stakeShares ?? 0n) / 1e12;
     const rate = s.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
     return sum + tS * rate;
   }, 0);
-  // USD yield uses per-chain prices — pHEX and eHEX trade at different prices
+  // USD yield uses per-chain prices - pHEX and eHEX trade at different prices
   const dailyYieldUsd = activeStakes.reduce((sum, s) => {
     const tS = s.tShares ?? Number(s.stakeShares ?? 0n) / 1e12;
     const rate = s.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
@@ -280,7 +293,7 @@ export function StakesSection({
     };
   });
 
-  // ── Filter stakes ───────────────────────────────────────────────────────────
+  // -- Filter stakes -----------------------------------------------------------
 
   const filteredStakes = stakes.filter(s => {
     if (stakeFilter === 'phex') return s.chain === 'pulsechain';
@@ -298,7 +311,7 @@ export function StakesSection({
     matured: stakes.filter(s => (s.daysRemaining ?? 0) <= 0).length,
   };
 
-  // ── Filter pill labels ──────────────────────────────────────────────────────
+  // -- Filter pill labels ------------------------------------------------------
 
   const filterPills: { id: StakeFilter; label: string }[] = [
     { id: 'all', label: 'All' },
@@ -308,14 +321,14 @@ export function StakesSection({
     { id: 'matured', label: 'Matured' },
   ];
 
-  // ── Progress bar color ──────────────────────────────────────────────────────
+  // -- Progress bar color ------------------------------------------------------
   function progressColor(pct: number): string {
     if (pct > 50) return '#00FF9F';
     if (pct >= 25) return '#f97316';
     return '#ef4444';
   }
 
-  // ── Days left badge class ───────────────────────────────────────────────────
+  // -- Days left badge class ---------------------------------------------------
   function daysClass(d: number): string {
     if (d <= 30) return 'days-left-expiring';
     if (d <= 180) return 'days-left-soon';
@@ -323,10 +336,10 @@ export function StakesSection({
   }
 
   function fmtDays(d: number): string {
-    return d >= 365 ? `${(d / 365).toFixed(1)}y` : `${d.toLocaleString(undefined, { maximumFractionDigits: 0 })}d`;
+    return d >= 365 ? `${(d / 365).toFixed(1)}y` : `${d.toLocaleString('en-US', { maximumFractionDigits: 0 })}d`;
   }
 
-  // ── Empty state ─────────────────────────────────────────────────────────────
+  // -- Empty state -------------------------------------------------------------
   if (stakes.length === 0) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 24px', gap: 16, background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 16 }}>
@@ -346,39 +359,29 @@ export function StakesSection({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-      {/* ── 1. Hero: Daily HEX Yield ─────────────────────────────────────── */}
+      {/* -- 1. Hero: Daily HEX Yield --------------------------------------- */}
       <div className="stakes-hero-card">
-        {/* Left: icon + title + big number */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20, flex: 1, minWidth: 0 }}>
-          <div style={{
-            width: 56, height: 56, borderRadius: 16, flexShrink: 0,
-            background: 'rgba(99,70,255,0.22)', border: '1.5px solid var(--accent-purple-border)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 0 24px rgba(99,70,255,0.25)',
-          }}>
+        <div className="stakes-hero-main">
+          <div className="stakes-hero-title-row">
+            <div className="stakes-hero-icon">
             <Zap size={26} style={{ color: '#c4b5fd' }} />
           </div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '.10em', marginBottom: 6 }}>
-              Daily HEX Yield
-            </div>
-            <div className="tabular-nums" style={{
-              fontSize: 52, fontWeight: 900, lineHeight: 1,
-              fontFamily: "'JetBrains Mono', monospace",
-              color: 'var(--positive)', letterSpacing: '-0.04em',
-              textShadow: '0 0 32px rgba(0,255,159,0.25)',
-            }}>
-              {fmtHex(dailyYieldHex)}
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg-muted)', marginTop: 7 }}>
-              <span style={{ color: 'var(--positive)', fontWeight: 700 }}>{fmtUsd(dailyYieldUsd)}</span>
-              {' · '}estimated across all active stakes
-            </div>
+            <div className="stakes-hero-kicker">HEX staking yield</div>
+            <h1 className="stakes-hero-title">Stake Dashboard</h1>
+          </div>
+          </div>
+          <p className="stakes-hero-copy">
+            Daily, projected, and maturity estimates across active pHEX and eHEX stakes.
+          </p>
+          <div className="stakes-hero-yield">
+            <span className="stakes-hero-yield-label">Daily HEX Yield</span>
+            <strong className="tabular-nums">{fmtHex(dailyYieldHex)}</strong>
+            <span>{fmtUsd(dailyYieldUsd)} estimated across all active stakes</span>
           </div>
         </div>
 
-        {/* Right: Weekly / Monthly / Annual mini-stats */}
-        <div className="stakes-hero-mini-stats" style={{ display: 'flex', gap: 14, flexShrink: 0 }}>
+        <div className="stakes-hero-mini-stats">
           {[
             { label: 'Weekly', value: fmtHex(dailyYieldHex * 7), sub: fmtUsd(dailyYieldUsd * 7), tone: 'yield' },
             { label: 'Monthly', value: fmtHex(dailyYieldHex * 30), sub: fmtUsd(dailyYieldUsd * 30), tone: 'yield' },
@@ -387,27 +390,27 @@ export function StakesSection({
             { label: 'Total Yield', value: `+${fmtHex(Math.max(0, totalMaturityHex - totalHexStaked))}`, sub: totalHexStaked > 0 ? `${((totalMaturityHex / totalHexStaked - 1) * 100).toFixed(1)}% yield` : 'waiting for stakes', tone: 'maturity' },
           ].map(({ label, value, sub, tone }) => (
             <div key={label} className={`stakes-hero-mini-card ${tone}`}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>{label}</div>
-              <div className="tabular-nums" style={{ fontSize: 17, fontWeight: 800, color: 'var(--positive)', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-0.02em' }}>
+              <div className="stakes-hero-mini-label">{label}</div>
+              <div className="stakes-hero-mini-value tabular-nums">
                 {value}
               </div>
-              <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 3 }}>{sub}</div>
+              <div className="stakes-hero-mini-sub">{sub}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* ── 2. HEX Totals ────────────────────────────────────────────────── */}
+      {/* -- 2. HEX Totals -------------------------------------------------- */}
       <div className="stakes-performance-grid">
         {chainPerformance.map(chain => (
           <div key={chain.chain} className="stakes-performance-card" style={{ ['--stake-chain-color' as string]: chain.color }}>
             <div className="stakes-performance-head">
               <div>
-                <div className="stakes-performance-kicker">{chain.label} · {chain.token}</div>
+                <div className="stakes-performance-kicker">{chain.label} - {chain.token}</div>
                 <div className="stakes-performance-title">{chain.activeCount} active stakes</div>
               </div>
               <div className="stakes-performance-tshares">
-                <strong>{chain.tShares.toLocaleString(undefined, { maximumFractionDigits: 6 })}</strong>
+                <strong>{chain.tShares.toLocaleString('en-US', { maximumFractionDigits: 6 })}</strong>
                 <span>T-Shares</span>
               </div>
             </div>
@@ -429,7 +432,7 @@ export function StakesSection({
 
             <div className="stakes-performance-footer">
               <span>Daily yield ~{fmtHex(chain.dailyHex)} {chain.token}/day</span>
-              <span>{fmtUsd(chain.dailyHex * chain.price)} · {chain.maturedCount} inactive</span>
+              <span>{fmtUsd(chain.dailyHex * chain.price)} - {chain.maturedCount} inactive</span>
             </div>
           </div>
         ))}
@@ -446,7 +449,7 @@ export function StakesSection({
             {fmtHex(totalPHex)}
           </div>
           <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 6 }}>
-            {fmtUsd(totalPHex * phexUsdPrice)} · {activePHexStakes.length} active stake{activePHexStakes.length !== 1 ? 's' : ''}
+            {fmtUsd(totalPHex * phexUsdPrice)} - {activePHexStakes.length} active stake{activePHexStakes.length !== 1 ? 's' : ''}
           </div>
         </div>
 
@@ -460,12 +463,12 @@ export function StakesSection({
             {fmtHex(totalEHex)}
           </div>
           <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 6 }}>
-            {fmtUsd(totalEHex * ehexUsdPrice)} · {activeEHexStakes.length} active stake{activeEHexStakes.length !== 1 ? 's' : ''}
+            {fmtUsd(totalEHex * ehexUsdPrice)} - {activeEHexStakes.length} active stake{activeEHexStakes.length !== 1 ? 's' : ''}
           </div>
         </div>
       </div>
 
-      {/* ── 3. Key Metrics ───────────────────────────────────────────────── */}
+      {/* -- 3. Key Metrics ------------------------------------------------- */}
       {/* Row A: 3 compact stats */}
       <div className="stakes-metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
         {/* HEX Staked */}
@@ -477,7 +480,7 @@ export function StakesSection({
           <div className="tabular-nums" style={{ fontSize: 20, fontWeight: 800, color: 'var(--fg)', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-0.02em', marginBottom: 4 }}>
             {fmtHex(totalHexStaked)}
           </div>
-          <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{activeStakes.length} active · {stakes.length - activeStakes.length} inactive</div>
+          <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{activeStakes.length} active - {stakes.length - activeStakes.length} inactive</div>
         </div>
 
         {/* Current Value */}
@@ -499,7 +502,7 @@ export function StakesSection({
             <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.07em' }}>T-Shares</div>
           </div>
           <div className="tabular-nums" style={{ fontSize: 20, fontWeight: 800, color: '#a78bfa', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-0.02em', marginBottom: 4 }}>
-            {totalTShares.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+            {totalTShares.toLocaleString('en-US', { maximumFractionDigits: 2 })}
           </div>
           <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>across all chains</div>
         </div>
@@ -510,7 +513,7 @@ export function StakesSection({
         <StakingLadder stakes={activeStakes.length > 0 ? activeStakes : stakes} />
       </div>
 
-      {/* ── 5. Individual Stakes Table ───────────────────────────────────── */}
+      {/* -- 5. Individual Stakes Table ------------------------------------- */}
       <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
 
         {/* Table header + filter pills */}
@@ -575,7 +578,7 @@ export function StakesSection({
                   const hexPrice   = stake.chain === 'pulsechain' ? phexUsdPrice : ehexUsdPrice;
                   // Always derive from tShares at the chain-specific rate so stale cached fields
                   // (stakeHexYield / interestHearts / estimatedValueUsd / totalValueUsd)
-                  // never show wrong numbers — even before the next wallet sync.
+                  // never show wrong numbers - even before the next wallet sync.
                   const tShares       = stake.tShares ?? Number(stake.stakeShares ?? 0n) / 1e12;
                   const daysLeft      = stake.daysRemaining ?? 0;
                   const daysStakedSoFar = Math.max(0, (stake.stakedDays ?? 0) - daysLeft);
@@ -599,7 +602,7 @@ export function StakesSection({
                     { label: 'Daily Yield', val: `+${fmtHexExact(dailyYield)} ${tokenLabel}`, sub: `${yieldRate.toFixed(2)} HEX/T-Share/day`, color: 'var(--positive)' },
                     { label: 'Current Value', val: fmtUsdExact(currentValueUsd), sub: `${fmtHexExact(stakedHex + accruedHex)} ${tokenLabel}` },
                     { label: 'Maturity', val: fmtUsdExact(maturityValueUsd), sub: `${fmtHexExact(maturityHex)} ${tokenLabel}`, color: 'var(--positive)' },
-                    { label: 'T-Shares', val: tShares.toLocaleString(undefined, { maximumFractionDigits: 6 }), sub: 'Stake weight' },
+                    { label: 'T-Shares', val: tShares.toLocaleString('en-US', { maximumFractionDigits: 6 }), sub: 'Stake weight' },
                     {
                       label: 'Timeline',
                       val: `${fmtDays(daysLeft)} left`,
@@ -609,12 +612,26 @@ export function StakesSection({
                     { label: 'Progress', val: `${stake.progress}%`, sub: `${daysStakedSoFar.toLocaleString()} / ${stakeLength.toLocaleString()} days` },
                   ];
                   const walletLabel = stake.walletLabel
-                    ?? (stake.walletAddress ? (walletLabels[stake.walletAddress] ?? shortenAddr(stake.walletAddress)) : '—');
+                    ?? (stake.walletAddress ? (walletLabels[stake.walletAddress] ?? shortenAddr(stake.walletAddress)) : '-');
+                  const isExpanded = expandedStakeIds.has(stake.id);
 
                   return (
                     <React.Fragment key={stake.id}>
-                    <tr className="stake-summary-row">
+                    <tr
+                      className={`stake-summary-row${isExpanded ? ' is-expanded' : ''}`}
+                      role="button"
+                      tabIndex={0}
+                      aria-expanded={isExpanded}
+                      onClick={() => toggleStakeDetails(stake.id)}
+                      onKeyDown={event => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          toggleStakeDetails(stake.id);
+                        }
+                      }}
+                    >
                       <td style={{ color: 'var(--fg)', fontWeight: 600, fontFamily: "'JetBrains Mono', monospace" }}>
+                        <span className={`stake-expand-caret${isExpanded ? ' is-open' : ''}`} aria-hidden="true">›</span>
                         #{stake.stakeId}
                       </td>
                       <td>
@@ -676,26 +693,28 @@ export function StakesSection({
                         {fmtHex(maturityHex)} HEX
                       </td>
                     </tr>
-                    <tr className="stake-detail-row">
-                      <td colSpan={10}>
-                        <div className="stake-detail-panel">
-                          <div className="stake-detail-context">
-                            <span>Stake #{stake.stakeId} on <strong>{chainLabel}</strong></span>
-                            <span>Wallet <strong>{walletLabel}</strong></span>
-                            <span>{stakeLength.toLocaleString()} days locked</span>
+                    {isExpanded && (
+                      <tr className="stake-detail-row">
+                        <td colSpan={10}>
+                          <div className="stake-detail-panel">
+                            <div className="stake-detail-context">
+                              <span>Stake #{stake.stakeId} on <strong>{chainLabel}</strong></span>
+                              <span>Wallet <strong>{walletLabel}</strong></span>
+                              <span>{stakeLength.toLocaleString()} days locked</span>
+                            </div>
+                            <div className="stake-detail-grid">
+                              {detailStats.map(({ label, val, sub, color }) => (
+                                <div key={label} className="stake-detail-stat">
+                                  <div className="stake-detail-label">{label}</div>
+                                  <div className="stake-detail-value" style={{ color: color ?? 'var(--fg)' }}>{val}</div>
+                                  <div className="stake-detail-sub">{sub}</div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                          <div className="stake-detail-grid">
-                            {detailStats.map(({ label, val, sub, color }) => (
-                              <div key={label} className="stake-detail-stat">
-                                <div className="stake-detail-label">{label}</div>
-                                <div className="stake-detail-value" style={{ color: color ?? 'var(--fg)' }}>{val}</div>
-                                <div className="stake-detail-sub">{sub}</div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
+                        </td>
+                      </tr>
+                    )}
                     </React.Fragment>
                   );
                 })}

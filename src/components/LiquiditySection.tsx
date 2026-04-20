@@ -15,7 +15,7 @@ import { LiquidityPositionCard } from './LiquidityPositionCard';
 import { fmtUsd, fmtTok } from '../lib/utils';
 import type { LpPositionEnriched } from '../types';
 
-// ─── Skeleton row ─────────────────────────────────────────────────────────────
+// --- Skeleton row -------------------------------------------------------------
 function SkeletonRow() {
   return (
     <div style={{
@@ -42,7 +42,7 @@ function SkeletonRow() {
   );
 }
 
-// ─── Skeleton full card ───────────────────────────────────────────────────────
+// --- Skeleton full card -------------------------------------------------------
 function SkeletonCard() {
   return (
     <div style={{
@@ -87,7 +87,7 @@ function SkeletonCard() {
   );
 }
 
-// ─── INC Token Logo ───────────────────────────────────────────────────────────
+// --- INC Token Logo -----------------------------------------------------------
 function IncLogo({ size = 28 }: { size?: number }) {
   const [err, setErr] = React.useState(false);
   return (
@@ -111,7 +111,7 @@ function IncLogo({ size = 28 }: { size?: number }) {
   );
 }
 
-// ─── Farming Rewards Banner ───────────────────────────────────────────────────
+// --- Farming Rewards Banner ---------------------------------------------------
 interface FarmingRewardsBannerProps {
   stakedPositions: LpPositionEnriched[];
   incPrice: number;
@@ -293,7 +293,7 @@ function FarmingRewardsBanner({ stakedPositions, incPrice }: FarmingRewardsBanne
   );
 }
 
-// ─── LP Summary Stats ─────────────────────────────────────────────────────────
+// --- LP Summary Stats ---------------------------------------------------------
 function LpSummaryStats({ positions }: { positions: LpPositionEnriched[] }) {
   if (positions.length === 0) return null;
 
@@ -314,7 +314,7 @@ function LpSummaryStats({ positions }: { positions: LpPositionEnriched[] }) {
         },
         {
           label: 'Fees Earned 24h',
-          value: totalFees24h > 0 ? `+${fmtUsd(totalFees24h)}` : '—',
+          value: totalFees24h > 0 ? `+${fmtUsd(totalFees24h)}` : '-',
           color: totalFees24h > 0 ? 'var(--positive)' : 'var(--fg-subtle)',
           icon: <Zap size={14} style={{ color: 'var(--positive)' }} />,
           bg: totalFees24h > 0 ? 'rgba(0,255,159,0.06)' : 'var(--bg-inset)',
@@ -356,7 +356,7 @@ function LpSummaryStats({ positions }: { positions: LpPositionEnriched[] }) {
   );
 }
 
-// ─── Section header ───────────────────────────────────────────────────────────
+// --- Section header -----------------------------------------------------------
 interface SectionHeaderProps {
   positions: LpPositionEnriched[];
   loading: boolean;
@@ -441,9 +441,9 @@ function SectionHeader({ positions, loading, onRefetch, onViewAll }: SectionHead
   );
 }
 
-// ─── Hook auto-fetch helper ───────────────────────────────────────────────────
+// --- Hook auto-fetch helper ---------------------------------------------------
 // Uses a stable ref so price changes (which recreate `refetch`) don't trigger
-// a second RPC round-trip — only wallet list changes and the first price
+// a second RPC round-trip - only wallet list changes and the first price
 // availability cause a re-fetch.
 function useAutoFetch(
   walletAddresses: string[],
@@ -460,7 +460,7 @@ function useAutoFetch(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [walletsKey]);
 
-  // Issue #2 — also re-fetch once when tokenPrices transitions from empty to
+  // Issue #2 - also re-fetch once when tokenPrices transitions from empty to
   // non-empty, so positions that loaded before prices were available get USD
   // values recalculated against real prices.
   const pricesReady = Object.keys(tokenPrices).length > 0;
@@ -473,7 +473,7 @@ function useAutoFetch(
   }, [pricesReady, walletAddresses.length]);
 }
 
-// ─── OVERVIEW STRIP ───────────────────────────────────────────────────────────
+// --- OVERVIEW STRIP -----------------------------------------------------------
 export interface LiquidityOverviewStripProps {
   walletAddresses: string[];
   tokenPrices: Record<string, number>;
@@ -558,7 +558,7 @@ export function LiquidityOverviewStrip({
   );
 }
 
-// ─── FULL DEFI PAGE ────────────────────────────────────────────────────────────
+// --- FULL DEFI PAGE ------------------------------------------------------------
 export interface LiquiditySectionProps {
   walletAddresses: string[];
   tokenPrices: Record<string, number>;
@@ -574,7 +574,7 @@ export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySect
 
   return (
     <div className="space-y-5">
-      {/* ── Page header ── */}
+      {/* -- Page header -- */}
       <div className="page-header">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -608,12 +608,12 @@ export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySect
             onMouseOut={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(247,57,255,0.07)')}
           >
             <RefreshCcw size={13} className={loading ? 'animate-spin' : ''} />
-            {loading ? 'Loading…' : 'Refresh'}
+            {loading ? 'Loading...' : 'Refresh'}
           </button>
         </div>
       </div>
 
-      {/* ── Error ── */}
+      {/* -- Error -- */}
       {error && (
         <div style={{
           padding: '12px 16px', borderRadius: 12,
@@ -626,17 +626,17 @@ export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySect
         </div>
       )}
 
-      {/* ── Summary stats (when data is available) ── */}
+      {/* -- Summary stats (when data is available) -- */}
       {!loading && positions.length > 0 && (
         <LpSummaryStats positions={positions} />
       )}
 
-      {/* ── Farming Rewards Banner ── */}
+      {/* -- Farming Rewards Banner -- */}
       {stakedPositions.length > 0 && (
         <FarmingRewardsBanner stakedPositions={stakedPositions} incPrice={incPrice} />
       )}
 
-      {/* ── Loading skeletons ── */}
+      {/* -- Loading skeletons -- */}
       {loading && positions.length === 0 && (
         <div className="asset-grid-3col">
           <SkeletonCard />
@@ -645,7 +645,7 @@ export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySect
         </div>
       )}
 
-      {/* ── Farming positions (staked) ── */}
+      {/* -- Farming positions (staked) -- */}
       {stakedPositions.length > 0 && (
         <>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -668,7 +668,7 @@ export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySect
         </>
       )}
 
-      {/* ── Regular LP positions ── */}
+      {/* -- Regular LP positions -- */}
       {regularPositions.length > 0 && (
         <>
           {stakedPositions.length > 0 && (
@@ -693,7 +693,7 @@ export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySect
         </>
       )}
 
-      {/* ── No wallets empty state ── */}
+      {/* -- No wallets empty state -- */}
       {!loading && walletAddresses.length === 0 && (
         <div className="defi-empty-state">
           <div style={{
@@ -716,7 +716,7 @@ export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySect
         </div>
       )}
 
-      {/* ── Empty state ── */}
+      {/* -- Empty state -- */}
       {!loading && walletAddresses.length > 0 && positions.length === 0 && !error && (
         <div className="defi-empty-state">
           {/* Icon */}

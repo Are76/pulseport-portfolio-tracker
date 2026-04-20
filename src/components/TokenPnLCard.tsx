@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import type { Transaction, Asset } from '../types';
 
-// ─── Props ────────────────────────────────────────────────────────────────────
+// --- Props --------------------------------------------------------------------
 export interface TokenPnLCardProps {
   /** The single token being analysed (= txAssetFilter value, never 'all') */
   symbol: string;
@@ -32,19 +32,19 @@ export interface TokenPnLCardProps {
   isSyncing?: boolean;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// --- Helpers ------------------------------------------------------------------
 function fmtUsd(n: number, decimals = 2): string {
   const abs = Math.abs(n);
   if (abs >= 1_000_000) return `$${(abs / 1_000_000).toFixed(2)}M`;
   if (abs >= 10_000)    return `$${(abs / 1_000).toFixed(1)}K`;
-  return `$${abs.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+  return `$${abs.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
 }
 function fmtTok(n: number): string {
   const abs = Math.abs(n);
   if (abs >= 1e9) return `${(abs / 1e9).toFixed(2)}B`;
   if (abs >= 1e6) return `${(abs / 1e6).toFixed(2)}M`;
   if (abs >= 1e3) return `${(abs / 1e3).toFixed(1)}K`;
-  return abs.toLocaleString(undefined, { maximumFractionDigits: 4 });
+  return abs.toLocaleString('en-US', { maximumFractionDigits: 4 });
 }
 function formatSign(n: number): string { return n >= 0 ? '+' : '−'; }
 function getProfitLossColor(n: number): string {
@@ -58,7 +58,7 @@ function sameSymbol(left: string, right: string): boolean {
   return normalizeSymbol(left) === normalizeSymbol(right);
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// --- Sub-components -----------------------------------------------------------
 function StatRow({
   label, value, valueColor, sub,
 }: {
@@ -104,7 +104,7 @@ function TokenLogo({ symbol, logoUrl, size = 36 }: { symbol: string; logoUrl?: s
   );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// --- Main component -----------------------------------------------------------
 export function TokenPnLCard({
   symbol,
   transactions,
@@ -117,7 +117,7 @@ export function TokenPnLCard({
 }: TokenPnLCardProps) {
   const [expanded, setExpanded] = useState(true);
 
-  // ── Compute P&L ─────────────────────────────────────────────────────────────
+  // -- Compute P&L -------------------------------------------------------------
   const {
     totalCost: _legacyTotalCost, totalProceeds: _legacyTotalProceeds, realizedPnl: _legacyRealizedPnl,
     buyCount, sellCount, transferInCount, transferOutCount,
@@ -140,11 +140,11 @@ export function TokenPnLCard({
       if (tx.type === 'swap') {
         swapCount++;
         if (sameSymbol(tx.asset, symbol)) {
-          // Received symbol (bought it) — usd is what we got
+          // Received symbol (bought it) - usd is what we got
           totalCost += usd;
           buyCount++;
         } else if (sameSymbol(tx.counterAsset ?? '', symbol)) {
-          // Spent symbol (sold it) — usd is what we received back
+          // Spent symbol (sold it) - usd is what we received back
           totalProceeds += usd;
           sellCount++;
         }
@@ -153,7 +153,7 @@ export function TokenPnLCard({
         totalCost += usd; // at market value at time of receipt
         transferInCount++;
       } else if (tx.type === 'withdraw') {
-        // Sent symbol away — treat as proceeds at the time
+        // Sent symbol away - treat as proceeds at the time
         totalProceeds += usd;
         transferOutCount++;
       }
@@ -169,7 +169,7 @@ export function TokenPnLCard({
     };
   }, [transactions, symbol, plsPriceUsd]);
 
-  // ── Current holdings ─────────────────────────────────────────────────────────
+  // -- Current holdings ---------------------------------------------------------
   const currentBalance = asset?.balance ?? 0;
   const currentValue   = currentBalance * priceUsd;
 
@@ -249,7 +249,7 @@ export function TokenPnLCard({
         pointerEvents: 'none',
       }} />
 
-      {/* ── Header ── */}
+      {/* -- Header -- */}
       <div
         className="pnl-card-header"
         style={{
@@ -315,7 +315,7 @@ export function TokenPnLCard({
         </div>
       </div>
 
-      {/* ── Body (collapsible) ── */}
+      {/* -- Body (collapsible) -- */}
       {expanded && (
         <div style={{ padding: '16px 18px 14px' }}>
           <div style={{
@@ -371,7 +371,7 @@ export function TokenPnLCard({
           {/* Two-column breakdown */}
           <div className="pnl-cols">
 
-            {/* ── LEFT: Realized ── */}
+            {/* -- LEFT: Realized -- */}
             <div style={{
               display: 'flex', flexDirection: 'column', gap: 12,
               padding: '14px 16px',
@@ -394,7 +394,7 @@ export function TokenPnLCard({
 
               <StatRow
                 label="Total Cost"
-                value={totalCost > 0 ? `−${fmtUsd(totalCost)}` : '—'}
+                value={totalCost > 0 ? `−${fmtUsd(totalCost)}` : '-'}
                 valueColor={totalCost > 0 ? 'var(--negative)' : 'var(--fg-subtle)'}
                 sub={buyCount > 0
                   ? `${buyCount} buy${buyCount > 1 ? 's' : ''}${transferInCount > 0 ? ` · ${transferInCount} received` : ''}`
@@ -403,7 +403,7 @@ export function TokenPnLCard({
               <Divider />
               <StatRow
                 label="Total Proceeds"
-                value={totalProceeds > 0 ? `+${fmtUsd(totalProceeds)}` : '—'}
+                value={totalProceeds > 0 ? `+${fmtUsd(totalProceeds)}` : '-'}
                 valueColor={totalProceeds > 0 ? 'var(--positive)' : 'var(--fg-subtle)'}
                 sub={sellCount > 0
                   ? `${sellCount} sell${sellCount > 1 ? 's' : ''}${transferOutCount > 0 ? ` · ${transferOutCount} sent` : ''}`
@@ -411,7 +411,7 @@ export function TokenPnLCard({
               />
               <Divider />
 
-              {/* Net Realized P&L — prominent */}
+              {/* Net Realized P&L - prominent */}
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '10px 12px', borderRadius: 10,
@@ -430,7 +430,7 @@ export function TokenPnLCard({
               </div>
             </div>
 
-            {/* ── RIGHT: Holdings ── */}
+            {/* -- RIGHT: Holdings -- */}
             <div style={{
               display: 'flex', flexDirection: 'column', gap: 12,
               padding: '14px 16px',
@@ -453,13 +453,13 @@ export function TokenPnLCard({
 
               <StatRow
                 label="Current Balance"
-                value={currentBalance > 0 ? fmtTok(currentBalance) + ' ' + symbol : '—'}
+                value={currentBalance > 0 ? fmtTok(currentBalance) + ' ' + symbol : '-'}
                 sub={currentBalance > 0 ? 'Live on-chain' : 'Nothing held currently'}
               />
               <Divider />
               <StatRow
                 label="Current Value"
-                value={currentValue > 0 ? fmtUsd(currentValue) : '—'}
+                value={currentValue > 0 ? fmtUsd(currentValue) : '-'}
                 valueColor={currentValue > 0 ? 'var(--fg)' : 'var(--fg-subtle)'}
                 sub={priceUsd > 0
                   ? `@ ${priceUsd < 0.001
@@ -471,7 +471,7 @@ export function TokenPnLCard({
               />
               <Divider />
 
-              {/* Unrealized P&L — current value as "unrealized" */}
+              {/* Unrealized P&L - current value as "unrealized" */}
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '10px 12px', borderRadius: 10,
@@ -491,7 +491,7 @@ export function TokenPnLCard({
             </div>
           </div>
 
-          {/* ── Bottom bar: gas + links ── */}
+          {/* -- Bottom bar: gas + links -- */}
           <div style={{
             marginTop: 12, display: 'flex', alignItems: 'center',
             justifyContent: 'space-between', flexWrap: 'wrap', gap: 8,
@@ -536,7 +536,7 @@ export function TokenPnLCard({
             </a>
           </div>
 
-          {/* ── Disclaimer note ── */}
+          {/* -- Disclaimer note -- */}
           <div style={{ marginTop: 8, fontSize: 10, color: 'var(--fg-subtle)', lineHeight: 1.5, textAlign: 'center' }}>
             P&amp;L is estimated from on-chain transaction values at time of execution.
             Cost = USD value of acquisitions · Proceeds = USD value of disposals.
@@ -546,4 +546,3 @@ export function TokenPnLCard({
     </div>
   );
 }
-

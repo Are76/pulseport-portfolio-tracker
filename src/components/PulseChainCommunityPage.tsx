@@ -1,503 +1,317 @@
-import React, { useState } from 'react';
-import { Layers, ExternalLink, ChevronDown, ChevronUp, BarChart2, Shield, Zap, Globe, BookOpen } from 'lucide-react';
+import { BarChart2, BookOpen, Copy, ExternalLink, Check, Cpu, Layers, Shield, Zap, WalletCards, Route, Gem, type LucideIcon } from 'lucide-react';
+import { useState } from 'react';
 
-const FEATURED_TOOLS = [
+type Project = {
+  name: string;
+  tag: string;
+  url: string;
+  color: string;
+  desc: string;
+  logo?: string;
+};
+
+type Lane = {
+  title: string;
+  kicker: string;
+  icon: LucideIcon;
+  color: string;
+  items: Project[];
+};
+
+const TOKEN_LOGOS = {
+  pls: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png',
+  plsx: 'https://tokens.app.pulsex.com/images/tokens/0x95B303987A60C71504D99Aa1b13B4DA07b0790ab.png',
+  inc: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png',
+  phex: 'https://tokens.app.pulsex.com/images/tokens/0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39.png',
+};
+
+const NETWORK_ROWS = [
+  ['Network name', 'PulseChain'],
+  ['Chain ID', '369'],
+  ['Currency symbol', 'PLS'],
+  ['Primary RPC', 'https://rpc-pulsechain.g4mm4.io'],
+  ['Backup RPC', 'https://pulsechain.publicnode.com'],
+  ['Explorer', 'https://scan.pulsechain.com'],
+];
+
+const QUICK_LINKS = [
+  ['PulseChain', 'https://pulsechain.com'],
+  ['Explorer', 'https://scan.pulsechain.com'],
+  ['PulseX', 'https://app.pulsex.com'],
+  ['Bridge', 'https://bridge.pulsechain.com'],
+  ['Launchpad', 'https://launchpad.pulsechain.com'],
+];
+
+const NETWORK_SNAPSHOT = [
+  { label: 'Chain ID', value: '369', detail: 'EVM compatible', icon: Cpu, color: 'var(--accent)' },
+  { label: 'Native gas', value: 'PLS', detail: 'Gas and base unit', icon: Zap, color: '#f739ff' },
+  { label: 'Block time', value: '~10s', detail: 'Proof of Stake', icon: Layers, color: '#627EEA' },
+  { label: 'Asset rule', value: 'Verify', detail: 'Contracts and prices', icon: Shield, color: '#22d3ee' },
+];
+
+const OFFICIAL_PROJECTS: Project[] = [
+  { name: 'HEX', tag: 'Staking', url: 'https://hex.com', color: '#a855f7', desc: 'Stake HEX for up to 5,555 days and earn T-share yield.', logo: TOKEN_LOGOS.phex },
+  { name: 'PulseX', tag: 'Official DEX', url: 'https://app.pulsex.com', color: 'var(--accent)', desc: 'Swap PRC20 tokens, provide liquidity, and farm INC rewards.', logo: TOKEN_LOGOS.plsx },
+  { name: 'PulseChain Bridge', tag: 'Bridge', url: 'https://bridge.pulsechain.com', color: '#627EEA', desc: 'Move assets between Ethereum and PulseChain.', logo: TOKEN_LOGOS.pls },
+  { name: 'PulseChain Explorer', tag: 'Explorer', url: 'https://scan.pulsechain.com', color: '#06b6d4', desc: 'Inspect transactions, blocks, contracts, tokens, and wallets.' },
+  { name: 'ProveX', tag: 'Settlement', url: 'https://provex.tech', color: '#a855f7', desc: 'Proof-based peer-to-peer settlement in the ecosystem.' },
+  { name: 'Launchpad', tag: 'Validators', url: 'https://launchpad.pulsechain.com', color: '#a855f7', desc: 'Official validator setup and PLS validator staking.' },
+];
+
+const LANES: Lane[] = [
   {
-    name: 'PulseX',      url: 'https://app.pulsex.com',      tag: 'Official DEX',      color: 'var(--accent)',
-    desc: "PulseChain's primary DEX. Swap PRC20 tokens, add liquidity, and earn INC farming rewards. 0.29% fee — 76% to LPs, 21% burns PLSX. Available in V1 and V2.",
+    title: 'DEXs and Liquidity',
+    kicker: 'Swap, farm, route',
+    icon: Zap,
+    color: 'var(--accent)',
+    items: [
+      { name: 'PulseX V1 / V2', tag: 'Official DEX', url: 'https://app.pulsex.com', color: 'var(--accent)', desc: 'Core swap, LP, and INC farming venue.', logo: TOKEN_LOGOS.plsx },
+      { name: '9INCH / 9MM', tag: 'Concentrated LP', url: 'https://9inch.io', color: '#627EEA', desc: 'Uniswap V3-style concentrated liquidity.' },
+      { name: 'PHUX', tag: 'Balancer Fork', url: 'https://phux.io', color: '#a855f7', desc: 'Weighted and multi-token pools.' },
+      { name: 'LASO Finance', tag: 'Trading', url: 'https://laso.finance', color: '#06b6d4', desc: 'Advanced trading and liquidity tools.' },
+    ],
   },
   {
-    name: 'LibertySwap', url: 'https://libertyswap.finance', tag: 'Privacy Bridge',     color: '#a855f7',
-    desc: 'Intent-based cross-chain DEX with ZK privacy. Non-custodial, 0.3% fee, $10–$25K per swap, ~2–3 min. Bridges PulseChain ↔ Ethereum, Base, Arbitrum, BNB, Polygon, Optimism, Solana.',
+    title: 'Bridges and Ramps',
+    kicker: 'Move value carefully',
+    icon: Route,
+    color: '#627EEA',
+    items: [
+      { name: 'Official Bridge', tag: 'Ethereum route', url: 'https://bridge.pulsechain.com', color: '#627EEA', desc: 'Canonical Ethereum to PulseChain bridge route.' },
+      { name: 'LibertySwap', tag: 'Privacy bridge', url: 'https://libertyswap.finance', color: '#a855f7', desc: 'Intent-based cross-chain swaps with privacy features.' },
+      { name: 'Hyperlane', tag: 'Messaging', url: 'https://hyperlane.xyz', color: '#06b6d4', desc: 'Interoperability layer and warp routes.' },
+      { name: '0xCoast', tag: 'Fiat ramp', url: 'https://0xcoast.com', color: '#22d3ee', desc: 'Fiat on/off ramp and CST stablecoin route.' },
+    ],
   },
   {
-    name: 'ProveX',      url: 'https://provex.tech',      tag: 'Proof Settlement',    color: '#f97316',
-    desc: 'Emerging proof-based settlement project. Buyers and sellers generate cryptographic proofs, code settles the transaction, and ProveX describes usage-based PRVX burn mechanics.',
+    title: 'Analytics and Discovery',
+    kicker: 'Charts, stats, lists',
+    icon: BarChart2,
+    color: '#22d3ee',
+    items: [
+      { name: 'PulseChainStats', tag: 'Analytics', url: 'https://pulsechainstats.com', color: 'var(--accent)', desc: 'Token intel, bridge stats, validators, and DEX volume.' },
+      { name: 'DexScreener', tag: 'Charts', url: 'https://dexscreener.com/pulsechain', color: '#22d3ee', desc: 'Pair charts, liquidity, volume, and token search.' },
+      { name: 'PulseCoinList', tag: 'Directory', url: 'https://pulsecoinlist.com', color: '#f739ff', desc: 'Broad project directory and discovery map.' },
+      { name: 'PLSFolio', tag: 'Portfolio', url: 'https://plsfolio.com/ecosystem/', color: '#627EEA', desc: 'Portfolio-oriented ecosystem resources.' },
+    ],
   },
   {
-    name: 'LASO Finance', url: 'https://laso.finance',       tag: 'DeFi Protocol',     color: '#06b6d4',
-    desc: 'DeFi protocol on PulseChain offering advanced trading and liquidity tools for the ecosystem.',
-  },
-  {
-    name: 'Peer.xyz',    url: 'https://peer.xyz',            tag: 'P2P Platform',      color: '#627EEA',
-    desc: 'Peer-to-peer trading and social platform for crypto. Enables direct asset transfers and community trading without centralized intermediaries.',
+    title: 'Wallets, NFTs, and Tools',
+    kicker: 'Access layer',
+    icon: WalletCards,
+    color: '#a855f7',
+    items: [
+      { name: 'Rabby Wallet', tag: 'Wallet', url: 'https://rabby.io', color: '#627EEA', desc: 'Multi-chain EVM wallet with transaction previews.' },
+      { name: 'MetaMask', tag: 'Wallet', url: 'https://metamask.io', color: '#a855f7', desc: 'Common EVM wallet with custom network support.' },
+      { name: 'Mintra', tag: 'NFT market', url: 'https://mintra.ai', color: 'var(--accent)', desc: 'PulseChain NFT marketplace.' },
+      { name: 'NOWnodes', tag: 'RPC', url: 'https://nownodes.io', color: '#22d3ee', desc: 'Node and RPC infrastructure.' },
+    ],
   },
 ];
 
-const DEXS = [
-  { name: 'PulseX V1 / V2',  url: 'https://app.pulsex.com', tag: 'Official DEX',           color: 'var(--accent)', desc: 'The primary DEX on PulseChain. 0.29% trading fee — 76% to LPs, 21% burns PLSX. V2 offers improved routing.' },
-  { name: '9INCH / 9MM V3',  url: 'https://9inch.io',       tag: 'Concentrated Liquidity', color: '#627EEA',       desc: 'Uniswap V3-style DEX with concentrated liquidity positions for higher capital efficiency.' },
-  { name: 'PHUX',            url: 'https://phux.io',        tag: 'Balancer Fork',          color: '#a855f7',       desc: 'Balancer fork on PulseChain — supports weighted pools and multi-token liquidity.' },
-  { name: 'Tide',            url: '#',                      tag: 'Balancer Fork',          color: '#06b6d4',       desc: 'Another Balancer-style fork providing multi-asset pool trading.' },
-  { name: 'EazySwap',        url: '#',                      tag: 'DEX',                    color: '#f59e0b',       desc: 'Alternative DEX for token swapping on PulseChain.' },
-  { name: 'RichardSwap',     url: '#',                      tag: 'DEX',                    color: '#f739ff',       desc: 'Community-run DEX on PulseChain.' },
-  { name: 'GoPulseX',        url: '#',                      tag: 'Aggregator',             color: 'var(--accent)', desc: 'DEX aggregator / frontend for finding best swap routes across PulseChain DEXs.' },
-  { name: 'LASO Finance',    url: 'https://laso.finance',   tag: 'DeFi Protocol',          color: '#06b6d4',       desc: 'DeFi protocol on PulseChain with advanced trading and liquidity tools.' },
-  { name: 'Peer.xyz',        url: 'https://peer.xyz',       tag: 'P2P Platform',           color: '#627EEA',       desc: 'Peer-to-peer trading and social platform for crypto — direct asset transfers without intermediaries.' },
-];
-
-const DEFI = [
-  { name: 'Liquid Loans',   url: 'https://liquidloans.io', tag: 'Lending',           color: 'var(--accent)', desc: 'Deposit PLS as collateral to borrow USDL interest-free. Similar to Liquity/MakerDAO on Ethereum.' },
-  { name: 'Hedron',         url: 'https://hedron.pro',     tag: 'HEX Tooling',       color: '#f739ff',       desc: 'Tokenizes HEX stakes as HSI (HEX Stake Instance) tokens that can be traded or used in DeFi, making illiquid stakes transferable.' },
-  { name: 'Maximus',        url: 'https://maximus.farm',   tag: 'HEX Staking Pool',  color: '#f59e0b',       desc: 'Community-run shared HEX staking pools. Variants: Base, Deci, Lucky, Perpetuals, Poly, Pool Party, Trio.' },
-  { name: 'PHIAT',          url: '#',                      tag: 'AAVE Fork',         color: '#627EEA',       desc: 'AAVE fork on PulseChain — lending and borrowing with interest rate markets.' },
-  { name: 'INCprinter',     url: '#',                      tag: 'Lending',           color: '#06b6d4',       desc: 'Lending and borrowing protocol on PulseChain.' },
-  { name: 'FLEX Protocol',  url: '#',                      tag: 'DeFi',              color: '#a855f7',       desc: 'DeFi protocol on PulseChain.' },
-  { name: 'EARN Protocol',  url: '#',                      tag: 'Yield',             color: '#f97316',       desc: 'Yield-generating protocol on PulseChain.' },
-  { name: 'Vouch',          url: '#',                      tag: 'Liquid Staking',    color: 'var(--accent)', desc: 'Liquid staking on PulseChain — stake PLS while keeping liquidity via a tradeable receipt token.' },
-  { name: 'Phame',          url: '#',                      tag: 'GMX Fork',          color: '#f739ff',       desc: 'GMX-style perpetuals trading fork on PulseChain.' },
-];
-
-const BRIDGES = [
-  { name: 'Official PulseChain Bridge',      url: 'https://bridge.pulsechain.com',  tag: 'Official',       color: 'var(--accent)', desc: 'Primary bridge between Ethereum and PulseChain. Bridging creates wrapped tokens (e.g., ETH → pWETH). Track TVL and flows on PulseChainStats.' },
-  { name: 'Hyperlane',                       url: 'https://hyperlane.xyz',          tag: 'Cross-Chain',    color: '#627EEA',       desc: 'Connects PulseChain to 160+ blockchains. Permissionless messaging protocol with warp routes for token bridging.' },
-  { name: 'BlockBlend',                      url: '#',                              tag: 'Privacy Bridge', color: '#f739ff',       desc: 'Privacy-focused bridge for moving assets across chains with enhanced anonymity.' },
-  { name: 'Gibs Finance',                    url: '#',                              tag: 'Privacy Bridge', color: '#06b6d4',       desc: 'Privacy bridge for cross-chain transfers.' },
-  { name: 'TokensEx',                        url: '#',                              tag: 'BSC Bridge',     color: '#f59e0b',       desc: 'Bridge connecting PulseChain to Binance Smart Chain.' },
-  { name: 'PortalX / StealthEX / SimpleSwap', url: '#',                             tag: 'CEX Bridge',     color: 'var(--fg-muted)', desc: 'Centralized swap services that support PulseChain assets.' },
-];
-
-const ANALYTICS_EXTRA = [
-  { name: 'DexScreener', url: 'https://dexscreener.com', tag: 'Price Charts',    color: '#f59e0b', desc: 'DEX price charts and pair analytics for PulseChain tokens. Good for quick price checks.' },
-  { name: 'DeFi Llama',  url: 'https://defillama.com',  tag: 'TVL',             color: '#06b6d4', desc: 'Total Value Locked by protocol across PulseChain DeFi ecosystem.' },
-  { name: 'DeBank',      url: 'https://debank.com',     tag: 'Portfolio',        color: '#627EEA', desc: 'Multi-chain portfolio tracker with PulseChain support.' },
-  { name: 'Koinly',      url: 'https://koinly.io',      tag: 'Tax & Portfolio', color: '#a855f7', desc: 'Crypto tax reporting and portfolio tracking, supports PulseChain transactions.' },
-];
-
-const WALLETS = [
-  { name: 'MetaMask',        url: 'https://metamask.io',  tag: 'Browser/Mobile',     color: '#f97316',       desc: 'Most widely used EVM wallet. Add PulseChain as a custom network (Chain ID 369) to use with PulseChain dApps.' },
-  { name: 'Rabby Wallet',    url: 'https://rabby.io',     tag: 'Multi-Chain',         color: '#627EEA',       desc: 'Multi-chain wallet with built-in PulseChain support and security features.' },
-  { name: 'The Pulse Wallet', url: '#',                   tag: 'PulseChain Native',   color: 'var(--accent)', desc: 'Wallet built specifically for the PulseChain ecosystem.' },
-  { name: 'Tangem',          url: 'https://tangem.com',  tag: 'Hardware',            color: '#a855f7',       desc: 'Hardware wallet card supporting PulseChain — cold storage for secure long-term holding.' },
-];
-
-const ONRAMPS = [
-  { name: 'RampNow',    url: 'https://rampnow.io',      tag: 'Fiat On/Off Ramp',  color: '#f59e0b', desc: 'Direct fiat-to-PulseChain ramp — PLS, HEX, 1,500+ tokens, 60+ chains. Apple Pay, Google Pay, iDEAL. 160 countries.' },
-  { name: 'ChangeNow',  url: 'https://changenow.io',    tag: 'Crypto Swap',       color: '#06b6d4', desc: 'Non-custodial crypto exchange with 1,400+ currencies including PLS. No registration, unlimited amounts.' },
-  { name: '0xCoast',    url: 'https://0xcoast.com',     tag: 'CST Stablecoin',    color: 'var(--accent)', desc: 'Direct fiat on/off ramp using the CST stablecoin. Buy and sell PulseChain assets with fiat — no bridges required.' },
-  { name: 'Guardarian', url: 'https://guardarian.com',  tag: 'EU Licensed',       color: '#a855f7', desc: 'EU-regulated fiat-to-crypto service supporting PulseChain assets via card and bank transfer.' },
-];
-
-const NFTS = [
-  { name: 'Mintra',       url: 'https://mintra.ai', tag: 'Marketplace', color: 'var(--accent)', desc: 'Primary NFT marketplace on PulseChain — buy, sell, and mint NFTs.' },
-  { name: 'BeatBox',      url: '#',                 tag: 'Marketplace', color: '#f739ff',       desc: 'NFT marketplace on PulseChain.' },
-  { name: 'PulseMarket',  url: '#',                 tag: 'Marketplace', color: '#627EEA',       desc: 'NFT trading platform on PulseChain.' },
-  { name: 'PulseCats',    url: '#',                 tag: 'Collection',  color: '#f59e0b',       desc: 'Popular NFT collection on PulseChain.' },
-  { name: 'Pulse Punks',  url: '#',                 tag: 'Collection',  color: '#a855f7',       desc: 'PulseChain-native NFT collection.' },
-  { name: 'Rentomania',   url: '#',                 tag: 'Game',        color: '#06b6d4',       desc: 'Blockchain-based game on PulseChain.' },
-];
-
-const DEVTOOLS = [
-  { name: 'Moralis',           url: 'https://moralis.io',   tag: 'Web3 Dev',     color: '#627EEA',       desc: 'Web3 development platform with PulseChain APIs, data indexing, and SDK.' },
-  { name: 'NOWnodes',          url: 'https://nownodes.io',  tag: 'RPC Nodes',    color: '#f59e0b',       desc: 'RPC node provider for PulseChain — use their endpoints in your dApps.' },
-  { name: 'Dextools',          url: 'https://dextools.io',  tag: 'Analytics',    color: '#06b6d4',       desc: 'Token analytics, charts, and pair explorer for PulseChain DEXs.' },
-  { name: 'Fetch Oracle',      url: '#',                    tag: 'Price Oracle', color: 'var(--accent)', desc: 'On-chain price oracle providing reliable price feeds for PulseChain smart contracts.' },
-  { name: 'GoRealDefi',        url: '#',                    tag: 'DeFi Tools',   color: '#a855f7',       desc: 'Tools for interacting with PulseChain DeFi.' },
-  { name: 'Pulse Domains (.pls)', url: '#',                 tag: 'Web3 Identity', color: '#f739ff',      desc: 'ENS-style naming service for PulseChain — register a human-readable .pls domain.' },
-];
-
-const COMMUNITY = [
-  { name: 'PulseCoinList',  url: 'https://pulsecoinlist.com', tag: 'Directory',   color: 'var(--accent)', desc: 'Comprehensive ecosystem directory with 80+ verified PulseChain projects, analytics, and live supply/gas tracking.' },
-  { name: 'PLSFolio',       url: 'https://plsfolio.com',      tag: 'Ecosystem',   color: '#627EEA',       desc: 'PulseChain ecosystem explorer and portfolio tool.' },
-  { name: 'HowToPulse',     url: '#',                         tag: 'Education',   color: '#f59e0b',       desc: 'Educational guides and tutorials for new users entering the PulseChain ecosystem.' },
-  { name: 'PulseTV',        url: '#',                         tag: 'Video',       color: '#f739ff',       desc: 'Video content, community streams, and ecosystem news.' },
-  { name: 'PulseConference', url: '#',                        tag: 'Events',      color: '#a855f7',       desc: 'Ecosystem events, conferences, and community meetups.' },
-];
-
-const GUIDE_STEPS = [
-  {
-    title: 'Start with infrastructure',
-    body: 'Add PulseChain to an EVM wallet, keep enough PLS for gas, and verify every app URL before connecting. Wallets, RPCs, explorers, revocation tools, and bridges are the base layer.',
-  },
-  {
-    title: 'Then map liquidity',
-    body: 'Use PulseX, aggregators, and analytics pages to understand where volume and liquidity are. Token price, depth, and route quality matter more than a logo or social hype.',
-  },
-  {
-    title: 'Separate official tools from community tools',
-    body: 'Directories mix official products, independent apps, experimental DeFi, memes, NFTs, and educational sites. Treat each listing as a starting point, then verify contracts and docs.',
-  },
-  {
-    title: 'Track bridges as flows',
-    body: 'Bridge activity tells you where liquidity enters and leaves PulseChain. Compare official bridge routes, cross-chain bridges, fiat ramps, and stablecoin supply changes before moving funds.',
-  },
-];
-
-const SOURCE_LINKS = [
-  {
-    name: 'PulseX',
-    url: 'https://pulsex.com/',
-    desc: 'Official DEX overview, fee split, liquidity provider incentives, INC farming, and PLSX buy-and-burn mechanics.',
-  },
-  {
-    name: 'LibertySwap',
-    url: 'https://libertyswap.finance/',
-    desc: 'Live cross-chain swap app with public/private modes, supported assets, gasless mode, fee display, and beta notices.',
-  },
-  {
-    name: 'LibertySwap Docs',
-    url: 'https://docs.libertyswap.finance/',
-    desc: 'Non-custodial intent-based exchange architecture, privacy model, supported operations, and security guidance.',
-  },
-  {
-    name: 'ProveX',
-    url: 'https://provex.tech/',
-    desc: 'Proof-based peer-to-peer settlement concept, browser-extension flow, use cases, and PRVX burn framing.',
-  },
-  {
-    name: 'PulseChainStats Bridge Stats',
-    url: 'https://www.pulsechainstats.com/bridge-stats',
-    desc: 'Official bridge TVL, daily/monthly inflows and outflows, top bridged tokens, Hyperlane activity, and CST supply.',
-  },
-  {
-    name: 'PulseCoinList Ecosystem Map',
-    url: 'https://pulsecoinlist.com/map',
-    desc: 'Project categories, ecosystem map, bridges, DEXs, DeFi, wallets, NFTs, tools, and community resources.',
-  },
-  {
-    name: 'PLSFolio Ecosystem',
-    url: 'https://plsfolio.com/ecosystem/',
-    desc: 'PulseChain ecosystem discovery and portfolio-oriented directory context.',
-  },
-  {
-    name: 'PulseChainStats Ecosystem',
-    url: 'https://www.pulsechainstats.com/ecosystem',
-    desc: 'DApps, bridges, DEX farms, lending, staking, developer tools, domain services, and ecosystem FAQ framing.',
-  },
-  {
-    name: 'PulseChainStats Richard Heart',
-    url: 'https://www.pulsechainstats.com/richardheart/',
-    desc: 'Founder profile and background page for Richard Heart, HEX, and PulseChain context.',
-  },
-];
-
-const FAQS = [
-  { q: 'Why can bridge transactions look different from normal swaps?', a: 'Bridge transactions often involve multiple contracts, helper addresses, wrapped tokens, and delayed settlement. A wallet may send one asset on the origin chain and later receive another representation of that asset on PulseChain. A portfolio tracker should show this as bridge activity when possible, not as a normal buy.' },
-  { q: 'What does bridge TVL tell me?', a: 'Bridge TVL shows the dollar value of assets currently locked through bridge routes. It helps measure ecosystem liquidity and adoption, but it does not guarantee token safety, price stability, or contract risk.' },
-  { q: 'What is net bridge flow?', a: 'Net bridge flow is inflow minus outflow. Positive net flow means more value entered PulseChain than left during the selected period. Negative net flow means more value left than entered.' },
-  { q: 'What is the difference between PulseX and LibertySwap?', a: 'PulseX is the main DEX and liquidity hub on PulseChain. LibertySwap is focused on cross-chain swapping and privacy-preserving intent-based exchange. PulseX is where many PulseChain token pools live; LibertySwap is more useful for cross-chain/private transfer routes.' },
-  { q: 'What is the simplest way to understand the PulseChain ecosystem?', a: 'Think of it in layers: wallets and RPCs first, bridges and ramps second, DEX liquidity third, then DeFi, NFTs, analytics, and community tools. Directories such as PulseCoinList, PLSFolio, and PulseChainStats help you discover projects, but you should still verify every app URL and contract before connecting a wallet.' },
-  { q: 'Which ecosystem categories matter most for a portfolio tracker?', a: 'The most important categories are DEXs, bridges, lending, HEX staking, liquidity farms, wallets, analytics, revocation tools, and fiat ramps. These directly affect balances, prices, transfers, approvals, and P&L interpretation.' },
-  { q: 'How should I use ecosystem directories safely?', a: 'Use directories as maps, not guarantees. Open the official project site, compare links across multiple sources, check contract addresses on an explorer, inspect token approvals with revoke.cash, and test with small amounts first.' },
-  { q: 'What is PulseX and how does it work?', a: "PulseX is PulseChain's official DEX. Users can swap PRC20 tokens, provide liquidity, and stake LP tokens in farms to earn INC rewards. Trading fee is 0.29% — 76% goes to LPs, 21% buys and burns PLSX. It has two versions: V1 and V2 with improved routing." },
-  { q: 'What is LibertySwap and how is it different from other bridges?', a: 'LibertySwap is an intent-based cross-chain DEX that uses zero-knowledge proofs for privacy. Unlike standard bridges, it never takes custody of your assets and transaction data is deleted after 48 hours. It has a gasless mode, a 0.3% fee, and supports swaps between PulseChain and other EVM chains including Base. Min $10, max $25,000.' },
-  { q: 'What is Hedron and why would I use it?', a: "Hedron allows HEX stakers to tokenize their stakes as HSI tokens. Normal HEX stakes are illiquid — you can't transfer them. Hedron wraps them into tradeable tokens so you can sell or use a stake in DeFi without ending it early and triggering penalties." },
-  { q: 'What is Maximus?', a: 'Maximus is a set of community-run shared HEX staking pools. Instead of staking HEX individually, you contribute to a shared pool and receive Maximus tokens representing your share. Pool variants include Base, Deci, Lucky, Perpetuals, Poly, Pool Party, and Trio.' },
-  { q: 'What is INC and where do I earn it?', a: 'INC is the PulseX farm incentive token. Liquidity providers who stake their LP tokens in PulseX farms earn INC continuously. It has decreasing inflation over time and PLSX holders vote via DAO on which pairs receive INC incentives.' },
-  { q: 'How are the Token League tiers determined?', a: 'Token leagues on PulseChainStats rank holders by what percentage of the total supply they hold: Poseidon (10%), Whale (1%), Shark (0.1%), Dolphin (0.01%), Squid (0.001%), Turtle (0.0001%).' },
-  { q: 'What are the PulseChainStats bridge stats tracking?', a: 'The bridge-stats dashboard tracks official bridge TVL with 24h/7d/30d changes, top 5 and top 10 tokens bridged in/out by USD volume, daily net flow, Hyperlane USDC activity, and CST stablecoin supply growth as a proxy for fiat adoption.' },
-  { q: 'What is the CST stablecoin?', a: 'CST is a stablecoin issued by 0xCoast, which operates a direct fiat on/off ramp for PulseChain. CST supply growth is tracked on PulseChainStats as a measure of real-world fiat adoption.' },
-  { q: 'How do I get on-chain price data accurately?', a: 'The most accurate method is querying LP reserves directly via RPC (eth_call, getReserves selector 0x0902f1ac). For PLS/USD: use the WPLS/DAI, WPLS/USDC, and WPLS/USDT pairs — take the highest (most liquidity = most reliable). DexScreener and PulseX subgraph can lag.' },
-  { q: 'Are there privacy options for trading on PulseChain?', a: 'Yes. LibertySwap offers private trading via ZK proofs. BlockBlend and Gibs Finance also offer privacy-focused bridging options for cross-chain transfers.' },
-  { q: 'How do I bridge assets to PulseChain?', a: 'Three main options: (1) the official bridge at bridge.pulsechain.com for Ethereum ↔ PulseChain, creating wrapped tokens (e.g. ETH → pWETH); (2) Liberty Swap for privacy-preserving intent-based swaps across 7+ chains; (3) Hyperlane warp routes for 160+ chains. For smaller amounts, CEX services like ChangeNOW work too.' },
-  { q: 'Can I buy PLS with fiat directly?', a: 'Yes. RampNow, 0xCoast (CST stablecoin), Guardarian (EU-regulated), and ChangeNOW all support direct fiat → PLS purchases with card, bank transfer, Apple Pay, or Google Pay. No bridging required.' },
-  { q: 'Where can I track my PulseChain portfolio?', a: 'PulsePort (this app), DeBank, Phatty, and Koinly all support PulseChain wallet tracking. DexScreener is better for single-token price watches. For ecosystem-wide stats, use pulsechainstats.com or plsfolio.com.' },
-  { q: 'What wallets support PulseChain?', a: 'MetaMask (add chain ID 369 manually), Rabby (built-in support), The Pulse Wallet (PulseChain-native), and Tangem (hardware card). Any EVM-compatible wallet works once you add the RPC.' },
-  { q: 'Are there NFT marketplaces on PulseChain?', a: 'Yes. Mintra is the largest, supporting minting, trading, and collections. PulseMarket, BeatBox, and TesseractX are smaller alternatives. All use the same PRC20/ERC721 standards as Ethereum.' },
-  { q: 'How do I stake HEX on PulseChain?', a: 'Go to go.hex.com, connect your wallet on PulseChain (chain 369), choose an amount and a stake length (1 – 5,555 days), and confirm. You receive T-shares that earn daily yield. Ending stakes late incurs penalties after 14 days.' },
-  { q: 'How do I revoke token approvals?', a: 'Use revoke.cash (supports PulseChain), connect your wallet, and review every contract that has spending permission. Revoke anything you no longer recognise. Do this periodically — especially after using new dApps.' },
-  { q: 'What is PulseChain Leagues (Shrimp → Poseidon)?', a: 'A ranking system based on % of a token\'s supply held: Poseidon (≥10%), Whale (≥1%), Shark (≥0.1%), Dolphin (≥0.01%), Squid (≥0.001%), Turtle (≥0.0001%). Smaller tiers (Shrimp, Plankton) continue below. Tracked on pulsechainstats.com.' },
-  { q: 'Where is the full ecosystem map?', a: 'pulsecoinlist.com/map maintains an interactive directory of 80+ verified projects grouped by category. plsfolio.com/ecosystem and pulsechainstats.com/ecosystem are complementary views.' },
-];
-
-function FaqItem({ q, a }: { key?: React.Key; q: string; a: string }) {
-  const [open, setOpen] = useState(false);
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
   return (
-    <div style={{ borderBottom: '1px solid var(--border)' }}>
-      <button onClick={() => setOpen(v => !v)}
-        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg)', fontWeight: 600, fontSize: 14, textAlign: 'left', gap: 12 }}>
-        <span>{q}</span>
-        {open ? <ChevronUp size={15} color="var(--fg-muted)" /> : <ChevronDown size={15} color="var(--fg-muted)" />}
-      </button>
-      {open && <p style={{ fontSize: 13, color: 'var(--fg-muted)', lineHeight: 1.7, paddingBottom: 14, margin: 0 }}>{a}</p>}
-    </div>
+    <button
+      onClick={() => {
+        navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1400);
+      }}
+      className="pce-copy"
+      aria-label={`Copy ${text}`}
+    >
+      {copied ? <Check size={13} color="var(--accent)" /> : <Copy size={13} />}
+    </button>
   );
 }
 
-// ── Shared design primitives ──────────────────────────────────────────────────
-const PINK = '#f739ff';
+function EcosystemMap() {
+  const nodes = [
+    { label: 'DEX', icon: Zap, color: 'var(--accent)', style: { left: '8%', top: '18%' } },
+    { label: 'Bridge', icon: Route, color: '#627EEA', style: { right: '5%', top: '20%' } },
+    { label: 'HEX', icon: Gem, color: '#a855f7', style: { left: '14%', bottom: '14%' } },
+    { label: 'Stats', icon: BarChart2, color: '#22d3ee', style: { right: '13%', bottom: '12%' } },
+  ];
 
-function Section({ title, icon, color, badge, children }: {
-  title: string; icon: React.ReactNode; color: string; badge?: string; children: React.ReactNode;
-}) {
   return (
-    <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 14, marginBottom: 16, overflow: 'hidden' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 20px', background: `${color}0d`, borderBottom: `1px solid ${color}28`, borderLeft: `3px solid ${color}` }}>
-        {icon}
-        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)', flex: 1 }}>{title}</span>
-        {badge && <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 100, background: `${color}22`, color, border: `1px solid ${color}44` }}>{badge}</span>}
+    <div className="pce-map" aria-hidden="true">
+      <div className="pce-map-ring" />
+      <div className="pce-map-core">
+        <img src={TOKEN_LOGOS.pls} alt="" />
+        <strong>369</strong>
+        <span>PulseChain</span>
       </div>
-      <div style={{ padding: 20 }}>{children}</div>
-    </div>
-  );
-}
-
-function StatBox({ label, value, color = PINK }: { label: string; value: string; color?: string }) {
-  return (
-    <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderBottom: `2px solid ${color}`, borderRadius: 10, padding: '14px 16px' }}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 800, color }}>{value}</div>
-    </div>
-  );
-}
-
-function ProjectGrid({ items }: { items: { name: string; url: string; tag: string; color: string; desc: string }[] }) {
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10 }}>
-      {items.map(p => (
-        <div key={p.name} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderLeft: `3px solid ${p.color}`, borderRadius: '0 10px 10px 0', padding: 14 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontWeight: 700, fontSize: 13, color: p.color, flex: 1 }}>{p.name}</span>
-            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 100, background: `${p.color}22`, color: p.color, border: `1px solid ${p.color}44`, whiteSpace: 'nowrap' }}>{p.tag}</span>
-            {p.url !== '#' && (
-              <a href={p.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--fg-muted)', flexShrink: 0 }}><ExternalLink size={13} /></a>
-            )}
-          </div>
-          <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: 0, lineHeight: 1.6 }}>{p.desc}</p>
+      {nodes.map(({ label, icon: Icon, color, style }) => (
+        <div key={label} className="pce-map-node" style={{ ...style, ['--node-color' as string]: color }}>
+          <Icon size={16} />
+          <span>{label}</span>
         </div>
       ))}
     </div>
   );
 }
 
-export default function PulseChainCommunityPage() {
+function NetworkSnapshot() {
   return (
-    <div style={{ maxWidth: 960, margin: '0 auto', paddingBottom: 48 }}>
-
-      {/* ── HERO BANNER ─────────────────────────────────────────────────────── */}
-      <div style={{
-        background: 'linear-gradient(135deg, var(--bg-surface) 0%, rgba(247,57,255,0.03) 100%)',
-        border: '1px solid var(--border)', borderTop: `3px solid ${PINK}`,
-        borderRadius: 16, padding: '28px 28px 24px', marginBottom: 20,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 22 }}>
-          <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(247,57,255,0.1)', border: '1px solid rgba(247,57,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Layers size={22} color={PINK} />
-          </div>
-          <div>
-            <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--fg)', margin: 0, letterSpacing: '-0.5px' }}>PulseChain Ecosystem</h1>
-            <p style={{ fontSize: 13, color: 'var(--fg-muted)', margin: '3px 0 0' }}>DEXs, DeFi, bridges, analytics, wallets, NFTs & community resources</p>
-          </div>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12 }}>
-          <StatBox label="Projects Listed" value="80+" />
-          <StatBox label="Active DEXs" value="7+" color="#627EEA" />
-          <StatBox label="DeFi Protocols" value="9+" color="#f97316" />
-          <StatBox label="Bridge Options" value="7+" color="#a855f7" />
-          <StatBox label="Wallet Options" value="4" color="var(--accent)" />
-          <StatBox label="NFT Marketplaces" value="3" color="#f59e0b" />
-        </div>
-      </div>
-
-      {/* ── Featured Tools ──────────────────────────────────────────────────── */}
-      <Section title="PulseChain Guide" icon={<BookOpen size={15} color="#627EEA" />} color="#627EEA" badge="How to read the map">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 10, marginBottom: 14 }}>
-          {GUIDE_STEPS.map((step, idx) => (
-            <div key={step.title} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 10, padding: 14 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <span style={{ width: 24, height: 24, borderRadius: 8, background: 'rgba(98,126,234,0.14)', border: '1px solid rgba(98,126,234,0.28)', color: '#8aa4f0', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, fontFamily: 'JetBrains Mono, monospace', flexShrink: 0 }}>
-                  {idx + 1}
-                </span>
-                <span style={{ color: 'var(--fg)', fontSize: 13, fontWeight: 800 }}>{step.title}</span>
-              </div>
-              <p style={{ color: 'var(--fg-muted)', fontSize: 12, lineHeight: 1.6, margin: 0 }}>{step.body}</p>
-            </div>
-          ))}
-        </div>
-        <div style={{ background: 'rgba(0,255,159,0.04)', border: '1px solid var(--accent-border)', borderRadius: 10, padding: 14 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--accent)', marginBottom: 6 }}>Portfolio rule</div>
-          <p style={{ color: 'var(--fg-muted)', fontSize: 12, lineHeight: 1.6, margin: 0 }}>
-            A clean portfolio view depends on separating real balance changes from router calls, bridge helper calls, approvals, and zero-value contract interactions. Use the transaction tab for cash-flow history and the ecosystem map for discovery.
-          </p>
-        </div>
-      </Section>
-
-      <Section title="Essential Tools" icon={<Zap size={15} color="var(--accent)" />} color="var(--accent)" badge="Must Know">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
-          {FEATURED_TOOLS.map(p => (
-            <div key={p.name} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderTop: `2px solid ${p.color}`, borderRadius: 12, padding: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <span style={{ fontWeight: 800, fontSize: 15, color: p.color, flex: 1 }}>{p.name}</span>
-                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 100, background: `${p.color}22`, color: p.color, border: `1px solid ${p.color}44`, whiteSpace: 'nowrap' as const }}>{p.tag}</span>
-                <a href={p.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--fg-muted)' }}><ExternalLink size={13} /></a>
-              </div>
-              <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: 0, lineHeight: 1.6 }}>{p.desc}</p>
-            </div>
-          ))}
-        </div>
-      </Section>
-
-      {/* ── DEXs ────────────────────────────────────────────────────────────── */}
-      <Section title="Decentralized Exchanges" icon={<Zap size={15} color={PINK} />} color={PINK} badge={`${DEXS.length} DEXs`}>
-        <ProjectGrid items={DEXS} />
-      </Section>
-
-      {/* ── DeFi Protocols ──────────────────────────────────────────────────── */}
-      <Section title="DeFi Protocols" icon={<BarChart2 size={15} color="#f97316" />} color="#f97316" badge={`${DEFI.length} protocols`}>
-        <ProjectGrid items={DEFI} />
-      </Section>
-
-      {/* ── Bridges ─────────────────────────────────────────────────────────── */}
-      <Section title="Bridges & Cross-Chain" icon={<Globe size={15} color="#a855f7" />} color="#a855f7" badge={`${BRIDGES.length + 1} options`}>
-        {/* Liberty Swap feature card */}
-        <div style={{
-          background: 'rgba(168,85,247,0.05)', border: '1px solid rgba(168,85,247,0.25)',
-          borderLeft: '3px solid #a855f7', borderRadius: '0 12px 12px 0',
-          padding: 16, marginBottom: 14,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-            <Shield size={14} color="#a855f7" />
-            <span style={{ fontWeight: 700, fontSize: 14, color: '#a855f7', flex: 1 }}>LibertySwap — Privacy-First Cross-Chain DEX</span>
-            <a href="https://libertyswap.finance" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--fg-muted)' }}><ExternalLink size={12} /></a>
-          </div>
-          <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: '0 0 12px', lineHeight: 1.6 }}>
-            Intent-based, non-custodial cross-chain exchange with on-chain zero-knowledge privacy. LibertySwap never holds your assets. Transaction data is automatically deleted after 48 hours.
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 8, marginBottom: 12 }}>
-            {[
-              { label: 'Protocol Fee', value: '0.3%' },
-              { label: 'Min / Max', value: '$10 / $25K' },
-              { label: 'Swap Time', value: '~2–3 min' },
-              { label: 'Gas', value: 'Gasless mode' },
-            ].map(({ label, value }) => (
-              <div key={label} style={{ background: 'var(--bg-elevated)', borderRadius: 8, padding: '8px 12px' }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 3 }}>{label}</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#a855f7' }}>{value}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>
-            <strong style={{ color: 'var(--fg)' }}>Supported tokens:</strong> USDC, PLS, WETH, PLSX, HEX, INC, PCOCK, pDAI, eHEX, PRVX, ZERØ — also supports Base chain
-          </div>
-        </div>
-
-        <ProjectGrid items={BRIDGES} />
-      </Section>
-
-      {/* ── Analytics ───────────────────────────────────────────────────────── */}
-      <Section title="Bridge Stats & Flow Reading" icon={<BarChart2 size={15} color="#627EEA" />} color="#627EEA" badge="Liquidity flows">
-        <p style={{ fontSize: 13, color: 'var(--fg-muted)', lineHeight: 1.7, margin: '0 0 14px' }}>
-          Bridge stats explain how value enters and leaves PulseChain. A portfolio deposit on PulseChain may be a bridge arrival, not a normal buy. Tracking bridge TVL, inflows, outflows, and net flow helps separate real liquidity movement from ordinary wallet transfers.
+    <section className="pce-network-snapshot">
+      <div className="pce-network-copy">
+        <span className="pce-eyebrow">Network reference</span>
+        <h2>PulseChain quick setup.</h2>
+        <p>
+          Chain 369 uses PLS for gas. Keep bridge tokens, fork copies, and native assets separated before signing.
         </p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 8, marginBottom: 12 }}>
-          {[
-            { label: 'Bridge TVL', value: 'Value locked through bridge routes' },
-            { label: 'Inflow', value: 'Assets entering PulseChain' },
-            { label: 'Outflow', value: 'Assets leaving PulseChain' },
-            { label: 'Net flow', value: 'Inflow minus outflow' },
-            { label: 'CST supply', value: 'Fiat on/off-ramp adoption signal' },
-            { label: 'Hyperlane', value: 'USDC cross-chain route activity' },
-          ].map(item => (
-            <div key={item.label} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px' }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: '#8aa4f0', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>{item.label}</div>
-              <div style={{ fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.5 }}>{item.value}</div>
-            </div>
-          ))}
-        </div>
-        <div style={{ fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.6 }}>
-          Stablecoin inflows are especially useful for reading liquidity depth. WETH, USDC, DAI, USDT, WBTC, HEX, CST, and Hyperlane USDC flows can all change how healthy PulseChain markets look from day to day.
-        </div>
-      </Section>
-
-      <Section title="Analytics & Data Tools" icon={<BarChart2 size={15} color="var(--accent)" />} color="var(--accent)">
-        {/* PulseChainStats feature card */}
-        <div style={{
-          background: 'rgba(0,255,159,0.04)', border: '1px solid var(--accent-border)',
-          borderLeft: '3px solid var(--accent)', borderRadius: '0 12px 12px 0',
-          padding: 16, marginBottom: 14,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-            <BarChart2 size={14} color="var(--accent)" />
-            <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--accent)', flex: 1 }}>PulseChainStats — Complete Analytics Suite</span>
-            <a href="https://pulsechainstats.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--fg-muted)' }}><ExternalLink size={12} /></a>
-          </div>
-          <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: '0 0 14px', lineHeight: 1.6 }}>
-            The #1 PulseChain analytics platform. Real-time on-chain data — token prices, bridge flows, validator stats, DEX volumes, HEX staking, social intelligence. No paywall.
-          </p>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 8, marginBottom: 14 }}>
-            {[
-              { path: '/intel',        label: 'Intel Dashboard', desc: 'Live pricing, TVL, gas stats, daily users, validator APR, PulseX volumes, burn metrics, ecosystem directory.' },
-              { path: '/tokenintel',   label: 'Token Intel',     desc: 'Deep analytics for PLS, HEX, PLSX, INC, PRVX. Price charts (24h–all-time), ROI from launch, burn rates, holder counts.' },
-              { path: '/bridge-stats', label: 'Bridge Stats',    desc: 'Bridge TVL, top bridged tokens, daily/monthly inflows/outflows, Hyperlane USDC activity, CST growth.' },
-              { path: '/richardheart', label: 'Richard Heart',   desc: 'RH project stats, social metrics, and ecosystem performance by founder.' },
-            ].map(({ path, label, desc }) => (
-              <a key={path} href={`https://pulsechainstats.com${path}`} target="_blank" rel="noopener noreferrer"
-                style={{ background: 'var(--bg-elevated)', borderRadius: 8, padding: '10px 12px', textDecoration: 'none', display: 'block', border: '1px solid var(--border)' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {label} <ExternalLink size={10} />
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--fg-muted)', lineHeight: 1.5 }}>{desc}</div>
-              </a>
-            ))}
-          </div>
-
-          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg)', marginBottom: 8 }}>Token League Tiers (% of supply held)</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {[
-                { tier: 'Poseidon', pct: '10%', color: '#f739ff' },
-                { tier: 'Whale',    pct: '1%',  color: '#627EEA' },
-                { tier: 'Shark',    pct: '0.1%', color: '#06b6d4' },
-                { tier: 'Dolphin',  pct: '0.01%', color: 'var(--accent)' },
-                { tier: 'Squid',    pct: '0.001%', color: '#f59e0b' },
-                { tier: 'Turtle',   pct: '0.0001%', color: '#a855f7' },
-              ].map(({ tier, pct, color }) => (
-                <div key={tier} style={{ padding: '4px 10px', borderRadius: 100, background: `${color}18`, border: `1px solid ${color}44`, fontSize: 11 }}>
-                  <span style={{ fontWeight: 700, color }}>{tier}</span>
-                  <span style={{ color: 'var(--fg-muted)', marginLeft: 4 }}>≥{pct}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <ProjectGrid items={ANALYTICS_EXTRA} />
-      </Section>
-
-      {/* ── Wallets ──────────────────────────────────────────────────────────── */}
-      <Section title="Wallets" icon={<Shield size={15} color="#627EEA" />} color="#627EEA" badge={`${WALLETS.length} options`}>
-        <ProjectGrid items={WALLETS} />
-      </Section>
-
-      {/* ── On-Ramps ─────────────────────────────────────────────────────────── */}
-      <Section title="Fiat On/Off Ramps" icon={<Zap size={15} color="#f59e0b" />} color="#f59e0b" badge={`${ONRAMPS.length} services`}>
-        <ProjectGrid items={ONRAMPS} />
-      </Section>
-
-      {/* ── NFTs ─────────────────────────────────────────────────────────────── */}
-      <Section title="NFTs & Gaming" icon={<Layers size={15} color="#f739ff" />} color="#f739ff">
-        <ProjectGrid items={NFTS} />
-      </Section>
-
-      {/* ── Dev Tools ────────────────────────────────────────────────────────── */}
-      <Section title="Developer Tools & Infrastructure" icon={<BarChart2 size={15} color="#06b6d4" />} color="#06b6d4">
-        <ProjectGrid items={DEVTOOLS} />
-      </Section>
-
-      {/* ── Community ────────────────────────────────────────────────────────── */}
-      <Section title="Community & Education" icon={<Globe size={15} color="var(--accent)" />} color="var(--accent)">
-        <ProjectGrid items={COMMUNITY} />
-      </Section>
-
-      {/* ── FAQ ─────────────────────────────────────────────────────────────── */}
-      <Section title="Research Sources" icon={<ExternalLink size={15} color="#627EEA" />} color="#627EEA" badge="Directory mix">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
-          {SOURCE_LINKS.map(source => (
-            <a key={source.url} href={source.url} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 10, padding: 14, color: 'inherit', textDecoration: 'none', display: 'block' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
-                <span style={{ fontSize: 13, fontWeight: 800, color: '#8aa4f0', flex: 1 }}>{source.name}</span>
-                <ExternalLink size={12} color="var(--fg-muted)" />
-              </div>
-              <p style={{ fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.55, margin: 0 }}>{source.desc}</p>
+        <div className="pce-mini-links">
+          {QUICK_LINKS.slice(0, 4).map(([label, url]) => (
+            <a key={url} href={url} target="_blank" rel="noopener noreferrer">
+              {label} <ExternalLink size={12} />
             </a>
           ))}
         </div>
-      </Section>
+      </div>
+      <div className="pce-snapshot-grid">
+        {NETWORK_SNAPSHOT.map(({ label, value, detail, icon: Icon, color }) => (
+          <div key={label} className="pce-fact" style={{ ['--fact-color' as string]: color }}>
+            <Icon size={18} />
+            <small>{label}</small>
+            <strong>{value}</strong>
+            <span>{detail}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
 
-      <Section title="Frequently Asked Questions" icon={<Layers size={15} color={PINK} />} color={PINK} badge={`${FAQS.length} questions`}>
-        {FAQS.map(item => <FaqItem key={item.q} {...item} />)}
-      </Section>
+function ProjectCard({ item }: { item: Project }) {
+  return (
+    <details className="pce-project-card" style={{ ['--project-color' as string]: item.color }}>
+      <summary className="pce-project-summary">
+        <span className="pce-project-logo">
+          {item.logo ? <img src={item.logo} alt="" /> : item.name.slice(0, 1)}
+        </span>
+        <span className="pce-project-body">
+          <span className="pce-project-top">
+            <strong>{item.name}</strong>
+            <span className="pce-project-caret" aria-hidden="true">›</span>
+          </span>
+          <small>{item.tag}</small>
+        </span>
+      </summary>
+      <div className="pce-project-detail">
+        <em>{item.desc}</em>
+        <a href={item.url} target="_blank" rel="noopener noreferrer">
+          Open {item.name} <ExternalLink size={12} />
+        </a>
+      </div>
+    </details>
+  );
+}
+
+function LaneSection({ lane }: { lane: Lane }) {
+  const Icon = lane.icon;
+  return (
+    <section className="pce-lane" style={{ ['--lane-color' as string]: lane.color }}>
+      <div className="pce-lane-head">
+        <span><Icon size={18} /></span>
+        <div>
+          <small>{lane.kicker}</small>
+          <h2>{lane.title}</h2>
+        </div>
+      </div>
+      <div className="pce-project-grid">
+        {lane.items.map(item => (
+          <div key={item.name}>
+            <ProjectCard item={item} />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function InfoDropdown() {
+  return (
+    <details className="pce-info-dropdown">
+      <summary>
+        <span>
+          <BookOpen size={18} />
+          PulseChain reference, contracts, bridge notes, and setup details
+        </span>
+        <small>Open info</small>
+      </summary>
+      <div className="pce-info-body">
+        <section className="pce-info-panel">
+          <div className="pce-section-intro">
+            <span>Network settings</span>
+            <h2>Wallet setup reference.</h2>
+          </div>
+          <div className="pce-network-list">
+            {NETWORK_ROWS.map(([label, value]) => (
+              <div key={label}>
+                <span>{label}</span>
+                <code>{value}</code>
+                <CopyButton text={value} />
+              </div>
+            ))}
+          </div>
+          <div className="pce-link-row">
+            {QUICK_LINKS.map(([label, url]) => (
+              <a key={url} href={url} target="_blank" rel="noopener noreferrer">
+                {label} <ExternalLink size={12} />
+              </a>
+            ))}
+          </div>
+        </section>
+
+      </div>
+    </details>
+  );
+}
+
+export default function PulseChainCommunityPage() {
+  return (
+    <div className="pce-page">
+      <section className="pce-hero">
+        <div className="pce-hero-copy">
+          <span className="pce-eyebrow">Map and reference</span>
+          <h1>PulseChain Ecosystem</h1>
+          <p>
+            A clean map of core tokens, official routes, DEX liquidity, bridge paths, analytics, wallets, and tools.
+          </p>
+          <div className="pce-hero-actions">
+            <a href="https://app.pulsex.com" target="_blank" rel="noopener noreferrer">Open PulseX <ExternalLink size={13} /></a>
+            <a href="https://scan.pulsechain.com" target="_blank" rel="noopener noreferrer">Open Explorer <ExternalLink size={13} /></a>
+          </div>
+        </div>
+        <EcosystemMap />
+      </section>
+
+      <NetworkSnapshot />
+
+      <section className="pce-featured">
+        <div className="pce-section-intro">
+          <span>Official routes</span>
+          <h2>Start with the main rails.</h2>
+        </div>
+        <div className="pce-official-grid">
+          {OFFICIAL_PROJECTS.map(item => (
+            <div key={item.name}>
+              <ProjectCard item={item} />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <div className="pce-lanes">
+        {LANES.map(lane => (
+          <div key={lane.title}>
+            <LaneSection lane={lane} />
+          </div>
+        ))}
+      </div>
+
+      <InfoDropdown />
     </div>
   );
 }

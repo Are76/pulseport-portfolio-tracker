@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { 
-  Wallet as WalletIcon, 
+import {
+  Wallet as WalletIcon,
   Coins,
   Lock,
-  TrendingUp, 
-  TrendingDown, 
-  Plus, 
+  TrendingUp,
+  Plus,
   Trash2,
   Copy,
   ExternalLink,
@@ -22,7 +21,6 @@ import {
   Filter,
   Download,
   LayoutDashboard,
-  User,
   ArrowLeftRight,
   Settings,
   Eye,
@@ -39,13 +37,14 @@ import {
   Zap,
   BarChart2,
   Droplets,
+  Shield,
   Menu
 } from 'lucide-react';
-import { 
-  PieChart, 
-  Pie, 
-  Cell, 
-  ResponsiveContainer, 
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
   Tooltip as RechartsTooltip,
   AreaChart,
   Area,
@@ -62,8 +61,8 @@ import BridgeDashboardPage from './components/BridgeDashboardPage';
 import { format } from 'date-fns';
 import { createPublicClient, http, fallback, formatUnits, getAddress } from 'viem';
 import { cn } from './lib/utils';
-import { CHAINS, HEX_ABI, TOKENS, PULSEX_V2_PAIR_ABI, PULSEX_LP_PAIRS, PHEX_YIELD_PER_TSHARE, EHEX_YIELD_PER_TSHARE, PHEX_YIELD_BI_NUM, PHEX_YIELD_BI_DEN, EHEX_YIELD_BI_NUM, EHEX_YIELD_BI_DEN, FALLBACK_DESCRIPTIONS } from './constants';
-import type { Asset, Wallet, Chain, HexStake, LpPosition, FarmPosition, PortfolioSummary, HistoryPoint, Transaction } from './types';
+import { CHAINS, HEX_ABI, TOKENS, PULSEX_LP_PAIRS, PHEX_YIELD_PER_TSHARE, EHEX_YIELD_PER_TSHARE, PHEX_YIELD_BI_NUM, PHEX_YIELD_BI_DEN, EHEX_YIELD_BI_NUM, EHEX_YIELD_BI_DEN, FALLBACK_DESCRIPTIONS } from './constants';
+import type { Asset, Wallet, Chain, HexStake, LpPosition, FarmPosition, HistoryPoint, Transaction } from './types';
 import { LiquidityOverviewStrip, LiquiditySection } from './components/LiquiditySection';
 import { TokenPnLCard } from './components/TokenPnLCard';
 import { PnLModal } from './components/PnLModal';
@@ -112,7 +111,7 @@ const MOCK_HISTORY: HistoryPoint[] = Array.from({ length: 30 }, (_, i) => {
   const baseValue = 8000;
   const randomFluc = Math.sin(i * 0.5) * 500 + (Math.random() * 200);
   const value = baseValue + randomFluc + (i * 50);
-  
+
   // Mock chain PNLs
   const chainPnl: Record<Chain, number> = {
     pulsechain: randomFluc * 0.6 + (Math.random() * 100 - 50),
@@ -129,156 +128,6 @@ const MOCK_HISTORY: HistoryPoint[] = Array.from({ length: 30 }, (_, i) => {
   };
 });
 
-// --- Bridge Activity helpers --------------------------------------------------
-/** Groups bridge activities by calendar date (e.g. "Apr 12, 2026"), newest date first. */
-function groupByDate(bridgeActivities: Transaction[]): Record<string, Transaction[]> {
-  const groups = new Map<string, Transaction[]>();
-  const sorted = [...bridgeActivities].sort((a, b) => b.timestamp - a.timestamp);
-
-  sorted.forEach((activity) => {
-    const dateKey = new Date(activity.timestamp).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-    const bucket = groups.get(dateKey) ?? [];
-    bucket.push(activity);
-    groups.set(dateKey, bucket);
-  });
-
-  return Object.fromEntries(groups.entries());
-}
-
-function fmtTxAmt(n: number): string {
-  const a = Math.abs(n);
-  if (a >= 1e9) return `${(a / 1e9).toFixed(2)}B`;
-  if (a >= 1e6) return `${(a / 1e6).toFixed(2)}M`;
-  if (a >= 1e3) return `${(a / 1e3).toFixed(1)}K`;
-  return a.toLocaleString(undefined, { maximumFractionDigits: 4 });
-}
-
-const BRIDGE_CHAIN_COLORS: Record<string, string> = {
-  pulsechain: '#9b5de5',
-  ethereum: '#627EEA',
-  base: '#0052FF',
-};
-
-type BridgeTimelineEventProps = {
-  key?: React.Key;
-  tx: Transaction;
-  matchedAsset?: Asset;
-  logoUrl?: string;
-  themeCardColor: string;
-  hidden: boolean;
-  isSelected: boolean;
-  tokenTransactions: Transaction[];
-  plsPriceUsd: number;
-  onSelect: (tx: Transaction, asset?: Asset) => void;
-  onToggleHide: (id: string) => void;
-  onSyncSwaps?: () => void;
-  isSyncing?: boolean;
-};
-
-function BridgeTimelineEvent({
-  tx,
-  matchedAsset,
-  logoUrl,
-  themeCardColor,
-  hidden,
-  isSelected,
-  tokenTransactions,
-  plsPriceUsd,
-  onSelect,
-  onToggleHide,
-  onSyncSwaps,
-  isSyncing,
-}: BridgeTimelineEventProps) {
-  const isDeposit = tx.type === 'deposit';
-  const isSwap = tx.type === 'swap';
-  const dotColor = isDeposit ? 'var(--accent)' : isSwap ? '#8b5cf6' : '#f97316';
-  const chainColor = BRIDGE_CHAIN_COLORS[tx.chain] || '#888';
-  const chainLabel = tx.chain === 'pulsechain' ? 'PulseChain' : tx.chain === 'ethereum' ? 'Ethereum' : 'Base';
-  const timeStr = new Date(tx.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-  const usdVal = tx.valueUsd ?? 0;
-  const fromChain = tx.type === 'withdraw' ? chainLabel : (tx.type === 'swap' ? chainLabel : 'External');
-  const toChain = tx.type === 'deposit' ? chainLabel : (tx.type === 'swap' ? chainLabel : 'External');
-
-  return (
-    <div className="bridge-timeline-event">
-      <div className="bridge-timeline-dot" style={{ background: dotColor, borderColor: themeCardColor }} />
-      <div className={`bridge-event-card${hidden ? ' bridge-event-card--hidden' : ''}`} onClick={() => onSelect(tx, matchedAsset)}>
-        <div className="bridge-event-head">
-          <div className="bridge-event-logo">
-            {logoUrl
-              ? <img src={logoUrl} alt={tx.asset} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-              : tx.asset[0]}
-          </div>
-          <span className="bridge-event-asset">{tx.asset}</span>
-          <div className="bridge-event-type-icon" style={{ background: `${dotColor}1a`, borderColor: `${dotColor}44` }}>
-            {isDeposit ? <ArrowDownLeft size={10} style={{ color: dotColor }} /> : isSwap ? <ArrowLeftRight size={10} style={{ color: dotColor }} /> : <ArrowUpRight size={10} style={{ color: dotColor }} />}
-          </div>
-          <span className="bridge-event-chain-chip" style={{ background: `${chainColor}18`, color: chainColor, borderColor: `${chainColor}33` }}>
-            {chainLabel}
-          </span>
-          <span className="bridge-event-time">{timeStr}</span>
-        </div>
-
-        <div className="bridge-event-flow">
-          <div className="bridge-event-flow-row">
-            <span className="bridge-event-flow-label">Chain</span>
-            <span className="bridge-event-flow-value">{fromChain} <ArrowRight size={10} /> {toChain}</span>
-          </div>
-          <div className="bridge-event-flow-row">
-            <span className="bridge-event-flow-label">Asset</span>
-            <span className="bridge-event-flow-value">
-              {isSwap ? `${fmtTxAmt(tx.counterAmount ?? 0)} ${tx.counterAsset} -> ${fmtTxAmt(tx.amount)} ${tx.asset}` : `${isDeposit ? '+' : '-'}${fmtTxAmt(tx.amount)} ${tx.asset}`}
-            </span>
-          </div>
-        </div>
-
-        <div className="bridge-event-footer">
-          {usdVal > 0 && (
-            <span className="bridge-event-usd">${usdVal.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
-          )}
-          <button
-            onClick={e => { e.stopPropagation(); onToggleHide(tx.id); }}
-            title={hidden ? 'Show' : 'Hide'}
-            className="bridge-event-icon-btn"
-          >
-            <EyeOff size={11} />
-          </button>
-          {tx.hash && tx.hash.length > 6 && (
-            <a
-              href={tx.chain === 'pulsechain' ? `https://scan.pulsechain.com/tx/${tx.hash}` : tx.chain === 'base' ? `https://basescan.org/tx/${tx.hash}` : `https://etherscan.io/tx/${tx.hash}`}
-              target="_blank" rel="noopener noreferrer"
-              onClick={e => e.stopPropagation()}
-              title="View on explorer"
-              className="bridge-event-icon-btn"
-            >
-              <ExternalLink size={11} />
-            </a>
-          )}
-        </div>
-      </div>
-
-      {isSelected && matchedAsset && (
-        <div className="bridge-event-pnl">
-          <TokenPnLCard
-            symbol={matchedAsset.symbol}
-            transactions={tokenTransactions}
-            asset={matchedAsset}
-            priceUsd={matchedAsset.price ?? 0}
-            plsPriceUsd={plsPriceUsd}
-            logoUrl={logoUrl}
-            onSyncSwaps={onSyncSwaps}
-            isSyncing={isSyncing}
-          />
-        </div>
-      )}
-    </div>
-  );
-}
-
 const MOCK_WALLET = '0xdemo0000000000000000000000000000000001';
 const MOCK_TRANSACTIONS: Transaction[] = [
   { id: 'm1', hash: '0x123...', timestamp: Date.now() - 86400000 * 2, type: 'deposit', from: '0xabc...', to: MOCK_WALLET, asset: 'ETH', amount: 1.5, chain: 'ethereum', valueUsd: 5175 },
@@ -292,16 +141,9 @@ const MOCK_TRANSACTIONS: Transaction[] = [
   { id: 'm7', hash: '0x999...', timestamp: Date.now() - 86400000 * 0.5, type: 'deposit', from: '0x123...', to: MOCK_WALLET, asset: 'USDC', amount: 25000, chain: 'ethereum', valueUsd: 25000 },
 ];
 
-const fP = (n: number) => {
-  if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
-  if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
-  if (n >= 1e3) return (n / 1e3).toFixed(2) + 'K';
-  return n.toFixed(0);
-};
-
 const PriceDisplay = ({ price, className }: { price: number, className?: string }) => {
   if (price === 0) return <span className={className}>$0.00</span>;
-  
+
   // Handle very small prices with subscript for zeros
   if (price < 0.0001 && price > 0) {
     const priceStr = price.toFixed(12);
@@ -316,12 +158,12 @@ const PriceDisplay = ({ price, className }: { price: number, className?: string 
       );
     }
   }
-  
+
   return (
     <span className={cn("font-mono", className)}>
-      ${price.toLocaleString(undefined, { 
-        minimumFractionDigits: 2, 
-        maximumFractionDigits: price < 1 ? 6 : 2 
+      ${price.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: price < 1 ? 6 : 2
       })}
     </span>
   );
@@ -353,6 +195,26 @@ function readStoredJSON<T>(key: string, fallback: T): T {
   } catch {
     return fallback;
   }
+}
+
+function isNoContractDataError(error: unknown): boolean {
+  const err = error as { shortMessage?: string; message?: string; details?: string; name?: string; cause?: unknown };
+  const cause = err?.cause as { shortMessage?: string; message?: string; details?: string; name?: string } | undefined;
+  const text = [
+    err?.name,
+    err?.shortMessage,
+    err?.message,
+    err?.details,
+    cause?.name,
+    cause?.shortMessage,
+    cause?.message,
+    cause?.details,
+  ].filter(Boolean).join(' ').toLowerCase();
+
+  return text.includes('returned no data')
+    || text.includes('contractfunctionzerodataerror')
+    || text.includes('abidecodingzerodataerror')
+    || text.includes('function may not exist');
 }
 
 // -- StakingLadder -------------------------------------------------------------
@@ -618,6 +480,8 @@ function decodeLibertySwapInput(input: string): { dstChainId: number; orderId: s
 type ActiveTab = 'home' | 'overview' | 'assets' | 'stakes' | 'history' | 'tracker' | 'wallets' | 'defi' | 'pulsechain-official' | 'pulsechain-community' | 'bridge';
 const ACTIVE_TABS: ActiveTab[] = ['home', 'overview', 'assets', 'stakes', 'history', 'tracker', 'defi', 'pulsechain-official', 'pulsechain-community', 'bridge'];
 const ACTIVE_TAB_STORAGE_KEY = 'pulseport_active_tab';
+type FrontMarketPeriod = '5m' | '1h' | '6h' | '24h' | '7d';
+const FRONT_MARKET_PERIODS: FrontMarketPeriod[] = ['5m', '1h', '6h', '24h', '7d'];
 
 const readStoredActiveTab = (): ActiveTab => {
   if (typeof window === 'undefined') return 'home';
@@ -629,9 +493,9 @@ const readStoredActiveTab = (): ActiveTab => {
 export default function App() {
   // -- Formatting helpers (defined once here, used throughout) ----------------
   const fmtBigNum = (n: number) => Math.round(n).toLocaleString('en-US').replace(/,/g, ' ');
-  const fmtDec = (n: number, dp = 2) => n.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp });
-  const fmtTok = (n: number) => n > 1e6 ? `${(n/1e6).toFixed(2)}M` : n > 1000 ? `${(n/1000).toFixed(2)}K` : n.toLocaleString(undefined, { maximumFractionDigits: 4 });
-  const fmtCompact = (n: number) => n >= 1e9 ? `${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  const fmtDec = (n: number, dp = 2) => n.toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp });
+  const fmtTok = (n: number) => n > 1e6 ? `${(n/1e6).toFixed(2)}M` : n > 1000 ? `${(n/1000).toFixed(2)}K` : n.toLocaleString('en-US', { maximumFractionDigits: 4 });
+  const fmtCompact = (n: number) => n >= 1e9 ? `${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : n.toLocaleString('en-US', { maximumFractionDigits: 0 });
 
   // -- CSV Export helper ------------------------------------------------------
   const exportCSV = (filename: string, headers: string[], rows: (string | number)[][]) => {
@@ -703,7 +567,6 @@ export default function App() {
   const [historyRange, setHistoryRange] = useState<'1D' | '1W' | '1M'>('1M');
   const [txTypeFilter, setTxTypeFilter] = useState<string>('all');
   const [txAssetFilter, setTxAssetFilter] = useState<string>('all');
-  const [txChainFilter, setTxChainFilter] = useState<string>('all');
   const [txYearFilter, setTxYearFilter] = useState<string>('all');
   const [txCoinCategory, setTxCoinCategory] = useState<string>('all');
   const [viewAsYou, setViewAsYou] = useState(false);
@@ -722,6 +585,7 @@ export default function App() {
   });
   const [showHiddenCoins, setShowHiddenCoins] = useState(false);
   const [coinVisibilityMenuOpen, setCoinVisibilityMenuOpen] = useState(false);
+  const [frontMarketPeriod, setFrontMarketPeriod] = useState<FrontMarketPeriod>('24h');
   const [priceChangePeriod, setPriceChangePeriod] = useState<'1h' | '6h' | '24h' | '7d'>('24h');
   const [assetSortField, setAssetSortField] = useState<'value' | 'change'>('value');
   const [assetSortDir, setAssetSortDir] = useState<'desc' | 'asc'>('desc');
@@ -915,12 +779,12 @@ export default function App() {
   useEffect(() => {
     if (wallets.length > 0) {
       fetchPortfolio();
-      
+
       // Auto-refresh every 30 seconds
       const interval = setInterval(() => {
         fetchPortfolio();
       }, 30000);
-      
+
       return () => clearInterval(interval);
     }
   }, [wallets]);
@@ -988,7 +852,7 @@ export default function App() {
           console.warn('simple/price fallback also failed');
         }
       }
-      
+
       // 1b. Fetch PulseChain prices from on-chain LP reserves (authoritative source per skill doc)
       // Uses getReserves() on PulseX V2 LP pairs - more reliable than subgraph which can lag/rate-limit
       try {
@@ -1161,10 +1025,10 @@ export default function App() {
           return await fn();
         } catch (e: any) {
           const errMsg = e.message?.toLowerCase() || '';
-          const shouldRetry = 
+          const shouldRetry =
             retries > 0 && (
-              errMsg.includes('rate limit') || 
-              errMsg.includes('429') || 
+              errMsg.includes('rate limit') ||
+              errMsg.includes('429') ||
               errMsg.includes('request failed') ||
               errMsg.includes('internal error') ||
               errMsg.includes('timeout') ||
@@ -1447,7 +1311,7 @@ export default function App() {
 
               const nativePrice = fetchedPrices['ethereum']?.usd || 0;
 
-              // Build Liberty Swap metadata map: tx hash → bridge data
+              // Build Liberty Swap metadata map: tx hash -> bridge data
               const libertySwapMap = new Map<string, { dstChainId: number; orderId: string }>();
 
               bsTxs.forEach((tx: any) => {
@@ -1619,7 +1483,7 @@ export default function App() {
                 const symbol = tx.tokenSymbol || 'TOKEN';
                 const decimals = Number(tx.tokenDecimal) || 18;
                 const contractAddr = tx.contractAddress.toLowerCase();
-                
+
                 const assetName = symbol;
                 const isBridged = false;
                 // Look up coinGeckoId from the hardcoded TOKENS list first (e.g. USDC -> 'usd-coin',
@@ -1648,7 +1512,7 @@ export default function App() {
 
                 const isHardcoded = TOKENS[chainKey].some(t => t.address.toLowerCase() === contractAddr);
                 const isAlreadyDiscovered = discoveredTokens.some(t => t.address.toLowerCase() === contractAddr);
-                
+
                 if (!isHardcoded && !isAlreadyDiscovered) {
                   // Spam: URL in name/symbol, or tiny airdrop amount (~10 tokens) with no price
                   const hasUrlPattern = /\.(io|com|net|org|xyz|finance|app|pro|gg)\b/i.test(assetName + ' ' + symbol);
@@ -1800,7 +1664,8 @@ export default function App() {
                 balance = BigInt(data as any);
               }
             } catch (e) {
-              console.warn(`Could not fetch balance for ${token.symbol} on ${chainKey}:`, e);
+              if (isNoContractDataError(e)) return;
+              if (import.meta.env.DEV) console.debug(`Could not fetch balance for ${token.symbol} on ${chainKey}:`, e);
               return;
             }
 
@@ -1894,11 +1759,17 @@ export default function App() {
 
             try {
               const hexAddr = getAddress(chainConfig.hexAddress);
+              // PulseChain stake reads are critical for the HEX dashboard. Use the
+              // primary RPC directly here so fallback ranking never lands on a
+              // partially-compatible endpoint for HEX contract reads.
+              const stakeClient = chainKey === 'pulsechain'
+                ? createPublicClient({ transport: http(chainConfig.rpc) })
+                : client;
 
               // Fetch stakeCount and currentDay in separate try/catch so one bad RPC
               // call cannot kill the other - they are independent contract reads.
               try {
-                hexStakeCount = await withRetry(() => client.readContract({
+                hexStakeCount = await withRetry(() => stakeClient.readContract({
                   address: hexAddr, abi: HEX_ABI, functionName: 'stakeCount', args: [address],
                 } as any)) as bigint;
               } catch (e: any) {
@@ -1906,7 +1777,7 @@ export default function App() {
               }
 
               try {
-                hexCurrentDay = await withRetry(() => client.readContract({
+                hexCurrentDay = await withRetry(() => stakeClient.readContract({
                   address: hexAddr, abi: HEX_ABI, functionName: 'currentDay',
                 } as any)) as bigint;
               } catch (e: any) {
@@ -1917,7 +1788,7 @@ export default function App() {
                 // Use Promise.allSettled so a single bad index never aborts the whole batch
                 const stakeResults = await Promise.allSettled(
                   Array.from({ length: Number(hexStakeCount) }, (_, i) =>
-                    withRetry(() => client.readContract({
+                    withRetry(() => stakeClient.readContract({
                       address: hexAddr, abi: HEX_ABI, functionName: 'stakeLists',
                       args: [address, BigInt(i)],
                     } as any))
@@ -2042,7 +1913,13 @@ export default function App() {
       }
 
       setRealAssets(Object.values(assetMap).sort((a, b) => b.value - a.value));
-      setRealStakes(allStakes);
+      setRealStakes(prev => {
+        if (allStakes.length > 0) return allStakes;
+        if (wallets.length === 0) return allStakes;
+        const walletSet = new Set(wallets.map(w => w.address.toLowerCase()));
+        const cachedForCurrentWallets = prev.filter(stake => walletSet.has((stake.walletAddress || '').toLowerCase()));
+        return cachedForCurrentWallets.length > 0 ? cachedForCurrentWallets : allStakes;
+      });
 
       // Build per-wallet asset arrays
       const newWalletAssets: Record<string, Asset[]> = {};
@@ -2332,7 +2209,7 @@ export default function App() {
       setWalletFormError('Enter a valid EVM wallet address (0x...).');
       return;
     }
-    
+
     // Prevent duplicate wallets
     if (wallets.some(w => w.address.toLowerCase() === checksummedAddress.toLowerCase())) {
       setWalletFormError('This wallet has already been added.');
@@ -2420,7 +2297,7 @@ export default function App() {
       ? (activeWalletKey ? (walletAssets[activeWalletKey] || []) : realAssets)
       : MOCK_ASSETS;
     const assetsWithCustom = [...baseAssets];
-    
+
     customCoins.forEach(coin => {
       assetsWithCustom.push({
         id: coin.id,
@@ -2533,16 +2410,21 @@ export default function App() {
 
   const filteredTransactions = useMemo(() => {
     return currentTransactions.filter(tx => {
+      if (tx.chain !== 'pulsechain') return false;
       const walletKey = selectedWalletAddr.toLowerCase();
       const matchesWallet = walletKey === 'all' ||
         tx.from?.toLowerCase() === walletKey ||
         tx.to?.toLowerCase() === walletKey ||
         (tx as any).walletAddress?.toLowerCase?.() === walletKey;
-      const matchesType = txTypeFilter === 'all' || tx.type === txTypeFilter;
+      const matchesType = txTypeFilter === 'all' ||
+        (txTypeFilter === 'swap'
+          ? tx.type === 'swap' || tx.swapLegOnly
+          : txTypeFilter === 'withdraw'
+            ? tx.type === 'withdraw' && !tx.swapLegOnly
+            : tx.type === txTypeFilter);
       const matchesAsset = txAssetFilter === 'all' ||
         sameAssetSymbol(tx.asset, txAssetFilter, tx.chain) ||
         sameAssetSymbol(tx.counterAsset ?? '', txAssetFilter, tx.chain);
-      const matchesChain = txChainFilter === 'all' || tx.chain === txChainFilter;
       // Year filter
       const txYear = new Date(tx.timestamp).getFullYear().toString();
       const matchesYear = txYearFilter === 'all' || txYear === txYearFilter;
@@ -2561,9 +2443,46 @@ export default function App() {
       } else if (txCoinCategory === 'bridged') {
         matchesCoin = !!(tx as any).bridged;
       }
-      return matchesWallet && matchesType && matchesAsset && matchesChain && matchesYear && matchesCoin;
+      return matchesWallet && matchesType && matchesAsset && matchesYear && matchesCoin;
     });
-  }, [currentTransactions, selectedWalletAddr, txTypeFilter, txAssetFilter, txChainFilter, txYearFilter, txCoinCategory]);
+  }, [currentTransactions, selectedWalletAddr, txTypeFilter, txAssetFilter, txYearFilter, txCoinCategory]);
+
+  const holdingsPulsechainTransactions = useMemo(() => {
+    return currentTransactions.filter(tx => {
+      if (tx.chain !== 'pulsechain') return false;
+      const walletKey = selectedWalletAddr.toLowerCase();
+      const matchesWallet = walletKey === 'all' ||
+        tx.from?.toLowerCase() === walletKey ||
+        tx.to?.toLowerCase() === walletKey ||
+        (tx as any).walletAddress?.toLowerCase?.() === walletKey;
+      const matchesType = txTypeFilter === 'all' ||
+        (txTypeFilter === 'swap'
+          ? tx.type === 'swap' || tx.swapLegOnly
+          : txTypeFilter === 'withdraw'
+            ? tx.type === 'withdraw' && !tx.swapLegOnly
+            : tx.type === txTypeFilter);
+      const matchesAsset = txAssetFilter === 'all' ||
+        sameAssetSymbol(tx.asset, txAssetFilter, tx.chain) ||
+        sameAssetSymbol(tx.counterAsset ?? '', txAssetFilter, tx.chain);
+      const txYear = new Date(tx.timestamp).getFullYear().toString();
+      const matchesYear = txYearFilter === 'all' || txYear === txYearFilter;
+      const au = tx.asset.toUpperCase();
+      let matchesCoin = true;
+      if (txCoinCategory === 'stablecoins') {
+        matchesCoin = au.includes('USDC') || au.includes('USDT') || au.includes('DAI') ||
+                      au.includes('TETHER') || au.includes('USD COIN') || au.includes('USDBC');
+      } else if (txCoinCategory === 'eth_weth') {
+        matchesCoin = au === 'ETH' || au === 'WETH';
+      } else if (txCoinCategory === 'hex') {
+        matchesCoin = au === 'HEX' || au === 'EHEX' || au.includes('HEX');
+      } else if (txCoinCategory === 'pls_wpls') {
+        matchesCoin = au === 'PLS' || au === 'WPLS';
+      } else if (txCoinCategory === 'bridged') {
+        matchesCoin = !!(tx as any).bridged;
+      }
+      return matchesWallet && matchesType && matchesAsset && matchesYear && matchesCoin;
+    });
+  }, [currentTransactions, selectedWalletAddr, txTypeFilter, txAssetFilter, txYearFilter, txCoinCategory]);
 
   const summary = useMemo(() => {
     const assets = currentAssets;
@@ -2587,11 +2506,11 @@ export default function App() {
 
     const totalValue = liquidValue + stakingValueUsd;
     const totalPnl = assets.reduce((acc, curr) => acc + (curr.value * (curr.pnl24h || 0) / 100), 0);
-    
+
     const distribution: Record<Chain, number> = { pulsechain: 0, ethereum: 0, base: 0 };
     const chainPnlUsd: Record<Chain, number> = { pulsechain: 0, ethereum: 0, base: 0 };
     const chainPnlPercent: Record<Chain, number> = { pulsechain: 0, ethereum: 0, base: 0 };
-    
+
     assets.forEach(a => {
       if (a.chain in distribution) {
         distribution[a.chain] += a.value;
@@ -2705,7 +2624,7 @@ export default function App() {
     let realizedPnl = 0;
 
     // Sort transactions by date to track cost basis chronologically
-    const sortedTxs = [...currentTransactions].sort((a, b) => 
+    const sortedTxs = [...currentTransactions].sort((a, b) =>
       new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
 
@@ -2888,12 +2807,12 @@ export default function App() {
   const receivedAssetsData = useMemo(() => {
     const START_2021 = new Date('2021-01-01').getTime();
     const ethPrice = prices['ethereum']?.usd || 3400;
+    const effectiveReceivedChainFilter = receivedChainFilter === 'pulsechain' ? 'all' : receivedChainFilter;
 
     const filtered = currentTransactions.filter(tx => {
       const typeMatch = tx.type === 'deposit' || (tx.type as string) === 'receive';
-      const chainMatch = receivedChainFilter === 'all'
-        ? (tx.chain === 'ethereum' || tx.chain === 'base' || tx.chain === 'pulsechain')
-        : tx.chain === receivedChainFilter;
+      const allowedBridgeChain = tx.chain === 'ethereum' || tx.chain === 'base';
+      const chainMatch = allowedBridgeChain && (effectiveReceivedChainFilter === 'all' || tx.chain === effectiveReceivedChainFilter);
       const dateMatch = tx.timestamp >= START_2021;
       const assetUpper = tx.asset.toUpperCase();
       const assetMatch = assetUpper === 'ETH' ||
@@ -3250,7 +3169,7 @@ export default function App() {
     if (p < 0.001)   return `$${p.toFixed(8)}`;
     if (p < 0.01)    return `$${p.toFixed(6)}`;
     if (p < 1)       return `$${p.toFixed(4)}`;
-    return `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+    return `$${p.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
   };
 
   const fmtMarket = (v?: number | null) =>
@@ -3260,6 +3179,14 @@ export default function App() {
     v >= 1e6 ? `$${(v/1e6).toFixed(2)}M` :
     v >= 1e3 ? `$${(v/1e3).toFixed(1)}K` :
     `$${v.toFixed(0)}`;
+
+  const getFrontMarketChange = (marketData: any, priceData: any, asset?: Asset | null): number | null => {
+    if (frontMarketPeriod === '5m') return marketData?.priceChange5m ?? null;
+    if (frontMarketPeriod === '1h') return marketData?.priceChange1h ?? priceData?.usd_1h_change ?? asset?.priceChange1h ?? null;
+    if (frontMarketPeriod === '6h') return marketData?.priceChange6h ?? null;
+    if (frontMarketPeriod === '7d') return marketData?.priceChange7d ?? priceData?.usd_7d_change ?? asset?.priceChange7d ?? null;
+    return marketData?.priceChange24h ?? priceData?.usd_24h_change ?? asset?.priceChange24h ?? asset?.pnl24h ?? null;
+  };
 
   type PortfolioPriceCard = {
     id: string;
@@ -3306,7 +3233,11 @@ export default function App() {
             volume24h: sorted.reduce((s: number, p: any) => s + (p.volume?.h24 || 0), 0),
             marketCap: top?.marketCap || null,
             fdv: top?.fdv || null,
+            priceChange5m: top?.priceChange?.m5 ?? null,
+            priceChange1h: top?.priceChange?.h1 ?? null,
+            priceChange6h: top?.priceChange?.h6 ?? null,
             priceChange24h: top?.priceChange?.h24 ?? null,
+            priceChange7d: top?.priceChange?.d7 ?? null,
           },
         }));
       } catch { /* ignore */ }
@@ -3327,14 +3258,14 @@ export default function App() {
         symbol: token.symbol,
         name: token.name,
         price: md?.usd || heldAsset?.price || 0,
-        change24h: liveMarketData?.priceChange24h ?? md?.usd_24h_change ?? heldAsset?.priceChange24h ?? null,
+        change24h: getFrontMarketChange(liveMarketData, md, heldAsset),
         marketCap: liveMarketData?.marketCap ?? liveMarketData?.fdv ?? null,
         volume24h: liveMarketData?.volume24h ?? null,
         accent: token.accent,
         logo: token.logo,
       };
     });
-  }, [coreLiveTokens, currentAssets, prices, tokenMarketData]);
+  }, [coreLiveTokens, currentAssets, prices, tokenMarketData, frontMarketPeriod]);
 
   const frontPageGridTokens = useMemo<PortfolioPriceCard[]>(() => {
     const cards = new Map<string, PortfolioPriceCard>();
@@ -3357,7 +3288,7 @@ export default function App() {
           symbol: asset.symbol,
           name: asset.name || asset.chain,
           price: asset.price,
-          change24h: asset.priceChange24h ?? asset.pnl24h ?? null,
+          change24h: getFrontMarketChange(tokenMarketData[asset.id], null, asset),
           marketCap: tokenMarketData[asset.id]?.marketCap ?? tokenMarketData[asset.id]?.fdv ?? null,
           volume24h: tokenMarketData[asset.id]?.volume24h ?? null,
           accent: `linear-gradient(90deg, ${chainColor}, rgba(0,255,159,0.85))`,
@@ -3366,7 +3297,7 @@ export default function App() {
       });
 
     return [...cards.values()].slice(0, 9);
-  }, [topHoldingCards, currentAssets, tokenMarketData, tokenLogos]);
+  }, [topHoldingCards, currentAssets, tokenMarketData, tokenLogos, frontMarketPeriod]);
 
   const frontPagePortfolioRows = useMemo(() => {
     const assets = currentAssets.length > 0 ? currentAssets : MOCK_ASSETS;
@@ -3528,13 +3459,13 @@ export default function App() {
           {([
             { id: 'home', label: 'Home', icon: Activity },
             { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-            { id: 'assets',   label: 'Holdings',           icon: Coins },
+            { id: 'assets',   label: 'Wallet',             icon: Coins },
             { id: 'stakes',   label: 'HEX Stakes',         icon: Lock },
             { id: 'defi',     label: 'DeFi Positions',     icon: Droplets },
-            { id: 'history',  label: 'Bridge Activity', icon: History },
+            { id: 'history',  label: 'Transaction',         icon: History },
             { id: 'pulsechain-official', label: 'PulseChain', icon: Zap },
-            { id: 'pulsechain-community', label: 'Ecosystem', icon: Layers },
-            { id: 'bridge', label: 'Bridge', icon: ArrowLeftRight },
+            { id: 'pulsechain-community', label: 'PulseChain Ecosystem', icon: Layers },
+            { id: 'bridge', label: 'PulseChain Bridge', icon: ArrowLeftRight },
           ] as const).map(({ id, label, icon: Icon }) => {
             const isDefi = id === 'defi';
             const isActive = activeTab === id;
@@ -3588,6 +3519,32 @@ export default function App() {
           </button>
           {sidebarWalletsOpen && (
             <div style={{ paddingBottom: 8 }}>
+              {wallets.length > 0 && (
+                <button
+                  onClick={() => {
+                    setSelectedWalletAddr('all');
+                    setActiveWallet(null);
+                    setActiveTab('wallets');
+                    setSidebarOpen(false);
+                  }}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '7px 10px', borderRadius: 8,
+                    background: selectedWalletAddr === 'all' && activeWallet === null ? 'var(--accent-dim)' : 'transparent',
+                    border: `1px solid ${selectedWalletAddr === 'all' && activeWallet === null ? 'var(--accent-border)' : 'transparent'}`,
+                    color: selectedWalletAddr === 'all' && activeWallet === null ? 'var(--accent)' : 'var(--fg)',
+                    cursor: 'pointer', transition: 'all .12s', marginBottom: 4,
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, fontWeight: 700 }}>
+                    <span className="wallet-dot wallet-dot-multi" />
+                    All wallets
+                  </span>
+                  <span style={{ fontSize: 10, color: 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace' }}>
+                    ${currentAssets.reduce((sum, asset) => sum + asset.value, 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                  </span>
+                </button>
+              )}
               <div className="overflow-y-auto custom-scrollbar" style={{ maxHeight: 180, padding: '2px 0', display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {wallets.map((w, wIdx) => {
                   const dotColors = ['#00FF9F','#f739ff','#627EEA','#f97316','#a855f7','#f59e0b'];
@@ -3596,7 +3553,7 @@ export default function App() {
                   const walletValue = (walletAssets[walletKey] || []).reduce((sum, asset) => sum + asset.value, 0);
                   return (
                     <div key={w.address}
-                      onClick={() => { setSelectedWalletAddr(w.address.toLowerCase()); setActiveWallet(w.address); setActiveTab('assets'); }}
+                      onClick={() => { setSelectedWalletAddr(w.address.toLowerCase()); setActiveWallet(w.address); setActiveTab('wallets'); setSidebarOpen(false); }}
                       style={{
                         padding: '7px 10px', borderRadius: 8,
                         background: isActive ? 'var(--accent-dim)' : 'transparent',
@@ -3614,7 +3571,7 @@ export default function App() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
                             <code style={{ fontSize: 10, color: 'var(--fg-muted)' }}>{w.address.slice(0,6)}...{w.address.slice(-4)}</code>
                             <span style={{ fontSize: 10, color: isActive ? 'var(--accent)' : 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace', whiteSpace: 'nowrap' }}>
-                              {walletValue > 0 ? `$${walletValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '$0'}
+                              {walletValue > 0 ? `$${walletValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '$0'}
                             </span>
                           </div>
                         </div>
@@ -3772,6 +3729,40 @@ export default function App() {
                     ))}
                   </div>
 
+                  <div className="front-hero-copy">
+                    <span className="front-eyebrow">PulsePort Live</span>
+                    <h1>{wallets.length > 0 ? 'Portfolio command center.' : 'Track PulseChain without the noise.'}</h1>
+                    <p>
+                      {wallets.length > 0
+                        ? 'Wallet value, HEX stakes, DeFi positions, transactions, and live PulseChain market data in one compact dashboard.'
+                        : 'Add a wallet to connect holdings, stakes, liquidity, and transactions with live market context.'}
+                    </p>
+                    <div className="front-hero-metrics">
+                      <div>
+                        <span>Total Value</span>
+                        <strong>${summary.totalValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong>
+                      </div>
+                      <div>
+                        <span>24h Move</span>
+                        <strong className={summary.pnl24h >= 0 ? 'is-up' : 'is-down'}>
+                          {summary.pnl24h >= 0 ? '+' : '-'}${Math.abs(summary.pnl24h).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                        </strong>
+                      </div>
+                      <div>
+                        <span>Wallets</span>
+                        <strong>{wallets.length}</strong>
+                      </div>
+                    </div>
+                    <div className="front-actions">
+                      <button className="btn-primary front-primary-action" onClick={() => wallets.length > 0 ? setActiveTab('overview') : setIsAddingWallet(true)}>
+                        {wallets.length > 0 ? 'Open Overview' : 'Add Wallet'} <ArrowRight size={15} />
+                      </button>
+                      <button className="btn-ghost front-secondary-action" onClick={() => setActiveTab('wallets')}>
+                        Wallets <WalletIcon size={14} />
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="front-market-board">
                     <form
                       className="front-search-shell"
@@ -3784,7 +3775,8 @@ export default function App() {
                       <input
                         value={homeSearch}
                         onChange={(e) => setHomeSearch(e.target.value)}
-                        placeholder="Search by Coin / Block / Transaction"
+                        aria-label="Search by coin, block, or transaction"
+                        placeholder="Search coin, block, or transaction..."
                       />
                       <button type="submit">Search</button>
                     </form>
@@ -3792,8 +3784,15 @@ export default function App() {
                     <div className="front-market-kicker">
                       <strong>Day 1071</strong>
                       <div className="front-time-tabs">
-                        {['5m', '1h', '6h', '24h', '7d', '30d', '90d', 'ATL'].map(label => (
-                          <span key={label} className={label === 'ATL' ? 'active' : ''}>{label}</span>
+                        {FRONT_MARKET_PERIODS.map(label => (
+                          <button
+                            type="button"
+                            key={label}
+                            className={frontMarketPeriod === label ? 'active' : ''}
+                            onClick={() => setFrontMarketPeriod(label)}
+                          >
+                            {label}
+                          </button>
                         ))}
                       </div>
                     </div>
@@ -3801,7 +3800,7 @@ export default function App() {
                     <div className="front-price-board-head">
                       <div>
                         <span>Live prices</span>
-                        <strong>PulseChain market grid</strong>
+                        <strong>PulseChain market</strong>
                       </div>
                       <button type="button" onClick={() => openMarketWatch('')}>
                         Open market watch <Activity size={14} />
@@ -3829,7 +3828,7 @@ export default function App() {
                           <span className="front-price-main">
                             <strong>{fmtPrice(token.price)}</strong>
                             <small className={(token.change24h ?? 0) >= 0 ? 'is-up' : 'is-down'}>
-                              {token.change24h == null ? 'Live' : `${token.change24h >= 0 ? '+' : ''}${token.change24h.toFixed(2)}% 24h`}
+                              {token.change24h == null ? 'Live' : `${token.change24h >= 0 ? '+' : ''}${token.change24h.toFixed(2)}% ${frontMarketPeriod}`}
                             </small>
                           </span>
                           <span className="front-price-footer">
@@ -3840,10 +3839,7 @@ export default function App() {
                       ))}
                     </div>
 
-                    <div className="front-actions">
-                      <button className="btn-primary front-primary-action" onClick={() => wallets.length > 0 ? setActiveTab('overview') : setIsAddingWallet(true)}>
-                        {wallets.length > 0 ? 'Open portfolio' : 'Track wallet'} <ArrowRight size={15} />
-                      </button>
+                    <div className="front-market-actions">
                       <button className="btn-ghost front-secondary-action" onClick={() => openMarketWatch('')}>
                         Market watch <Activity size={14} />
                       </button>
@@ -3880,12 +3876,12 @@ export default function App() {
                     <div className="front-value-row">
                       <div>
                         <span>Total value</span>
-                        <strong>${summary.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong>
+                        <strong>${summary.totalValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong>
                       </div>
                       <div>
                         <span>24h move</span>
                         <strong className={summary.pnl24h >= 0 ? 'is-up' : 'is-down'}>
-                          {summary.pnl24h >= 0 ? '+' : '-'}${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                          {summary.pnl24h >= 0 ? '+' : '-'}${Math.abs(summary.pnl24h).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                         </strong>
                       </div>
                     </div>
@@ -3900,7 +3896,7 @@ export default function App() {
                               <small>{asset.chain}</small>
                             </span>
                             <span>
-                              <strong>${asset.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong>
+                              <strong>${asset.value.toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong>
                               <small className={(asset.pnl24h ?? asset.priceChange24h ?? 0) >= 0 ? 'is-up' : 'is-down'}>
                                 {(asset.pnl24h ?? asset.priceChange24h ?? 0) >= 0 ? '+' : ''}{(asset.pnl24h ?? asset.priceChange24h ?? 0).toFixed(2)}%
                               </small>
@@ -3939,7 +3935,7 @@ export default function App() {
                       {[
                         { label: 'HEX stakes', tab: 'stakes' as const, icon: Lock },
                         { label: 'DeFi positions', tab: 'defi' as const, icon: Droplets },
-                        { label: 'Activity', tab: 'history' as const, icon: History },
+                        { label: 'Transaction', tab: 'history' as const, icon: History },
                         { label: 'Wallets', tab: 'assets' as const, icon: WalletIcon },
                       ].map(({ label, tab, icon: Icon }) => (
                         <button key={label} onClick={() => setActiveTab(tab)}>
@@ -3951,190 +3947,12 @@ export default function App() {
                   </div>
                 </section>
 
-                <section className="front-section">
-                  <div className="front-section-head">
-                    <span>PulseChain guide</span>
-                    <h2>Make the dashboard teach the route, not just the price.</h2>
-                  </div>
-                  <div className="front-info-grid">
-                    {frontInfoCards.map(({ label, value, detail, action, href, icon: Icon, tab }) => (
-                      <button
-                        key={label}
-                        className="front-info-card"
-                        onClick={() => {
-                          if (tab) setActiveTab(tab);
-                          else if (href) window.open(href, '_blank', 'noopener,noreferrer');
-                        }}
-                        type="button"
-                      >
-                        <span className="front-info-icon"><Icon size={17} /></span>
-                        <span className="front-info-copy">
-                          <small>{label}</small>
-                          <strong>{value}</strong>
-                          <em>{detail}</em>
-                          <b>{action} {href && <ExternalLink size={12} />}</b>
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </section>
-
-                {/* ── Explore guide pages ── */}
-                <section className="front-section front-section-tight">
-                  <div className="front-section-head">
-                    <span>PulseChain deep-dive</span>
-                    <h2>Everything you need to know, in two pages.</h2>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
-                    {[
-                      {
-                        tab: 'pulsechain-official' as ActiveTab,
-                        accent: 'var(--accent)',
-                        dim: 'var(--accent-dim)',
-                        border: 'var(--accent-border)',
-                        eyebrow: 'Official',
-                        title: 'PulseChain',
-                        desc: 'Network config, Richard Heart, core tokens, official projects (HEX, PulseX, ProveX, Bridge), IPFS-verified app hashes, and desktop node setup.',
-                        cta: 'Open guide',
-                        items: ['Chain ID 369 · ~10s blocks', 'PLS, PLSX, HEX, INC, PRVX', 'IPFS-verified app hashes', 'Richard Heart founder bio'],
-                      },
-                      {
-                        tab: 'pulsechain-community' as ActiveTab,
-                        accent: '#f739ff',
-                        dim: 'rgba(247,57,255,0.08)',
-                        border: 'rgba(247,57,255,0.25)',
-                        eyebrow: 'Ecosystem',
-                        title: 'Community & Projects',
-                        desc: '80+ verified projects across DEXs, DeFi protocols, bridges, analytics, wallets, NFTs, and on/off ramps. Includes LibertySwap, PulseChainStats, and more.',
-                        cta: 'Explore ecosystem',
-                        items: ['7+ DEXs including PulseX & 9INCH', 'LibertySwap ZK privacy bridge', 'PulseChainStats analytics suite', 'NFTs, gaming & developer tools'],
-                      },
-                    ].map(({ tab, accent, dim, border, eyebrow, title, desc, cta, items }) => (
-                      <button
-                        key={tab}
-                        type="button"
-                        onClick={() => setActiveTab(tab)}
-                        style={{
-                          background: dim, border: `1px solid ${border}`, borderRadius: 14,
-                          padding: '20px 20px', textAlign: 'left', cursor: 'pointer',
-                          transition: 'all .15s', display: 'flex', flexDirection: 'column', gap: 12,
-                        }}
-                        onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = `${accent}18`; }}
-                        onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = dim; }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: accent, background: `${accent}18`, border: `1px solid ${accent}33`, padding: '2px 8px', borderRadius: 100 }}>{eyebrow}</span>
-                          <ChevronRight size={14} color={accent} />
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--fg)', marginBottom: 6 }}>{title}</div>
-                          <div style={{ fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.6 }}>{desc}</div>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          {items.map(item => (
-                            <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--fg-muted)' }}>
-                              <span style={{ color: accent, fontSize: 10 }}>✓</span>
-                              {item}
-                            </div>
-                          ))}
-                        </div>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: accent, display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                          {cta} <ArrowRight size={12} />
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </section>
-
-                {/* ── Ecosystem quick access ── */}
-                <section className="front-section front-section-tight">
-                  <div className="front-section-head">
-                    <span>Ecosystem directory</span>
-                    <h2>Key projects at a glance.</h2>
-                  </div>
-                  <div className="front-info-grid">
-                    {[
-                      {
-                        label: 'PulseX DEX',
-                        value: 'Swap & farm on PulseChain',
-                        detail: '0.29% fee — 76% to LPs, 21% burns PLSX. V1 and V2. Farm INC by staking LP tokens.',
-                        action: 'Open PulseX',
-                        href: 'https://app.pulsex.com/',
-                        icon: Droplets,
-                        tab: null,
-                      },
-                      {
-                        label: 'ProveX (PRVX)',
-                        value: "Richard Heart's latest project",
-                        detail: 'P2P crypto trading via ZK-proofs. Browser extension. No middlemen — every swap burns PRVX. Fixed supply.',
-                        action: 'Learn ProveX',
-                        href: null,
-                        icon: Zap,
-                        tab: 'pulsechain-official' as ActiveTab,
-                      },
-                      {
-                        label: 'LibertySwap',
-                        value: 'Privacy cross-chain bridge',
-                        detail: 'ZK-privacy bridge. Gasless mode. 0.3% fee, $10–$25K, ~2-3 min. Transaction data deleted after 48h.',
-                        action: 'Open LibertySwap',
-                        href: 'https://libertyswap.finance/',
-                        icon: ArrowLeftRight,
-                        tab: null,
-                      },
-                      {
-                        label: 'PulseChainStats',
-                        value: 'Full on-chain analytics',
-                        detail: 'Token intel, bridge stats, validator data, DEX volumes, HEX staking metrics, social intelligence. No paywall.',
-                        action: 'Open stats',
-                        href: 'https://pulsechainstats.com/',
-                        icon: BarChart2,
-                        tab: null,
-                      },
-                      {
-                        label: 'HEX Staking',
-                        value: 'Stake HEX, earn T-shares',
-                        detail: 'Lock HEX for 1–5555 days. T-shares earn daily pool interest. Longer + larger = more shares. Late stakes penalised.',
-                        action: 'View stakes',
-                        href: null,
-                        icon: Lock,
-                        tab: 'stakes' as ActiveTab,
-                      },
-                      {
-                        label: 'Ecosystem guide',
-                        value: '80+ verified projects',
-                        detail: 'DEXs, DeFi, bridges, wallets, NFT marketplaces, analytics tools, developer infrastructure, and community resources.',
-                        action: 'Explore ecosystem',
-                        href: null,
-                        icon: Layers,
-                        tab: 'pulsechain-community' as ActiveTab,
-                      },
-                    ].map(({ label, value, detail, action, href, icon: Icon, tab }) => (
-                      <button
-                        key={label}
-                        className="front-info-card"
-                        onClick={() => {
-                          if (tab) setActiveTab(tab);
-                          else if (href) window.open(href, '_blank', 'noopener,noreferrer');
-                        }}
-                        type="button"
-                      >
-                        <span className="front-info-icon"><Icon size={17} /></span>
-                        <span className="front-info-copy">
-                          <small>{label}</small>
-                          <strong>{value}</strong>
-                          <em>{detail}</em>
-                          <b>{action} {href && <ExternalLink size={12} />}</b>
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </section>
 
               </motion.div>
             )}
 
             {activeTab === 'overview' && (
-              <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4" style={{ width: '100%', minWidth: 1 }}>
+              <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="overview-page-shell space-y-4" style={{ width: '100%', minWidth: 1 }}>
 
                 {/* -- ONBOARDING -- */}
                 {wallets.length === 0 && (
@@ -4187,21 +4005,21 @@ export default function App() {
                            <div className="overview-kicker">Total Portfolio Value</div>
                            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap', marginBottom: 18 }}>
                              <div className="value-hero gradient-text-green">
-                               ${summary.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                               ${summary.totalValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                              </div>
                              <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingBottom: 6 }}>
                                <div className={`hero-change-pill ${summary.pnl24h >= 0 ? 'up' : 'down'}`}>
-                                 {summary.pnl24h >= 0 ? '+' : '-'}${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })} / {summary.pnl24h >= 0 ? '+' : '-'}{summary.pnl24hPercent.toFixed(2)}%
+                                 {summary.pnl24h >= 0 ? '+' : '-'}${Math.abs(summary.pnl24h).toLocaleString('en-US', { maximumFractionDigits: 0 })} / {summary.pnl24h >= 0 ? '+' : '-'}{summary.pnl24hPercent.toFixed(2)}%
                                </div>
-                               <div style={{ fontSize: 13, color: t.textSecondary }}>{summary.nativeValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</div>
+                               <div style={{ fontSize: 13, color: t.textSecondary }}>{summary.nativeValue.toLocaleString('en-US', { maximumFractionDigits: 0 })} PLS</div>
                              </div>
                            </div>
                            {/* Compact stats */}
                            <div style={{ height: 1, background: theme === 'dark' ? 'var(--border)' : 'rgba(0,0,0,.08)', margin: '18px 0 14px' }} />
                            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-                             <span style={{ fontSize: 12, color: t.textTertiary }}>Liquid: <span style={{ color: t.textSecondary, fontWeight: 600 }}>${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></span>
+                             <span style={{ fontSize: 12, color: t.textTertiary }}>Liquid: <span style={{ color: t.textSecondary, fontWeight: 600 }}>${summary.liquidValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span></span>
                              <span style={{ fontSize: 12, color: t.textMuted }}> - </span>
-                             <span style={{ fontSize: 12, color: t.textTertiary }}>Staked: <span style={{ color: t.textSecondary, fontWeight: 600 }}>${summary.stakingValueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></span>
+                             <span style={{ fontSize: 12, color: t.textTertiary }}>Staked: <span style={{ color: t.textSecondary, fontWeight: 600 }}>${summary.stakingValueUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span></span>
                              <span style={{ fontSize: 12, color: t.textMuted }}> - </span>
                              {wallets.length > 0 ? (() => {
                                const HEX_A = '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39';
@@ -4224,9 +4042,9 @@ export default function App() {
                            <div style={{ height: 1, background: 'var(--border)', margin: '16px 0 14px' }} />
                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }} className="max-sm:grid-cols-1">
                              {[
-                               { label: 'Total Invested', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '-', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? 'ETH + stablecoin inflows' : 'No ETH/stable inflows found', color: t.text,
+                               { label: 'Total Invested', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `$${Math.abs(summary.netInvestment).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '-', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? 'ETH + stablecoin inflows' : 'No ETH/stable inflows found', color: t.text,
                                  icon: <TrendingUp size={14} color={t.textMuted} />, iconBg: t.cardHigh, link: true },
-                               { label: 'Total P&L', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '-', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}${((summary.unifiedPnl / summary.netInvestment) * 100).toFixed(1)}% vs invested` : 'P&L % needs ETH/stable history', color: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? t.green : t.red) : t.text,
+                               { label: 'Total P&L', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '-', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}${((summary.unifiedPnl / summary.netInvestment) * 100).toFixed(1)}% vs invested` : 'P&L % needs ETH/stable history', color: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? t.green : t.red) : t.text,
                                  icon: <ArrowUpRight size={14} color={summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? t.green : t.red) : t.textMuted} />, iconBg: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? 'rgba(0,255,159,0.1)' : 'rgba(244,63,94,0.1)') : t.cardHigh, link: false },
                              ].map(({ label, val, sub, color, icon, iconBg, link }) => (
                                <div key={label} className="stat-card" onClick={link ? () => setActiveTab('history') : undefined}
@@ -4274,7 +4092,7 @@ export default function App() {
                              b >= 1e9 ? `${(b/1e9).toFixed(2)}B` :
                              b >= 1e6 ? `${(b/1e6).toFixed(2)}M` :
                              b >= 1e3 ? `${(b/1e3).toFixed(2)}K` :
-                             b.toLocaleString(undefined, { maximumFractionDigits: 2 });
+                             b.toLocaleString('en-US', { maximumFractionDigits: 2 });
                            const fmtVal = (v: number) =>
                              v >= 1e6 ? `$${(v/1e6).toFixed(2)}M` :
                              v >= 1e3 ? `$${(v/1e3).toFixed(2)}K` :
@@ -4289,6 +4107,8 @@ export default function App() {
                            return (
                              <div className="hero-holdings-wrap">
                                <div className="hero-holdings-panel overview-section-card">
+                                 {false && (
+                                  <>
                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
                                      <span className="overview-section-title">Top 7 Holdings</span>
@@ -4297,7 +4117,7 @@ export default function App() {
                                      )}
                                      {wallets.length > 0 && summary.liquidValue > 0 && (
                                        <span style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>
-                                          -  ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                          -  ${summary.liquidValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                                        </span>
                                      )}
                                    </div>
@@ -4342,6 +4162,8 @@ export default function App() {
                                    footerValueUsd={holdingAssets.reduce((sum, asset) => sum + asset.value, 0)}
                                    shareBaseUsd={summary.totalValue}
                                  />
+                                  </>
+                                 )}
                                  {false && (holdingAssets.length === 0 ? (
                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '28px 0', color: 'var(--fg-subtle)' }}>
                                      <WalletIcon size={28} style={{ opacity: 0.35 }} />
@@ -4527,7 +4349,7 @@ export default function App() {
                                 <span style={{ fontSize: 13, fontWeight: 600, color: t.textSecondary, textTransform: 'uppercase', letterSpacing: '.5px' }}>{b.label}</span>
                               </div>
                               <div style={{ fontSize: 22, fontWeight: 700, color: b.color, letterSpacing: '-0.5px' }}>{b.val}</div>
-                              {b.usd !== null && <div style={{ fontSize: 13, color: t.textSecondary, marginTop: 2 }}>${b.usd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>}
+                              {b.usd !== null && <div style={{ fontSize: 13, color: t.textSecondary, marginTop: 2 }}>${b.usd.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>}
                               <div style={{ fontSize: 13, color: t.textMuted, marginTop: 6 }}>{b.sub}</div>
                             </div>
                           ))}
@@ -4557,7 +4379,7 @@ export default function App() {
                                       <span style={{ fontSize: 12, fontWeight: 600, color: t.textSecondary }}>Total</span>
                                       <div style={{ textAlign: 'right' }}>
                                         <div style={{ fontSize: 14, fontWeight: 800, color: r.color, fontFamily: 'JetBrains Mono, monospace' }}>{fmtBigNum(r.total)}</div>
-                                        <div style={{ fontSize: 11, color: t.textMuted }}>${(r.total * r.usdPrice).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                                        <div style={{ fontSize: 11, color: t.textMuted }}>${(r.total * r.usdPrice).toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
                                       </div>
                                     </div>
                                   </div>
@@ -4676,7 +4498,7 @@ export default function App() {
                                 <YAxis width={54} fontSize={11} tickLine={false} axisLine={false} tick={{ fill: t.textSecondary }} tickFormatter={fmtYAxis} domain={[yMin - yPad, yMax + yPad]} />
                                 <RechartsTooltip
                                   contentStyle={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 13, color: t.text }}
-                                  formatter={(v: any) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Portfolio Value']}
+                                  formatter={(v: any) => [`$${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}`, 'Portfolio Value']}
                                   labelStyle={{ color: t.textSecondary, marginBottom: 4 }}
                                 />
                                 <Area type="monotone" dataKey="value" stroke="var(--accent)" fillOpacity={1} fill="url(#colorValue)" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: 'var(--accent)', strokeWidth: 0 }} />
@@ -4721,7 +4543,7 @@ export default function App() {
             )}
 
             {activeTab === 'assets' && (
-              <motion.div key="assets" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+              <motion.div key="assets" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {(() => {
                   const selectedScope = selectedWalletAddr === 'all' ? null : wallets.find(w => w.address.toLowerCase() === selectedWalletAddr);
                   const visibleWalletAssets = selectedScope ? (walletAssets[selectedWalletAddr] || []) : currentAssets;
@@ -4774,14 +4596,14 @@ export default function App() {
                     </div>
                   </div>
                   <div style={{ fontSize: 36, fontWeight: 800, color: 'var(--fg)', marginBottom: 16 }}>
-                    ${(selectedScope ? selectedTotalUsd : summary.totalValue).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    ${(selectedScope ? selectedTotalUsd : summary.totalValue).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                   </div>
                   <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
                     <span className="wallet-stat-pill-green">
-                      Liquid ${(selectedScope ? selectedLiquidUsd : summary.liquidValue).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      Liquid ${(selectedScope ? selectedLiquidUsd : summary.liquidValue).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                     </span>
                     <span style={{ background: 'rgba(239,68,68,0.12)', color: t.red, padding: '4px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: '1px solid rgba(239,68,68,0.20)' }}>
-                      Staking ${(selectedScope ? selectedStakingUsd : summary.stakingValueUsd).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      Staking ${(selectedScope ? selectedStakingUsd : summary.stakingValueUsd).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                     </span>
                     <span style={{ background: 'var(--bg-surface)', color: 'var(--fg-muted)', padding: '4px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: '1px solid var(--border)' }}>
                       {visibleWalletAssets.length} token{visibleWalletAssets.length !== 1 ? 's' : ''}
@@ -4810,7 +4632,7 @@ export default function App() {
                         >
                           <span className="wallet-dot" style={{ background: dotColor, boxShadow: `0 0 5px ${dotColor}bb` }} />
                           <span>{wallet.name || shortenAddr(wallet.address)}</span>
-                          <span style={{ color: 'var(--fg-subtle)', fontSize: 11 }}>${walletValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                          <span style={{ color: 'var(--fg-subtle)', fontSize: 11 }}>${walletValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
                         </button>
                       );
                     })}
@@ -4825,42 +4647,79 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="coin-visibility-panel">
-                  <div className="coin-visibility-copy">
-                    <span>Coin visibility</span>
-                    <strong>Wallet coins are auto-detected on refresh.</strong>
-                    <small>
-                      If a new buy is missing, refresh balances first. If it was hidden by accident, unhide it here or turn off Dust/Spam filters.
-                    </small>
-                  </div>
-                  <div className="coin-visibility-stats">
-                    <span>{hiddenTokens.length} hidden</span>
-                    <span>{customCoins.length} manual</span>
-                    <span>{hideDust ? 'Dust off' : 'Dust on'}</span>
-                    <span>{hideSpam ? 'Spam off' : 'Spam on'}</span>
-                  </div>
-                  <div className="coin-visibility-actions">
-                    <button type="button" onClick={fetchPortfolio}>
-                      <RefreshCcw size={13} className={isLoading ? 'animate-spin' : ''} />
-                      Refresh / detect
-                    </button>
-                    <button type="button" onClick={() => setShowHiddenCoins(v => !v)}>
-                      <Eye size={13} />
-                      Hidden coins
-                      {hiddenTokens.length > 0 && <span className="hidden-coins-count">{hiddenTokens.length}</span>}
-                    </button>
-                    <button type="button" className="coin-visibility-primary" onClick={() => setIsCustomCoinsModalOpen(true)}>
-                      <Plus size={13} />
-                      Add coin
-                    </button>
-                  </div>
+                <div className={`coin-visibility-panel${coinVisibilityMenuOpen ? ' is-open' : ''}`}>
+                  <button
+                    type="button"
+                    className="coin-visibility-trigger"
+                    onClick={() => setCoinVisibilityMenuOpen(v => !v)}
+                    aria-expanded={coinVisibilityMenuOpen}
+                  >
+                    <div className="coin-visibility-copy">
+                      <span>Coin visibility</span>
+                      <strong>Wallet coins are auto-detected on refresh.</strong>
+                      <small>
+                        Open filters, hidden coins, manual coins, and spam scan controls.
+                      </small>
+                    </div>
+                    <div className="coin-visibility-stats">
+                      <span>{hiddenTokens.length} hidden</span>
+                      <span>{customCoins.length} manual</span>
+                      <span>{hideDust ? 'Dust hidden' : 'Dust visible'}</span>
+                      <span>{hideSpam ? 'Spam hidden' : 'Spam visible'}</span>
+                    </div>
+                    <ChevronDown size={16} className="coin-visibility-chevron" />
+                  </button>
+                  {coinVisibilityMenuOpen && (
+                    <div className="coin-visibility-dropdown-panel">
+                      <div className="coin-visibility-actions">
+                        <button type="button" onClick={fetchPortfolio}>
+                          <RefreshCcw size={13} className={isLoading ? 'animate-spin' : ''} />
+                          Refresh / detect
+                        </button>
+                        <button type="button" onClick={() => setShowHiddenCoins(v => !v)}>
+                          <Eye size={13} />
+                          {showHiddenCoins ? 'Close hidden coins' : 'Open hidden coins'}
+                          {hiddenTokens.length > 0 && <span className="hidden-coins-count">{hiddenTokens.length}</span>}
+                        </button>
+                        <button type="button" className="coin-visibility-primary" onClick={() => setIsCustomCoinsModalOpen(true)}>
+                          <Plus size={13} />
+                          Add coin
+                        </button>
+                        <button type="button" onClick={scanForSpam} disabled={isScanning || wallets.length === 0}>
+                          <Shield size={13} />
+                          {isScanning ? 'Scanning...' : 'Scan spam'}
+                          {scanResult !== null && !isScanning && (
+                            <span className="hidden-coins-count">{scanResult > 0 ? `+${scanResult}` : 'clean'}</span>
+                          )}
+                        </button>
+                      </div>
+                      <div className="coin-visibility-dropdown">
+                        <button type="button" onClick={() => setHideDust(v => !v)}>
+                          <span>{hideDust ? 'Show dust coins' : 'Hide dust coins'}</span>
+                          <small>{hideDust ? 'Dust filter is on' : 'Dust filter is off'}</small>
+                        </button>
+                        <button type="button" onClick={() => setHideSpam(v => !v)}>
+                          <span>{hideSpam ? 'Show spam coins' : 'Hide spam coins'}</span>
+                          <small>{hideSpam ? 'Spam filter is on' : 'Spam filter is off'}</small>
+                        </button>
+                        <button type="button" disabled={hiddenTokens.length === 0} onClick={() => { setHiddenTokens([]); setShowHiddenCoins(false); }}>
+                          <span>Unhide all manual coins</span>
+                          <small>Restore every hidden coin</small>
+                        </button>
+                        <button type="button" onClick={() => { setHideDust(false); setHideSpam(false); setShowHiddenCoins(true); }}>
+                          <span>Show everything</span>
+                          <small>Turn off filters and open hidden list</small>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Header row */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                   <div>
                     <div style={{ fontSize: 18, fontWeight: 700, color: t.text, marginBottom: 2 }}>Holdings</div>
-                    <div style={{ fontSize: 13, color: t.textSecondary }}>{chainAssets.length} token{chainAssets.length !== 1 ? 's' : ''}  -  ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} liquid</div>
+                    <div style={{ fontSize: 13, color: t.textSecondary }}>{chainAssets.length} token{chainAssets.length !== 1 ? 's' : ''}  -  ${summary.liquidValue.toLocaleString('en-US', { maximumFractionDigits: 0 })} liquid</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', gap: 3, background: t.cardHigh, border: `1px solid ${t.border}`, borderRadius: 8, padding: 3 }}>
@@ -4873,176 +4732,14 @@ export default function App() {
                         </button>
                       ))}
                     </div>
-                    <div className="coin-visibility-menu-wrap">
-                      <button
-                        onClick={() => setCoinVisibilityMenuOpen(v => !v)}
-                        style={{ padding: '6px 14px', borderRadius: 8,
-                          background: coinVisibilityMenuOpen ? 'var(--accent-dim)' : t.cardHigh,
-                          color: coinVisibilityMenuOpen ? 'var(--accent)' : t.textSecondary,
-                          fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all .12s',
-                          border: coinVisibilityMenuOpen ? '1px solid var(--accent-border)' : `1px solid ${t.border}`,
-                          display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Eye size={13} />
-                        Hide / unhide
-                        {hiddenTokens.length > 0 && <span className="hidden-coins-count">{hiddenTokens.length}</span>}
-                        <ChevronDown size={13} />
-                      </button>
-                      {coinVisibilityMenuOpen && (
-                        <div className="coin-visibility-dropdown">
-                          <button type="button" onClick={() => setHideDust(v => !v)}>
-                            <span>{hideDust ? 'Show dust coins' : 'Hide dust coins'}</span>
-                            <small>{hideDust ? 'Dust filter is on' : 'Dust filter is off'}</small>
-                          </button>
-                          <button type="button" onClick={() => setHideSpam(v => !v)}>
-                            <span>{hideSpam ? 'Show spam coins' : 'Hide spam coins'}</span>
-                            <small>{hideSpam ? 'Spam filter is on' : 'Spam filter is off'}</small>
-                          </button>
-                          <button type="button" onClick={() => { setShowHiddenCoins(v => !v); setCoinVisibilityMenuOpen(false); }}>
-                            <span>{showHiddenCoins ? 'Close hidden coins' : 'Open hidden coins'}</span>
-                            <small>{hiddenTokens.length} manually hidden</small>
-                          </button>
-                          <button type="button" disabled={hiddenTokens.length === 0} onClick={() => { setHiddenTokens([]); setShowHiddenCoins(false); setCoinVisibilityMenuOpen(false); }}>
-                            <span>Unhide all manual coins</span>
-                            <small>Restore every hidden coin</small>
-                          </button>
-                          <button type="button" onClick={() => { setHideDust(false); setHideSpam(false); setShowHiddenCoins(true); setCoinVisibilityMenuOpen(false); }}>
-                            <span>Show everything</span>
-                            <small>Turn off filters and open hidden list</small>
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    <button onClick={scanForSpam} disabled={isScanning || wallets.length === 0}
-                      style={{ padding: '6px 14px', borderRadius: 8, border: `1px solid ${t.border}`,
-                        background: t.cardHigh, color: isScanning ? t.textMuted : t.textSecondary,
-                        fontSize: 13, fontWeight: 600, cursor: isScanning || wallets.length === 0 ? 'default' : 'pointer',
-                        transition: 'all .12s', display: 'flex', alignItems: 'center', gap: 5 }}>
-                      {isScanning ? 'Scanning...' : 'Scan'}
-                      {scanResult !== null && !isScanning && (
-                        <span style={{ background: scanResult > 0 ? '#f739ff33' : 'var(--accent-dim)', color: scanResult > 0 ? '#f739ff' : t.green,
-                          borderRadius: 4, padding: '1px 5px', fontSize: 13 }}>
-                          {scanResult > 0 ? `+${scanResult} spam` : 'ok clean'}
-                        </span>
-                      )}
-                    </button>
-                    <button
-                      onClick={() => setAllocWheelOpen(v => !v)}
-                      title={allocWheelOpen ? 'Hide allocation' : 'Show allocation'}
-                      style={{ padding: '6px 8px', borderRadius: 8, border: `1px solid ${allocWheelOpen ? 'var(--accent-border)' : t.border}`,
-                        background: allocWheelOpen ? 'var(--accent-dim)' : t.cardHigh,
-                        color: allocWheelOpen ? 'var(--accent)' : t.textSecondary,
-                        cursor: 'pointer', transition: 'all .12s', display: 'flex', alignItems: 'center' }}>
-                      <PieChartIcon size={14} />
-                    </button>
-                    {allocWheelOpen && (
-                      <button
-                        onClick={() => setAllocationCalculatorOpen(v => !v)}
-                        style={{ padding: '6px 10px', borderRadius: 8, border: `1px solid ${allocationCalculatorOpen ? 'var(--accent-border)' : t.border}`,
-                          background: allocationCalculatorOpen ? 'var(--accent-dim)' : t.cardHigh,
-                          color: allocationCalculatorOpen ? 'var(--accent)' : t.textSecondary,
-                          cursor: 'pointer', transition: 'all .12s', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700 }}>
-                        <Calculator size={13} />
-                        {allocationCalculatorOpen ? 'Close Calculator' : 'Open Calculator'}
-                      </button>
-                    )}
                   </div>
                 </div>
-
-                {allocWheelOpen && (() => {
-                  const ALLOC_COLORS_P = ['#00FF9F','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
-                  const alloc = assetAllocation.length > 0 ? assetAllocation : [];
-                  return (
-                    <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, padding: '16px 20px', display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap', transition: 'all .2s ease' }}>
-                      {!allocationCalculatorOpen ? (
-                        <>
-                          <div style={{ width: 146, height: 146, flexShrink: 0, display: 'grid', placeItems: 'center' }}>
-                            {alloc.length > 0 ? (
-                              <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} debounce={50}>
-                                <PieChart>
-                                  <Pie data={alloc} cx="50%" cy="50%" innerRadius={43} outerRadius={66} paddingAngle={3} dataKey="value" strokeWidth={0}>
-                                    {alloc.map((_, i) => (
-                                      <Cell key={i} fill={ALLOC_COLORS_P[i % ALLOC_COLORS_P.length]} />
-                                    ))}
-                                  </Pie>
-                                  <RechartsTooltip contentStyle={{ background: 'var(--bg-surface)', border: '1px solid rgba(0,255,159,0.15)', borderRadius: 10, fontSize: 12, color: 'var(--fg)', boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }} />
-                                </PieChart>
-                              </ResponsiveContainer>
-                            ) : (
-                              <div style={{ width: 112, height: 112, borderRadius: '50%', border: `14px solid ${t.border}`, opacity: 0.8 }} aria-hidden="true" />
-                            )}
-                          </div>
-                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 7, minWidth: 160 }}>
-                            {alloc.length > 0 ? alloc.map((a, i) => {
-                              const pct = (a.value / (summary.totalValue || 1)) * 100;
-                              const valFmt = a.value >= 1e6 ? `$${(a.value/1e6).toFixed(1)}M` : a.value >= 1e3 ? `$${(a.value/1e3).toFixed(0)}K` : `$${a.value.toFixed(0)}`;
-                              return (
-                                <div key={a.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                  <div style={{ width: 8, height: 8, borderRadius: 2, background: ALLOC_COLORS_P[i % ALLOC_COLORS_P.length], flexShrink: 0, boxShadow: `0 0 6px ${ALLOC_COLORS_P[i % ALLOC_COLORS_P.length]}66` }} />
-                                  <span style={{ fontSize: 14, color: t.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</span>
-                                  <span style={{ fontSize: 14, fontWeight: 800, color: t.textSecondary, fontFamily: 'JetBrains Mono, monospace', fontVariantNumeric: 'tabular-nums', marginLeft: 4 }}>{pct.toFixed(1)}%</span>
-                                  <span style={{ fontSize: 13, color: t.textMuted, fontFamily: 'JetBrains Mono, monospace', minWidth: 58, textAlign: 'right' }}>{valFmt}</span>
-                                </div>
-                              );
-                            }) : (
-                              <div style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>Add wallets to see allocation</div>
-                            )}
-                          </div>
-                        </>
-                      ) : (
-                        <div style={{ width: '100%', display: 'grid', gap: 10 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>Adjust Allocation</div>
-                            <div style={{ fontSize: 12, color: t.textSecondary }}>
-                              Total: {allocationCalculatorRows.reduce((sum, r) => sum + r.percent, 0).toFixed(1)}%
-                            </div>
-                          </div>
-                          {allocationCalculatorRows.length > 0 ? allocationCalculatorRows.map((row, i) => (
-                            <div key={row.name} style={{ display: 'grid', gridTemplateColumns: '100px 1fr 80px 80px', alignItems: 'center', gap: 10 }} className="max-sm:grid-cols-1">
-                              <span style={{ fontSize: 13, color: t.text }}>{row.name}</span>
-                              <input
-                                type="range"
-                                min={0}
-                                max={100}
-                                step={0.1}
-                                value={row.percent}
-                                onChange={(e) => {
-                                  const next = Number(e.target.value);
-                                  setAllocationDraftPercentages(prev => ({ ...prev, [row.name]: next }));
-                                }}
-                                style={{ accentColor: ALLOC_COLORS_P[i % ALLOC_COLORS_P.length] }}
-                              />
-                              <input
-                                type="number"
-                                min={0}
-                                max={100}
-                                step={0.1}
-                                value={row.percent.toFixed(1)}
-                                onChange={(e) => {
-                                  const next = Number(e.target.value);
-                                  if (!Number.isFinite(next)) return;
-                                  setAllocationDraftPercentages(prev => ({ ...prev, [row.name]: Math.min(100, Math.max(0, next)) }));
-                                }}
-                                style={{ width: '100%', background: t.cardHigh, color: t.text, border: `1px solid ${t.border}`, borderRadius: 6, padding: '5px 8px', fontSize: 12, fontFamily: 'JetBrains Mono, monospace' }}
-                              />
-                              <span style={{ fontSize: 12, color: t.textSecondary, textAlign: 'right', fontFamily: 'JetBrains Mono, monospace' }}>
-                                ${row.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                              </span>
-                            </div>
-                          )) : (
-                            <div style={{ fontSize: 13, color: t.textMuted }}>No holdings available for allocation calculator.</div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-
                 {/* Token Table */}
                 <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, overflow: 'hidden' }} className="md-elevation-1">
                   <div style={{ padding: '14px 16px', borderBottom: isCollapsed('assets-table') ? 'none' : `1px solid ${t.borderLight}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
                       <div style={{ fontSize: 15, fontWeight: 700, color: t.text }}>Assets</div>
-                      <div style={{ fontSize: 13, color: t.textSecondary, marginTop: 2 }}>{chainAssets.length} tokens  -  ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                      <div style={{ fontSize: 13, color: t.textSecondary, marginTop: 2 }}>{chainAssets.length} tokens  -  ${summary.liquidValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
                     </div>
                     <button onClick={() => toggleSection('assets-table')}
                       style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s' }}
@@ -5169,7 +4866,7 @@ export default function App() {
                               b >= 1e9 ? `${(b/1e9).toFixed(2)}B` :
                               b >= 1e6 ? `${(b/1e6).toFixed(2)}M` :
                               b >= 1e3 ? `${(b/1e3).toFixed(2)}K` :
-                              b.toLocaleString(undefined, { maximumFractionDigits: 4 });
+                              b.toLocaleString('en-US', { maximumFractionDigits: 4 });
                             return (
                               <React.Fragment key={asset.id}>
                               <motion.tr
@@ -5229,7 +4926,7 @@ export default function App() {
                                 </td>
                                 <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                                   <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>
-                                    ${asset.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                    ${asset.value.toLocaleString('en-US', { maximumFractionDigits: 2 })}
                                   </div>
                                   <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 2 }}>
                                     {fmtBal(asset.balance)} {asset.symbol}
@@ -5353,12 +5050,12 @@ export default function App() {
                                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                             <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Held</span>
                                             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>
-                                              {asset.balance >= 1e6 ? `${(asset.balance/1e6).toFixed(2)}M` : asset.balance >= 1e3 ? `${(asset.balance/1e3).toFixed(2)}K` : asset.balance.toLocaleString(undefined, { maximumFractionDigits: 4 })} {asset.symbol}
+                                              {asset.balance >= 1e6 ? `${(asset.balance/1e6).toFixed(2)}M` : asset.balance >= 1e3 ? `${(asset.balance/1e3).toFixed(2)}K` : asset.balance.toLocaleString('en-US', { maximumFractionDigits: 4 })} {asset.symbol}
                                             </span>
                                           </div>
                                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                             <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Value</span>
-                                            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>${asset.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                                            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>${asset.value.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                                           </div>
                                           {priceInPls > 0 && (
                                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -5392,16 +5089,16 @@ export default function App() {
                                           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                               <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Entry</span>
-                                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)' }}>{(entryPls!).toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</span>
+                                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)' }}>{(entryPls!).toLocaleString('en-US', { maximumFractionDigits: 0 })} PLS</span>
                                             </div>
                                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                               <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Now</span>
-                                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{currentPlsValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</span>
+                                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{currentPlsValue.toLocaleString('en-US', { maximumFractionDigits: 0 })} PLS</span>
                                             </div>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 4, borderTop: '1px solid var(--border)', marginTop: 2 }}>
                                               <span style={{ fontSize: 12, color: 'var(--fg-subtle)', fontWeight: 700 }}>Net P&L</span>
                                               <span style={{ fontSize: 14, fontWeight: 800, color: pnlPls >= 0 ? t.green : t.red }}>
-                                                {pnlPls >= 0 ? '+' : ''}{pnlPls.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS
+                                                {pnlPls >= 0 ? '+' : ''}{pnlPls.toLocaleString('en-US', { maximumFractionDigits: 0 })} PLS
                                               </span>
                                             </div>
                                           </div>
@@ -5471,7 +5168,7 @@ export default function App() {
                               TOTAL LIQUID
                             </td>
                             <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>
-                              ${summary.liquidValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                              ${summary.liquidValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                             </td>
                             <td colSpan={2} />
                           </tr>
@@ -5485,76 +5182,6 @@ export default function App() {
                     </div>
                   )}
                   </>)}
-                </div>
-
-                <div className="hidden-coins-bottom">
-                  <button type="button" className="hidden-coins-bottom-trigger" onClick={() => setShowHiddenCoins(v => !v)}>
-                    <span>
-                      Hidden coins
-                      {hiddenTokens.length > 0 && <span className="hidden-coins-count">{hiddenTokens.length}</span>}
-                    </span>
-                    <ChevronDown size={14} style={{ transform: showHiddenCoins ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }} />
-                  </button>
-                  {showHiddenCoins && (
-                    <div className="hidden-coins-panel">
-                      <div className="hidden-coins-panel-header">
-                        <div>
-                          <div className="hidden-coins-title">Hidden Coins</div>
-                          <div className="hidden-coins-subtitle">
-                            {hiddenTokens.length === 0
-                              ? 'Nothing is manually hidden. New buys can still be affected by Dust or Spam filters.'
-                              : `${hiddenTokens.length} hidden token${hiddenTokens.length !== 1 ? 's' : ''}. Unhide anything that was hidden by mistake.`}
-                          </div>
-                        </div>
-                        <div className="hidden-coins-actions">
-                          <button
-                            type="button"
-                            className="hidden-coins-soft-btn"
-                            onClick={() => { setHideDust(false); setHideSpam(false); }}
-                          >
-                            Show all filters
-                          </button>
-                          {hiddenTokens.length > 0 && (
-                            <button
-                              type="button"
-                              className="hidden-coins-soft-btn hidden-coins-danger-btn"
-                              onClick={() => setHiddenTokens([])}
-                            >
-                              Unhide all
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      {hiddenChainAssets.length > 0 ? (
-                        <div className="hidden-coins-list">
-                          {hiddenChainAssets.map(asset => {
-                            const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()] || (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()] || getTokenLogoUrl(asset);
-                            return (
-                              <div key={asset.id} className="hidden-coin-row">
-                                <div className="hidden-coin-identity">
-                                  <span className="hidden-coin-logo">{logo ? <img src={logo} alt={asset.symbol} /> : asset.symbol.slice(0, 1)}</span>
-                                  <span>
-                                    <span className="hidden-coin-name">{asset.symbol}</span>
-                                    <span className="hidden-coin-meta">{asset.name} - {asset.chain}</span>
-                                  </span>
-                                </div>
-                                <div className="hidden-coin-side">
-                                  <span className="hidden-coin-value">${asset.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
-                                  <button type="button" className="hidden-coins-unhide-btn" onClick={() => unhideToken(asset.id)}>
-                                    Unhide
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <div className="hidden-coins-empty">
-                          {walletChainFilter === 'all' ? 'No manually hidden coins.' : `No hidden coins on ${walletChainFilter}.`}
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
 
                 {/* -- Transactions -- */}
@@ -5573,17 +5200,12 @@ export default function App() {
                         {label}
                       </button>
                     ))}
-                    {(txAssetFilter !== 'all' || txChainFilter !== 'all' || txYearFilter !== 'all' || txCoinCategory !== 'all') && (
+                    {(txAssetFilter !== 'all' || txYearFilter !== 'all' || txCoinCategory !== 'all') && (
                       <>
                         <div style={{ width: 1, height: 18, background: 'var(--border)', flexShrink: 0 }} />
                         {txAssetFilter !== 'all' && (
                           <button className="filter-chip" onClick={() => setTxAssetFilter('all')}>
                             {txAssetFilter}<span className="chip-x">x</span>
-                          </button>
-                        )}
-                        {txChainFilter !== 'all' && (
-                          <button className="filter-chip" onClick={() => setTxChainFilter('all')}>
-                            {txChainFilter === 'pulsechain' ? 'PulseChain' : txChainFilter === 'ethereum' ? 'Ethereum' : 'Base'}<span className="chip-x">x</span>
                           </button>
                         )}
                         {txYearFilter !== 'all' && (
@@ -5597,7 +5219,7 @@ export default function App() {
                           </button>
                         )}
                         <button
-                          onClick={() => { setTxTypeFilter('all'); setTxAssetFilter('all'); setTxChainFilter('all'); setTxYearFilter('all'); setTxCoinCategory('all'); }}
+                          onClick={() => { setTxTypeFilter('all'); setTxAssetFilter('all'); setTxYearFilter('all'); setTxCoinCategory('all'); }}
                           style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', background: 'none', border: 'none', cursor: 'pointer', padding: '3px 6px', textDecoration: 'underline' }}>
                           Clear all
                         </button>
@@ -5608,12 +5230,12 @@ export default function App() {
                   <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, overflow: 'hidden' }} className="md-elevation-1">
                     <div style={{ padding: '14px 18px', borderBottom: isCollapsed('holdings-txs') ? 'none' : `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: 14, fontWeight: 600, color: t.text }}>Activity</span>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: t.text }}>Transaction</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent-border)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
                           <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', display: 'inline-block', animation: 'pulse 2s infinite' }} />
-                          Live
+                          PulseChain
                         </span>
-                        <span style={{ fontSize: 12, color: t.textTertiary }}>{filteredTransactions.length} tx</span>
+                        <span style={{ fontSize: 12, color: t.textTertiary }}>{holdingsPulsechainTransactions.length} tx</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                         <button onClick={() => setViewAsYou(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}>
@@ -5633,7 +5255,7 @@ export default function App() {
                         <button
                           onClick={() => {
                             const hdrs = ['Date', 'Type', 'Asset', 'Amount', 'Counter Asset', 'Counter Amount', 'Value USD', 'Chain', 'Hash'];
-                            const rows = filteredTransactions.map(tx => [
+                            const rows = holdingsPulsechainTransactions.map(tx => [
                               new Date(tx.timestamp).toISOString().slice(0, 10),
                               tx.type, tx.asset, tx.amount, tx.counterAsset ?? '', tx.counterAmount ?? '', tx.valueUsd ?? '', tx.chain, tx.hash ?? '',
                             ]);
@@ -5657,8 +5279,7 @@ export default function App() {
                     {/* Filter row */}
                     <div className="tx-filter-row history-filter-row" style={{ padding: '8px 18px', borderBottom: `1px solid ${t.border}`, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                       {[
-                        { value: txChainFilter, onChange: setTxChainFilter, options: [['all','All Chains'],['pulsechain','PulseChain'],['ethereum','Ethereum'],['base','Base']] as [string,string][] },
-                        { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Tokens'], ...Array.from(new Set(currentTransactions.flatMap(tx => [tx.asset, tx.counterAsset].filter(Boolean) as string[]))).sort().map(a => [a,a])] as [string,string][] },
+                        { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Tokens'], ...Array.from(new Set(currentTransactions.filter(tx => tx.chain === 'pulsechain').flatMap(tx => [tx.asset, tx.counterAsset].filter(Boolean) as string[]))).sort().map(a => [a,a])] as [string,string][] },
                         { value: txYearFilter, onChange: setTxYearFilter, options: [['all','All Years'],['2026','2026'],['2025','2025'],['2024','2024'],['2023','2023'],['2022','2022'],['2021','2021']] as [string,string][] },
                         { value: txCoinCategory, onChange: setTxCoinCategory, options: [['all','All Coins'],['stablecoins','Stablecoins'],['eth_weth','ETH/WETH'],['hex','HEX/eHEX'],['pls_wpls','PLS/WPLS'],['bridged','Bridged']] as [string,string][] },
                       ].map(({ value, onChange, options }, i) => (
@@ -5670,20 +5291,19 @@ export default function App() {
                       ))}
                     </div>
                     {/* Active filter chips */}
-                    {(txAssetFilter !== 'all' || txChainFilter !== 'all' || txYearFilter !== 'all' || txCoinCategory !== 'all') && (
+                    {(txAssetFilter !== 'all' || txYearFilter !== 'all' || txCoinCategory !== 'all') && (
                       <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, padding: '8px 18px', borderBottom: '1px solid var(--border)' }}>
                         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginRight: 4 }}>Filtering by:</span>
                         {txAssetFilter !== 'all' && (<button className="filter-chip" onClick={() => setTxAssetFilter('all')}>{txAssetFilter}<span className="chip-x">&#x2715;</span></button>)}
-                        {txChainFilter !== 'all' && (<button className="filter-chip" onClick={() => setTxChainFilter('all')}>{txChainFilter === 'pulsechain' ? 'PulseChain' : txChainFilter === 'ethereum' ? 'Ethereum' : 'Base'}<span className="chip-x">&#x2715;</span></button>)}
                         {txYearFilter !== 'all' && (<button className="filter-chip" onClick={() => setTxYearFilter('all')}>{txYearFilter}<span className="chip-x">&#x2715;</span></button>)}
                         {txCoinCategory !== 'all' && (<button className="filter-chip" onClick={() => setTxCoinCategory('all')}>{txCoinCategory === 'stablecoins' ? 'Stablecoins' : txCoinCategory === 'eth_weth' ? 'ETH/WETH' : txCoinCategory === 'hex' ? 'HEX/eHEX' : txCoinCategory === 'pls_wpls' ? 'PLS/WPLS' : 'Bridged'}<span className="chip-x">&#x2715;</span></button>)}
-                        <button onClick={() => { setTxTypeFilter('all'); setTxAssetFilter('all'); setTxChainFilter('all'); setTxYearFilter('all'); setTxCoinCategory('all'); }} style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', textDecoration: 'underline', marginLeft: 4 }}>Clear all</button>
+                        <button onClick={() => { setTxTypeFilter('all'); setTxAssetFilter('all'); setTxYearFilter('all'); setTxCoinCategory('all'); }} style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', textDecoration: 'underline', marginLeft: 4 }}>Clear all</button>
                       </div>
                     )}
                     {/* -- Wallet-style transaction cards -- */}
                     <div className="custom-scrollbar tx-module-list wallet-tx-list">
                       <TransactionList
-                        transactions={filteredTransactions}
+                        transactions={holdingsPulsechainTransactions}
                         viewAsYou={viewAsYou}
                         wallets={wallets}
                         compact={txCompact}
@@ -5730,16 +5350,18 @@ export default function App() {
                     )
                     .reduce((sum, asset) => sum + asset.balance, 0);
                   return (
-                <StakesSection
-                  stakes={currentStakes}
-                  hexUsdPrice={prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0}
-                  phexUsdPrice={prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0}
-                  ehexUsdPrice={prices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['hex']?.usd || 0}
-                  liquidPHex={pHexLiquid}
-                  liquidEHex={eHexLiquid}
-                  walletAddresses={wallets.map(w => w.address)}
-                  walletLabels={Object.fromEntries(wallets.filter(w => w.name).map(w => [w.address, w.name!]))}
-                />
+                    <div className="stakes-page-shell">
+                      <StakesSection
+                        stakes={currentStakes}
+                        hexUsdPrice={prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0}
+                        phexUsdPrice={prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0}
+                        ehexUsdPrice={prices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['hex']?.usd || 0}
+                        liquidPHex={pHexLiquid}
+                        liquidEHex={eHexLiquid}
+                        walletAddresses={wallets.map(w => w.address)}
+                        walletLabels={Object.fromEntries(wallets.filter(w => w.name).map(w => [w.address, w.name!]))}
+                      />
+                    </div>
                   );
                 })()}
               </motion.div>
@@ -5753,8 +5375,8 @@ export default function App() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)', marginBottom: 2 }}>Bridge Activity</div>
-                  <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Cross-chain activity &amp; performance tracking</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)', marginBottom: 2 }}>Transaction</div>
+                  <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Transaction history, filters, and portfolio performance tracking</div>
                 </div>
               </div>
             </div>
@@ -5762,10 +5384,10 @@ export default function App() {
             {/* Stats grid */}
             <div className="stat-grid-4">
               {[
-                { label: 'Total Invested', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `$${Math.abs(summary.netInvestment).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '-', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? 'ETH + stablecoin inflows' : 'No ETH/stable inflows found', color: 'var(--fg)' },
-                { label: 'Total P&L', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '-', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}${((summary.unifiedPnl / summary.netInvestment) * 100).toFixed(1)}% vs invested` : 'P&L % needs ETH/stable history', color: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? t.green : t.red) : 'var(--fg)' },
-                { label: 'Realized P&L', val: `${summary.realizedPnl >= 0 ? '+' : ''}$${Math.abs(summary.realizedPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: 'Closed trade profit', color: summary.realizedPnl >= 0 ? t.green : t.red },
-                { label: 'Unrealized P&L', val: `${summary.pnl24h >= 0 ? '+' : ''}$${Math.abs(summary.pnl24h).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: "Today's portfolio change", color: summary.pnl24h >= 0 ? t.green : t.red },
+                { label: 'Total Invested', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `$${Math.abs(summary.netInvestment).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '-', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? 'ETH + stablecoin inflows' : 'No ETH/stable inflows found', color: 'var(--fg)' },
+                { label: 'Total P&L', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '-', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}${((summary.unifiedPnl / summary.netInvestment) * 100).toFixed(1)}% vs invested` : 'P&L % needs ETH/stable history', color: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? t.green : t.red) : 'var(--fg)' },
+                { label: 'Realized P&L', val: `${summary.realizedPnl >= 0 ? '+' : ''}$${Math.abs(summary.realizedPnl).toLocaleString('en-US', { maximumFractionDigits: 0 })}`, sub: 'Closed trade profit', color: summary.realizedPnl >= 0 ? t.green : t.red },
+                { label: 'Unrealized P&L', val: `${summary.pnl24h >= 0 ? '+' : ''}$${Math.abs(summary.pnl24h).toLocaleString('en-US', { maximumFractionDigits: 0 })}`, sub: "Today's portfolio change", color: summary.pnl24h >= 0 ? t.green : t.red },
               ].map(({ label, val, sub, color }) => (
                 <div key={label} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 18 }}>
                   <div style={{ fontSize: 13, color: 'var(--fg-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>{label}</div>
@@ -5773,6 +5395,209 @@ export default function App() {
                   <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>{sub}</div>
                 </div>
               ))}
+            </div>
+
+            <div className="tx-module-card">
+              <div className="tx-module-header" style={{ borderBottom: allocWheelOpen ? '1px solid var(--border)' : 'none' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
+                  <PieChartIcon size={16} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                  <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>Portfolio Allocation</span>
+                  <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>By token value</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => setAllocWheelOpen(v => !v)}
+                    title={allocWheelOpen ? 'Hide allocation' : 'Show allocation'}
+                    style={{ padding: '6px 8px', borderRadius: 8, border: `1px solid ${allocWheelOpen ? 'var(--accent-border)' : t.border}`,
+                      background: allocWheelOpen ? 'var(--accent-dim)' : t.cardHigh,
+                      color: allocWheelOpen ? 'var(--accent)' : t.textSecondary,
+                      cursor: 'pointer', transition: 'all .12s', display: 'flex', alignItems: 'center' }}>
+                    <PieChartIcon size={14} />
+                  </button>
+                  {allocWheelOpen && (
+                    <button
+                      onClick={() => setAllocationCalculatorOpen(v => !v)}
+                      style={{ padding: '6px 10px', borderRadius: 8, border: `1px solid ${allocationCalculatorOpen ? 'var(--accent-border)' : t.border}`,
+                        background: allocationCalculatorOpen ? 'var(--accent-dim)' : t.cardHigh,
+                        color: allocationCalculatorOpen ? 'var(--accent)' : t.textSecondary,
+                        cursor: 'pointer', transition: 'all .12s', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700 }}>
+                      <Calculator size={13} />
+                      {allocationCalculatorOpen ? 'Close Calculator' : 'Open Calculator'}
+                    </button>
+                  )}
+                </div>
+              </div>
+                {allocWheelOpen && (() => {
+                  const ALLOC_COLORS_P = ['#00FF9F','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
+                  const alloc = assetAllocation.length > 0 ? assetAllocation : [];
+                  return (
+                    <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, padding: '16px 20px', display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap', transition: 'all .2s ease' }}>
+                      {!allocationCalculatorOpen ? (
+                        <>
+                          <div style={{ width: 146, height: 146, flexShrink: 0, display: 'grid', placeItems: 'center' }}>
+                            {alloc.length > 0 ? (
+                              <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} debounce={50}>
+                                <PieChart>
+                                  <Pie data={alloc} cx="50%" cy="50%" innerRadius={43} outerRadius={66} paddingAngle={3} dataKey="value" strokeWidth={0}>
+                                    {alloc.map((_, i) => (
+                                      <Cell key={i} fill={ALLOC_COLORS_P[i % ALLOC_COLORS_P.length]} />
+                                    ))}
+                                  </Pie>
+                                  <RechartsTooltip contentStyle={{ background: 'var(--bg-surface)', border: '1px solid rgba(0,255,159,0.15)', borderRadius: 10, fontSize: 12, color: 'var(--fg)', boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }} />
+                                </PieChart>
+                              </ResponsiveContainer>
+                            ) : (
+                              <div style={{ width: 112, height: 112, borderRadius: '50%', border: `14px solid ${t.border}`, opacity: 0.8 }} aria-hidden="true" />
+                            )}
+                          </div>
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 7, minWidth: 160 }}>
+                            {alloc.length > 0 ? alloc.map((a, i) => {
+                              const pct = (a.value / (summary.totalValue || 1)) * 100;
+                              const valFmt = a.value >= 1e6 ? `$${(a.value/1e6).toFixed(1)}M` : a.value >= 1e3 ? `$${(a.value/1e3).toFixed(0)}K` : `$${a.value.toFixed(0)}`;
+                              return (
+                                <div key={a.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <div style={{ width: 8, height: 8, borderRadius: 2, background: ALLOC_COLORS_P[i % ALLOC_COLORS_P.length], flexShrink: 0, boxShadow: `0 0 6px ${ALLOC_COLORS_P[i % ALLOC_COLORS_P.length]}66` }} />
+                                  <span style={{ fontSize: 14, color: t.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</span>
+                                  <span style={{ fontSize: 14, fontWeight: 800, color: t.textSecondary, fontFamily: 'JetBrains Mono, monospace', fontVariantNumeric: 'tabular-nums', marginLeft: 4 }}>{pct.toFixed(1)}%</span>
+                                  <span style={{ fontSize: 13, color: t.textMuted, fontFamily: 'JetBrains Mono, monospace', minWidth: 58, textAlign: 'right' }}>{valFmt}</span>
+                                </div>
+                              );
+                            }) : (
+                              <div style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>Add wallets to see allocation</div>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <div style={{ width: '100%', display: 'grid', gap: 10 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>Adjust Allocation</div>
+                            <div style={{ fontSize: 12, color: t.textSecondary }}>
+                              Total: {allocationCalculatorRows.reduce((sum, r) => sum + r.percent, 0).toFixed(1)}%
+                            </div>
+                          </div>
+                          {allocationCalculatorRows.length > 0 ? allocationCalculatorRows.map((row, i) => (
+                            <div key={row.name} style={{ display: 'grid', gridTemplateColumns: '100px 1fr 80px 80px', alignItems: 'center', gap: 10 }} className="max-sm:grid-cols-1">
+                              <span style={{ fontSize: 13, color: t.text }}>{row.name}</span>
+                              <input
+                                type="range"
+                                min={0}
+                                max={100}
+                                step={0.1}
+                                value={row.percent}
+                                onChange={(e) => {
+                                  const next = Number(e.target.value);
+                                  setAllocationDraftPercentages(prev => ({ ...prev, [row.name]: next }));
+                                }}
+                                style={{ accentColor: ALLOC_COLORS_P[i % ALLOC_COLORS_P.length] }}
+                              />
+                              <input
+                                type="number"
+                                min={0}
+                                max={100}
+                                step={0.1}
+                                value={row.percent.toFixed(1)}
+                                onChange={(e) => {
+                                  const next = Number(e.target.value);
+                                  if (!Number.isFinite(next)) return;
+                                  setAllocationDraftPercentages(prev => ({ ...prev, [row.name]: Math.min(100, Math.max(0, next)) }));
+                                }}
+                                style={{ width: '100%', background: t.cardHigh, color: t.text, border: `1px solid ${t.border}`, borderRadius: 6, padding: '5px 8px', fontSize: 12, fontFamily: 'JetBrains Mono, monospace' }}
+                              />
+                              <span style={{ fontSize: 12, color: t.textSecondary, textAlign: 'right', fontFamily: 'JetBrains Mono, monospace' }}>
+                                ${row.value.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                              </span>
+                            </div>
+                          )) : (
+                            <div style={{ fontSize: 13, color: t.textMuted }}>No holdings available for allocation calculator.</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+            </div>
+            <div className="tx-module-card">
+              <div className="tx-module-header" style={{ borderBottom: isCollapsed('holdings-txs') ? 'none' : '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
+                  <History size={16} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                  <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>Transaction</span>
+                  <span style={{ fontSize: 12, color: 'var(--accent)', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', padding: '2px 8px', borderRadius: 6, fontWeight: 700 }}>PulseChain</span>
+                  <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{filteredTransactions.length} tx</span>
+                </div>
+                <div className="transaction-toolbar">
+                  <button type="button" className={`filter-pill${viewAsYou ? ' active' : ''}`} onClick={() => setViewAsYou(v => !v)}>
+                    View as You
+                  </button>
+                  <button type="button" className={`filter-pill${txCompact ? ' active' : ''}`} onClick={() => setTxCompact(v => !v)}>
+                    Compact
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const hdrs = ['Date', 'Type', 'Asset', 'Amount', 'Counter Asset', 'Counter Amount', 'Value USD', 'Chain', 'Hash'];
+                      const rows = filteredTransactions.map(tx => [
+                        new Date(tx.timestamp).toISOString().slice(0, 10),
+                        tx.swapLegOnly ? 'swap' : tx.type,
+                        tx.asset,
+                        tx.amount,
+                        tx.counterAsset ?? '',
+                        tx.counterAmount ?? '',
+                        tx.valueUsd ?? '',
+                        tx.chain,
+                        tx.hash ?? '',
+                      ]);
+                      exportCSV(`pulseport-transactions-${Date.now()}.csv`, hdrs, rows);
+                    }}
+                    className="history-csv-btn"
+                    style={{ padding: '5px 10px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 6, cursor: 'pointer', color: 'var(--accent)', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}
+                  >
+                    <Download size={12} /> CSV
+                  </button>
+                  <button onClick={() => toggleSection('holdings-txs')}
+                    style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: t.textTertiary, flexShrink: 0 }}
+                    title={isCollapsed('holdings-txs') ? 'Expand' : 'Collapse'}>
+                    {isCollapsed('holdings-txs') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                  </button>
+                </div>
+              </div>
+              {!isCollapsed('holdings-txs') && (
+                <>
+                  <div className="tx-filter-row history-filter-row" style={{ padding: '10px 18px', borderBottom: `1px solid ${t.border}`, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {([
+                      { value: txTypeFilter, onChange: setTxTypeFilter, options: [['all','All Types'],['deposit','Received'],['withdraw','Sent'],['swap','Swaps']] as [string,string][] },
+                      { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Tokens'], ...Array.from(new Set(currentTransactions.filter(tx => tx.chain === 'pulsechain').flatMap(tx => [tx.asset, tx.counterAsset].filter(Boolean) as string[]))).sort().map(a => [a,a])] as [string,string][] },
+                      { value: txYearFilter, onChange: setTxYearFilter, options: [['all','All Years'],['2026','2026'],['2025','2025'],['2024','2024'],['2023','2023'],['2022','2022'],['2021','2021']] as [string,string][] },
+                      { value: txCoinCategory, onChange: setTxCoinCategory, options: [['all','All Coins'],['stablecoins','Stablecoins'],['eth_weth','ETH/WETH'],['hex','HEX/eHEX'],['pls_wpls','PLS/WPLS'],['bridged','Bridged']] as [string,string][] },
+                    ]).map(({ value, onChange, options }) => (
+                      <select key={options[0][1]} value={value} onChange={e => onChange(e.target.value)}
+                        className="history-filter-select"
+                        style={{ background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 6, color: 'var(--fg)', fontSize: 13, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
+                        {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                      </select>
+                    ))}
+                    <button onClick={() => { setTxTypeFilter('all'); setTxAssetFilter('all'); setTxYearFilter('all'); setTxCoinCategory('all'); }}
+                      style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg-subtle)', background: 'none', border: 'none', cursor: 'pointer', padding: '5px 8px', textDecoration: 'underline' }}>
+                      Clear all
+                    </button>
+                  </div>
+                  <div className="custom-scrollbar tx-module-list wallet-tx-list">
+                    <TransactionList
+                      transactions={filteredTransactions}
+                      viewAsYou={viewAsYou}
+                      wallets={wallets}
+                      compact={txCompact}
+                      assets={currentAssets}
+                      getTokenLogoUrl={getTokenLogoUrl}
+                      tokenLogos={tokenLogos}
+                      hideIds={hiddenTxIds}
+                      onToggleHide={id => setHiddenTxIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
+                      showHidden={showHiddenTxs}
+                      onFilterByAsset={symbol => setTxAssetFilter(symbol)}
+                      emptyMessage="No transactions found for these filters."
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Charts row */}
@@ -5832,7 +5657,7 @@ export default function App() {
                         <XAxis dataKey="day" tick={{ fill: '#7c8798', fontSize: 11 }} axisLine={{ stroke: '#222' }} tickLine={false} interval={Math.max(0, Math.floor(histChartPoints.length / 7) - 1)} />
                         <YAxis width={54} fontSize={11} tickLine={false} axisLine={false} tick={{ fill: '#7c8798' }} tickFormatter={fmtHistY} domain={[histYMin - histYPad, histYMax + histYPad]} />
                         <RechartsTooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13 }}
-                          formatter={(v: any) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Portfolio Value']}
+                          formatter={(v: any) => [`$${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}`, 'Portfolio Value']}
                           labelStyle={{ color: '#7c8798', marginBottom: 4 }} />
                         <Area type="monotone" dataKey="value" stroke="var(--accent)" fillOpacity={1} fill="url(#histColorValue)" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: 'var(--accent)', strokeWidth: 0 }} />
                       </AreaChart>
@@ -5841,118 +5666,6 @@ export default function App() {
                 );
               })()}
 
-            </div>
-
-            {/* Received Assets History */}
-            <div className="tx-module-card received-token-module">
-              <div className="received-header tx-module-header" style={{ borderBottom: isCollapsed('received-assets') ? 'none' : '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
-                  <ArrowDownLeft size={16} style={{ color: '#627EEA', flexShrink: 0 }} />
-                  <span style={{ fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}>MultiChain Transactions</span>
-                  <select value={receivedChainFilter} onChange={e => setReceivedChainFilter(e.target.value)}
-                    className="history-filter-select"
-                    style={{ background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 6, color: 'var(--fg)', fontSize: 13, padding: '4px 8px', cursor: 'pointer', outline: 'none' }}>
-                    <option value="all">All Chains</option>
-                    <option value="ethereum">Ethereum</option>
-                    <option value="base">Base</option>
-                    <option value="pulsechain">PulseChain</option>
-                  </select>
-                  <select value={receivedCoinFilter} onChange={e => setReceivedCoinFilter(e.target.value)}
-                    className="history-filter-select"
-                    style={{ background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 6, color: 'var(--fg)', fontSize: 13, padding: '4px 8px', cursor: 'pointer', outline: 'none' }}>
-                    <option value="all">All Coins</option>
-                    <option value="ETH">ETH</option>
-                    <option value="PLS">PLS</option>
-                    <option value="USDC">USDC</option>
-                    <option value="USDT">USDT</option>
-                    <option value="DAI">DAI</option>
-                  </select>
-                </div>
-                <div className="received-totals" style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginBottom: 2, fontWeight: 600, letterSpacing: '.5px', textTransform: 'uppercase' }}>Total Received</div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)' }}>${receivedAssetsData.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                    <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{receivedAssetsData.list.length} tx</div>
-                  </div>
-                  <button onClick={() => toggleSection('received-assets')}
-                    style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s', flexShrink: 0 }}
-                    onMouseOver={e => (e.currentTarget.style.color = 'var(--fg)')}
-                    onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}
-                    title={isCollapsed('received-assets') ? 'Expand' : 'Collapse'}>
-                    {isCollapsed('received-assets') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-                  </button>
-                </div>
-              </div>
-              {!isCollapsed('received-assets') && (<>
-              {receivedAssetsData.list.length > 0 && (
-                <div tabIndex={0} className="received-asset-summary-row custom-scrollbar">
-                  {(Object.entries(receivedAssetsData.byAsset) as [string, { amount: number; valueUsd: number }][]).map(([sym, data]) => (
-                    <div key={sym} className="received-asset-summary-card">
-                      <div className="received-asset-symbol">{sym}</div>
-                      <div className="received-asset-amount">
-                        {sym === 'ETH' ? data.amount.toLocaleString(undefined, { maximumFractionDigits: 4 }) : data.amount.toLocaleString(undefined, { maximumFractionDigits: 0 })} {sym}
-                      </div>
-                      <div className="received-asset-value">${data.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="received-history-list custom-scrollbar tx-module-list">
-                {receivedAssetsData.list.length === 0 ? (
-                  <div style={{ padding: '48px 20px', textAlign: 'center', color: 'var(--fg-muted)', fontSize: 13 }}>
-                    {wallets.length === 0
-                      ? 'Add wallets to see received assets history.'
-                      : ['ethereum', 'base'].includes(receivedChainFilter) && !etherscanApiKey
-                      ? <span>
-                          No Ethereum/Base transactions loaded.{' '}
-                          <button
-                            onClick={() => { setApiKeyInput(''); setIsApiKeyModalOpen(true); }}
-                            style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontSize: 13, padding: 0 }}>
-                            Add an Etherscan API key
-                          </button>
-                          {' '}for reliable ETH/Base history.
-                        </span>
-                      : 'No ETH or stablecoin inbound transfers found since 2021.'}
-                  </div>
-                ) : (
-                  <TransactionList
-                    transactions={receivedAssetsData.list.map(tx => {
-                      const assetUp = tx.asset.toUpperCase();
-                      const isEth = assetUp === 'ETH';
-                      const isPls = assetUp === 'PLS';
-                      const pulseDaiPrice = prices['pulsechain:0xefd766ccb38eaf1dfd701853bfce31359239f305']?.usd
-                        ?? prices['pulsechain:0x6b175474e89094c44da98b954eedeac495271d0f']?.usd
-                        ?? prices['pulsechain:dai']?.usd
-                        ?? 0;
-                      const daiPrice = tx.chain === 'pulsechain' ? pulseDaiPrice : (prices['dai']?.usd ?? 0);
-                      const usdtPrice = tx.chain === 'pulsechain'
-                        ? (prices['pulsechain:0x0cb6f5a34ad42ec934882a05265a7d5f59b51a2f']?.usd ?? 0)
-                        : (prices['tether']?.usd ?? 1);
-                      const usdcPrice = tx.chain === 'pulsechain'
-                        ? (prices['pulsechain:0x15d38573d2feeb82e7ad5187ab8c1d52810b1f07']?.usd ?? 0)
-                        : (prices['usd-coin']?.usd ?? 1);
-                      const displayUsd = tx.valueUsd || (
-                        isEth ? tx.amount * (prices['ethereum']?.usd || 3400) :
-                        isPls ? tx.amount * (prices['pulsechain']?.usd || 0.00005) :
-                        assetUp.includes('USDT') || assetUp.includes('TETHER') ? tx.amount * usdtPrice :
-                        assetUp.includes('DAI') ? tx.amount * daiPrice :
-                        tx.amount * usdcPrice
-                      );
-                      return { ...tx, valueUsd: displayUsd };
-                    })}
-                    viewAsYou={viewAsYou}
-                    wallets={wallets}
-                    assets={currentAssets}
-                    getTokenLogoUrl={getTokenLogoUrl}
-                    tokenLogos={tokenLogos}
-                    hideIds={hiddenTxIds}
-                    onToggleHide={id => setHiddenTxIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
-                    showHidden={showHiddenTxs}
-                    emptyMessage="No received token transactions found for these filters."
-                  />
-                )}
-              </div>
-              </>)}
             </div>
 
             {/* -- TOKEN P&L SUMMARY CARD - shown when a specific asset filter is active -- */}
@@ -6034,10 +5747,10 @@ export default function App() {
                 {!isCollapsed('history-pls') && (
                   <div className="stat-grid-4" style={{ padding: '12px 18px' }}>
                     {[
-                      { label: 'PLS Received', val: plsSwapData.totalReceived >= 1e6 ? `${(plsSwapData.totalReceived/1e6).toFixed(2)}M` : plsSwapData.totalReceived.toLocaleString(undefined,{maximumFractionDigits:0}), sub: 'Total inflow', color: t.green },
-                      { label: 'PLS Spent', val: plsSwapData.totalSpent >= 1e6 ? `${(plsSwapData.totalSpent/1e6).toFixed(2)}M` : plsSwapData.totalSpent.toLocaleString(undefined,{maximumFractionDigits:0}), sub: 'Total outflow', color: t.red },
-                      { label: 'Net PLS', val: `${plsSwapData.totalNet >= 0 ? '+' : ''}${Math.abs(plsSwapData.totalNet) >= 1e6 ? (plsSwapData.totalNet/1e6).toFixed(2)+'M' : plsSwapData.totalNet.toLocaleString(undefined,{maximumFractionDigits:0})}`, sub: 'Net balance', color: plsSwapData.totalNet >= 0 ? t.green : t.red },
-                      { label: 'Net USD', val: `${plsSwapData.netUsd >= 0 ? '+' : ''}$${Math.abs(plsSwapData.netUsd).toLocaleString(undefined,{maximumFractionDigits:0})}`, sub: `@ $${(plsSwapData.plsPrice||0).toFixed(6)}/PLS`, color: plsSwapData.netUsd >= 0 ? t.green : t.red },
+                      { label: 'PLS Received', val: plsSwapData.totalReceived >= 1e6 ? `${(plsSwapData.totalReceived/1e6).toFixed(2)}M` : plsSwapData.totalReceived.toLocaleString('en-US',{maximumFractionDigits:0}), sub: 'Total inflow', color: t.green },
+                      { label: 'PLS Spent', val: plsSwapData.totalSpent >= 1e6 ? `${(plsSwapData.totalSpent/1e6).toFixed(2)}M` : plsSwapData.totalSpent.toLocaleString('en-US',{maximumFractionDigits:0}), sub: 'Total outflow', color: t.red },
+                      { label: 'Net PLS', val: `${plsSwapData.totalNet >= 0 ? '+' : ''}${Math.abs(plsSwapData.totalNet) >= 1e6 ? (plsSwapData.totalNet/1e6).toFixed(2)+'M' : plsSwapData.totalNet.toLocaleString('en-US',{maximumFractionDigits:0})}`, sub: 'Net balance', color: plsSwapData.totalNet >= 0 ? t.green : t.red },
+                      { label: 'Net USD', val: `${plsSwapData.netUsd >= 0 ? '+' : ''}$${Math.abs(plsSwapData.netUsd).toLocaleString('en-US',{maximumFractionDigits:0})}`, sub: `@ $${(plsSwapData.plsPrice||0).toFixed(6)}/PLS`, color: plsSwapData.netUsd >= 0 ? t.green : t.red },
                     ].map(({ label, val, sub, color }) => (
                       <div key={label} style={{ background: 'var(--bg-elevated)', borderRadius: 10, padding: '12px 14px' }}>
                         <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 6 }}>{label}</div>
@@ -6100,21 +5813,31 @@ export default function App() {
           const fmtHexCount = (n: number) => n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(0)}K` : Math.round(n).toLocaleString('en-US');
 
           return (
-            <motion.div key="wallets" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+            <motion.div key="wallets" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="wallet-page-shell space-y-4">
+              <WalletSelector
+                wallets={wallets.map(w => w.address.toLowerCase())}
+                activeWallet={selectedWalletAddr === 'all' ? null : selectedWalletAddr}
+                onSelect={(addr) => {
+                  setSelectedWalletAddr(addr ? addr.toLowerCase() : 'all');
+                  setActiveWallet(addr);
+                }}
+                onAdd={() => setIsAddingWallet(true)}
+                walletLabels={Object.fromEntries(wallets.map(w => [w.address.toLowerCase(), w.name || shortenAddr(w.address)]))}
+              />
 
               {/* Hero card */}
               <div style={{ background: 'var(--bg-elevated)', borderRadius: 16, padding: '24px', border: '1px solid var(--accent-border)' }}>
                 <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 8 }}>{isAll ? 'All Wallets' : selWallet?.name}</div>
                 {!isAll && <div style={{ fontSize: 13, color: 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace', marginBottom: 12 }}>{selWallet?.address}</div>}
                 <div style={{ fontSize: 36, fontWeight: 800, color: 'var(--fg)', marginBottom: 16 }}>
-                  ${totalUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  ${totalUsdValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
                   <span className="wallet-stat-pill-green">
-                    Wallet ${walletUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    Wallet ${walletUsdValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                   </span>
                   <span style={{ background: 'rgba(239,68,68,0.12)', color: t.red, padding: '4px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: '1px solid rgba(239,68,68,0.20)' }}>
-                    Staking ${stakingUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    Staking ${stakingUsdValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                   </span>
                 </div>
                 {/* pHEX / eHEX totals - matches Overview hero */}
@@ -6148,7 +5871,7 @@ export default function App() {
                 <div style={{ padding: '14px 16px', borderBottom: isCollapsed('wallet-holdings') ? 'none' : `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                   <div>
                     <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)' }}>Holdings</div>
-                    <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginTop: 2 }}>{filteredViewAssets.length} tokens  -  ${walletUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                    <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginTop: 2 }}>{filteredViewAssets.length} tokens  -  ${walletUsdValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{ display: 'flex', gap: 3, background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 8, padding: 3 }}>
@@ -6320,13 +6043,13 @@ export default function App() {
                               </td>
                               <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>
-                                  {asset.balance.toLocaleString(undefined, { maximumFractionDigits: 4 })}
+                                  {asset.balance.toLocaleString('en-US', { maximumFractionDigits: 4 })}
                                 </div>
                                 <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>{asset.symbol}</div>
                               </td>
                               <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                                 <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>
-                                  ${asset.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                  ${asset.value.toLocaleString('en-US', { maximumFractionDigits: 2 })}
                                 </div>
                               </td>
                               <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap', minWidth: 90 }}>
@@ -6385,9 +6108,9 @@ export default function App() {
                                       <div style={{ background: 'var(--bg-elevated)', borderRadius: 8, padding: '12px 14px' }}>
                                         <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Your Holdings</div>
                                         <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)' }}>
-                                          {asset.balance >= 1e6 ? `${(asset.balance/1e6).toFixed(2)}M` : asset.balance >= 1e3 ? `${(asset.balance/1e3).toFixed(2)}K` : asset.balance.toLocaleString(undefined, { maximumFractionDigits: 4 })} {asset.symbol}
+                                          {asset.balance >= 1e6 ? `${(asset.balance/1e6).toFixed(2)}M` : asset.balance >= 1e3 ? `${(asset.balance/1e3).toFixed(2)}K` : asset.balance.toLocaleString('en-US', { maximumFractionDigits: 4 })} {asset.symbol}
                                         </div>
-                                        <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginTop: 4 }}>${asset.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+                                        <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginTop: 4 }}>${asset.value.toLocaleString('en-US', { maximumFractionDigits: 2 })}</div>
                                         {wCurrentPlsValue > 0 && <div style={{ fontSize: 12, color: '#f739ff', marginTop: 2 }}>{wCurrentPlsValue >= 1e6 ? `${(wCurrentPlsValue/1e6).toFixed(2)}M` : wCurrentPlsValue >= 1e3 ? `${(wCurrentPlsValue/1e3).toFixed(2)}K` : wCurrentPlsValue.toFixed(0)} PLS</div>}
                                       </div>
                                       {/* P&L card */}
@@ -6408,16 +6131,16 @@ export default function App() {
                                           <>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                                               <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Entry</span>
-                                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)' }}>{wEntryPls.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</span>
+                                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)' }}>{wEntryPls.toLocaleString('en-US', { maximumFractionDigits: 0 })} PLS</span>
                                             </div>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                                               <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Now</span>
-                                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{wCurrentPlsValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS</span>
+                                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{wCurrentPlsValue.toLocaleString('en-US', { maximumFractionDigits: 0 })} PLS</span>
                                             </div>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 4, borderTop: '1px solid var(--border)', marginTop: 4 }}>
                                               <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg-subtle)' }}>Net P&L</span>
                                               <span style={{ fontSize: 14, fontWeight: 800, color: wPnlPls !== null && wPnlPls >= 0 ? t.green : t.red }}>
-                                                {wPnlPls !== null ? `${wPnlPls >= 0 ? '+' : ''}${wPnlPls.toLocaleString(undefined, { maximumFractionDigits: 0 })} PLS` : '-'}
+                                                {wPnlPls !== null ? `${wPnlPls >= 0 ? '+' : ''}${wPnlPls.toLocaleString('en-US', { maximumFractionDigits: 0 })} PLS` : '-'}
                                               </span>
                                             </div>
                                           </>
@@ -6456,18 +6179,18 @@ export default function App() {
                                            <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
                                              <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 12px', fontSize: 12 }}>
                                                <span style={{ color: 'var(--fg-subtle)' }}>Bought </span>
-                                               <span style={{ color: 'var(--fg)', fontWeight: 700 }}>{totalBoughtAmt >= 1e6 ? `${(totalBoughtAmt/1e6).toFixed(2)}M` : totalBoughtAmt >= 1e3 ? `${(totalBoughtAmt/1e3).toFixed(2)}K` : totalBoughtAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })} {sym}</span>
-                                               {totalCostUsd > 0 && <span style={{ color: 'var(--fg-subtle)', marginLeft: 4 }}>(${totalCostUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })})</span>}
+                                               <span style={{ color: 'var(--fg)', fontWeight: 700 }}>{totalBoughtAmt >= 1e6 ? `${(totalBoughtAmt/1e6).toFixed(2)}M` : totalBoughtAmt >= 1e3 ? `${(totalBoughtAmt/1e3).toFixed(2)}K` : totalBoughtAmt.toLocaleString('en-US', { maximumFractionDigits: 2 })} {sym}</span>
+                                               {totalCostUsd > 0 && <span style={{ color: 'var(--fg-subtle)', marginLeft: 4 }}>(${totalCostUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })})</span>}
                                              </div>
                                              <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 12px', fontSize: 12 }}>
                                                <span style={{ color: 'var(--fg-subtle)' }}>Sold </span>
-                                               <span style={{ color: 'var(--fg)', fontWeight: 700 }}>{totalSoldAmt >= 1e6 ? `${(totalSoldAmt/1e6).toFixed(2)}M` : totalSoldAmt >= 1e3 ? `${(totalSoldAmt/1e3).toFixed(2)}K` : totalSoldAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })} {sym}</span>
-                                               {totalProceedsUsd > 0 && <span style={{ color: 'var(--fg-subtle)', marginLeft: 4 }}>(${totalProceedsUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })})</span>}
+                                               <span style={{ color: 'var(--fg)', fontWeight: 700 }}>{totalSoldAmt >= 1e6 ? `${(totalSoldAmt/1e6).toFixed(2)}M` : totalSoldAmt >= 1e3 ? `${(totalSoldAmt/1e3).toFixed(2)}K` : totalSoldAmt.toLocaleString('en-US', { maximumFractionDigits: 2 })} {sym}</span>
+                                               {totalProceedsUsd > 0 && <span style={{ color: 'var(--fg-subtle)', marginLeft: 4 }}>(${totalProceedsUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })})</span>}
                                              </div>
                                              {(totalCostUsd > 0 || totalProceedsUsd > 0) && (
                                                <div style={{ background: realizedPnlTok >= 0 ? 'rgba(0,255,159,.1)' : 'rgba(244,63,94,.1)', border: `1px solid ${realizedPnlTok >= 0 ? 'rgba(0,255,159,.25)' : 'rgba(244,63,94,.25)'}`, borderRadius: 8, padding: '6px 12px', fontSize: 12 }}>
                                                  <span style={{ color: 'var(--fg-subtle)' }}>Realized P&amp;L </span>
-                                                 <span style={{ fontWeight: 800, color: realizedPnlTok >= 0 ? t.green : t.red }}>{realizedPnlTok >= 0 ? '+' : ''}${realizedPnlTok.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                                                 <span style={{ fontWeight: 800, color: realizedPnlTok >= 0 ? t.green : t.red }}>{realizedPnlTok >= 0 ? '+' : ''}${realizedPnlTok.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                                                </div>
                                              )}
                                            </div>
@@ -6509,7 +6232,7 @@ export default function App() {
                         <tr style={{ borderTop: '1px solid var(--border)' }}>
                           <td colSpan={4} style={{ padding: '10px 16px', fontSize: 13, color: 'var(--fg-muted)', fontWeight: 600 }}>TOTAL LIQUID</td>
                           <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>
-                            ${walletUsdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                            ${walletUsdValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                           </td>
                           <td colSpan={2} />
                         </tr>
@@ -6524,12 +6247,16 @@ export default function App() {
 
               {/* -- WALLET TRANSACTIONS -- */}
               {(() => {
-                const baseTxs = isAll
+                const baseTxs = (isAll
                   ? currentTransactions
-                  : currentTransactions.filter(tx => tx.from?.toLowerCase() === selectedWalletAddr || tx.to?.toLowerCase() === selectedWalletAddr);
+                  : currentTransactions.filter(tx => tx.from?.toLowerCase() === selectedWalletAddr || tx.to?.toLowerCase() === selectedWalletAddr)
+                ).filter(tx => tx.chain === 'pulsechain');
                 const filtered = baseTxs.filter(tx => {
-                  if (txTypeFilter !== 'all' && tx.type !== txTypeFilter) return false;
-                  if (walletChainFilter !== 'all' && tx.chain !== walletChainFilter) return false;
+                  if (txTypeFilter !== 'all') {
+                    if (txTypeFilter === 'swap' && tx.type !== 'swap' && !tx.swapLegOnly) return false;
+                    if (txTypeFilter === 'withdraw' && (tx.type !== 'withdraw' || tx.swapLegOnly)) return false;
+                    if (txTypeFilter !== 'swap' && txTypeFilter !== 'withdraw' && tx.type !== txTypeFilter) return false;
+                  }
                   if (txAssetFilter !== 'all' &&
                     !sameAssetSymbol(tx.asset, txAssetFilter, tx.chain) &&
                     !sameAssetSymbol(tx.counterAsset ?? '', txAssetFilter, tx.chain)
@@ -6585,6 +6312,82 @@ export default function App() {
                   </div>
                 );
               })()}
+
+              {(() => {
+                const hiddenChainAssets = walletChainFilter === 'all' ? hiddenAssetRows : hiddenAssetRows.filter(a => a.chain === walletChainFilter);
+                return (
+                <div className="hidden-coins-bottom">
+                  <button type="button" className="hidden-coins-bottom-trigger" onClick={() => setShowHiddenCoins(v => !v)}>
+                    <span>
+                      Hidden coins
+                      {hiddenTokens.length > 0 && <span className="hidden-coins-count">{hiddenTokens.length}</span>}
+                    </span>
+                    <ChevronDown size={14} style={{ transform: showHiddenCoins ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }} />
+                  </button>
+                  {showHiddenCoins && (
+                    <div className="hidden-coins-panel">
+                      <div className="hidden-coins-panel-header">
+                        <div>
+                          <div className="hidden-coins-title">Hidden Coins</div>
+                          <div className="hidden-coins-subtitle">
+                            {hiddenTokens.length === 0
+                              ? 'Nothing is manually hidden. New buys can still be affected by Dust or Spam filters.'
+                              : `${hiddenTokens.length} hidden token${hiddenTokens.length !== 1 ? 's' : ''}. Unhide anything that was hidden by mistake.`}
+                          </div>
+                        </div>
+                        <div className="hidden-coins-actions">
+                          <button
+                            type="button"
+                            className="hidden-coins-soft-btn"
+                            onClick={() => { setHideDust(false); setHideSpam(false); }}
+                          >
+                            Show all filters
+                          </button>
+                          {hiddenTokens.length > 0 && (
+                            <button
+                              type="button"
+                              className="hidden-coins-soft-btn hidden-coins-danger-btn"
+                              onClick={() => setHiddenTokens([])}
+                            >
+                              Unhide all
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      {hiddenChainAssets.length > 0 ? (
+                        <div className="hidden-coins-list">
+                          {hiddenChainAssets.map(asset => {
+                            const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()] || (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()] || getTokenLogoUrl(asset);
+                            return (
+                              <div key={asset.id} className="hidden-coin-row">
+                                <div className="hidden-coin-identity">
+                                  <span className="hidden-coin-logo">{logo ? <img src={logo} alt={asset.symbol} /> : asset.symbol.slice(0, 1)}</span>
+                                  <span>
+                                    <span className="hidden-coin-name">{asset.symbol}</span>
+                                    <span className="hidden-coin-meta">{asset.name} - {asset.chain}</span>
+                                  </span>
+                                </div>
+                                <div className="hidden-coin-side">
+                                  <span className="hidden-coin-value">${asset.value.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                                  <button type="button" className="hidden-coins-unhide-btn" onClick={() => unhideToken(asset.id)}>
+                                    Unhide
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="hidden-coins-empty">
+                          {walletChainFilter === 'all' ? 'No manually hidden coins.' : `No hidden coins on ${walletChainFilter}.`}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                );
+              })()}
+
             </motion.div>
           );
         })()}
@@ -6603,7 +6406,118 @@ export default function App() {
 
         {activeTab === 'bridge' && (
           <motion.div key="bridge" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <BridgeDashboardPage />
+            <BridgeDashboardPage
+              afterOfficialBridge={(
+                <div className="tx-module-card received-token-module">
+                  <div className="received-header tx-module-header" style={{ borderBottom: isCollapsed('received-assets') ? 'none' : '1px solid var(--border)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
+                      <ArrowDownLeft size={16} style={{ color: '#627EEA', flexShrink: 0 }} />
+                      <span style={{ fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}>MultiChain Transactions</span>
+                      <select value={receivedChainFilter === 'pulsechain' ? 'all' : receivedChainFilter} onChange={e => setReceivedChainFilter(e.target.value)}
+                        className="history-filter-select"
+                        style={{ background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 6, color: 'var(--fg)', fontSize: 13, padding: '4px 8px', cursor: 'pointer', outline: 'none' }}>
+                        <option value="all">All Chains</option>
+                        <option value="ethereum">Ethereum</option>
+                        <option value="base">Base</option>
+                      </select>
+                      <select value={receivedCoinFilter} onChange={e => setReceivedCoinFilter(e.target.value)}
+                        className="history-filter-select"
+                        style={{ background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 6, color: 'var(--fg)', fontSize: 13, padding: '4px 8px', cursor: 'pointer', outline: 'none' }}>
+                        <option value="all">All Coins</option>
+                        <option value="ETH">ETH</option>
+                        <option value="USDC">USDC</option>
+                        <option value="USDT">USDT</option>
+                        <option value="DAI">DAI</option>
+                      </select>
+                    </div>
+                    <div className="received-totals" style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginBottom: 2, fontWeight: 600, letterSpacing: '.5px', textTransform: 'uppercase' }}>Total Received</div>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)' }}>${receivedAssetsData.totalValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
+                        <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{receivedAssetsData.list.length} tx</div>
+                      </div>
+                      <button onClick={() => toggleSection('received-assets')}
+                        style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s', flexShrink: 0 }}
+                        onMouseOver={e => (e.currentTarget.style.color = 'var(--fg)')}
+                        onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}
+                        title={isCollapsed('received-assets') ? 'Expand' : 'Collapse'}>
+                        {isCollapsed('received-assets') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                      </button>
+                    </div>
+                  </div>
+                  {!isCollapsed('received-assets') && (<>
+                  {receivedAssetsData.list.length > 0 && (
+                    <div tabIndex={0} className="received-asset-summary-row custom-scrollbar">
+                      {(Object.entries(receivedAssetsData.byAsset) as [string, { amount: number; valueUsd: number }][]).map(([sym, data]) => (
+                        <div key={sym} className="received-asset-summary-card">
+                          <div className="received-asset-symbol">{sym}</div>
+                          <div className="received-asset-amount">
+                            {sym === 'ETH' ? data.amount.toLocaleString('en-US', { maximumFractionDigits: 4 }) : data.amount.toLocaleString('en-US', { maximumFractionDigits: 0 })} {sym}
+                          </div>
+                          <div className="received-asset-value">${data.valueUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="received-history-list custom-scrollbar tx-module-list">
+                    {receivedAssetsData.list.length === 0 ? (
+                      <div style={{ padding: '48px 20px', textAlign: 'center', color: 'var(--fg-muted)', fontSize: 13 }}>
+                        {wallets.length === 0
+                          ? 'Add wallets to see received assets history.'
+                          : ['ethereum', 'base'].includes(receivedChainFilter === 'pulsechain' ? 'all' : receivedChainFilter) && !etherscanApiKey
+                          ? <span>
+                              No Ethereum/Base transactions loaded.{' '}
+                              <button
+                                onClick={() => { setApiKeyInput(''); setIsApiKeyModalOpen(true); }}
+                                style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontSize: 13, padding: 0 }}>
+                                Add an Etherscan API key
+                              </button>
+                              {' '}for reliable ETH/Base history.
+                            </span>
+                          : 'No ETH or stablecoin inbound transfers found since 2021.'}
+                      </div>
+                    ) : (
+                      <TransactionList
+                        transactions={receivedAssetsData.list.map(tx => {
+                          const assetUp = tx.asset.toUpperCase();
+                          const isEth = assetUp === 'ETH';
+                          const isPls = assetUp === 'PLS';
+                          const pulseDaiPrice = prices['pulsechain:0xefd766ccb38eaf1dfd701853bfce31359239f305']?.usd
+                            ?? prices['pulsechain:0x6b175474e89094c44da98b954eedeac495271d0f']?.usd
+                            ?? prices['pulsechain:dai']?.usd
+                            ?? 0;
+                          const daiPrice = tx.chain === 'pulsechain' ? pulseDaiPrice : (prices['dai']?.usd ?? 0);
+                          const usdtPrice = tx.chain === 'pulsechain'
+                            ? (prices['pulsechain:0x0cb6f5a34ad42ec934882a05265a7d5f59b51a2f']?.usd ?? 0)
+                            : (prices['tether']?.usd ?? 1);
+                          const usdcPrice = tx.chain === 'pulsechain'
+                            ? (prices['pulsechain:0x15d38573d2feeb82e7ad5187ab8c1d52810b1f07']?.usd ?? 0)
+                            : (prices['usd-coin']?.usd ?? 1);
+                          const displayUsd = tx.valueUsd || (
+                            isEth ? tx.amount * (prices['ethereum']?.usd || 3400) :
+                            isPls ? tx.amount * (prices['pulsechain']?.usd || 0.00005) :
+                            assetUp.includes('USDT') || assetUp.includes('TETHER') ? tx.amount * usdtPrice :
+                            assetUp.includes('DAI') ? tx.amount * daiPrice :
+                            tx.amount * usdcPrice
+                          );
+                          return { ...tx, valueUsd: displayUsd };
+                        })}
+                        viewAsYou={viewAsYou}
+                        wallets={wallets}
+                        assets={currentAssets}
+                        getTokenLogoUrl={getTokenLogoUrl}
+                        tokenLogos={tokenLogos}
+                        hideIds={hiddenTxIds}
+                        onToggleHide={id => setHiddenTxIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
+                        showHidden={showHiddenTxs}
+                        emptyMessage="No received token transactions found for these filters."
+                      />
+                    )}
+                  </div>
+                  </>)}
+                </div>
+              )}
+            />
           </motion.div>
         )}
 
@@ -6627,7 +6541,7 @@ export default function App() {
         {([
           { id: 'home',     label: 'Home',              icon: Activity },
           { id: 'overview', label: 'Portfolio',         icon: LayoutDashboard },
-          { id: 'assets',   label: 'Holdings',           icon: Coins },
+          { id: 'assets',   label: 'Wallet',             icon: Coins },
           { id: 'stakes',   label: 'Stakes',            icon: Lock },
           { id: 'defi',     label: 'DeFi',              icon: Droplets },
         ] as const).map(({ id, label, icon: Icon }) => (
@@ -6649,14 +6563,14 @@ export default function App() {
       <AnimatePresence>
         {isAddingWallet && (
           <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-6">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsAddingWallet(false)}
               className="absolute inset-0 bg-black/80 backdrop-blur-sm"
             />
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: '100%' }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: '100%' }}
@@ -6678,8 +6592,8 @@ export default function App() {
                   <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 }}>
                     Wallet Address
                   </label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="0x..."
                     inputMode="text"
                     value={newWalletAddress}
@@ -6699,8 +6613,8 @@ export default function App() {
                   <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 }}>
                     Wallet Name <span style={{ color: t.textMuted, fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
                   </label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="My Main Wallet"
                     value={newWalletName}
                     onChange={(e) => {
@@ -6719,7 +6633,7 @@ export default function App() {
                   {walletFormError || 'Tip: Wallets are read-only. PulsePort never requests private keys.'}
                 </div>
                 <div style={{ paddingTop: 8, display: 'flex', gap: 10 }}>
-                  <button 
+                  <button
                     onClick={() => {
                       setIsAddingWallet(false);
                       setWalletFormError('');
@@ -6729,7 +6643,7 @@ export default function App() {
                   >
                     Cancel
                   </button>
-                  <button 
+                  <button
                     onClick={addWallet}
                     disabled={!newWalletAddress.trim()}
                     style={{ flex: 1, minHeight: 44, borderRadius: 10, background: newWalletAddress.trim() ? 'var(--accent)' : 'var(--border)',
@@ -6980,5 +6894,3 @@ export default function App() {
     </div>
   );
 }
-
-

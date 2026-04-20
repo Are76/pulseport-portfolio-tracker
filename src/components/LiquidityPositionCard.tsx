@@ -8,12 +8,12 @@ import {
 import type { LpPositionEnriched } from '../types';
 import { fmtUsd, fmtTok } from '../lib/utils';
 
-// ─── Token logo URL ────────────────────────────────────────────────────────────
+// --- Token logo URL ------------------------------------------------------------
 function tokenLogoUrl(address: string): string {
   return `https://tokens.app.pulsex.com/images/tokens/${address}.png`;
 }
 
-// ─── Token Logo ───────────────────────────────────────────────────────────────
+// --- Token Logo ---------------------------------------------------------------
 interface TokenLogoProps {
   address: string;
   symbol: string;
@@ -50,7 +50,7 @@ function TokenLogo({ address, symbol, size, zIndex = 1, style }: TokenLogoProps)
   );
 }
 
-// ─── Overlapping Pair Logos ────────────────────────────────────────────────────
+// --- Overlapping Pair Logos ----------------------------------------------------
 interface PairLogosProps {
   token0Address: string;
   token1Address: string;
@@ -70,7 +70,7 @@ function PairLogos({ token0Address, token1Address, token0Symbol, token1Symbol, s
   );
 }
 
-// ─── IL Badge ─────────────────────────────────────────────────────────────────
+// --- IL Badge -----------------------------------------------------------------
 function ILBadge({ il }: { il: number | null }) {
   if (il === null) {
     return (
@@ -102,7 +102,7 @@ function ILBadge({ il }: { il: number | null }) {
   );
 }
 
-// ─── Sparkline ────────────────────────────────────────────────────────────────
+// --- Sparkline ----------------------------------------------------------------
 function Sparkline({ data, w, h, id }: {
   data: { t: number; v: number }[];
   w?: number | string;
@@ -134,7 +134,7 @@ function Sparkline({ data, w, h, id }: {
   );
 }
 
-// ─── Token Breakdown Box ──────────────────────────────────────────────────────
+// --- Token Breakdown Box ------------------------------------------------------
 interface TokenBoxProps {
   address: string;
   symbol: string;
@@ -193,7 +193,7 @@ function TokenBox({ address, symbol, amount, usd, weightPct, priceUsd }: TokenBo
   );
 }
 
-// ─── Stat Pill ────────────────────────────────────────────────────────────────
+// --- Stat Pill ----------------------------------------------------------------
 function StatPill({ label, value, color, bg, border }: {
   label: string;
   value: string;
@@ -217,7 +217,7 @@ function StatPill({ label, value, color, bg, border }: {
   );
 }
 
-// ─── FULL CARD ────────────────────────────────────────────────────────────────
+// --- FULL CARD ----------------------------------------------------------------
 function LiquidityPositionCardFull({ pos }: { pos: LpPositionEnriched }) {
   const totalUsd  = pos.totalUsd;
   const tok0Pct   = totalUsd > 0 ? (pos.token0Usd / totalUsd) * 100 : 50;
@@ -227,9 +227,9 @@ function LiquidityPositionCardFull({ pos }: { pos: LpPositionEnriched }) {
   return (
     <div className="lp-card" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* ── Top accent line rendered by CSS ::before ── */}
+      {/* -- Top accent line rendered by CSS ::before -- */}
 
-      {/* ── Header: logos + pair name + value ─────── */}
+      {/* -- Header: logos + pair name + value ------- */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <PairLogos
@@ -263,7 +263,7 @@ function LiquidityPositionCardFull({ pos }: { pos: LpPositionEnriched }) {
           </div>
         </div>
 
-        {/* USD value — top right */}
+        {/* USD value - top right */}
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
           <div style={{
             fontSize: 22, fontWeight: 800, color: 'var(--fg)',
@@ -280,10 +280,10 @@ function LiquidityPositionCardFull({ pos }: { pos: LpPositionEnriched }) {
         </div>
       </div>
 
-      {/* ── Divider ── */}
+      {/* -- Divider -- */}
       <div style={{ height: 1, background: 'var(--border)' }} />
 
-      {/* ── Token Amount Row ── */}
+      {/* -- Token Amount Row -- */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         <TokenBox
           address={pos.token0Address} symbol={pos.token0Symbol}
@@ -297,7 +297,7 @@ function LiquidityPositionCardFull({ pos }: { pos: LpPositionEnriched }) {
         />
       </div>
 
-      {/* ── Stats pills ── */}
+      {/* -- Stats pills -- */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {/* IL */}
         <div style={{
@@ -329,7 +329,7 @@ function LiquidityPositionCardFull({ pos }: { pos: LpPositionEnriched }) {
 
         <StatPill
           label="Fees 24h"
-          value={pos.fees24hUsd != null && pos.fees24hUsd > 0 ? `+${fmtUsd(pos.fees24hUsd)}` : '—'}
+          value={pos.fees24hUsd != null && pos.fees24hUsd > 0 ? `+${fmtUsd(pos.fees24hUsd)}` : '-'}
           color={pos.fees24hUsd != null && pos.fees24hUsd > 0 ? 'var(--positive)' : 'var(--fg-subtle)'}
           bg={pos.fees24hUsd != null && pos.fees24hUsd > 0 ? 'rgba(0,255,159,0.06)' : 'var(--bg-inset)'}
           border={pos.fees24hUsd != null && pos.fees24hUsd > 0 ? 'rgba(0,255,159,0.18)' : 'var(--border-inset)'}
@@ -356,12 +356,12 @@ function LiquidityPositionCardFull({ pos }: { pos: LpPositionEnriched }) {
         )}
       </div>
 
-      {/* ── Sparkline ── */}
+      {/* -- Sparkline -- */}
       <div style={{ borderRadius: 10, overflow: 'hidden', margin: '0 -2px' }}>
         <Sparkline data={pos.sparkline} h={48} id={sparkId} />
       </div>
 
-      {/* ── Footer: LP balance + action buttons ── */}
+      {/* -- Footer: LP balance + action buttons -- */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         paddingTop: 8, borderTop: '1px solid var(--border)', flexWrap: 'wrap', gap: 8,
@@ -372,19 +372,19 @@ function LiquidityPositionCardFull({ pos }: { pos: LpPositionEnriched }) {
         }}>
           {pos.walletLpBalance > 0 && pos.stakedLpBalance > 0 ? (
             <>
-              Wallet: {pos.walletLpBalance.toLocaleString(undefined, { maximumFractionDigits: 6 })}
+              Wallet: {pos.walletLpBalance.toLocaleString('en-US', { maximumFractionDigits: 6 })}
               {' · '}
-              Staked: {pos.stakedLpBalance.toLocaleString(undefined, { maximumFractionDigits: 6 })}
+              Staked: {pos.stakedLpBalance.toLocaleString('en-US', { maximumFractionDigits: 6 })}
             </>
           ) : pos.stakedLpBalance > 0 ? (
-            <>Staked LP: {pos.stakedLpBalance.toLocaleString(undefined, { maximumFractionDigits: 6 })}</>
+            <>Staked LP: {pos.stakedLpBalance.toLocaleString('en-US', { maximumFractionDigits: 6 })}</>
           ) : (
-            <>LP Balance: {pos.walletLpBalance.toLocaleString(undefined, { maximumFractionDigits: 6 })}</>
+            <>LP Balance: {pos.walletLpBalance.toLocaleString('en-US', { maximumFractionDigits: 6 })}</>
           )}
         </span>
 
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          {/* Remove Liquidity link → PulseX */}
+          {/* Remove Liquidity link -> PulseX */}
           <a
             href={`https://pulsex.com/#/remove/${pos.token0Address}/${pos.token1Address}`}
             target="_blank"
@@ -402,7 +402,7 @@ function LiquidityPositionCardFull({ pos }: { pos: LpPositionEnriched }) {
           >
             Remove
           </a>
-          {/* Manage → PulseX add liq */}
+          {/* Manage -> PulseX add liq */}
           <a
             href={`https://pulsex.com/#/add/${pos.token0Address}/${pos.token1Address}`}
             target="_blank"
@@ -444,7 +444,7 @@ function LiquidityPositionCardFull({ pos }: { pos: LpPositionEnriched }) {
   );
 }
 
-// ─── COMPACT CARD (overview strip) ────────────────────────────────────────────
+// --- COMPACT CARD (overview strip) --------------------------------------------
 function LiquidityPositionCardCompact({ pos, onClick }: {
   pos: LpPositionEnriched;
   onClick?: () => void;
@@ -516,7 +516,7 @@ function LiquidityPositionCardCompact({ pos, onClick }: {
   );
 }
 
-// ─── PUBLIC EXPORT ────────────────────────────────────────────────────────────
+// --- PUBLIC EXPORT ------------------------------------------------------------
 export interface LiquidityPositionCardProps {
   key?: React.Key;
   pos: LpPositionEnriched;

@@ -90,7 +90,7 @@ export interface LpPositionEnriched extends LpPosition {
   reserve1: number;
   token0PriceUsd: number;
   token1PriceUsd: number;
-  ilEstimate: number | null;      // result of IL formula × 100 for %, null if no entry
+  ilEstimate: number | null;      // result of IL formula x 100 for %, null if no entry
   fees24hUsd: number | null;
   volume24hUsd: number | null;
   isStaked: boolean;
@@ -98,7 +98,7 @@ export interface LpPositionEnriched extends LpPosition {
   pendingIncUsd?: number;
   walletLpBalance: number;   // LP tokens held in wallet (normalised to 1e18)
   stakedLpBalance: number;   // LP tokens staked in MasterChef (normalised to 1e18)
-  sparkline: { t: number; v: number }[];  // 7 points, approximate — totalUsd ± small variance
+  sparkline: { t: number; v: number }[];  // 7 points, approximate - totalUsd ± small variance
 }
 
 export interface PortfolioSummary {
@@ -145,12 +145,12 @@ export interface Transaction {
   asset: string;
   /** Amount of the primary asset. */
   amount: number;
-  /** USD value at time of transaction (optional — may be 0 for older txs). */
+  /** USD value at time of transaction (optional - may be 0 for older txs). */
   valueUsd?: number;
   /** Gas fee paid in native token (PLS or ETH). */
   fee?: number;
   chain: Chain;
-  // ── Swap-only fields ──────────────────────────────────────────────────────
+  // -- Swap-only fields ------------------------------------------------------
   /** Asset that was spent in the swap (the "sell" side). */
   counterAsset?: string;
   /** Amount of counterAsset spent. */
@@ -159,6 +159,8 @@ export interface Transaction {
   assetPriceUsdAtTx?: number;
   /** Estimated USD price per spent asset at swap time or last sync. */
   counterPriceUsdAtTx?: number;
+  /** True when only the spent side of an on-chain swap was available from the explorer. */
+  swapLegOnly?: boolean;
   bridged?: boolean;
   status?: string;
   /** Present when this transaction was routed via Liberty Swap cross-chain bridge. */

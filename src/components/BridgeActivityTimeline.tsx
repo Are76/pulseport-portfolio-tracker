@@ -123,14 +123,14 @@ function formatUsd(value: number | undefined): string {
   const v = value ?? 0;
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(2)}M`;
   if (v >= 10_000) return `$${(v / 1_000).toFixed(1)}K`;
-  return `$${v.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  return `$${v.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
 }
 
 function formatToken(value: number): string {
   if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
   if (value >= 1e6) return `${(value / 1e6).toFixed(2)}M`;
   if (value >= 1e3) return `${(value / 1e3).toFixed(2)}K`;
-  return value.toLocaleString(undefined, { maximumFractionDigits: 4 });
+  return value.toLocaleString('en-US', { maximumFractionDigits: 4 });
 }
 
 function explorerUrl(chain: Chain, hash: string): string {

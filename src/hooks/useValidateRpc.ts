@@ -26,7 +26,7 @@ export function useValidateRpc(initialUrl?: string | null): UseValidateRpcResult
   const validateRpc = useCallback(async (url: string): Promise<boolean> => {
     if (!url || !url.startsWith('http')) {
       setIsValid(false);
-      setError('Invalid URL — must start with http:// or https://');
+      setError('Invalid URL - must start with http:// or https://');
       return false;
     }
 
@@ -58,7 +58,7 @@ export function useValidateRpc(initialUrl?: string | null): UseValidateRpcResult
 
       if (!valid) {
         const decimal = parseInt(chainId, 16);
-        setError(`Wrong chain — expected PulseChain (369) but got chain ID ${decimal}`);
+        setError(`Wrong chain - expected PulseChain (369) but got chain ID ${decimal}`);
         setIsValid(false);
         return false;
       }

@@ -17,7 +17,7 @@ const SUBGRAPH_V2 = 'https://graph.pulsechain.com/subgraphs/name/pulsechain/puls
 
 const FETCH_TIMEOUT = 10_000;
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// --- Types --------------------------------------------------------------------
 
 export interface TokenSearchResult {
   id: string;
@@ -35,7 +35,7 @@ export interface UseTokenSearchResult {
   noResults: boolean;
 }
 
-// ─── GraphQL helpers ──────────────────────────────────────────────────────────
+// --- GraphQL helpers ----------------------------------------------------------
 
 interface SubgraphPair {
   id: string;
@@ -116,7 +116,7 @@ async function querySubgraph(
     }));
 }
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
+// --- Hook ---------------------------------------------------------------------
 
 export function useTokenSearch(searchTerm: string): UseTokenSearchResult {
   const [data,      setData]      = useState<TokenSearchResult[]>([]);
@@ -155,7 +155,7 @@ export function useTokenSearch(searchTerm: string): UseTokenSearchResult {
         if (v1Res.status === 'fulfilled') combined.push(...v1Res.value);
         if (v2Res.status === 'fulfilled') combined.push(...v2Res.value);
 
-        // Deduplicate by pairAddress (keep first occurrence — V1 first, then V2)
+        // Deduplicate by pairAddress (keep first occurrence - V1 first, then V2)
         const seen = new Set<string>();
         const deduped = combined.filter(p => {
           if (seen.has(p.pairAddress)) return false;

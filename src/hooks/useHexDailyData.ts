@@ -9,7 +9,7 @@
  */
 import { useState, useEffect, useRef } from 'react';
 
-// ─── HEX contract config ──────────────────────────────────────────────────────
+// --- HEX contract config ------------------------------------------------------
 
 const HEX_ADDRESS = '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39'; // same on both chains
 
@@ -21,13 +21,13 @@ const ETHEREUM_RPC_FALLBACK   = 'https://eth.llamarpc.com';
 /** How many recent days of daily data to fetch (enough for a rolling average). */
 const FETCH_DAYS = 30;
 
-/** Cache TTL in milliseconds — re-fetch once per hour. */
+/** Cache TTL in milliseconds - re-fetch once per hour. */
 const CACHE_TTL_MS = 60 * 60 * 1000;
 
 const CACHE_KEY_PULSE = 'hex_daily_data_pulse';
 const CACHE_KEY_ETH   = 'hex_daily_data_eth';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// --- Types --------------------------------------------------------------------
 
 /** One decoded day entry from the HEX dailyDataRange response. */
 export interface HexDayData {
@@ -49,9 +49,9 @@ export interface HexDailyDataResult {
   error: string | null;
 }
 
-// ─── RPC helpers ─────────────────────────────────────────────────────────────
+// --- RPC helpers -------------------------------------------------------------
 
-/** Call currentDay() — selector 0x5c9302c9 */
+/** Call currentDay() - selector 0x5c9302c9 */
 async function fetchCurrentDay(rpcUrl: string): Promise<number> {
   const res = await fetch(rpcUrl, {
     method: 'POST',
@@ -100,10 +100,10 @@ async function fetchDailyDataRange(
  * Decode the raw ABI-encoded uint256[] from dailyDataRange.
  *
  * HEX packs two values per uint256:
- *   bits 0–71   → payout (hearts per raw share × 1e18 scale)
- *   bits 72–143 → totalStaked (hearts)
+ *   bits 0-71   -> payout (hearts per raw share x 1e18 scale)
+ *   bits 72-143 -> totalStaked (hearts)
  *
- * payoutPerTShare (HEX) = payout × 1e12 / 1e8 (T-share = 1e12 raw shares; 1 HEX = 1e8 hearts)
+ * payoutPerTShare (HEX) = payout x 1e12 / 1e8 (T-share = 1e12 raw shares; 1 HEX = 1e8 hearts)
  */
 function decodeDailyData(raw: string, beginDay: number): HexDayData[] {
   const hex = raw.replace('0x', '');
@@ -115,7 +115,7 @@ function decodeDailyData(raw: string, beginDay: number): HexDayData[] {
   if (arrayLen === 0) return [];
 
   const entries: HexDayData[] = [];
-  const dataStart = 128; // after offset + length words (2 × 64 hex chars)
+  const dataStart = 128; // after offset + length words (2 x 64 hex chars)
 
   for (let i = 0; i < arrayLen; i++) {
     const wordStart = dataStart + i * 64;
@@ -128,10 +128,10 @@ function decodeDailyData(raw: string, beginDay: number): HexDayData[] {
     const totalStaked = (word >> 72n) & ((1n << 72n) - 1n);
 
     // Convert to HEX per T-Share:
-    //   payoutRaw is hearts per raw share × 10^18 (HEX contract internal scale)
+    //   payoutRaw is hearts per raw share x 10^18 (HEX contract internal scale)
     //   1 T-Share = 10^12 raw shares
     //   1 HEX     = 10^8  hearts
-    //   payoutPerTShare(HEX) = payoutRaw × 10^12 / (10^8 × 10^18) = payoutRaw / 10^14
+    //   payoutPerTShare(HEX) = payoutRaw x 10^12 / (10^8 x 10^18) = payoutRaw / 10^14
     const payoutPerTShare = Number(payoutRaw) / 1e14;
 
     entries.push({
@@ -144,7 +144,7 @@ function decodeDailyData(raw: string, beginDay: number): HexDayData[] {
   return entries;
 }
 
-// ─── Cache helpers ────────────────────────────────────────────────────────────
+// --- Cache helpers ------------------------------------------------------------
 
 interface CachedData {
   ts: number;
@@ -172,7 +172,7 @@ function saveCache(key: string, days: HexDayData[]): void {
   }
 }
 
-// ─── Fetch one chain ──────────────────────────────────────────────────────────
+// --- Fetch one chain ----------------------------------------------------------
 
 async function fetchChainDailyData(
   primaryRpc: string,
@@ -202,7 +202,7 @@ async function fetchChainDailyData(
   return decodeDailyData(raw, beginDay);
 }
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
+// --- Hook ---------------------------------------------------------------------
 
 export function useHexDailyData(): HexDailyDataResult {
   const [pulsechain, setPulsechain] = useState<HexDayData[]>(() => tryLoadCache(CACHE_KEY_PULSE) ?? []);

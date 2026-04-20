@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { LpPositionEnriched } from '../types';
 
-// ─── Pair Registry ────────────────────────────────────────────────────────────
+// --- Pair Registry ------------------------------------------------------------
 export const PULSEX_PAIR_REGISTRY: Record<string, {
   token0Symbol: string;
   token1Symbol: string;
@@ -60,7 +60,7 @@ export const PULSEX_PAIR_REGISTRY: Record<string, {
   },
 };
 
-// ─── RPC Helpers ─────────────────────────────────────────────────────────────
+// --- RPC Helpers -------------------------------------------------------------
 const PRIMARY_RPC   = 'https://rpc-pulsechain.g4mm4.io';
 const FALLBACK_RPC  = 'https://rpc.pulsechain.com';
 const MASTERCHEF    = '0xb2ca4a66d3e57a5a9a12043b6bad28249fe302d4';
@@ -117,7 +117,7 @@ function chunks<T>(arr: T[], size: number): T[][] {
   return result;
 }
 
-// Sequential chunked batch — avoids overloading the RPC node
+// Sequential chunked batch - avoids overloading the RPC node
 async function chunkedBatch(
   calls: { to: string; data: string }[],
 ): Promise<string[]> {
@@ -129,7 +129,7 @@ async function chunkedBatch(
   return results;
 }
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
+// --- Hook ---------------------------------------------------------------------
 export interface UseLiquidityPositionsResult {
   positions: LpPositionEnriched[];
   loading: boolean;
@@ -158,7 +158,7 @@ export function useLiquidityPositions(
       const wallets = walletAddresses.map(a => a.toLowerCase());
       const pairAddrs = Object.keys(PULSEX_PAIR_REGISTRY);
 
-      // ── 1. Wallet LP balances + totalSupply + reserves ────────────────────
+      // -- 1. Wallet LP balances + totalSupply + reserves --------------------
       // 3 calls per pair per wallet  (balanceOf) + 2 pair-level calls
       const walletBalCalls: { to: string; data: string }[] = [];
       const walletBalIndex: { pairAddr: string; walletAddr: string }[] = [];
@@ -210,7 +210,7 @@ export function useLiquidityPositions(
           (pairData[pairAddr].walletBalances[walletAddr] ?? 0n) + BigInt('0x' + clean);
       });
 
-      // ── 2. MasterChef staked LP ───────────────────────────────────────────
+      // -- 2. MasterChef staked LP -------------------------------------------
       // 2a. Get pool count
       let poolCount = 0;
       try {
@@ -222,12 +222,12 @@ export function useLiquidityPositions(
           POOL_CAP,
         );
       } catch {
-        // MasterChef unavailable — proceed without staking data
+        // MasterChef unavailable - proceed without staking data
       }
 
-      // Map: lpTokenAddress → poolId
+      // Map: lpTokenAddress -> poolId
       const lpToPool: Record<string, number> = {};
-      // Map: poolId → Map: wallet → { staked, pendingInc }
+      // Map: poolId -> Map: wallet -> { staked, pendingInc }
       const stakedMap: Record<number, Record<string, { staked: bigint; pendingInc: bigint }>> = {};
 
       if (poolCount > 0) {
@@ -247,7 +247,7 @@ export function useLiquidityPositions(
           }
         });
 
-        // 2c. userInfo + pendingInc for each (relevant pool × wallet)
+        // 2c. userInfo + pendingInc for each (relevant pool x wallet)
         const relevantPools = Object.values(lpToPool);
         if (relevantPools.length > 0) {
           const userCalls: { to: string; data: string }[] = [];
@@ -282,7 +282,7 @@ export function useLiquidityPositions(
         }
       }
 
-      // ── 3. Fetch 24h volume from PulseX subgraph (best-effort) ───────────
+      // -- 3. Fetch 24h volume from PulseX subgraph (best-effort) -----------
       const volume24h: Record<string, number> = {};
       try {
         const query = `{
@@ -310,10 +310,10 @@ export function useLiquidityPositions(
           });
         }
       } catch {
-        // Subgraph is optional enrichment — failures are silently ignored
+        // Subgraph is optional enrichment - failures are silently ignored
       }
 
-      // ── 4. Build enriched positions ───────────────────────────────────────
+      // -- 4. Build enriched positions ---------------------------------------
       const incPrice = tokenPrices['INC'] ?? 0;
       const enriched: LpPositionEnriched[] = [];
 
@@ -341,11 +341,11 @@ export function useLiquidityPositions(
           }
         }
 
-        // Total user LP — wallet balance PLUS staked balance (a user can hold both)
+        // Total user LP - wallet balance PLUS staked balance (a user can hold both)
         const userLPBalance = stakedBal + walletBal;
         if (userLPBalance === 0n) continue;
 
-        // ── Per-spec math ──────────────────────────────────────────────────
+        // -- Per-spec math --------------------------------------------------
         const totalSupplyNum = Number(d.totalSupply) / 1e18;
         const userShare      = Number(userLPBalance) / Number(d.totalSupply);
 
@@ -361,7 +361,7 @@ export function useLiquidityPositions(
 
         const ownershipPct = userShare * 100;
 
-        // ── Impermanent Loss ──────────────────────────────────────────────
+        // -- Impermanent Loss ----------------------------------------------
         const entryKey     = `lp_entry_${pairAddr}`;
         const currentRatio = token1Amount > 0 ? token0Amount / token1Amount : 0;
         let ilEstimate: number | null = null;
@@ -377,7 +377,7 @@ export function useLiquidityPositions(
               ilEstimate = impermanentLossRatio * 100; // as %
             }
           } else if (currentRatio > 0) {
-            // First discovery — save entry snapshot
+            // First discovery - save entry snapshot
             localStorage.setItem(
               entryKey,
               JSON.stringify({ ratio: currentRatio, timestamp: Date.now() }),
@@ -387,17 +387,17 @@ export function useLiquidityPositions(
           // localStorage unavailable in some environments
         }
 
-        // ── Fees 24h / Volume 24h ─────────────────────────────────────────
+        // -- Fees 24h / Volume 24h -----------------------------------------
         const vol24h    = volume24h[pairAddr] ?? null;
         const fees24h   = vol24h !== null ? vol24h * 0.003 * userShare : null;
 
-        // ── Sparkline (7 points approximation) ───────────────────────────
+        // -- Sparkline (7 points approximation) ---------------------------
         const sparkline = Array.from({ length: 7 }, (_, i) => ({
           t: Date.now() - (6 - i) * 86400000,
           v: totalUsd * (0.95 + Math.sin(i * 0.8 + (totalUsd % 3)) * 0.04 + i * 0.005),
         }));
 
-        // ── Pending INC USD ───────────────────────────────────────────────
+        // -- Pending INC USD -----------------------------------------------
         const pendingIncHuman = Number(pendingIncTotal) / 1e18;
         const pendingIncUsd   = pendingIncHuman * incPrice;
 
@@ -452,7 +452,7 @@ export function useLiquidityPositions(
     fetchPositions();
   }, [fetchPositions]);
 
-  // Issue #1 — Auto-refresh LP positions every 60 s when wallets are present.
+  // Issue #1 - Auto-refresh LP positions every 60 s when wallets are present.
   // Reserves and prices change constantly, so a periodic refresh keeps data fresh.
   const refetchRef = useRef(refetch);
   useEffect(() => { refetchRef.current = refetch; });

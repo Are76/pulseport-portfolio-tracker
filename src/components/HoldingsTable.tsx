@@ -52,7 +52,7 @@ interface HoldingsTableProps {
 }
 
 const fmtAmount = (value: number, maxDigits = 4) =>
-  value.toLocaleString(undefined, { maximumFractionDigits: maxDigits });
+  value.toLocaleString('en-US', { maximumFractionDigits: maxDigits });
 
 const fmtCompact = (value: number, suffix = '') => {
   const abs = Math.abs(value);
@@ -60,17 +60,17 @@ const fmtCompact = (value: number, suffix = '') => {
   if (abs >= 1e9) return `${sign}${(abs / 1e9).toFixed(2)}B${suffix}`;
   if (abs >= 1e6) return `${sign}${(abs / 1e6).toFixed(2)}M${suffix}`;
   if (abs >= 1e3) return `${sign}${(abs / 1e3).toFixed(2)}K${suffix}`;
-  if (abs >= 1) return `${sign}${abs.toLocaleString(undefined, { maximumFractionDigits: 2 })}${suffix}`;
-  return `${sign}${abs.toLocaleString(undefined, { maximumFractionDigits: 6 })}${suffix}`;
+  if (abs >= 1) return `${sign}${abs.toLocaleString('en-US', { maximumFractionDigits: 2 })}${suffix}`;
+  return `${sign}${abs.toLocaleString('en-US', { maximumFractionDigits: 6 })}${suffix}`;
 };
 
 const fmtUsd = (value: number, maxDigits = 2) =>
-  `$${value.toLocaleString(undefined, { maximumFractionDigits: maxDigits })}`;
+  `$${value.toLocaleString('en-US', { maximumFractionDigits: maxDigits })}`;
 
 const fmtPrice = (price: number) => {
   if (!price) return '$0.00';
   if (price < 0.0001) return `$${price.toFixed(10).replace(/0+$/, '')}`;
-  return `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: price < 1 ? 6 : 2 })}`;
+  return `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: price < 1 ? 6 : 2 })}`;
 };
 
 const pctForPeriod = (asset: HoldingDisplayAsset, period: HoldingsTableProps['priceChangePeriod']) => {

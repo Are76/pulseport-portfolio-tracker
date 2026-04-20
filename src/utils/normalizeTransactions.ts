@@ -6,7 +6,7 @@
  * single `swap` record.
  *
  * This is the ONLY place swap-detection logic should live.
- * All UI code must consume the output of this function — never raw blockchain
+ * All UI code must consume the output of this function - never raw blockchain
  * structures directly.
  */
 
@@ -21,6 +21,9 @@ const NATIVE_TOKEN: Record<string, string> = {
 
 const isZeroValueNativeCall = (t: Transaction): boolean =>
   t.amount <= 0 && t.asset === NATIVE_TOKEN[t.chain];
+
+const isOwnAddress = (addr: string | undefined, walletAddrs: Set<string>): boolean =>
+  !!addr && walletAddrs.has(addr.toLowerCase());
 
 export function normalizeTransactions(
   rawTxs: Transaction[],
@@ -37,12 +40,27 @@ export function normalizeTransactions(
   const seen = new Set<string>();
 
   Object.entries(byHash).forEach(([hash, txs]) => {
+    const hasOutboundZeroValueCall = txs.some(t =>
+      isZeroValueNativeCall(t) &&
+      isOwnAddress(t.from, walletAddrs) &&
+      !isOwnAddress(t.to, walletAddrs),
+    );
+
     // Only include transactions that involve at least one of the user's wallets
     const relevant = txs.filter(t =>
       !isZeroValueNativeCall(t) &&
-      (walletAddrs.has(t.from.toLowerCase()) || walletAddrs.has(t.to.toLowerCase())),
+      (isOwnAddress(t.from, walletAddrs) || isOwnAddress(t.to, walletAddrs)),
     );
     if (relevant.length === 0) return;
+
+    if (relevant.length === 1 && relevant[0].type === 'withdraw' && hasOutboundZeroValueCall) {
+      const tx = relevant[0];
+      if (!seen.has(tx.id)) {
+        seen.add(tx.id);
+        result.push({ ...tx, swapLegOnly: true });
+      }
+      return;
+    }
 
     if (relevant.length > 1) {
       const outs = relevant.filter(t => t.type === 'withdraw');
@@ -51,7 +69,7 @@ export function normalizeTransactions(
       // Helper: identify zero-value native-token calls (router invocations with no value)
       const isNativeTx = (t: Transaction) => t.asset === NATIVE_TOKEN[t.chain];
 
-      // In + Out on the same hash → this is a swap
+      // In + Out on the same hash -> this is a swap
       if (outs.length > 0 && ins.length > 0) {
         const txUsd = (t: Transaction) => t.valueUsd ?? 0;
 
@@ -95,7 +113,7 @@ export function normalizeTransactions(
         return;
       }
 
-      // Multiple outs, no ins → e.g. token sold for native PLS via internal transfer
+      // Multiple outs, no ins -> e.g. token sold for native PLS via internal transfer
       // Drop the zero-amount native-call entry; keep only the actual token-out
       if (outs.length >= 2 && ins.length === 0) {
         const tokenOuts = outs.filter(t => !isNativeTx(t) && t.amount > 0);
@@ -110,7 +128,7 @@ export function normalizeTransactions(
       }
     }
 
-    // Single transaction (or no swap pattern detected) — include as-is
+    // Single transaction (or no swap pattern detected) - include as-is
     relevant.forEach(tx => {
       if (!seen.has(tx.id)) {
         seen.add(tx.id);

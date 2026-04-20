@@ -16,7 +16,7 @@ const FETCH_TIMEOUT   = 10_000;
 const BLOCKS          = 4;
 const PERCENTILES     = [25, 50, 75];
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// --- Types --------------------------------------------------------------------
 
 export interface FeeOption {
   label: string;
@@ -37,7 +37,7 @@ export interface UseGasEstimatesResult {
   error: string | null;
 }
 
-// ─── RPC helpers ──────────────────────────────────────────────────────────────
+// --- RPC helpers --------------------------------------------------------------
 
 interface FeeHistoryResponse {
   result?: {
@@ -74,7 +74,7 @@ async function rpcPostWithFallback<T>(
   }
 }
 
-// ─── Estimate computation ─────────────────────────────────────────────────────
+// --- Estimate computation -----------------------------------------------------
 
 async function computeEstimates(rpcUrl: string, fallbackRpc: string): Promise<GasEstimates> {
   const feeHistory = await rpcPostWithFallback<FeeHistoryResponse>(
@@ -158,7 +158,7 @@ async function computeEstimates(rpcUrl: string, fallbackRpc: string): Promise<Ga
   };
 }
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
+// --- Hook ---------------------------------------------------------------------
 
 export function useGasEstimates(rpcUrl?: string): UseGasEstimatesResult {
   const primaryRpc  = rpcUrl ?? DEFAULT_RPC;

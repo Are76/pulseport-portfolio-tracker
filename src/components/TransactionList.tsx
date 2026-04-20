@@ -1,5 +1,5 @@
 /**
- * TransactionList — the single unified transaction card component.
+ * TransactionList - the single unified transaction card component.
  *
  * This is the canonical reference implementation used across ALL views:
  *   - History tab (full mode, expand-in-place P&L detail)
@@ -10,7 +10,7 @@
  *
  * Features:
  *   - Expand-in-place detail panels (click any card)
- *   - Swap detail: Trade P/L + Dollar P/L cards, received/spent legs with then→now price
+ *   - Swap detail: Trade P/L + Dollar P/L cards, received/spent legs with then->now price
  *   - Deposit/withdraw detail: stats grid (amount, USD value, current price, P/L, chain, date)
  *   - "View as You": resolves wallet addresses to "You" or wallet name
  *   - Compact mode: smaller padding, icon hidden, less info per row
@@ -31,7 +31,7 @@ import { format } from 'date-fns';
 import type { Transaction } from '../types';
 import type { Asset, Wallet } from '../types';
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// -- Constants -----------------------------------------------------------------
 const EXPLORER: Record<string, string> = {
   pulsechain: 'https://scan.pulsechain.com',
   ethereum:   'https://etherscan.io',
@@ -55,14 +55,14 @@ const normalizeSymbol = (symbol: string, chain?: string): string => {
   return chain === 'pulsechain' && upper === 'WPLS' ? 'PLS' : upper;
 };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// -- Helpers -------------------------------------------------------------------
 function shortAddr(addr: string): string {
   if (!addr || addr.length < 10) return addr;
-  return `${addr.slice(0, 6)}\u2026${addr.slice(-4)}`;
+  return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 }
 
 function fmtPrice(p: number): string {
-  if (p <= 0) return '\u2014';
+  if (p <= 0) return '-';
   if (p < 0.001) return `$${p.toFixed(8)}`;
   if (p < 1)     return `$${p.toFixed(6)}`;
   return `$${p.toFixed(4)}`;
@@ -82,15 +82,15 @@ function txVisual(type: Transaction['type']) {
   }
 }
 
-// ── Props ─────────────────────────────────────────────────────────────────────
+// -- Props ---------------------------------------------------------------------
 export interface TransactionListProps {
   transactions: Transaction[];
   /** Resolve wallet addresses to "You" / wallet name */
   viewAsYou?: boolean;
   wallets?: Wallet[];
-  /** Compact card variant — smaller padding, icon hidden */
+  /** Compact card variant - smaller padding, icon hidden */
   compact?: boolean;
-  /** Current asset holdings — used to compute current prices / P&L */
+  /** Current asset holdings - used to compute current prices / P&L */
   assets?: Asset[];
   /** Called with an Asset to return its logo URL */
   getTokenLogoUrl?: (asset: Asset) => string;
@@ -108,7 +108,7 @@ export interface TransactionListProps {
   emptyMessage?: string;
 }
 
-// ── Liberty Swap chain names ──────────────────────────────────────────────────
+// -- Liberty Swap chain names --------------------------------------------------
 const LS_CHAIN_NAMES: Record<number, string> = {
   1:     'Ethereum',
   56:    'BNB Chain',
@@ -121,7 +121,7 @@ const LS_CHAIN_NAMES: Record<number, string> = {
 
 function LibertySwapPanel({ dstChainId, orderId }: { dstChainId: number; orderId: string }) {
   const dstChainName = LS_CHAIN_NAMES[dstChainId] ?? `Chain ${dstChainId}`;
-  const shortOrder = orderId.length > 14 ? `${orderId.slice(0, 8)}…${orderId.slice(-6)}` : orderId;
+  const shortOrder = orderId.length > 14 ? `${orderId.slice(0, 8)}...${orderId.slice(-6)}` : orderId;
 
   return (
     <div style={{
@@ -169,7 +169,7 @@ function LibertySwapPanel({ dstChainId, orderId }: { dstChainId: number; orderId
   );
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// --- Component ----------------------------------------------------------------
 export function TransactionList({
   transactions,
   viewAsYou = false,
@@ -184,7 +184,7 @@ export function TransactionList({
   onFilterByAsset,
   emptyMessage = 'No transactions found.',
 }: TransactionListProps) {
-  // Internal expansion state — no parent needed
+  // Internal expansion state - no parent needed
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const walletSet = useMemo(
@@ -249,9 +249,10 @@ export function TransactionList({
 
         const isExpanded  = expandedIds.has(tx.id);
         const isDeposit   = tx.type === 'deposit';
-        const isWithdraw  = tx.type === 'withdraw';
+        const isSwapLegOnly = !!tx.swapLegOnly;
+        const isWithdraw  = tx.type === 'withdraw' && !isSwapLegOnly;
         const isSwap      = tx.type === 'swap';
-        const { Icon, bg, color, label } = txVisual(tx.type);
+        const { Icon, bg, color, label } = txVisual(isSwapLegOnly ? 'swap' : tx.type);
 
         const coinAsset = findAsset(tx.asset, tx.chain);
         const counterAsset = tx.counterAsset ? findAsset(tx.counterAsset, tx.chain) : undefined;
@@ -266,7 +267,7 @@ export function TransactionList({
             className={`tx-card-row${isHidden ? ' tx-card-row--hidden' : ''}`}
             style={{ borderBottom: '1px solid var(--border)' }}
           >
-            {/* ── Card row ─────────────────────────────────────────────── */}
+            {/* -- Card row ----------------------------------------------- */}
             <div
               className={`tx-card${compact ? ' tx-card--compact' : ''}`}
               style={{ cursor: 'pointer' }}
@@ -314,28 +315,30 @@ export function TransactionList({
                   </div>
 
                   {/* Amount row */}
-                  {(!compact || isSwap) && (
+                  {(!compact || isSwap || isSwapLegOnly) && (
                   <div
                     className="tx-card__amount"
-                    style={{ color: isDeposit ? 'var(--accent)' : isSwap ? 'var(--fg)' : '#ef4444' }}
+                    style={{ color: isDeposit ? 'var(--accent)' : (isSwap || isSwapLegOnly) ? 'var(--fg)' : '#ef4444' }}
                   >
-                    {isDeposit ? '+' : isWithdraw ? '\u2212' : ''}
+                    {isDeposit ? '+' : isWithdraw ? '-' : ''}
                     {isSwap && tx.counterAsset
                       ? (
                         <span className="tx-swap-line">
                           <span className="tx-swap-leg tx-swap-leg--paid">
-                            Paid {(tx.counterAmount ?? 0).toLocaleString(undefined, { maximumFractionDigits: 4 })} {tx.counterAsset}
+                            Paid {(tx.counterAmount ?? 0).toLocaleString('en-US', { maximumFractionDigits: 4 })} {tx.counterAsset}
                           </span>
                           <span className="tx-swap-arrow" aria-hidden="true">-&gt;</span>
                           <span className="tx-swap-leg tx-swap-leg--got">
-                            Got {tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {tx.asset}
+                            Got {tx.amount.toLocaleString('en-US', { maximumFractionDigits: 4 })} {tx.asset}
                           </span>
                         </span>
                       )
-                      : `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`}
+                      : isSwapLegOnly
+                        ? `Paid ${tx.amount.toLocaleString('en-US', { maximumFractionDigits: 4 })} ${tx.asset}`
+                      : `${tx.amount.toLocaleString('en-US', { maximumFractionDigits: 4 })} ${tx.asset}`}
                       {!compact && tx.valueUsd != null && (
                         <span className="tx-card__usd">
-                          \u2248 ${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                          ~ ${tx.valueUsd.toLocaleString('en-US', { maximumFractionDigits: 2 })}
                         </span>
                       )}
                     </div>
@@ -380,7 +383,7 @@ export function TransactionList({
               </div>
             </div>
 
-            {/* ── Expanded detail panel ─────────────────────────────────── */}
+            {/* -- Expanded detail panel ----------------------------------- */}
             {isExpanded && (
               <div className="tx-card__detail-panel" style={{ padding: '0 18px 14px', background: 'var(--bg-inset, var(--bg-elevated))' }}>
                 {isSwap
@@ -396,7 +399,7 @@ export function TransactionList({
   );
 }
 
-// ── Swap detail panel ─────────────────────────────────────────────────────────
+// -- Swap detail panel ---------------------------------------------------------
 interface SwapDetailProps {
   tx: Transaction;
   coinAsset: Asset | undefined;
@@ -435,7 +438,7 @@ function SwapDetail({ tx, coinAsset, counterAsset, coinLogo, getLogoUrl, display
         </span>
         {tx.fee != null && tx.fee > 0 && (
           <span style={{ color: 'var(--fg-subtle)', fontSize: 11 }}>
-            &#x26FD; {tx.fee.toLocaleString(undefined, { maximumFractionDigits: 4 })} {tx.chain === 'ethereum' ? 'ETH' : 'PLS'}
+            &#x26FD; {tx.fee.toLocaleString('en-US', { maximumFractionDigits: 4 })} {tx.chain === 'ethereum' ? 'ETH' : 'PLS'}
           </span>
         )}
         <span style={{ marginLeft: 'auto', color: 'var(--fg-subtle)', fontSize: 11 }}>
@@ -495,7 +498,7 @@ function SwapDetail({ tx, coinAsset, counterAsset, coinLogo, getLogoUrl, display
             logo={counterLogo}
             symbol={tx.counterAsset}
             amount={tx.counterAmount}
-            sign="\u2212"
+            sign="-"
             color="#ef4444"
             thenPrice={thenPriceSpent}
             nowPrice={nowPriceSpent}
@@ -512,7 +515,7 @@ function SwapDetail({ tx, coinAsset, counterAsset, coinLogo, getLogoUrl, display
   );
 }
 
-// ── Token leg (used inside SwapDetail) ────────────────────────────────────────
+// -- Token leg (used inside SwapDetail) ----------------------------------------
 interface TokenLegProps {
   logo: string;
   symbol: string;
@@ -535,7 +538,7 @@ function TokenLeg({ logo, symbol, amount, sign, color, thenPrice, nowPrice, expl
       }
       <div className="tx-token-leg__body" style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color, fontFamily: 'JetBrains Mono, monospace' }}>
-          {sign} {amount.toLocaleString(undefined, { maximumFractionDigits: 6 })} {symbol}
+          {sign} {amount.toLocaleString('en-US', { maximumFractionDigits: 6 })} {symbol}
         </div>
         {thenPrice > 0 && (
           <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 1 }}>
@@ -563,7 +566,7 @@ function TokenLeg({ logo, symbol, amount, sign, color, thenPrice, nowPrice, expl
   );
 }
 
-// ── Transfer (deposit / withdraw) detail panel ────────────────────────────────
+// -- Transfer (deposit / withdraw) detail panel --------------------------------
 interface TransferDetailProps {
   tx: Transaction;
   isDeposit: boolean;
@@ -580,22 +583,22 @@ function TransferDetail({ tx, isDeposit, coinAsset, displayAddr, isOwn, explorer
   const stats: Array<{ label: string; val: string; sub: string; color?: string }> = [
     {
       label: 'Amount',
-      val: `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${tx.asset}`,
+      val: `${tx.amount.toLocaleString('en-US', { maximumFractionDigits: 6 })} ${tx.asset}`,
       sub: 'Token amount',
     },
     {
       label: 'USD at Entry',
-      val: tx.valueUsd != null ? `$${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '\u2014',
+      val: tx.valueUsd != null ? `$${tx.valueUsd.toLocaleString('en-US', { maximumFractionDigits: 2 })}` : '-',
       sub: 'Value at time of tx',
     },
     {
       label: 'Current Price',
-      val: coinAsset?.price ? fmtPrice(coinAsset.price) : '\u2014',
+      val: coinAsset?.price ? fmtPrice(coinAsset.price) : '-',
       sub: coinAsset ? `${tx.asset} now` : 'Price unknown',
     },
     {
       label: 'Current Value',
-      val: currentValue != null ? `$${currentValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '\u2014',
+      val: currentValue != null ? `$${currentValue.toLocaleString('en-US', { maximumFractionDigits: 2 })}` : '-',
       sub: 'If held to now',
       color: currentValue != null && tx.valueUsd != null
         ? currentValue >= tx.valueUsd ? 'var(--accent)' : '#ef4444'
@@ -603,7 +606,7 @@ function TransferDetail({ tx, isDeposit, coinAsset, displayAddr, isOwn, explorer
     },
     ...(pnl !== null ? [{
       label: 'Profit / Loss',
-      val: `${pnl >= 0 ? '+' : ''}$${Math.abs(pnl).toLocaleString(undefined, { maximumFractionDigits: 2 })}`,
+      val: `${pnl >= 0 ? '+' : ''}$${Math.abs(pnl).toLocaleString('en-US', { maximumFractionDigits: 2 })}`,
       sub: tx.valueUsd
         ? `${(((currentValue! / tx.valueUsd) - 1) * 100).toFixed(1)}% change`
         : '',
@@ -662,4 +665,3 @@ function TransferDetail({ tx, isDeposit, coinAsset, displayAddr, isOwn, explorer
     </div>
   );
 }
-

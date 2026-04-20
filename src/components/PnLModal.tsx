@@ -3,24 +3,24 @@ import { X, TrendingUp, TrendingDown, ExternalLink } from 'lucide-react';
 import type { Asset, Transaction } from '../types';
 import { CHAINS } from '../constants';
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// --- Helpers ----------------------------------------------------------------
 function fmtD(n: number, dp = 2): string {
   const a = Math.abs(n);
   if (a >= 1_000_000) return `$${(a / 1_000_000).toFixed(2)}M`;
   if (a >= 10_000)    return `$${(a / 1_000).toFixed(1)}K`;
-  return `$${a.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp })}`;
+  return `$${a.toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp })}`;
 }
 function fmtT(n: number): string {
   const a = Math.abs(n);
   if (a >= 1e9) return `${(a / 1e9).toFixed(2)}B`;
   if (a >= 1e6) return `${(a / 1e6).toFixed(2)}M`;
   if (a >= 1e3) return `${(a / 1e3).toFixed(1)}K`;
-  return a.toLocaleString(undefined, { maximumFractionDigits: 4 });
+  return a.toLocaleString('en-US', { maximumFractionDigits: 4 });
 }
 function sign(n: number): string { return n >= 0 ? '+' : '−'; }
 function pnlColor(n: number): string { return n >= 0 ? 'var(--positive)' : 'var(--negative)'; }
 
-// ─── Props ────────────────────────────────────────────────────────────────────
+// --- Props --------------------------------------------------------------------
 export interface PnLModalProps {
   asset: Asset;
   transactions: Transaction[];
@@ -45,7 +45,7 @@ const PERIOD_MS: Record<FilterPeriod, number> = {
 
 const SWAP_PRESETS = [10, 25, 50, 100] as const;
 
-// ─── Component ───────────────────────────────────────────────────────────────
+// --- Component ---------------------------------------------------------------
 export function PnLModal({ asset, transactions, prices, logoUrl, onClose, walletAddress }: PnLModalProps) {
   // Close on Escape
   useEffect(() => {
@@ -72,11 +72,11 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
   const ethPrice  = prices['ethereum']?.usd || 3400;
   const nativePrice = chainKey === 'ethereum' ? ethPrice : plsPrice;
 
-  // ── Symbol alias: PulseChain fork-copy tokens store their original symbol
+  // -- Symbol alias: PulseChain fork-copy tokens store their original symbol
   //    on-chain (e.g. pDAI uses symbol 'DAI' in transactions).
   const symAliases = new Set([sym]);
   if (chainKey === 'pulsechain' && sym.startsWith('P') && sym.length > 1) {
-    symAliases.add(sym.slice(1)); // 'PDAI' → also try 'DAI'
+    symAliases.add(sym.slice(1)); // 'PDAI' -> also try 'DAI'
   }
   if (chainKey === 'pulsechain' && (sym === 'PLS' || sym === 'WPLS')) {
     symAliases.add('PLS');
@@ -103,7 +103,7 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
     ...allSells.map(tx => ({ tx, side: 'sell' as const })),
   ].sort((a, b) => b.tx.timestamp - a.tx.timestamp);
 
-  // ── Apply filters ──────────────────────────────────────────────────────────
+  // -- Apply filters ----------------------------------------------------------
   const now = Date.now();
   let filteredRows = allRows;
 
@@ -118,7 +118,7 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
     filteredRows = filteredRows.slice(0, maxSwaps);
   }
 
-  // ── Recompute stats from filtered rows ─────────────────────────────────────
+  // -- Recompute stats from filtered rows -------------------------------------
   const filteredBuys  = filteredRows.filter(r => r.side === 'buy').map(r => r.tx);
   const filteredSells = filteredRows.filter(r => r.side === 'sell').map(r => r.tx);
 
@@ -127,7 +127,7 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
   const totalSold   = filteredSells.reduce((s, tx) => s + (tx.counterAmount ?? 0), 0);
 
   // Sum tx.valueUsd for cost so both cost and proceeds use the same valuation basis
-  // (both are priced at most-recent data refresh — historical prices are unavailable)
+  // (both are priced at most-recent data refresh - historical prices are unavailable)
   const costUsd         = filteredBuys.reduce((s, tx) => s + (tx.valueUsd ?? 0), 0);
   const proceedsUsd     = filteredSells.reduce((s, tx) => s + (tx.valueUsd ?? 0), 0);
   const avgCostUsd      = totalBought > 0 ? costUsd / totalBought : 0;
@@ -202,7 +202,7 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
           flexShrink: 0,
         }} />
 
-        {/* ── Header ── */}
+        {/* -- Header -- */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '16px 20px',
@@ -298,7 +298,7 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
           </div>
         </div>
 
-        {/* ── Filter bar ── */}
+        {/* -- Filter bar -- */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
           padding: '10px 20px',
@@ -367,7 +367,7 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
           </div>
         </div>
 
-        {/* ── Scrollable body ── */}
+        {/* -- Scrollable body -- */}
         <div style={{ overflowY: 'auto', flex: 1 }} className="custom-scrollbar">
 
           {/* Two-col stats */}
@@ -380,7 +380,7 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
               <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 12 }}>
                 Realized
               </div>
-              {/* Cost → Proceeds → Net */}
+              {/* Cost -> Proceeds -> Net */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>Cost basis</span>
@@ -450,7 +450,7 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Unrealized</span>
                   <span style={{ fontSize: 16, fontWeight: 800, color: holdingsUsd > 0 ? '#a78bfa' : 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-0.02em' }}>
-                    {holdingsUsd > 0 ? `+${fmtD(holdingsUsd)}` : '—'}
+                    {holdingsUsd > 0 ? `+${fmtD(holdingsUsd)}` : '-'}
                   </span>
                 </div>
               </div>
@@ -466,7 +466,7 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
             </div>
           </div>
 
-          {/* ── Swap history list ── */}
+          {/* -- Swap history list -- */}
           {filteredRows.length > 0 && (
             <div style={{ margin: '0 20px 20px', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
               <div style={{
@@ -558,7 +558,7 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
               {chainKey && <span> on {chainKey === 'pulsechain' ? 'PulseChain' : 'Ethereum'}</span>}
               {filterPeriod !== 'all' && (
                 <div style={{ marginTop: 8, fontSize: 12 }}>
-                  in the selected period —{' '}
+                  in the selected period -{' '}
                   <button onClick={() => setFilterPeriod('all')}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a78bfa', fontSize: 12, padding: 0, textDecoration: 'underline' }}>
                     show all time
@@ -575,7 +575,7 @@ export function PnLModal({ asset, transactions, prices, logoUrl, onClose, wallet
 
           {/* Disclaimer */}
           <div style={{ padding: '0 20px 16px', fontSize: 10, color: 'var(--fg-subtle)', textAlign: 'center', lineHeight: 1.5 }}>
-            P&amp;L is estimated using current token prices applied to on-chain amounts — historical prices are not stored.
+            P&amp;L is estimated using current token prices applied to on-chain amounts - historical prices are not stored.
             Cost = USD value of acquisitions · Proceeds = USD value of disposals.
           </div>
         </div>
