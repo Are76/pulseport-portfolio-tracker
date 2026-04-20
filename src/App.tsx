@@ -75,7 +75,7 @@ import { TransactionList } from './components/TransactionList';
 import { HoldingsTable } from './components/HoldingsTable';
 import type { HoldingDisplayAsset, HoldingSortField } from './components/HoldingsTable';
 import { normalizeTransactions } from './utils/normalizeTransactions';
-import { scheduleLocalStorageWrite, resolveBlockscoutBase } from './utils/localStorageDebounce';
+import { scheduleLocalStorageWrite, resolveBlockscoutBase, resolveEtherscanCompatBase } from './utils/localStorageDebounce';
 
 const ERC20_ABI = [
   {
@@ -1332,9 +1332,7 @@ export default function App() {
               };
 
               // Etherscan-compat base - same proxy logic as above
-              const esBase = isElectron
-                ? 'https://api.scan.pulsechain.com/api'
-                : '/proxy/pulsechain/api';
+              const esBase = resolveEtherscanCompatBase();
 
               // Fetch per-token transfers in parallel using Etherscan-compat API.
               // Per-token queries use a contract index and are ~instant even for active wallets,
@@ -3149,8 +3147,7 @@ export default function App() {
     setTokenCardModalLoading(true);
     (async () => {
       try {
-        const isElectron = /electron/i.test(navigator.userAgent);
-        const bsBase = isElectron ? 'https://api.scan.pulsechain.com/api/v2' : '/proxy/pulsechain/api/v2';
+        const bsBase = resolveBlockscoutBase();
         const [dsResult, holderResult] = await Promise.allSettled([
           fetch(`https://api.dexscreener.com/latest/dex/tokens/${addr}`).then(r => r.ok ? r.json() : null),
           tokenCardModal?.chain === 'pulsechain' && !isNativePls
@@ -3206,8 +3203,7 @@ export default function App() {
     if (toFetch.length === 0) return;
     Promise.all(toFetch.map(async (asset) => {
       const addr = (asset as any).address as string;
-      const isElectron = /electron/i.test(navigator.userAgent);
-      const bsBase = isElectron ? 'https://api.scan.pulsechain.com/api/v2' : '/proxy/pulsechain/api/v2';
+      const bsBase = resolveBlockscoutBase();
       try {
         // Fetch DexScreener data + Blockscout holder count in parallel
         const [dsResult, holderResult] = await Promise.allSettled([
