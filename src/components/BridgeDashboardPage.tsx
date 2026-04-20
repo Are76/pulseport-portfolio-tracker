@@ -69,7 +69,7 @@ function Section({ title, icon, color, badge, children }: {
 
 // ── Stat box ──────────────────────────────────────────────────────────────────
 function StatBox({ label, value, sub, color = 'var(--accent)', mono = false }: {
-  label: string; value: string; sub?: string; color?: string; mono?: boolean;
+  key?: React.Key; label: string; value: string; sub?: string; color?: string; mono?: boolean;
 }) {
   return (
     <div style={{

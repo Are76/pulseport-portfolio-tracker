@@ -238,15 +238,17 @@ export function StakesSection({
 
   const pHexStakes = stakes.filter(s => s.chain === 'pulsechain');
   const eHexStakes = stakes.filter(s => s.chain === 'ethereum');
+  const activePHexStakes = activeStakes.filter(s => s.chain === 'pulsechain');
+  const activeEHexStakes = activeStakes.filter(s => s.chain === 'ethereum');
 
-  const totalPHex = pHexStakes.reduce((s, st) => s + (st.stakedHex ?? 0), 0);
-  const totalEHex = eHexStakes.reduce((s, st) => s + (st.stakedHex ?? 0), 0);
+  const totalPHex = activePHexStakes.reduce((s, st) => s + (st.stakedHex ?? 0), 0);
+  const totalEHex = activeEHexStakes.reduce((s, st) => s + (st.stakedHex ?? 0), 0);
 
-  const totalHexStaked = stakes.reduce((s, st) => s + (st.stakedHex ?? 0), 0);
-  const totalCurrentValueUsd = stakes.reduce((s, st) => s + (st.estimatedValueUsd ?? 0), 0);
-  const totalMaturityValueUsd = stakes.reduce((s, st) => s + (st.totalValueUsd ?? st.estimatedValueUsd ?? 0), 0);
-  const totalMaturityHex = stakes.reduce((s, st) => s + stakeMaturityHex(st), 0);
-  const totalTShares = stakes.reduce((s, st) => s + (st.tShares ?? 0), 0);
+  const totalHexStaked = activeStakes.reduce((s, st) => s + (st.stakedHex ?? 0), 0);
+  const totalCurrentValueUsd = activeStakes.reduce((s, st) => s + (st.estimatedValueUsd ?? 0), 0);
+  const totalMaturityValueUsd = activeStakes.reduce((s, st) => s + (st.totalValueUsd ?? st.estimatedValueUsd ?? 0), 0);
+  const totalMaturityHex = activeStakes.reduce((s, st) => s + stakeMaturityHex(st), 0);
+  const totalTShares = activeStakes.reduce((s, st) => s + (st.tShares ?? 0), 0);
 
   const chainPerformance = ([
     { chain: 'pulsechain' as StakeChain, label: 'PulseChain', token: 'pHEX', price: phexUsdPrice, color: 'var(--chain-pulse)', stakes: pHexStakes, liquidHex: liquidPHex },
@@ -254,8 +256,8 @@ export function StakesSection({
   ]).map(({ chain, label, token, price, color, stakes: chainStakes, liquidHex }) => {
     const active = chainStakes.filter(s => (s.daysRemaining ?? 0) > 0);
     const matured = chainStakes.filter(s => (s.daysRemaining ?? 0) <= 0);
-    const stakedHex = chainStakes.reduce((sum, st) => sum + (st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8), 0);
-    const tShares = chainStakes.reduce((sum, st) => sum + (st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12), 0);
+    const stakedHex = active.reduce((sum, st) => sum + (st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8), 0);
+    const tShares = active.reduce((sum, st) => sum + (st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12), 0);
     const rate = chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
     const dailyHex = active.reduce((sum, st) => sum + (st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12) * rate, 0);
     const yieldToDateHex = active.reduce((sum, st) => sum + stakeAccruedYieldHex(st), 0);
@@ -444,7 +446,7 @@ export function StakesSection({
             {fmtHex(totalPHex)}
           </div>
           <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 6 }}>
-            {fmtUsd(totalPHex * phexUsdPrice)} · {pHexStakes.length} stake{pHexStakes.length !== 1 ? 's' : ''}
+            {fmtUsd(totalPHex * phexUsdPrice)} · {activePHexStakes.length} active stake{activePHexStakes.length !== 1 ? 's' : ''}
           </div>
         </div>
 
@@ -458,7 +460,7 @@ export function StakesSection({
             {fmtHex(totalEHex)}
           </div>
           <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 6 }}>
-            {fmtUsd(totalEHex * ehexUsdPrice)} · {eHexStakes.length} stake{eHexStakes.length !== 1 ? 's' : ''}
+            {fmtUsd(totalEHex * ehexUsdPrice)} · {activeEHexStakes.length} active stake{activeEHexStakes.length !== 1 ? 's' : ''}
           </div>
         </div>
       </div>
@@ -475,7 +477,7 @@ export function StakesSection({
           <div className="tabular-nums" style={{ fontSize: 20, fontWeight: 800, color: 'var(--fg)', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-0.02em', marginBottom: 4 }}>
             {fmtHex(totalHexStaked)}
           </div>
-          <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{stakes.length} total stakes</div>
+          <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{activeStakes.length} active · {stakes.length - activeStakes.length} inactive</div>
         </div>
 
         {/* Current Value */}
@@ -583,11 +585,35 @@ export function StakesSection({
                   const currentValueUsd  = (stakedHex + accruedHex) * hexPrice;    // principal + accrued
                   const maturityHex      = stakedHex + yieldHex;
                   const maturityValueUsd = maturityHex * hexPrice;
+                  const chainLabel = stake.chain === 'pulsechain' ? 'PulseChain' : 'Ethereum';
+                  const tokenLabel = stake.chain === 'pulsechain' ? 'pHEX' : 'eHEX';
+                  const dailyYield = tShares * yieldRate;
+                  const principalValueUsd = stakedHex * hexPrice;
+                  const activeYieldUsd = accruedHex * hexPrice;
+                  const stakeLength = stake.stakedDays ?? 0;
+                  const lockedDay = stake.lockedDay ?? 0;
+                  const endDay = lockedDay + stakeLength;
+                  const detailStats = [
+                    { label: 'Principal', val: `${fmtHexExact(stakedHex)} ${tokenLabel}`, sub: fmtUsdExact(principalValueUsd) },
+                    { label: 'Active Yield', val: `+${fmtHexExact(accruedHex)} ${tokenLabel}`, sub: fmtUsdExact(activeYieldUsd), color: 'var(--positive)' },
+                    { label: 'Daily Yield', val: `+${fmtHexExact(dailyYield)} ${tokenLabel}`, sub: `${yieldRate.toFixed(2)} HEX/T-Share/day`, color: 'var(--positive)' },
+                    { label: 'Current Value', val: fmtUsdExact(currentValueUsd), sub: `${fmtHexExact(stakedHex + accruedHex)} ${tokenLabel}` },
+                    { label: 'Maturity', val: fmtUsdExact(maturityValueUsd), sub: `${fmtHexExact(maturityHex)} ${tokenLabel}`, color: 'var(--positive)' },
+                    { label: 'T-Shares', val: tShares.toLocaleString(undefined, { maximumFractionDigits: 6 }), sub: 'Stake weight' },
+                    {
+                      label: 'Timeline',
+                      val: `${fmtDays(daysLeft)} left`,
+                      sub: `Day ${lockedDay.toLocaleString()} -> ${endDay.toLocaleString()}`,
+                      color: daysLeft <= 30 && daysLeft > 0 ? '#ef4444' : daysLeft <= 180 ? '#f97316' : undefined,
+                    },
+                    { label: 'Progress', val: `${stake.progress}%`, sub: `${daysStakedSoFar.toLocaleString()} / ${stakeLength.toLocaleString()} days` },
+                  ];
                   const walletLabel = stake.walletLabel
                     ?? (stake.walletAddress ? (walletLabels[stake.walletAddress] ?? shortenAddr(stake.walletAddress)) : '—');
 
                   return (
-                    <tr key={stake.id}>
+                    <React.Fragment key={stake.id}>
+                    <tr className="stake-summary-row">
                       <td style={{ color: 'var(--fg)', fontWeight: 600, fontFamily: "'JetBrains Mono', monospace" }}>
                         #{stake.stakeId}
                       </td>
@@ -604,7 +630,7 @@ export function StakesSection({
                             background: stake.chain === 'pulsechain' ? 'var(--chain-pulse)' : 'var(--chain-eth)',
                             flexShrink: 0,
                           }} />
-                          {stake.chain === 'pulsechain' ? 'pHEX' : 'eHEX'}
+                          {tokenLabel}
                         </span>
                       </td>
                       <td className="col-hide-mobile" style={{ fontSize: 12, color: 'var(--fg-subtle)', fontFamily: "'JetBrains Mono', monospace" }}>
@@ -650,6 +676,27 @@ export function StakesSection({
                         {fmtHex(maturityHex)} HEX
                       </td>
                     </tr>
+                    <tr className="stake-detail-row">
+                      <td colSpan={10}>
+                        <div className="stake-detail-panel">
+                          <div className="stake-detail-context">
+                            <span>Stake #{stake.stakeId} on <strong>{chainLabel}</strong></span>
+                            <span>Wallet <strong>{walletLabel}</strong></span>
+                            <span>{stakeLength.toLocaleString()} days locked</span>
+                          </div>
+                          <div className="stake-detail-grid">
+                            {detailStats.map(({ label, val, sub, color }) => (
+                              <div key={label} className="stake-detail-stat">
+                                <div className="stake-detail-label">{label}</div>
+                                <div className="stake-detail-value" style={{ color: color ?? 'var(--fg)' }}>{val}</div>
+                                <div className="stake-detail-sub">{sub}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                    </React.Fragment>
                   );
                 })}
               </tbody>

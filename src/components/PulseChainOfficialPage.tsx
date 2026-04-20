@@ -58,7 +58,7 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-function FaqItem({ q, a }: { q: string; a: string }) {
+function FaqItem({ q, a }: { key?: React.Key; q: string; a: string }) {
   const [open, setOpen] = useState(false);
   return (
     <div style={{ borderBottom: '1px solid var(--border)' }}>

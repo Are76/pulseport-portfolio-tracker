@@ -593,7 +593,6 @@ const sameAssetSymbol = (left: string, right: string, chain?: string): boolean =
 // Below this threshold (USD) we consider netInvestment effectively zero and hide the P&L %.
 // PulseChain-only wallets have no ETH/stable inflows so netInvestment stays near 0.
 const MIN_INVESTMENT_THRESHOLD = 100;
-const OPENPULSECHAIN_API_BASE = 'https://api.openpulsechain.com';
 
 // Liberty Swap cross-chain bridge detection
 const LIBERTY_SWAP_ROUTERS: Record<string, string> = {
@@ -990,84 +989,6 @@ export default function App() {
         }
       }
       
-      // 1a2. Fetch DexScreener 24h % change for PulseChain tokens (INC, PRVX, etc.)
-      // Use specific pair addresses (pairs endpoint) - more reliable than the token endpoint
-      // which requires chainId filtering that can fail when DexScreener rate-limits or changes format.
-      const dexScreenerChanges: Record<string, number> = {};
-      try {
-        const dsPairs: Array<{ tokenAddr: string; pairAddr: string }> = [
-          { tokenAddr: '0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d', pairAddr: '0xf808bb6265e9ca27002c0a04562bf50d4fe37eaa' }, // INC/WPLS
-          { tokenAddr: '0xf6f8db0aba00007681f8faf16a0fda1c9b030b11', pairAddr: '0x7f681a5ad615238357ba148c281e2eaefd2de55a' }, // PRVX/USDC
-          { tokenAddr: '0x95b303987a60c71504d99aa1b13b4da07b0790ab', pairAddr: '0x1b45b9148791d3a104184cd5dfe5ce57193a3ee9' }, // PLSX/WPLS
-          { tokenAddr: '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39', pairAddr: '0xf1f4ee610b2babb05c635f726ef8b0c568c8dc65' }, // pHEX/WPLS
-          { tokenAddr: '0xa1077a294dde1b09bb078844df40758a5d0f9a27', pairAddr: '0x322df7921f28f1146cdf62afdac0d6bc0ab80711' }, // WPLS/USDT
-        ];
-        await Promise.allSettled(
-          dsPairs.map(({ tokenAddr, pairAddr }) =>
-            fetch(`https://api.dexscreener.com/latest/dex/pairs/pulsechain/${pairAddr}`)
-              .then(r => r.ok ? r.json() : null)
-              .then(data => {
-                // Pair endpoint returns { pairs: [...] } - use first entry directly
-                const pair = data?.pairs?.[0] ?? data?.pair ?? (Array.isArray(data) ? data[0] : null);
-                const change = pair?.priceChange?.h24;
-                if (change != null) {
-                  dexScreenerChanges[tokenAddr] = parseFloat(change);
-                }
-              })
-          )
-        );
-      } catch (e) {
-        console.warn('DexScreener 24h change fetch failed:', e);
-      }
-
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000);
-        const openPulseRes = await fetch(`${OPENPULSECHAIN_API_BASE}/api/v1/tokens?limit=5000`, {
-          signal: controller.signal,
-        });
-        clearTimeout(timeout);
-        if (!openPulseRes.ok) throw new Error(`HTTP ${openPulseRes.status}`);
-        const openPulseData = await openPulseRes.json();
-        const openPulseTokens = Array.isArray(openPulseData)
-          ? openPulseData
-          : Array.isArray(openPulseData?.data)
-            ? openPulseData.data
-            : [];
-
-        openPulseTokens.forEach((token: any) => {
-          const address = String(token.address || '').toLowerCase();
-          const symbol = String(token.symbol || '').toUpperCase();
-          const price = Number(token.price_usd ?? token.priceUsd ?? 0);
-          if (!address || price <= 0) return;
-
-          const change24h = Number(token.price_change_24h_pct ?? token.priceChange24hPct ?? token.price_change_24h ?? NaN);
-          const priceKey = `pulsechain:${address}`;
-          const existing = fetchedPrices[priceKey] || {};
-          fetchedPrices[priceKey] = {
-            ...existing,
-            usd: existing.usd ?? price,
-            ...(Number.isFinite(change24h) && existing.usd_24h_change == null ? { usd_24h_change: change24h } : {}),
-          };
-
-          if (symbol === 'WPLS' || symbol === 'PLS') {
-            const existingPls = fetchedPrices.pulsechain || {};
-            fetchedPrices.pulsechain = {
-              ...existingPls,
-              usd: existingPls.usd ?? price,
-              ...(Number.isFinite(change24h) && existingPls.usd_24h_change == null ? { usd_24h_change: change24h } : {}),
-            };
-            fetchedPrices['pulsechain:native'] = {
-              ...(fetchedPrices['pulsechain:native'] || {}),
-              usd: fetchedPrices['pulsechain:native']?.usd ?? price,
-              ...(Number.isFinite(change24h) && fetchedPrices['pulsechain:native']?.usd_24h_change == null ? { usd_24h_change: change24h } : {}),
-            };
-          }
-        });
-      } catch (e) {
-        console.warn('OpenPulseChain token price fetch failed:', e);
-      }
-
       // 1b. Fetch PulseChain prices from on-chain LP reserves (authoritative source per skill doc)
       // Uses getReserves() on PulseX V2 LP pairs - more reliable than subgraph which can lag/rate-limit
       try {
@@ -1099,11 +1020,15 @@ export default function App() {
           const r1 = Number(BigInt('0x' + d.slice(64, 128)));
           return [r0, r1];
         };
+        const reserveResult = (key: keyof typeof PULSEX_LP_PAIRS): string => {
+          const idx = lpKeys.indexOf(key);
+          return idx >= 0 ? (batchData[idx]?.result ?? '0x') : '0x';
+        };
 
         // --- WPLS price from 3 stablecoin pairs; pick max (highest = most liquidity) ---
-        const [daiR0, daiR1]   = parseRes(batchData[lpKeys.indexOf('WPLS_DAI')].result);
-        const [usdcR0, usdcR1] = parseRes(batchData[lpKeys.indexOf('WPLS_USDC')].result);
-        const [usdtR0, usdtR1] = parseRes(batchData[lpKeys.indexOf('WPLS_USDT')].result);
+        const [daiR0, daiR1]   = parseRes(reserveResult('WPLS_DAI'));
+        const [usdcR0, usdcR1] = parseRes(reserveResult('WPLS_USDC'));
+        const [usdtR0, usdtR1] = parseRes(reserveResult('WPLS_USDT'));
 
         // WPLS/USDC: token0=pUSDC(6dec), token1=WPLS(18dec) -> plsPrice = (usdcR0/1e6) / (usdcR1/1e18)
         const plsFromUSDC = usdcR0 > 0 && usdcR1 > 0 ? (usdcR0 / 1e6) / (usdcR1 / 1e18)    : 0;
@@ -1118,32 +1043,28 @@ export default function App() {
 
         if (wplsUSD > 0) {
           if (!fetchedPrices.pulsechain) fetchedPrices.pulsechain = {};
-          const plsDs24h = dexScreenerChanges['0xa1077a294dde1b09bb078844df40758a5d0f9a27'];
           fetchedPrices.pulsechain.usd = wplsUSD;
-          if (plsDs24h != null) fetchedPrices.pulsechain.usd_24h_change = plsDs24h;
-          fetchedPrices['pulsechain:native'] = { usd: wplsUSD, ...(plsDs24h != null ? { usd_24h_change: plsDs24h } : {}) };
+          fetchedPrices['pulsechain:native'] = { usd: wplsUSD };
 
           const setTokenPrice = (addrLower: string, priceUSD: number, cgId?: string) => {
             if (priceUSD <= 0) return;
             const existing = cgId ? (fetchedPrices[cgId] || {}) : {};
-            const ds24h = dexScreenerChanges[addrLower];
-            // Prefer DexScreener 24h change (PulseChain-specific) over CoinGecko (may be ETH-based or missing)
-            const change24h = ds24h != null ? ds24h : existing.usd_24h_change;
+            const change24h = existing.usd_24h_change;
             fetchedPrices[`pulsechain:${addrLower}`] = { ...existing, usd: priceUSD, ...(change24h != null ? { usd_24h_change: change24h } : {}) };
           };
 
           // PLSX/WPLS - token0=PLSX(18), token1=WPLS(18)
-          const [plsxR0, plsxR1] = parseRes(batchData[lpKeys.indexOf('PLSX_WPLS')].result);
+          const [plsxR0, plsxR1] = parseRes(reserveResult('PLSX_WPLS'));
           if (plsxR0 > 0 && plsxR1 > 0)
             setTokenPrice('0x95b303987a60c71504d99aa1b13b4da07b0790ab', (plsxR1 / plsxR0) * wplsUSD, 'pulsex');
 
           // INC/WPLS - token0=INC(18), token1=WPLS(18)
-          const [incR0, incR1] = parseRes(batchData[lpKeys.indexOf('INC_WPLS')].result);
+          const [incR0, incR1] = parseRes(reserveResult('INC_WPLS'));
           if (incR0 > 0 && incR1 > 0)
             setTokenPrice('0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d', (incR1 / incR0) * wplsUSD, 'incentive');
 
           // pHEX/WPLS - token0=pHEX(8dec), token1=WPLS(18dec)
-          const [hexR0, hexR1] = parseRes(batchData[lpKeys.indexOf('PHEX_WPLS')].result);
+          const [hexR0, hexR1] = parseRes(reserveResult('PHEX_WPLS'));
           if (hexR0 > 0 && hexR1 > 0) {
             const pHexUSD = ((hexR1 / 1e18) / (hexR0 / 1e8)) * wplsUSD;
             setTokenPrice(ETH_HEX_ADDR, pHexUSD, 'hex');
@@ -1179,7 +1100,7 @@ export default function App() {
           }
 
           // pWETH/WPLS - token0=pWETH(18), token1=WPLS(18)
-          const [wethR0, wethR1] = parseRes(batchData[lpKeys.indexOf('PWETH_WPLS')].result);
+          const [wethR0, wethR1] = parseRes(reserveResult('PWETH_WPLS'));
           if (wethR0 > 0 && wethR1 > 0) {
             const ethFromLp = (wethR1 / wethR0) * wplsUSD;
             setTokenPrice('0x02dcdd04e3f455d838cd1249292c58f3b79e3c3c', ethFromLp, 'ethereum');
@@ -1198,7 +1119,7 @@ export default function App() {
           }
 
           // pWBTC/WPLS - REVERSED: token0=WPLS(18), token1=pWBTC(8)
-          const [wbtcR0, wbtcR1] = parseRes(batchData[lpKeys.indexOf('PWBTC_WPLS')].result);
+          const [wbtcR0, wbtcR1] = parseRes(reserveResult('PWBTC_WPLS'));
           if (wbtcR0 > 0 && wbtcR1 > 0)
             setTokenPrice('0xb17d901469b9208b17d916112988a3fed19b5ca1', ((wbtcR0 / 1e18) / (wbtcR1 / 1e8)) * wplsUSD, 'wrapped-bitcoin');
 
@@ -1214,12 +1135,12 @@ export default function App() {
             setTokenPrice('0x0cb6f5a34ad42ec934882a05265a7d5f59b51a2f', (usdtR1 / 1e18) / (usdtR0 / 1e6) * wplsUSD);
           // System copy pDAI (0x6b175474... - Ethereum's DAI address, fork-copied)
           // token0=pDAI_sys(18dec), token1=WPLS(18dec) -> pDAI_sys_USD = (sysR1/sysR0) * wplsUSD
-          const [sysR0, sysR1] = parseRes(batchData[lpKeys.indexOf('PDAI_SYS_WPLS')].result);
+          const [sysR0, sysR1] = parseRes(reserveResult('PDAI_SYS_WPLS'));
           if (sysR0 > 0 && sysR1 > 0)
             setTokenPrice('0x6b175474e89094c44da98b954eedeac495271d0f', (sysR1 / sysR0) * wplsUSD);
           // PRVX: use high-liquidity USDC pair ($1M) - token0=pUSDC(6dec), token1=PRVX(18dec)
           // Direct stablecoin price - no WPLS conversion needed
-          const [prvxR0, prvxR1] = parseRes(batchData[lpKeys.indexOf('PRVX_USDC')].result);
+          const [prvxR0, prvxR1] = parseRes(reserveResult('PRVX_USDC'));
           if (prvxR0 > 0 && prvxR1 > 0)
             setTokenPrice('0xf6f8db0aba00007681f8faf16a0fda1c9b030b11', (prvxR0 / 1e6) / (prvxR1 / 1e18));
         }
@@ -1774,9 +1695,8 @@ export default function App() {
             console.warn(`Could not fetch transactions for ${address} on ${chainKey}:`, e);
           }
 
-          // 2a. Fetch DexScreener prices for discovered PulseChain wallet tokens.
-          // DexScreener covers many actively traded PulseChain coins that are not in
-          // the static list or OpenPulseChain's top-token response.
+          // 2a. Fetch DexScreener metadata for discovered PulseChain wallet tokens.
+          // Per pricing rules, DexScreener is not used as a USD price source here.
           if (chainKey === 'pulsechain' && discoveredTokens.length > 0) {
             try {
               const discoveredByAddr = new Map(
@@ -1818,22 +1738,6 @@ export default function App() {
                 if (!token) return;
 
                 const baseAddr = pair?.baseToken?.address?.toLowerCase?.();
-                const baseUsd = Number(pair?.priceUsd);
-                const priceNative = Number(pair?.priceNative);
-                const priceUsd = baseAddr === addr
-                  ? baseUsd
-                  : priceNative > 0
-                    ? baseUsd / priceNative
-                    : 0;
-                if (Number.isFinite(priceUsd) && priceUsd > 0) {
-                  fetchedPrices[`pulsechain:${addr}`] = {
-                    ...(fetchedPrices[`pulsechain:${addr}`] || {}),
-                    usd: priceUsd,
-                    usd_24h_change: pair?.priceChange?.h24,
-                    usd_1h_change: pair?.priceChange?.h1,
-                    image: pair?.info?.imageUrl,
-                  };
-                }
 
                 const pairToken = baseAddr === addr ? pair?.baseToken : pair?.quoteToken;
                 if (pairToken?.symbol && token.symbol === 'TOKEN') token.symbol = pairToken.symbol;
@@ -2102,9 +2006,8 @@ export default function App() {
       }
 
       // Aggregate HEX stakes into HEX assets for total balance visibility.
-      // Only active stakes (daysRemaining > 0) contribute — ended stakes are sitting in the wallet already.
-      allStakes.forEach(stake => {
-        if ((stake.daysRemaining ?? 0) <= 0) return;
+      // Only active stakes (daysRemaining > 0) contribute; ended stakes are sitting in the wallet already.
+      allStakes.filter(stake => (stake.daysRemaining ?? 0) > 0).forEach(stake => {
         const assetKey = `${stake.chain}-HEX`;
         if (assetMap[assetKey]) {
           const stakedHeartsNum = Number(stake.stakedHearts) / 1e8;
@@ -2864,13 +2767,13 @@ export default function App() {
 
   const stakeSummary = useMemo(() => {
     const stakes = wallets.length > 0 ? realStakes : MOCK_STAKES;
+    const activeStakes = stakes.filter(s => (s.daysRemaining ?? 0) > 0);
     let totalStakedHex = 0;
     let totalTShares = 0;
     let totalValueUsd = 0;
     let totalInterestHex = 0;
 
-    stakes.forEach(s => {
-      if ((s.daysRemaining ?? 0) <= 0) return; // exclude ended stakes from active totals
+    activeStakes.forEach(s => {
       const stakedHex  = Number(s.stakedHearts ?? 0n) / 1e8;
       const tShares    = Number(s.stakeShares  ?? 0n) / 1e12;
       // Recalculate accrued yield from first principles using chain-specific rate
@@ -2893,8 +2796,7 @@ export default function App() {
 
     const phexPrice = prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0;
     // Daily payout uses chain-specific rates; sum pHEX and eHEX T-Share contributions separately
-    const estimatedDailyPayoutHex = stakes.reduce((sum, s) => {
-      if ((s.daysRemaining ?? 0) <= 0) return sum; // ended stakes earn nothing
+    const estimatedDailyPayoutHex = activeStakes.reduce((sum, s) => {
       const tS = Number(s.stakeShares ?? 0n) / 1e12;
       const rate = s.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
       return sum + tS * rate;
@@ -3023,18 +2925,30 @@ export default function App() {
 
     // Per-asset totals
     const plsPrice = prices['pulsechain']?.usd || 0.00005;
-    const usdcPrice = prices['usd-coin']?.usd || 1;
-    const usdtPrice = prices['tether']?.usd || 1;
-    const daiPrice  = prices['dai']?.usd || 1;
+    const getStablePrice = (tx: typeof list[0], stable: 'USDC' | 'USDT' | 'DAI') => {
+      if (tx.chain === 'pulsechain') {
+        if (stable === 'DAI') {
+          return prices['pulsechain:0xefd766ccb38eaf1dfd701853bfce31359239f305']?.usd
+            ?? prices['pulsechain:0x6b175474e89094c44da98b954eedeac495271d0f']?.usd
+            ?? prices['pulsechain:dai']?.usd
+            ?? 0;
+        }
+        if (stable === 'USDT') return prices['pulsechain:0x0cb6f5a34ad42ec934882a05265a7d5f59b51a2f']?.usd ?? 0;
+        return prices['pulsechain:0x15d38573d2feeb82e7ad5187ab8c1d52810b1f07']?.usd ?? 0;
+      }
+      if (stable === 'DAI') return prices['dai']?.usd ?? 0;
+      if (stable === 'USDT') return prices['tether']?.usd ?? 1;
+      return prices['usd-coin']?.usd ?? 1;
+    };
 
     const getUsd = (tx: typeof list[0]) => {
       if (tx.valueUsd) return tx.valueUsd;
       const a = tx.asset.toUpperCase();
       if (a === 'ETH') return tx.amount * ethPrice;
       if (a === 'PLS') return tx.amount * plsPrice;
-      if (a.includes('USDT') || a.includes('TETHER')) return tx.amount * usdtPrice;
-      if (a.includes('DAI')) return tx.amount * daiPrice;
-      return tx.amount * usdcPrice; // USDC and other stables
+      if (a.includes('USDT') || a.includes('TETHER')) return tx.amount * getStablePrice(tx, 'USDT');
+      if (a.includes('DAI')) return tx.amount * getStablePrice(tx, 'DAI');
+      return tx.amount * getStablePrice(tx, 'USDC'); // USDC and other stables
     };
 
     const byAsset: Record<string, { amount: number; valueUsd: number }> = {};
@@ -3617,7 +3531,7 @@ export default function App() {
             { id: 'assets',   label: 'Holdings',           icon: Coins },
             { id: 'stakes',   label: 'HEX Stakes',         icon: Lock },
             { id: 'defi',     label: 'DeFi Positions',     icon: Droplets },
-            { id: 'history',  label: 'Activity', icon: History },
+            { id: 'history',  label: 'Bridge Activity', icon: History },
             { id: 'pulsechain-official', label: 'PulseChain', icon: Zap },
             { id: 'pulsechain-community', label: 'Ecosystem', icon: Layers },
             { id: 'bridge', label: 'Bridge', icon: ArrowLeftRight },
@@ -5694,7 +5608,7 @@ export default function App() {
                   <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, overflow: 'hidden' }} className="md-elevation-1">
                     <div style={{ padding: '14px 18px', borderBottom: isCollapsed('holdings-txs') ? 'none' : `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: 14, fontWeight: 600, color: t.text }}>Transactions</span>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: t.text }}>Activity</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent-border)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
                           <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', display: 'inline-block', animation: 'pulse 2s infinite' }} />
                           Live
@@ -5839,7 +5753,7 @@ export default function App() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)', marginBottom: 2 }}>Activity</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)', marginBottom: 2 }}>Bridge Activity</div>
                   <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Cross-chain activity &amp; performance tracking</div>
                 </div>
               </div>
@@ -6006,12 +5920,23 @@ export default function App() {
                       const assetUp = tx.asset.toUpperCase();
                       const isEth = assetUp === 'ETH';
                       const isPls = assetUp === 'PLS';
+                      const pulseDaiPrice = prices['pulsechain:0xefd766ccb38eaf1dfd701853bfce31359239f305']?.usd
+                        ?? prices['pulsechain:0x6b175474e89094c44da98b954eedeac495271d0f']?.usd
+                        ?? prices['pulsechain:dai']?.usd
+                        ?? 0;
+                      const daiPrice = tx.chain === 'pulsechain' ? pulseDaiPrice : (prices['dai']?.usd ?? 0);
+                      const usdtPrice = tx.chain === 'pulsechain'
+                        ? (prices['pulsechain:0x0cb6f5a34ad42ec934882a05265a7d5f59b51a2f']?.usd ?? 0)
+                        : (prices['tether']?.usd ?? 1);
+                      const usdcPrice = tx.chain === 'pulsechain'
+                        ? (prices['pulsechain:0x15d38573d2feeb82e7ad5187ab8c1d52810b1f07']?.usd ?? 0)
+                        : (prices['usd-coin']?.usd ?? 1);
                       const displayUsd = tx.valueUsd || (
                         isEth ? tx.amount * (prices['ethereum']?.usd || 3400) :
                         isPls ? tx.amount * (prices['pulsechain']?.usd || 0.00005) :
-                        assetUp.includes('USDT') || assetUp.includes('TETHER') ? tx.amount * (prices['tether']?.usd || 1) :
-                        assetUp.includes('DAI') ? tx.amount * (prices['dai']?.usd || 1) :
-                        tx.amount * (prices['usd-coin']?.usd || 1)
+                        assetUp.includes('USDT') || assetUp.includes('TETHER') ? tx.amount * usdtPrice :
+                        assetUp.includes('DAI') ? tx.amount * daiPrice :
+                        tx.amount * usdcPrice
                       );
                       return { ...tx, valueUsd: displayUsd };
                     })}

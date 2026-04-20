@@ -126,7 +126,7 @@ const FAQS = [
   { q: 'Where is the full ecosystem map?', a: 'pulsecoinlist.com/map maintains an interactive directory of 80+ verified projects grouped by category. plsfolio.com/ecosystem and pulsechainstats.com/ecosystem are complementary views.' },
 ];
 
-function FaqItem({ q, a }: { q: string; a: string }) {
+function FaqItem({ q, a }: { key?: React.Key; q: string; a: string }) {
   const [open, setOpen] = useState(false);
   return (
     <div style={{ borderBottom: '1px solid var(--border)' }}>

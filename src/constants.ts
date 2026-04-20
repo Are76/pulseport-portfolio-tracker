@@ -43,7 +43,7 @@ export const FALLBACK_DESCRIPTIONS: Record<string, string> = {
     'PrivacyX (PRVX) is a privacy-focused token on PulseChain. It aims to provide enhanced transactional privacy features for PulseChain users while remaining interoperable with the broader PulseChain DeFi ecosystem.',
   // pDAI
   '0xefd766ccb38eaf1dfd701853bfce31359239f305':
-    'pDAI is a bridged version of the Ethereum DAI stablecoin on PulseChain. It is pegged to the US dollar and originated on Ethereum — on PulseChain it typically trades at a small discount to $1 due to bridge and liquidity dynamics.',
+    'pDAI is a bridged version of Ethereum DAI on PulseChain. It is not guaranteed to trade at $1 on PulseChain; its live value is determined by on-chain liquidity and market demand.',
   // pUSDC
   '0x15d38573d2feeb82e7ad5187ab8c1d52810b1f07':
     'pUSDC is a bridged version of USD Coin (USDC) on PulseChain. As a fiat-backed stablecoin, each USDC on Ethereum is redeemable 1-for-1 for one US dollar. On PulseChain its price is determined by bridge liquidity.',
