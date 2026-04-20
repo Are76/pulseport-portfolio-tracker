@@ -7,7 +7,7 @@ const CORE_TOKENS = [
   { symbol: 'PLSX', role: 'PulseX DEX token',     contract: '0x95b303987a60c71504d99aa1b13b4da07b0790ab', decimals: 18, note: 'Every trade on PulseX buys and burns PLSX — fixed supply decreasing over time' },
   { symbol: 'HEX',  role: 'Staking protocol (pHEX)', contract: '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39', decimals: 8, note: 'Fork copy of Ethereum HEX. Time-lock staking with T-share yield system' },
   { symbol: 'INC',  role: 'Farm incentive token', contract: '0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d', decimals: 18, note: 'Earned by liquidity providers in PulseX farms. Decreasing inflation over time' },
-  { symbol: 'PRVX', role: 'ProveX protocol token', contract: 'Loading',                                   decimals: 18, note: 'Fixed supply. Every ProveX swap/verification burns PRVX permanently' },
+  { symbol: 'PRVX', role: 'ProveX protocol token', contract: 'Loading',                                   decimals: 18, note: 'Emerging proof-based settlement token. Verify live tokenomics and contract details from official sources' },
 ];
 
 const BRIDGED_TOKENS = [
@@ -36,7 +36,7 @@ const FAQS = [
   { q: 'Are bridged stablecoins (pDAI, pUSDC, pUSDT) worth $1?', a: 'No. Bridged stablecoins on PulseChain trade at market prices and are not pegged to $1. Always check the live on-chain price before assuming their value. Never treat pDAI, pUSDC, or pUSDT as dollar equivalents.' },
   { q: 'What is HEX staking and what are T-shares?', a: 'HEX is a blockchain certificate of deposit. You lock ("stake") HEX for a chosen period (1 day to 5,555 days) and receive T-shares, which earn a daily portion of interest from the staking pool. Longer and larger stakes receive more T-shares. Stakes that end late incur penalties. T-shares are the unit of your share in the pool\'s daily payouts.' },
   { q: 'What is PLSX and why does it burn?', a: 'PLSX is the PulseX DEX token. 21% of every trading fee on PulseX is used to buy and permanently burn PLSX, reducing supply over time. The supply only ever decreases — it never inflates.' },
-  { q: 'What is ProveX (PRVX)?', a: 'ProveX is Richard Heart\'s latest project. It\'s a browser extension enabling peer-to-peer crypto trading without intermediaries, using zero-knowledge proofs (ZKP2P). A buyer proves they paid from their bank; a seller proves they sent coins — smart contracts release funds automatically. Every successful swap burns PRVX, giving it a fixed deflationary supply.' },
+  { q: 'What is ProveX (PRVX)?', a: 'ProveX is an emerging project in the Richard Heart / PulseChain ecosystem focused on proof-based peer-to-peer settlement. The project describes a browser-extension flow where buyers and sellers generate cryptographic proofs, then code settles the transaction without exchange custody or a traditional middleman. Because the project is still emerging, verify current fees, contracts, and tokenomics from official sources before relying on static guide text.' },
   { q: 'What is IPFS and why does it matter for PulseChain apps?', a: 'IPFS (InterPlanetary File System) is a decentralized storage network. All official PulseChain apps are published to IPFS with a unique hash (CID). If the hash matches the official list, the app is byte-for-byte identical to the original. Access any app directly at https://ipfs.io/ipfs/<HASH> even if the domain is unavailable.' },
   { q: 'Do I need PLS to use PulseChain?', a: 'Yes. A small amount of PLS is required in your wallet to pay gas fees for any transaction on PulseChain. Gas fees on PulseChain are significantly lower than Ethereum.' },
   { q: 'How is PulseChain different from Ethereum?', a: 'Same EVM, same address format, same tooling — but a separate chain with its own state, validators, and gas token (PLS). Block time is ~10 seconds vs Ethereum\'s ~12, and gas costs roughly 12× less for standard operations.' },
@@ -239,7 +239,7 @@ export default function PulseChainOfficialPage() {
             { name: 'PulseX', url: 'https://pulsex.com', color: 'var(--accent)', tag: 'DEX', desc: 'The #1 DEX on PulseChain. Swap PRC20 tokens, provide liquidity, earn INC farming rewards. Trading fee: 0.29% — 76% to LPs, 21% to buy-and-burn PLSX. Available in V1 and V2.' },
             { name: 'PulseChain Bridge', url: 'https://bridge.pulsechain.com', color: '#627EEA', tag: 'Bridge', desc: 'Official bridge to move assets between Ethereum and PulseChain. Bridging creates wrapped tokens on PulseChain (e.g., ETH → pWETH). TVL tracked live on PulseChainStats bridge dashboard.' },
             { name: 'PulseChain Explorer', url: 'https://scan.pulsechain.com', color: '#06b6d4', tag: 'Block Explorer', desc: 'Official Blockscout-based explorer. View transactions, blocks, addresses, contracts, and token transfers. OtterScan is an alternative with richer tracing.' },
-            { name: 'ProveX', url: 'https://provex-landing.vercel.app', color: '#f97316', tag: 'P2P Trading', desc: 'Browser extension for peer-to-peer crypto trading using zero-knowledge proofs. No middlemen — buyers prove payment, sellers prove delivery, smart contracts handle escrow. Every swap burns PRVX.' },
+            { name: 'ProveX', url: 'https://provex.tech', color: '#f97316', tag: 'Proof Settlement', desc: 'Emerging peer-to-peer settlement project using cryptographic proofs. Buyers and sellers generate proofs, code settles the transaction, and ProveX describes usage-based PRVX burn mechanics.' },
             { name: 'PulseChain Launchpad', url: 'https://launchpad.pulsechain.com', color: '#a855f7', tag: 'Validator Staking', desc: 'Official launchpad for becoming a PulseChain validator. Stake 32M PLS to run a validator node and earn staking rewards while helping secure the network.' },
             { name: 'PumpTires', url: 'https://pumptires.com', color: '#f59e0b', tag: 'Token Launchpad', desc: 'Official memecoin launchpad on PulseChain. Deflationary fee-burning model — platform fees buy and burn tokens. Track launch metrics and stats on PulseChainStats.' },
           ].map(p => (
@@ -253,6 +253,49 @@ export default function PulseChainOfficialPage() {
             </div>
           ))}
         </div>
+      </Section>
+
+      <Section title="PulseX Mechanics" icon={<Zap size={15} color="var(--accent)" />} color="var(--accent)" badge="DEX">
+        <p style={{ fontSize: 13, color: 'var(--fg-muted)', lineHeight: 1.7, margin: '0 0 14px' }}>
+          PulseX is the primary decentralized exchange on PulseChain. It lets users swap PRC20 tokens, provide liquidity, and farm INC rewards by staking LP tokens. For portfolio tracking, PulseX matters because its pools are often the source of token pricing, liquidity depth, LP value, and swap history.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10, marginBottom: 12 }}>
+          {[
+            { label: 'Swap fee', value: '0.29%', sub: 'Charged on trades' },
+            { label: 'LP share', value: '76%', sub: 'Can go to liquidity providers' },
+            { label: 'PLSX burn', value: '21%', sub: 'Can buy and burn PLSX' },
+            { label: 'Farm token', value: 'INC', sub: 'Earned by LP farmers' },
+          ].map(item => (
+            <div key={item.label}>
+              <StatBox label={item.label} value={item.value} sub={item.sub} color="var(--accent)" />
+            </div>
+          ))}
+        </div>
+        <div style={{ background: 'rgba(0,255,159,0.06)', border: '1px solid var(--accent-border)', borderLeft: '3px solid var(--accent)', borderRadius: '0 8px 8px 0', padding: '10px 14px', fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.6 }}>
+          Use the official app at <a href="https://app.pulsex.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 700 }}>app.pulsex.com</a>. Always verify token contracts before swapping. Fork-copy tokens and bridged tokens can share similar names while having different addresses and prices.
+        </div>
+      </Section>
+
+      <Section title="ProveX (PRVX)" icon={<Shield size={15} color="#f97316" />} color="#f97316" badge="Replace Trust with Proof">
+        <p style={{ fontSize: 13, color: 'var(--fg-muted)', lineHeight: 1.7, margin: '0 0 12px' }}>
+          ProveX is an emerging proof-based settlement project in the PulseChain ecosystem. Its public landing page describes a browser-extension flow where buyers and sellers create cryptographic proofs, then code validates those proofs and settles without exchange custody or a traditional escrow middleman.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, marginBottom: 12 }}>
+          {[
+            ['Settlement', 'Peer-to-peer proof execution'],
+            ['Custody', 'Non-custodial design'],
+            ['Privacy', 'Proofs avoid unnecessary data exposure'],
+            ['Token model', 'Usage-based PRVX burn framing'],
+          ].map(([label, value]) => (
+            <div key={label} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px' }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>{label}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg)' }}>{value}</div>
+            </div>
+          ))}
+        </div>
+        <p style={{ fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.65, margin: 0 }}>
+          Safety note: verify the current ProveX URL, browser extension, PRVX contract, fees, and burn mechanics from official sources before using it. Treat new browser extensions as high-risk until they are widely reviewed.
+        </p>
       </Section>
 
       {/* ── Richard Heart ───────────────────────────────────────────────────── */}
@@ -269,7 +312,7 @@ export default function PulseChainOfficialPage() {
             'Raised $27M+ for medical research',
             'Predicted Bitcoin peaks in 2017 and 2021',
             'Warned early about Celsius, BlockFi, and FTX failures',
-            'Won complete SEC court dismissal (2025) — no settlement',
+            'Publicly challenged centralized crypto custody and exchange risk',
             'Purchased 555.55-carat Enigma Diamond, rebranded as The HEX.com Diamond',
             'Author of SciVive — self-help book on health and success',
           ].map(item => (
@@ -301,6 +344,9 @@ export default function PulseChainOfficialPage() {
         <p style={{ fontSize: 13, color: 'var(--fg-muted)', lineHeight: 1.7, marginBottom: 14 }}>
           All official PulseChain apps are published to IPFS — a decentralized network that cannot be taken down. An IPFS hash (CID) is a unique fingerprint: if the hash matches, the app is byte-for-byte identical to the original. Access any app via <code style={mono}>https://ipfs.io/ipfs/&lt;HASH&gt;</code> even if the domain is down.
         </p>
+        <div style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.25)', borderLeft: '3px solid #f59e0b', borderRadius: '0 8px 8px 0', padding: '10px 14px', fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.6, marginBottom: 14 }}>
+          IPFS hashes are version-specific. Prefer starting from the official domain and checking the current CID instead of bookmarking old IPFS links. If a CID does not match the current official source, do not connect your wallet.
+        </div>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead>

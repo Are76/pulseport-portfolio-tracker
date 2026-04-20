@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layers, ExternalLink, ChevronDown, ChevronUp, BarChart2, Shield, Zap, Globe } from 'lucide-react';
+import { Layers, ExternalLink, ChevronDown, ChevronUp, BarChart2, Shield, Zap, Globe, BookOpen } from 'lucide-react';
 
 const FEATURED_TOOLS = [
   {
@@ -11,8 +11,8 @@ const FEATURED_TOOLS = [
     desc: 'Intent-based cross-chain DEX with ZK privacy. Non-custodial, 0.3% fee, $10–$25K per swap, ~2–3 min. Bridges PulseChain ↔ Ethereum, Base, Arbitrum, BNB, Polygon, Optimism, Solana.',
   },
   {
-    name: 'ProveX',      url: 'https://app.provex.com',      tag: 'ZK P2P Trading',    color: '#f97316',
-    desc: "Richard Heart's browser extension for peer-to-peer crypto trading with zero-knowledge proofs. No intermediaries — buyers prove bank payment, sellers prove coin transfer. Every swap burns PRVX.",
+    name: 'ProveX',      url: 'https://provex.tech',      tag: 'Proof Settlement',    color: '#f97316',
+    desc: 'Emerging proof-based settlement project. Buyers and sellers generate cryptographic proofs, code settles the transaction, and ProveX describes usage-based PRVX burn mechanics.',
   },
   {
     name: 'LASO Finance', url: 'https://laso.finance',       tag: 'DeFi Protocol',     color: '#06b6d4',
@@ -104,7 +104,81 @@ const COMMUNITY = [
   { name: 'PulseConference', url: '#',                        tag: 'Events',      color: '#a855f7',       desc: 'Ecosystem events, conferences, and community meetups.' },
 ];
 
+const GUIDE_STEPS = [
+  {
+    title: 'Start with infrastructure',
+    body: 'Add PulseChain to an EVM wallet, keep enough PLS for gas, and verify every app URL before connecting. Wallets, RPCs, explorers, revocation tools, and bridges are the base layer.',
+  },
+  {
+    title: 'Then map liquidity',
+    body: 'Use PulseX, aggregators, and analytics pages to understand where volume and liquidity are. Token price, depth, and route quality matter more than a logo or social hype.',
+  },
+  {
+    title: 'Separate official tools from community tools',
+    body: 'Directories mix official products, independent apps, experimental DeFi, memes, NFTs, and educational sites. Treat each listing as a starting point, then verify contracts and docs.',
+  },
+  {
+    title: 'Track bridges as flows',
+    body: 'Bridge activity tells you where liquidity enters and leaves PulseChain. Compare official bridge routes, cross-chain bridges, fiat ramps, and stablecoin supply changes before moving funds.',
+  },
+];
+
+const SOURCE_LINKS = [
+  {
+    name: 'PulseX',
+    url: 'https://pulsex.com/',
+    desc: 'Official DEX overview, fee split, liquidity provider incentives, INC farming, and PLSX buy-and-burn mechanics.',
+  },
+  {
+    name: 'LibertySwap',
+    url: 'https://libertyswap.finance/',
+    desc: 'Live cross-chain swap app with public/private modes, supported assets, gasless mode, fee display, and beta notices.',
+  },
+  {
+    name: 'LibertySwap Docs',
+    url: 'https://docs.libertyswap.finance/',
+    desc: 'Non-custodial intent-based exchange architecture, privacy model, supported operations, and security guidance.',
+  },
+  {
+    name: 'ProveX',
+    url: 'https://provex.tech/',
+    desc: 'Proof-based peer-to-peer settlement concept, browser-extension flow, use cases, and PRVX burn framing.',
+  },
+  {
+    name: 'PulseChainStats Bridge Stats',
+    url: 'https://www.pulsechainstats.com/bridge-stats',
+    desc: 'Official bridge TVL, daily/monthly inflows and outflows, top bridged tokens, Hyperlane activity, and CST supply.',
+  },
+  {
+    name: 'PulseCoinList Ecosystem Map',
+    url: 'https://pulsecoinlist.com/map',
+    desc: 'Project categories, ecosystem map, bridges, DEXs, DeFi, wallets, NFTs, tools, and community resources.',
+  },
+  {
+    name: 'PLSFolio Ecosystem',
+    url: 'https://plsfolio.com/ecosystem/',
+    desc: 'PulseChain ecosystem discovery and portfolio-oriented directory context.',
+  },
+  {
+    name: 'PulseChainStats Ecosystem',
+    url: 'https://www.pulsechainstats.com/ecosystem',
+    desc: 'DApps, bridges, DEX farms, lending, staking, developer tools, domain services, and ecosystem FAQ framing.',
+  },
+  {
+    name: 'PulseChainStats Richard Heart',
+    url: 'https://www.pulsechainstats.com/richardheart/',
+    desc: 'Founder profile and background page for Richard Heart, HEX, and PulseChain context.',
+  },
+];
+
 const FAQS = [
+  { q: 'Why can bridge transactions look different from normal swaps?', a: 'Bridge transactions often involve multiple contracts, helper addresses, wrapped tokens, and delayed settlement. A wallet may send one asset on the origin chain and later receive another representation of that asset on PulseChain. A portfolio tracker should show this as bridge activity when possible, not as a normal buy.' },
+  { q: 'What does bridge TVL tell me?', a: 'Bridge TVL shows the dollar value of assets currently locked through bridge routes. It helps measure ecosystem liquidity and adoption, but it does not guarantee token safety, price stability, or contract risk.' },
+  { q: 'What is net bridge flow?', a: 'Net bridge flow is inflow minus outflow. Positive net flow means more value entered PulseChain than left during the selected period. Negative net flow means more value left than entered.' },
+  { q: 'What is the difference between PulseX and LibertySwap?', a: 'PulseX is the main DEX and liquidity hub on PulseChain. LibertySwap is focused on cross-chain swapping and privacy-preserving intent-based exchange. PulseX is where many PulseChain token pools live; LibertySwap is more useful for cross-chain/private transfer routes.' },
+  { q: 'What is the simplest way to understand the PulseChain ecosystem?', a: 'Think of it in layers: wallets and RPCs first, bridges and ramps second, DEX liquidity third, then DeFi, NFTs, analytics, and community tools. Directories such as PulseCoinList, PLSFolio, and PulseChainStats help you discover projects, but you should still verify every app URL and contract before connecting a wallet.' },
+  { q: 'Which ecosystem categories matter most for a portfolio tracker?', a: 'The most important categories are DEXs, bridges, lending, HEX staking, liquidity farms, wallets, analytics, revocation tools, and fiat ramps. These directly affect balances, prices, transfers, approvals, and P&L interpretation.' },
+  { q: 'How should I use ecosystem directories safely?', a: 'Use directories as maps, not guarantees. Open the official project site, compare links across multiple sources, check contract addresses on an explorer, inspect token approvals with revoke.cash, and test with small amounts first.' },
   { q: 'What is PulseX and how does it work?', a: "PulseX is PulseChain's official DEX. Users can swap PRC20 tokens, provide liquidity, and stake LP tokens in farms to earn INC rewards. Trading fee is 0.29% — 76% goes to LPs, 21% buys and burns PLSX. It has two versions: V1 and V2 with improved routing." },
   { q: 'What is LibertySwap and how is it different from other bridges?', a: 'LibertySwap is an intent-based cross-chain DEX that uses zero-knowledge proofs for privacy. Unlike standard bridges, it never takes custody of your assets and transaction data is deleted after 48 hours. It has a gasless mode, a 0.3% fee, and supports swaps between PulseChain and other EVM chains including Base. Min $10, max $25,000.' },
   { q: 'What is Hedron and why would I use it?', a: "Hedron allows HEX stakers to tokenize their stakes as HSI tokens. Normal HEX stakes are illiquid — you can't transfer them. Hedron wraps them into tradeable tokens so you can sell or use a stake in DeFi without ending it early and triggering penalties." },
@@ -216,6 +290,28 @@ export default function PulseChainCommunityPage() {
       </div>
 
       {/* ── Featured Tools ──────────────────────────────────────────────────── */}
+      <Section title="PulseChain Guide" icon={<BookOpen size={15} color="#627EEA" />} color="#627EEA" badge="How to read the map">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 10, marginBottom: 14 }}>
+          {GUIDE_STEPS.map((step, idx) => (
+            <div key={step.title} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 10, padding: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <span style={{ width: 24, height: 24, borderRadius: 8, background: 'rgba(98,126,234,0.14)', border: '1px solid rgba(98,126,234,0.28)', color: '#8aa4f0', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, fontFamily: 'JetBrains Mono, monospace', flexShrink: 0 }}>
+                  {idx + 1}
+                </span>
+                <span style={{ color: 'var(--fg)', fontSize: 13, fontWeight: 800 }}>{step.title}</span>
+              </div>
+              <p style={{ color: 'var(--fg-muted)', fontSize: 12, lineHeight: 1.6, margin: 0 }}>{step.body}</p>
+            </div>
+          ))}
+        </div>
+        <div style={{ background: 'rgba(0,255,159,0.04)', border: '1px solid var(--accent-border)', borderRadius: 10, padding: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--accent)', marginBottom: 6 }}>Portfolio rule</div>
+          <p style={{ color: 'var(--fg-muted)', fontSize: 12, lineHeight: 1.6, margin: 0 }}>
+            A clean portfolio view depends on separating real balance changes from router calls, bridge helper calls, approvals, and zero-value contract interactions. Use the transaction tab for cash-flow history and the ecosystem map for discovery.
+          </p>
+        </div>
+      </Section>
+
       <Section title="Essential Tools" icon={<Zap size={15} color="var(--accent)" />} color="var(--accent)" badge="Must Know">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
           {FEATURED_TOOLS.map(p => (
@@ -279,6 +375,30 @@ export default function PulseChainCommunityPage() {
       </Section>
 
       {/* ── Analytics ───────────────────────────────────────────────────────── */}
+      <Section title="Bridge Stats & Flow Reading" icon={<BarChart2 size={15} color="#627EEA" />} color="#627EEA" badge="Liquidity flows">
+        <p style={{ fontSize: 13, color: 'var(--fg-muted)', lineHeight: 1.7, margin: '0 0 14px' }}>
+          Bridge stats explain how value enters and leaves PulseChain. A portfolio deposit on PulseChain may be a bridge arrival, not a normal buy. Tracking bridge TVL, inflows, outflows, and net flow helps separate real liquidity movement from ordinary wallet transfers.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 8, marginBottom: 12 }}>
+          {[
+            { label: 'Bridge TVL', value: 'Value locked through bridge routes' },
+            { label: 'Inflow', value: 'Assets entering PulseChain' },
+            { label: 'Outflow', value: 'Assets leaving PulseChain' },
+            { label: 'Net flow', value: 'Inflow minus outflow' },
+            { label: 'CST supply', value: 'Fiat on/off-ramp adoption signal' },
+            { label: 'Hyperlane', value: 'USDC cross-chain route activity' },
+          ].map(item => (
+            <div key={item.label} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px' }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: '#8aa4f0', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>{item.label}</div>
+              <div style={{ fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.5 }}>{item.value}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.6 }}>
+          Stablecoin inflows are especially useful for reading liquidity depth. WETH, USDC, DAI, USDT, WBTC, HEX, CST, and Hyperlane USDC flows can all change how healthy PulseChain markets look from day to day.
+        </div>
+      </Section>
+
       <Section title="Analytics & Data Tools" icon={<BarChart2 size={15} color="var(--accent)" />} color="var(--accent)">
         {/* PulseChainStats feature card */}
         <div style={{
@@ -361,6 +481,20 @@ export default function PulseChainCommunityPage() {
       </Section>
 
       {/* ── FAQ ─────────────────────────────────────────────────────────────── */}
+      <Section title="Research Sources" icon={<ExternalLink size={15} color="#627EEA" />} color="#627EEA" badge="Directory mix">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
+          {SOURCE_LINKS.map(source => (
+            <a key={source.url} href={source.url} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 10, padding: 14, color: 'inherit', textDecoration: 'none', display: 'block' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
+                <span style={{ fontSize: 13, fontWeight: 800, color: '#8aa4f0', flex: 1 }}>{source.name}</span>
+                <ExternalLink size={12} color="var(--fg-muted)" />
+              </div>
+              <p style={{ fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.55, margin: 0 }}>{source.desc}</p>
+            </a>
+          ))}
+        </div>
+      </Section>
+
       <Section title="Frequently Asked Questions" icon={<Layers size={15} color={PINK} />} color={PINK} badge={`${FAQS.length} questions`}>
         {FAQS.map(item => <FaqItem key={item.q} {...item} />)}
       </Section>

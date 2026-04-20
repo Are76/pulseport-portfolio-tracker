@@ -19,6 +19,9 @@ const NATIVE_TOKEN: Record<string, string> = {
   base:       'ETH',
 };
 
+const isZeroValueNativeCall = (t: Transaction): boolean =>
+  t.amount <= 0 && t.asset === NATIVE_TOKEN[t.chain];
+
 export function normalizeTransactions(
   rawTxs: Transaction[],
   walletAddrs: Set<string>,
@@ -36,7 +39,8 @@ export function normalizeTransactions(
   Object.entries(byHash).forEach(([hash, txs]) => {
     // Only include transactions that involve at least one of the user's wallets
     const relevant = txs.filter(t =>
-      walletAddrs.has(t.from.toLowerCase()) || walletAddrs.has(t.to.toLowerCase()),
+      !isZeroValueNativeCall(t) &&
+      (walletAddrs.has(t.from.toLowerCase()) || walletAddrs.has(t.to.toLowerCase())),
     );
     if (relevant.length === 0) return;
 

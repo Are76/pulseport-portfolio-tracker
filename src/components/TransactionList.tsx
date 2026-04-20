@@ -315,14 +315,24 @@ export function TransactionList({
 
                   {/* Amount row */}
                   {(!compact || isSwap) && (
-                    <div
-                      className="tx-card__amount"
-                      style={{ color: isDeposit ? 'var(--accent)' : isSwap ? 'var(--fg)' : '#ef4444' }}
-                    >
-                      {isDeposit ? '+' : isWithdraw ? '\u2212' : ''}
-                      {isSwap && tx.counterAsset
-                        ? `Paid ${(tx.counterAmount ?? 0).toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.counterAsset} \u2192 Got ${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`
-                        : `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`}
+                  <div
+                    className="tx-card__amount"
+                    style={{ color: isDeposit ? 'var(--accent)' : isSwap ? 'var(--fg)' : '#ef4444' }}
+                  >
+                    {isDeposit ? '+' : isWithdraw ? '\u2212' : ''}
+                    {isSwap && tx.counterAsset
+                      ? (
+                        <span className="tx-swap-line">
+                          <span className="tx-swap-leg tx-swap-leg--paid">
+                            Paid {(tx.counterAmount ?? 0).toLocaleString(undefined, { maximumFractionDigits: 4 })} {tx.counterAsset}
+                          </span>
+                          <span className="tx-swap-arrow" aria-hidden="true">-&gt;</span>
+                          <span className="tx-swap-leg tx-swap-leg--got">
+                            Got {tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {tx.asset}
+                          </span>
+                        </span>
+                      )
+                      : `${tx.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${tx.asset}`}
                       {!compact && tx.valueUsd != null && (
                         <span className="tx-card__usd">
                           \u2248 ${tx.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
@@ -372,7 +382,7 @@ export function TransactionList({
 
             {/* ── Expanded detail panel ─────────────────────────────────── */}
             {isExpanded && (
-              <div style={{ padding: '0 18px 14px', background: 'var(--bg-inset, var(--bg-elevated))' }}>
+              <div className="tx-card__detail-panel" style={{ padding: '0 18px 14px', background: 'var(--bg-inset, var(--bg-elevated))' }}>
                 {isSwap
                   ? <SwapDetail tx={tx} coinAsset={coinAsset} counterAsset={counterAsset} coinLogo={coinLogo} getLogoUrl={getLogoUrl} displayAddr={displayAddr} isOwn={isOwn} explorerBase={explorerBase} onFilterByAsset={onFilterByAsset} />
                   : <TransferDetail tx={tx} isDeposit={isDeposit} coinAsset={coinAsset} displayAddr={displayAddr} isOwn={isOwn} explorerBase={explorerBase} />
@@ -517,13 +527,13 @@ interface TokenLegProps {
 
 function TokenLeg({ logo, symbol, amount, sign, color, thenPrice, nowPrice, explorerUrl, onFilter }: TokenLegProps) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--bg-elevated)', borderRadius: 8 }}>
+    <div className="tx-token-leg" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--bg-elevated)', borderRadius: 8 }}>
       {logo
         ? <img src={logo} alt={symbol} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
             onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
         : <div style={{ width: 28, height: 28, borderRadius: '50%', background: `${color}1a`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color, flexShrink: 0 }}>{symbol[0]}</div>
       }
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="tx-token-leg__body" style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color, fontFamily: 'JetBrains Mono, monospace' }}>
           {sign} {amount.toLocaleString(undefined, { maximumFractionDigits: 6 })} {symbol}
         </div>

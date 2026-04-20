@@ -6895,3 +6895,178 @@ textarea:focus-visible,
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   Mobile viewport hardening
+   Prevent accidental page zoom/sideways layouts from wide rows, small inputs,
+   long token amounts, and dense staking/transaction modules.
+   ═══════════════════════════════════════════════════════════════════════════ */
+html {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  .app-main {
+    width: 100%;
+    max-width: 100vw;
+    min-width: 0;
+    overflow-x: clip;
+  }
+
+  .app-main > div,
+  .app-main main,
+  .app-main section,
+  .app-main article {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .tx-module-card,
+  .tx-module-list,
+  .wallet-tx-list,
+  .tx-list,
+  .tx-card-row,
+  .tx-card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .tx-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
+  .tx-card__left,
+  .tx-card__meta,
+  .tx-card__badges,
+  .tx-card__amount,
+  .tx-card__context {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .tx-card__amount {
+    display: block;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .tx-swap-line {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+    max-width: 100%;
+  }
+
+  .tx-swap-leg {
+    display: block;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .tx-swap-arrow {
+    display: none;
+  }
+
+  .tx-card__usd {
+    display: block;
+    margin-left: 0;
+    margin-top: 2px;
+  }
+
+  .tx-card__actions {
+    max-width: 96px;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+  }
+
+  .tx-card__actions button {
+    min-width: 34px;
+    min-height: 34px;
+  }
+
+  .tx-card__detail-panel {
+    padding: 0 10px 12px !important;
+  }
+
+  .tx-token-leg {
+    align-items: flex-start !important;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .tx-token-leg__body {
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .tx-token-leg__body > div {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .stakes-hero-card {
+    padding: 18px 14px !important;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .stakes-hero-card > div:first-child {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .stakes-hero-mini-stats {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .stakes-hero-mini-card,
+  .stakes-hero-mini-card.maturity {
+    min-width: 0 !important;
+    width: 100%;
+    padding: 10px 12px;
+  }
+}
+
+@media (max-width: 380px) {
+  .stakes-hero-mini-stats {
+    grid-template-columns: 1fr !important;
+  }
+
+  .tx-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tx-card__actions {
+    justify-content: flex-start;
+    max-width: 100%;
+    padding-top: 4px;
+  }
+}
+
