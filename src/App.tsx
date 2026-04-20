@@ -1093,10 +1093,10 @@ export default function App() {
         const parseRes = (hex: string): [number, number] => {
           if (!hex || hex === '0x') return [0, 0];
           const d = hex.replace('0x', '').padStart(192, '0');
-          // Use parseFloat on hex to avoid BigInt -> Number precision loss on large reserves
-          // Division normalises the magnitude before conversion
-          const r0 = parseInt(d.slice(0, 64), 16);
-          const r1 = parseInt(d.slice(64, 128), 16);
+          // parseInt loses precision above 2^53; reserves routinely exceed this (1e24 for 18-dec tokens).
+          // BigInt parses exactly, Number() then gives a safe float approximation for ratio math.
+          const r0 = Number(BigInt('0x' + d.slice(0, 64)));
+          const r1 = Number(BigInt('0x' + d.slice(64, 128)));
           return [r0, r1];
         };
 
@@ -2101,14 +2101,16 @@ export default function App() {
         }));
       }
 
-      // Aggregate HEX stakes into HEX assets for total balance visibility
+      // Aggregate HEX stakes into HEX assets for total balance visibility.
+      // Only active stakes (daysRemaining > 0) contribute — ended stakes are sitting in the wallet already.
       allStakes.forEach(stake => {
+        if ((stake.daysRemaining ?? 0) <= 0) return;
         const assetKey = `${stake.chain}-HEX`;
         if (assetMap[assetKey]) {
           const stakedHeartsNum = Number(stake.stakedHearts) / 1e8;
           const interestHeartsNum = Number(stake.interestHearts || 0n) / 1e8;
           const totalHeartsNum = stakedHeartsNum + interestHeartsNum;
-          
+
           assetMap[assetKey].stakedBalance = (assetMap[assetKey].stakedBalance || 0) + totalHeartsNum;
           assetMap[assetKey].stakedValue = (assetMap[assetKey].stakedValue || 0) + (stake.totalValueUsd || stake.estimatedValueUsd);
         }
@@ -2668,6 +2670,7 @@ export default function App() {
     // Recalculate accrued yield from tShares * daysStaked * chain-specific rate so
     // stale cached interestHearts never corrupt the total.
     const stakingValueUsd = currentStakes.reduce((acc, s) => {
+      if ((s.daysRemaining ?? 0) <= 0) return acc; // exclude ended stakes
       const hexPriceKey = `${s.chain}:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39`;
       const chainHexFallback = s.chain === 'pulsechain' ? prices['pulsechain:hex']?.usd : prices['hex']?.usd;
       const hexPrice = prices[hexPriceKey]?.usd || chainHexFallback || 0;
@@ -2705,7 +2708,9 @@ export default function App() {
     const nativeValue = totalValue / plsPrice;
 
     const nativePlsBalance = assets.find(a => a.symbol === 'PLS' && a.chain === 'pulsechain')?.balance || 0;
-    const stakedPlsValue = currentStakes.reduce((acc, curr) => acc + (curr.estimatedValueUsd / plsPrice), 0);
+    const stakedPlsValue = currentStakes.reduce((acc, curr) => (
+      (curr.daysRemaining ?? 0) > 0 ? acc + (curr.estimatedValueUsd / plsPrice) : acc
+    ), 0);
     const tokenPlsValue = nativeValue - nativePlsBalance - stakedPlsValue;
 
     // Net Investment = total stablecoin + ETH received from external addresses into own wallets
@@ -2865,6 +2870,7 @@ export default function App() {
     let totalInterestHex = 0;
 
     stakes.forEach(s => {
+      if ((s.daysRemaining ?? 0) <= 0) return; // exclude ended stakes from active totals
       const stakedHex  = Number(s.stakedHearts ?? 0n) / 1e8;
       const tShares    = Number(s.stakeShares  ?? 0n) / 1e12;
       // Recalculate accrued yield from first principles using chain-specific rate
@@ -2888,6 +2894,7 @@ export default function App() {
     const phexPrice = prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0;
     // Daily payout uses chain-specific rates; sum pHEX and eHEX T-Share contributions separately
     const estimatedDailyPayoutHex = stakes.reduce((sum, s) => {
+      if ((s.daysRemaining ?? 0) <= 0) return sum; // ended stakes earn nothing
       const tS = Number(s.stakeShares ?? 0n) / 1e12;
       const rate = s.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
       return sum + tS * rate;
@@ -4285,9 +4292,9 @@ export default function App() {
                              {wallets.length > 0 ? (() => {
                                const HEX_A = '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39';
                                const totalPHex = currentAssets.filter(a => a.chain === 'pulsechain' && (a as any).address?.toLowerCase() === HEX_A).reduce((s, a) => s + a.balance, 0)
-                                              + currentStakes.filter(s => s.chain === 'pulsechain').reduce((s, st) => s + (st.stakedHex ?? 0), 0);
+                                              + currentStakes.filter(s => s.chain === 'pulsechain' && (s.daysRemaining ?? 0) > 0).reduce((s, st) => s + (st.stakedHex ?? 0), 0);
                                const totalEHex = currentAssets.filter(a => (a.chain === 'ethereum' && (a as any).address?.toLowerCase() === HEX_A) || (a.chain === 'pulsechain' && a.symbol === 'eHEX')).reduce((s, a) => s + a.balance, 0)
-                                              + currentStakes.filter(s => s.chain === 'ethereum').reduce((s, st) => s + (st.stakedHex ?? 0), 0);
+                                              + currentStakes.filter(s => s.chain === 'ethereum' && (s.daysRemaining ?? 0) > 0).reduce((s, st) => s + (st.stakedHex ?? 0), 0);
                                return <>
                                  <span style={{ fontSize: 12, color: t.textTertiary }}>pHEX: <span style={{ color: '#fb923c', fontWeight: 600 }}>{totalPHex >= 1e6 ? `${(totalPHex/1e6).toFixed(1)}M` : totalPHex >= 1e3 ? `${(totalPHex/1e3).toFixed(0)}K` : Math.round(totalPHex).toLocaleString('en-US')}</span></span>
                                  <span style={{ fontSize: 12, color: t.textMuted }}> - </span>
@@ -4807,6 +4814,7 @@ export default function App() {
                   const selectedWalletStakes = selectedScope ? currentStakes.filter(s => s.walletAddress === selectedWalletAddr) : currentStakes;
                   const selectedLiquidUsd = visibleWalletAssets.reduce((sum, asset) => sum + asset.value, 0);
                   const selectedStakingUsd = selectedWalletStakes.reduce((sum, st) => {
+                    if ((st.daysRemaining ?? 0) <= 0) return sum; // exclude ended stakes
                     const hexPriceKey = `${st.chain}:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39`;
                     const chainHexFallback = st.chain === 'pulsechain' ? prices['pulsechain:hex']?.usd : prices['hex']?.usd;
                     const hexPrice = prices[hexPriceKey]?.usd || chainHexFallback || 0;
@@ -6141,6 +6149,7 @@ export default function App() {
           // and the Overview HEX Holdings section. Using full maturity yield here would make the
           // Wallets total vastly higher than the Overview total for long-running stakes.
           const stakingUsdValue = viewStakes.reduce((s, st) => {
+            if ((st.daysRemaining ?? 0) <= 0) return s; // exclude ended stakes
             const hexPriceKey = `${st.chain}:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39`;
             const chainHexFallback = st.chain === 'pulsechain' ? prices['pulsechain:hex']?.usd : prices['hex']?.usd;
             const hexPrice = prices[hexPriceKey]?.usd || chainHexFallback || 0;
@@ -6158,11 +6167,11 @@ export default function App() {
           const walletPHex = viewAssets
             .filter(a => a.chain === 'pulsechain' && (a as any).address?.toLowerCase() === HEX_A)
             .reduce((s, a) => s + a.balance, 0)
-            + viewStakes.filter(s => s.chain === 'pulsechain').reduce((s, st) => s + (st.stakedHex ?? 0), 0);
+            + viewStakes.filter(s => s.chain === 'pulsechain' && (s.daysRemaining ?? 0) > 0).reduce((s, st) => s + (st.stakedHex ?? 0), 0);
           const walletEHex = viewAssets
             .filter(a => (a.chain === 'ethereum' && (a as any).address?.toLowerCase() === HEX_A) || (a.chain === 'pulsechain' && a.symbol === 'eHEX'))
             .reduce((s, a) => s + a.balance, 0)
-            + viewStakes.filter(s => s.chain === 'ethereum').reduce((s, st) => s + (st.stakedHex ?? 0), 0);
+            + viewStakes.filter(s => s.chain === 'ethereum' && (s.daysRemaining ?? 0) > 0).reduce((s, st) => s + (st.stakedHex ?? 0), 0);
           const fmtHexCount = (n: number) => n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(0)}K` : Math.round(n).toLocaleString('en-US');
 
           return (
