@@ -3,6 +3,7 @@ build/
 dist/
 release/
 coverage/
+.worktrees/
 .DS_Store
 *.log
 .env*
