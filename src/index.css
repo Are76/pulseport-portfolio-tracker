@@ -218,6 +218,25 @@
   background: linear-gradient(90deg, #007a4d 0%, rgba(0,122,77,0.2) 60%, transparent 100%);
 }
 
+@font-face {
+  font-family: 'Avenir Next Demi';
+  src: url('/branding/AvenirNext-DemiBold.ttf') format('truetype');
+  font-display: swap;
+  font-weight: 600;
+  font-style: normal;
+}
+
+:root {
+  --font-shell-display: 'Avenir Next Demi', 'Sora', ui-sans-serif, system-ui, sans-serif;
+  --shell-bg: #090c12;
+  --shell-surface: #11141d;
+  --shell-fg: #f3f6ff;
+  --shell-muted: #97a0b7;
+  --shell-subtle: #6b7388;
+  --shell-accent: #00d68f;
+  --shell-border: rgba(255, 255, 255, 0.08);
+}
+
 /* btn-primary keeps white text (it has a colored bg so it's always legible) */
 [data-theme="light"] .btn-primary {
   color: #ffffff;
