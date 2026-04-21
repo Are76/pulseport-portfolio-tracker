@@ -569,6 +569,55 @@ textarea:focus-visible,
   box-shadow: 0 0 18px color-mix(in srgb, currentColor 55%, transparent);
 }
 
+.app-sidebar,
+.sidebar-backdrop {
+  display: none !important;
+}
+
+.app-top-nav {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 0 12px;
+  scrollbar-width: none;
+}
+
+.app-top-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.app-top-nav-btn {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fg-muted);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .15s ease;
+}
+
+.app-top-nav-btn.is-active {
+  color: var(--accent);
+  border-color: var(--accent-border);
+  background: var(--accent-dim);
+}
+
+.app-top-nav-btn:hover {
+  color: var(--fg);
+  background: var(--bg-elevated);
+}
+
 .sidebar-wallet-zone {
   border-top: 1px solid var(--border);
   background:
@@ -8065,6 +8114,23 @@ body,
   font-weight: 900;
 }
 
+.pce-note-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.pce-note-list p {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  color: var(--fg-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 @media (max-width: 980px) {
   .pce-hero,
   .pce-network-snapshot,
@@ -8199,6 +8265,128 @@ body,
   min-width: 0;
 }
 
+.my-investment-page {
+  display: grid;
+  gap: 20px;
+  padding-bottom: 72px;
+}
+
+.my-investment-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(300px, .95fr);
+  gap: 18px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 12% 16%, rgba(0,255,159,.14), transparent 34%),
+    radial-gradient(circle at 88% 22%, rgba(99,126,234,.12), transparent 32%),
+    linear-gradient(145deg, rgba(12,14,22,.95), rgba(10,12,19,.88));
+}
+
+.my-investment-hero-copy,
+.my-investment-hero-panel {
+  padding: clamp(20px, 3vw, 30px);
+}
+
+.my-investment-hero-copy {
+  display: grid;
+  align-content: center;
+  gap: 14px;
+}
+
+.my-investment-kicker,
+.my-investment-panel-head span {
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.my-investment-hero-copy h1 {
+  margin: 0;
+  color: var(--fg);
+  font-size: clamp(34px, 4vw, 58px);
+  line-height: .96;
+  font-weight: 900;
+}
+
+.my-investment-hero-copy p {
+  margin: 0;
+  max-width: 560px;
+  color: var(--fg-muted);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.my-investment-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.my-investment-hero-panel {
+  display: grid;
+  gap: 16px;
+  align-content: center;
+  border-left: 1px solid rgba(255,255,255,.08);
+  background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+}
+
+.my-investment-panel-head {
+  display: grid;
+  gap: 6px;
+}
+
+.my-investment-panel-head strong {
+  color: var(--fg);
+  font-size: 24px;
+  line-height: 1.05;
+  font-weight: 800;
+}
+
+.my-investment-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.my-investment-mini-grid > div,
+.my-investment-empty {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255,255,255,.03);
+}
+
+.my-investment-mini-grid span {
+  display: block;
+  color: var(--fg-subtle);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 6px;
+}
+
+.my-investment-mini-grid strong {
+  color: var(--fg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.my-investment-card,
+.my-investment-performance {
+  min-width: 0;
+}
+
+.my-investment-empty {
+  color: var(--fg-muted);
+  font-size: 13px;
+}
+
 .stakes-hero-main {
   min-width: 0;
   display: flex;
@@ -8327,6 +8515,19 @@ body,
   .wallet-page-shell {
     width: 100%;
     padding-inline: 0;
+  }
+
+  .my-investment-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .my-investment-hero-panel {
+    border-left: 0;
+    border-top: 1px solid rgba(255,255,255,.08);
+  }
+
+  .my-investment-mini-grid {
+    grid-template-columns: 1fr;
   }
 
   .stakes-page-shell {

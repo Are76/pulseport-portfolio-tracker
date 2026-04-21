@@ -400,6 +400,11 @@ export function StakesSection({
         </div>
       </div>
 
+      <div className="stakes-charts-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <StakingPie stakes={activeStakes.length > 0 ? activeStakes : stakes} hexUsdPrice={hexUsdPrice} />
+        <StakingLadder stakes={activeStakes.length > 0 ? activeStakes : stakes} />
+      </div>
+
       {/* -- 2. HEX Totals -------------------------------------------------- */}
       <div className="stakes-performance-grid">
         {chainPerformance.map(chain => (
@@ -506,11 +511,6 @@ export function StakesSection({
           </div>
           <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>across all chains</div>
         </div>
-      </div>
-
-      <div className="stakes-charts-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        <StakingPie stakes={activeStakes.length > 0 ? activeStakes : stakes} hexUsdPrice={hexUsdPrice} />
-        <StakingLadder stakes={activeStakes.length > 0 ? activeStakes : stakes} />
       </div>
 
       {/* -- 5. Individual Stakes Table ------------------------------------- */}

@@ -193,7 +193,7 @@ function ProjectCard({ item }: { item: Project }) {
         <span className="pce-project-body">
           <span className="pce-project-top">
             <strong>{item.name}</strong>
-            <span className="pce-project-caret" aria-hidden="true">›</span>
+            <span className="pce-project-caret" aria-hidden="true">{'>'}</span>
           </span>
           <small>{item.tag}</small>
         </span>
@@ -236,7 +236,7 @@ function InfoDropdown() {
       <summary>
         <span>
           <BookOpen size={18} />
-          PulseChain reference, contracts, bridge notes, and setup details
+          PulseChain setup, safety notes, and official links
         </span>
         <small>Open info</small>
       </summary>
@@ -264,6 +264,17 @@ function InfoDropdown() {
           </div>
         </section>
 
+        <section className="pce-info-panel">
+          <div className="pce-section-intro">
+            <span>Safety notes</span>
+            <h2>Verify the route before you sign.</h2>
+          </div>
+          <div className="pce-note-list">
+            <p>PulseChain tokens are separate from Ethereum tokens even when addresses match.</p>
+            <p>Bridged stablecoins such as pDAI, pUSDC, and pUSDT are market-priced. Do not assume $1.</p>
+            <p>Verify chain ID 369 before signing transactions or adding custom RPC endpoints.</p>
+          </div>
+        </section>
       </div>
     </details>
   );

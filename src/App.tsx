@@ -37,8 +37,7 @@ import {
   Zap,
   BarChart2,
   Droplets,
-  Shield,
-  Menu
+  Shield
 } from 'lucide-react';
 import {
   PieChart,
@@ -55,7 +54,6 @@ import {
   CartesianGrid
 } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
-import PulseChainOfficialPage from './components/PulseChainOfficialPage';
 import PulseChainCommunityPage from './components/PulseChainCommunityPage';
 import BridgeDashboardPage from './components/BridgeDashboardPage';
 import { format } from 'date-fns';
@@ -3429,6 +3427,18 @@ export default function App() {
     openMarketWatch(q);
   };
 
+  const navItems = [
+    { id: 'home', label: 'Home', icon: Activity },
+    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'assets', label: 'Wallet', icon: Coins },
+    { id: 'stakes', label: 'HEX Stakes', icon: Lock },
+    { id: 'defi', label: 'DeFi', icon: Droplets },
+    { id: 'history', label: 'Transaction', icon: History },
+    { id: 'pulsechain-official', label: 'My Investment', icon: Zap },
+    { id: 'pulsechain-community', label: 'Ecosystem', icon: Layers },
+    { id: 'bridge', label: 'Bridge', icon: ArrowLeftRight },
+  ] as const;
+
   return (
     <div className="app-shell min-h-screen font-sans flex" style={{ fontSize: 14, color: 'var(--fg)' }}>
       {/* -- SIDEBAR BACKDROP (mobile) -- */}
@@ -3456,17 +3466,7 @@ export default function App() {
 
         {/* Nav */}
         <nav style={{ padding: '10px 8px' }} className="flex flex-col gap-0.5">
-          {([
-            { id: 'home', label: 'Home', icon: Activity },
-            { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-            { id: 'assets',   label: 'Wallet',             icon: Coins },
-            { id: 'stakes',   label: 'HEX Stakes',         icon: Lock },
-            { id: 'defi',     label: 'DeFi Positions',     icon: Droplets },
-            { id: 'history',  label: 'Transaction',         icon: History },
-            { id: 'pulsechain-official', label: 'PulseChain', icon: Zap },
-            { id: 'pulsechain-community', label: 'PulseChain Ecosystem', icon: Layers },
-            { id: 'bridge', label: 'PulseChain Bridge', icon: ArrowLeftRight },
-          ] as const).map(({ id, label, icon: Icon }) => {
+          {navItems.map(({ id, label, icon: Icon }) => {
             const isDefi = id === 'defi';
             const isActive = activeTab === id;
             const defiColor = 'rgba(247,57,255,0.9)';
@@ -3626,11 +3626,8 @@ export default function App() {
             position: 'sticky', top: 0, zIndex: 50,
             padding: '0 20px',
           }}>
-          {/* Mobile logo + hamburger */}
-          <div className="flex md:hidden items-center gap-2">
-            <button className="mobile-menu-btn" onClick={() => setSidebarOpen(v => !v)}>
-              <Menu size={18} />
-            </button>
+          {/* Logo */}
+          <div className="flex items-center gap-2">
             <div style={{
               width: 26, height: 26, background: 'var(--accent)', borderRadius: 7,
               boxShadow: '0 0 12px rgba(0,255,159,.3)',
@@ -3641,36 +3638,22 @@ export default function App() {
             <span className="logo-wordmark" style={{ fontSize: 14 }}>PULSEPORT</span>
           </div>
 
-          {/* Price ticker - desktop only */}
-          {Object.keys(prices).length > 0 && (
-            <div className="ticker-wrapper hidden sm:flex flex-1 mx-4" style={{ height: 56, alignItems: 'center', overflow: 'hidden' }}>
-              <div className="ticker-track" style={{ gap: 0 }}>
-                {([
-                  { sym: 'PLS',  dot: '#00FF9F', price: prices['pulsechain']?.usd || 0, change: prices['pulsechain']?.usd_24h_change ?? prices['pulsechain:native']?.usd_24h_change },
-                  { sym: 'PLSX', dot: '#f739ff', price: prices['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd || prices['pulsex']?.usd || 0, change: prices['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd_24h_change ?? prices['pulsex']?.usd_24h_change },
-                  { sym: 'pHEX', dot: '#fb923c', price: prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || 0, change: prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd_24h_change ?? prices['hex']?.usd_24h_change },
-                  { sym: 'INC',  dot: '#22d3ee', price: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd || prices['incentive']?.usd || 0, change: prices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd_24h_change ?? prices['incentive']?.usd_24h_change },
-                  { sym: 'PRVX', dot: '#a855f7', price: prices['pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11']?.usd || 0, change: prices['pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11']?.usd_24h_change },
-                  { sym: 'eHEX', dot: '#627EEA', price: prices['hex']?.usd || 0, change: prices['hex']?.usd_24h_change },
-                  { sym: 'ETH',  dot: '#627EEA', price: prices['ethereum']?.usd || 0, change: prices['ethereum']?.usd_24h_change },
-                ] as { sym: string; dot: string; price: number; change?: number | null }[]).flatMap(c => [c, { ...c }]).map((coin, i) => (
-                  <React.Fragment key={i}>
-                    <div className="ticker-item">
-                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: coin.dot, flexShrink: 0, boxShadow: `0 0 8px ${coin.dot}dd, 0 0 3px ${coin.dot}` }} />
-                      <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.07em' }}>{coin.sym}</span>
-                      <span className="tabular-nums" style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg)', letterSpacing: '-0.01em' }}>{fmtPrice(coin.price)}</span>
-                      {coin.change != null && (
-                        <span className={coin.change >= 0 ? 'ticker-pct-pos' : 'ticker-pct-neg'}>
-                          {coin.change >= 0 ? '+' : ''}{coin.change.toFixed(2)}%
-                        </span>
-                      )}
-                    </div>
-                    <div className="ticker-sep" />
-                  </React.Fragment>
-                ))}
-              </div>
-            </div>
-          )}
+          <nav className="app-top-nav hidden md:flex">
+            {navItems.map(({ id, label, icon: Icon }) => {
+              const isActive = activeTab === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  className={`app-top-nav-btn${isActive ? ' is-active' : ''}`}
+                  onClick={() => setActiveTab(id)}
+                >
+                  <Icon size={15} />
+                  <span>{label}</span>
+                </button>
+              );
+            })}
+          </nav>
 
           {/* Right controls */}
           <div className="flex items-center gap-2 ml-auto">
@@ -3871,12 +3854,13 @@ export default function App() {
                   <div className="front-portfolio-preview">
                     <div className="front-section-head">
                       <span>Your wallet</span>
-                      <h2>{wallets.length > 0 ? 'Your portfolio is ready.' : 'Paste a wallet. See the full picture.'}</h2>
+                      <h2>{wallets.length > 0 ? 'Your portfolio is ready.' : 'Track the wallet right from the portfolio view.'}</h2>
                     </div>
                     <div className="front-value-row">
                       <div>
                         <span>Total value</span>
                         <strong>${summary.totalValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong>
+                        {!wallets.length && <small style={{ color: 'var(--fg-muted)', fontSize: 12, lineHeight: 1.5 }}>Paste a wallet. See the full picture.</small>}
                       </div>
                       <div>
                         <span>24h move</span>
@@ -4062,8 +4046,22 @@ export default function App() {
                              ))}
                            </div>
                          </div>
-                         {/* Profit Planner button */}
-                         <div style={{ marginTop: 14 }}>
+                         {/* Profit Planner + Market Watch buttons */}
+                         <div style={{ marginTop: 14, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                           <button
+                             onClick={() => openMarketWatch('')}
+                             style={{
+                               display: 'inline-flex', alignItems: 'center', gap: 8,
+                               padding: '10px 20px', borderRadius: 12,
+                               background: 'rgba(99,70,255,0.12)',
+                               border: '1px solid rgba(99,70,255,0.26)',
+                               color: '#c4b5fd', fontSize: 13, fontWeight: 700,
+                               cursor: 'pointer', transition: 'all .15s',
+                             }}
+                           >
+                             <Activity size={15} />
+                             Market Watch
+                           </button>
                            <button
                              onClick={() => setProfitPlannerOpen(true)}
                              style={{
@@ -4741,15 +4739,73 @@ export default function App() {
                       <div style={{ fontSize: 15, fontWeight: 700, color: t.text }}>Assets</div>
                       <div style={{ fontSize: 13, color: t.textSecondary, marginTop: 2 }}>{chainAssets.length} tokens  -  ${summary.liquidValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
                     </div>
-                    <button onClick={() => toggleSection('assets-table')}
-                      style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s' }}
-                      onMouseOver={e => (e.currentTarget.style.color = 'var(--fg)')}
-                      onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}
-                      title={isCollapsed('assets-table') ? 'Expand' : 'Collapse'}>
-                      {isCollapsed('assets-table') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <button
+                        type="button"
+                        onClick={() => setAllocationCalculatorOpen(v => !v)}
+                        style={{ padding: '6px 10px', borderRadius: 8, border: `1px solid ${allocationCalculatorOpen ? 'var(--accent-border)' : t.border}`,
+                          background: allocationCalculatorOpen ? 'var(--accent-dim)' : t.cardHigh,
+                          color: allocationCalculatorOpen ? 'var(--accent)' : t.textSecondary,
+                          cursor: 'pointer', transition: 'all .12s', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700 }}
+                      >
+                        <Calculator size={13} />
+                        {allocationCalculatorOpen ? 'Close Calculator' : 'Open Calculator'}
+                      </button>
+                      <button onClick={() => toggleSection('assets-table')}
+                        style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s' }}
+                        onMouseOver={e => (e.currentTarget.style.color = 'var(--fg)')}
+                        onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}
+                        title={isCollapsed('assets-table') ? 'Expand' : 'Collapse'}>
+                        {isCollapsed('assets-table') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                      </button>
+                    </div>
                   </div>
                   {!isCollapsed('assets-table') && (<>
+                  {allocationCalculatorOpen && (
+                    <div style={{ margin: '0 16px 16px', padding: '16px 18px', borderRadius: 12, border: `1px solid ${t.border}`, background: t.cardHigh, display: 'grid', gap: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>Adjust Allocation</div>
+                        <div style={{ fontSize: 12, color: t.textSecondary }}>
+                          Total: {allocationCalculatorRows.reduce((sum, r) => sum + r.percent, 0).toFixed(1)}%
+                        </div>
+                      </div>
+                      {allocationCalculatorRows.length > 0 ? allocationCalculatorRows.map((row, i) => (
+                        <div key={row.name} style={{ display: 'grid', gridTemplateColumns: '100px 1fr 80px 80px', alignItems: 'center', gap: 10 }} className="max-sm:grid-cols-1">
+                          <span style={{ fontSize: 13, color: t.text }}>{row.name}</span>
+                          <input
+                            type="range"
+                            min={0}
+                            max={100}
+                            step={0.1}
+                            value={row.percent}
+                            onChange={(e) => {
+                              const next = Number(e.target.value);
+                              setAllocationDraftPercentages(prev => ({ ...prev, [row.name]: next }));
+                            }}
+                            style={{ accentColor: ['#00FF9F','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'][i % 7] }}
+                          />
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={0.1}
+                            value={row.percent.toFixed(1)}
+                            onChange={(e) => {
+                              const next = Number(e.target.value);
+                              if (!Number.isFinite(next)) return;
+                              setAllocationDraftPercentages(prev => ({ ...prev, [row.name]: Math.min(100, Math.max(0, next)) }));
+                            }}
+                            style={{ width: '100%', background: t.card, color: t.text, border: `1px solid ${t.border}`, borderRadius: 6, padding: '5px 8px', fontSize: 12, fontFamily: 'JetBrains Mono, monospace' }}
+                          />
+                          <span style={{ fontSize: 12, color: t.textSecondary, textAlign: 'right', fontFamily: 'JetBrains Mono, monospace' }}>
+                            ${row.value.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                          </span>
+                        </div>
+                      )) : (
+                        <div style={{ fontSize: 13, color: t.textMuted }}>No holdings available for allocation calculator.</div>
+                      )}
+                    </div>
+                  )}
                   <HoldingsTable
                     assets={chainDisplayAssets}
                     allAssets={currentAssets}
@@ -6316,72 +6372,96 @@ export default function App() {
               {(() => {
                 const hiddenChainAssets = walletChainFilter === 'all' ? hiddenAssetRows : hiddenAssetRows.filter(a => a.chain === walletChainFilter);
                 return (
-                <div className="hidden-coins-bottom">
-                  <button type="button" className="hidden-coins-bottom-trigger" onClick={() => setShowHiddenCoins(v => !v)}>
-                    <span>
-                      Hidden coins
-                      {hiddenTokens.length > 0 && <span className="hidden-coins-count">{hiddenTokens.length}</span>}
-                    </span>
-                    <ChevronDown size={14} style={{ transform: showHiddenCoins ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }} />
+                <div className={`coin-visibility-panel${showHiddenCoins ? ' is-open' : ''}`}>
+                  <button type="button" className="coin-visibility-trigger" onClick={() => setShowHiddenCoins(v => !v)} aria-expanded={showHiddenCoins}>
+                    <div className="coin-visibility-copy">
+                      <span>Coin visibility</span>
+                      <strong>Manage hidden coins under assets.</strong>
+                      <small>Open the hidden list, restore assets, and control dust or spam filters.</small>
+                    </div>
+                    <div className="coin-visibility-stats">
+                      <span>{hiddenTokens.length} hidden</span>
+                      <span>{hideDust ? 'Dust hidden' : 'Dust visible'}</span>
+                      <span>{hideSpam ? 'Spam hidden' : 'Spam visible'}</span>
+                    </div>
+                    <ChevronDown size={16} className="coin-visibility-chevron" />
                   </button>
                   {showHiddenCoins && (
-                    <div className="hidden-coins-panel">
-                      <div className="hidden-coins-panel-header">
-                        <div>
-                          <div className="hidden-coins-title">Hidden Coins</div>
-                          <div className="hidden-coins-subtitle">
-                            {hiddenTokens.length === 0
-                              ? 'Nothing is manually hidden. New buys can still be affected by Dust or Spam filters.'
-                              : `${hiddenTokens.length} hidden token${hiddenTokens.length !== 1 ? 's' : ''}. Unhide anything that was hidden by mistake.`}
-                          </div>
-                        </div>
-                        <div className="hidden-coins-actions">
-                          <button
-                            type="button"
-                            className="hidden-coins-soft-btn"
-                            onClick={() => { setHideDust(false); setHideSpam(false); }}
-                          >
-                            Show all filters
+                    <div className="coin-visibility-dropdown-panel">
+                      <div className="coin-visibility-actions">
+                        <button type="button" onClick={() => setHideDust(v => !v)}>
+                          <Eye size={13} />
+                          {hideDust ? 'Show dust' : 'Hide dust'}
+                        </button>
+                        <button type="button" onClick={() => setHideSpam(v => !v)}>
+                          <Shield size={13} />
+                          {hideSpam ? 'Show spam' : 'Hide spam'}
+                        </button>
+                        {hiddenTokens.length > 0 && (
+                          <button type="button" className="coin-visibility-primary" onClick={() => setHiddenTokens([])}>
+                            <Plus size={13} />
+                            Unhide all
                           </button>
-                          {hiddenTokens.length > 0 && (
+                        )}
+                      </div>
+                      <div className="hidden-coins-panel">
+                        <div className="hidden-coins-panel-header">
+                          <div>
+                            <div className="hidden-coins-title">Coin visibility</div>
+                            <div className="hidden-coins-subtitle">
+                              {hiddenTokens.length === 0
+                                ? 'Nothing is manually hidden. New buys can still be affected by Dust or Spam filters.'
+                                : `${hiddenTokens.length} hidden token${hiddenTokens.length !== 1 ? 's' : ''}. Unhide anything that was hidden by mistake.`}
+                            </div>
+                          </div>
+                          <div className="hidden-coins-actions">
                             <button
                               type="button"
-                              className="hidden-coins-soft-btn hidden-coins-danger-btn"
-                              onClick={() => setHiddenTokens([])}
+                              className="hidden-coins-soft-btn"
+                              onClick={() => { setHideDust(false); setHideSpam(false); }}
                             >
-                              Unhide all
+                              Show all filters
                             </button>
-                          )}
+                            {hiddenTokens.length > 0 && (
+                              <button
+                                type="button"
+                                className="hidden-coins-soft-btn hidden-coins-danger-btn"
+                                onClick={() => setHiddenTokens([])}
+                              >
+                                Unhide all
+                              </button>
+                            )}
+                          </div>
                         </div>
+                        {hiddenChainAssets.length > 0 ? (
+                          <div className="hidden-coins-list">
+                            {hiddenChainAssets.map(asset => {
+                              const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()] || (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()] || getTokenLogoUrl(asset);
+                              return (
+                                <div key={asset.id} className="hidden-coin-row">
+                                  <div className="hidden-coin-identity">
+                                    <span className="hidden-coin-logo">{logo ? <img src={logo} alt={asset.symbol} /> : asset.symbol.slice(0, 1)}</span>
+                                    <span>
+                                      <span className="hidden-coin-name">{asset.symbol}</span>
+                                      <span className="hidden-coin-meta">{asset.name} - {asset.chain}</span>
+                                    </span>
+                                  </div>
+                                  <div className="hidden-coin-side">
+                                    <span className="hidden-coin-value">${asset.value.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                                    <button type="button" className="hidden-coins-unhide-btn" onClick={() => unhideToken(asset.id)}>
+                                      Unhide
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="hidden-coins-empty">
+                            {walletChainFilter === 'all' ? 'No manually hidden coins.' : `No hidden coins on ${walletChainFilter}.`}
+                          </div>
+                        )}
                       </div>
-                      {hiddenChainAssets.length > 0 ? (
-                        <div className="hidden-coins-list">
-                          {hiddenChainAssets.map(asset => {
-                            const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()] || (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()] || getTokenLogoUrl(asset);
-                            return (
-                              <div key={asset.id} className="hidden-coin-row">
-                                <div className="hidden-coin-identity">
-                                  <span className="hidden-coin-logo">{logo ? <img src={logo} alt={asset.symbol} /> : asset.symbol.slice(0, 1)}</span>
-                                  <span>
-                                    <span className="hidden-coin-name">{asset.symbol}</span>
-                                    <span className="hidden-coin-meta">{asset.name} - {asset.chain}</span>
-                                  </span>
-                                </div>
-                                <div className="hidden-coin-side">
-                                  <span className="hidden-coin-value">${asset.value.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
-                                  <button type="button" className="hidden-coins-unhide-btn" onClick={() => unhideToken(asset.id)}>
-                                    Unhide
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <div className="hidden-coins-empty">
-                          {walletChainFilter === 'all' ? 'No manually hidden coins.' : `No hidden coins on ${walletChainFilter}.`}
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
@@ -6394,7 +6474,386 @@ export default function App() {
 
         {activeTab === 'pulsechain-official' && (
           <motion.div key="pulsechain-official" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <PulseChainOfficialPage />
+            {(() => {
+              const HEX_ADDR = '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39';
+              const isAllWallets = selectedWalletAddr === 'all';
+              const selectedWallet = wallets.find(w => w.address.toLowerCase() === selectedWalletAddr);
+              const investmentAssets = (isAllWallets ? currentAssets : (walletAssets[selectedWalletAddr] || []))
+                .filter(a => !hiddenTokens.includes(a.id) && !(a as any).isSpam);
+              const investmentStakes = isAllWallets
+                ? currentStakes
+                : currentStakes.filter(s => s.walletAddress === selectedWalletAddr);
+              const investmentWalletUsd = investmentAssets.reduce((sum, asset) => sum + asset.value, 0);
+              const investmentStakingUsd = investmentStakes.reduce((sum, stake) => {
+                const hexPrice = stake.chain === 'ethereum'
+                  ? (prices[`ethereum:${HEX_ADDR}`]?.usd || prices['hex']?.usd || 0)
+                  : (prices[`pulsechain:${HEX_ADDR}`]?.usd || prices['pulsechain:hex']?.usd || 0);
+                return sum + (((stake.stakedHex ?? 0) + (stake.accruedHex ?? 0)) * hexPrice);
+              }, 0);
+              const investmentTotalUsd = investmentWalletUsd + investmentStakingUsd;
+              const investmentTopAssets = investmentAssets
+                .slice()
+                .sort((a, b) => b.value - a.value)
+                .slice(0, 5);
+              const investedRatio = summary.netInvestment > MIN_INVESTMENT_THRESHOLD
+                ? (summary.unifiedPnl / summary.netInvestment) * 100
+                : 0;
+
+              const now = Date.now();
+              const cutoffs: Record<string, number> = {
+                '1w': now - 7 * 24 * 3600 * 1000,
+                '1m': now - 30 * 24 * 3600 * 1000,
+                '1y': now - 365 * 24 * 3600 * 1000,
+                'all': 0,
+              };
+              const cutoff = cutoffs[perfPeriod];
+              const realHistory = (wallets.length > 0 ? history : []).filter(p => p.timestamp >= cutoff);
+              const currentVal = summary.totalValue || 1;
+              const mockLast = MOCK_HISTORY[MOCK_HISTORY.length - 1]?.value || 1;
+              const scale = currentVal / mockLast;
+              const byBucket = new Map<string, { value: number; ts: number }>();
+              realHistory.forEach(p => {
+                const key = perfPeriod === '1w' ? format(p.timestamp, 'yyyy-MM-dd HH') : format(p.timestamp, 'yyyy-MM-dd');
+                byBucket.set(key, { value: p.value, ts: p.timestamp });
+              });
+              const uniquePts = [...byBucket.entries()]
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([, { value, ts }]) => ({ day: fmtLabel(ts), value }));
+              let chartPoints: { day: string; value: number }[];
+              let isSimulated = false;
+              if (uniquePts.length >= 3) {
+                chartPoints = uniquePts;
+              } else {
+                isSimulated = true;
+                const mockCount = perfPeriod === '1w' ? 28 : perfPeriod === '1m' ? 30 : perfPeriod === '1y' ? 52 : 60;
+                chartPoints = MOCK_HISTORY.slice(-mockCount).map(p => ({
+                  day: fmtLabel(p.timestamp),
+                  value: p.value * scale,
+                }));
+                if (chartPoints.length > 0) chartPoints[chartPoints.length - 1].value = currentVal;
+              }
+              const periodChange = chartPoints.length >= 2
+                ? ((chartPoints[chartPoints.length - 1].value - chartPoints[0].value) / Math.max(1, chartPoints[0].value)) * 100
+                : 0;
+              const periodLabel: Record<string, string> = { '1w': 'Week', '1m': 'Month', '1y': 'Year', 'all': 'All' };
+              const xTickCount = perfPeriod === '1w' ? 7 : perfPeriod === '1m' ? 6 : 8;
+              const xInterval = Math.max(0, Math.floor(chartPoints.length / xTickCount) - 1);
+              const yMin = Math.min(...chartPoints.map(p => p.value));
+              const yMax = Math.max(...chartPoints.map(p => p.value));
+              const yPad = (yMax - yMin) * 0.1 || yMax * 0.1;
+              const fmtYAxis = (v: number) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v.toFixed(0)}`;
+
+              return (
+                <div className="wallet-page-shell my-investment-page">
+                  <section className="front-portfolio-preview my-investment-card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                      <div className="front-section-head">
+                        <span>Your wallet</span>
+                        <h2>{wallets.length > 0 ? 'Drill into wallets and top positions.' : 'Paste a wallet to load your portfolio.'}</h2>
+                      </div>
+                      <button onClick={fetchPortfolio} className="front-refresh-btn">
+                        <RefreshCcw size={13} className={isLoading ? 'animate-spin' : ''} />
+                        Refresh
+                      </button>
+                    </div>
+                    <div style={{ marginTop: 18 }}>
+                      <WalletSelector
+                        wallets={wallets.map(w => w.address.toLowerCase())}
+                        activeWallet={selectedWalletAddr === 'all' ? null : selectedWalletAddr}
+                        onSelect={(addr) => {
+                          setSelectedWalletAddr(addr ? addr.toLowerCase() : 'all');
+                          setActiveWallet(addr);
+                        }}
+                        onAdd={() => setIsAddingWallet(true)}
+                        walletLabels={Object.fromEntries(wallets.map(w => [w.address.toLowerCase(), w.name || shortenAddr(w.address)]))}
+                      />
+                    </div>
+                    <div className="front-value-row">
+                      <div>
+                        <span>Selected value</span>
+                        <strong>${investmentTotalUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong>
+                      </div>
+                      <div>
+                        <span>Tracked positions</span>
+                        <strong>{investmentAssets.length + investmentStakes.length}</strong>
+                      </div>
+                    </div>
+                    <div className="front-holding-list">
+                      {investmentTopAssets.length > 0 ? investmentTopAssets.map(asset => {
+                        const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()] || (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()] || getTokenLogoUrl(asset);
+                        return (
+                          <button key={asset.id} className="front-holding-row" onClick={() => { setActiveTab('assets'); setOverviewTokenSearch(asset.symbol); }}>
+                            <span className="front-holding-logo">{logo ? <img src={logo} alt={asset.symbol} /> : asset.symbol.slice(0, 1)}</span>
+                            <span>
+                              <strong>{asset.symbol}</strong>
+                              <small>{asset.chain}</small>
+                            </span>
+                            <span>
+                              <strong>${asset.value.toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong>
+                              <small className={(asset.pnl24h ?? asset.priceChange24h ?? 0) >= 0 ? 'is-up' : 'is-down'}>
+                                {(asset.pnl24h ?? asset.priceChange24h ?? 0) >= 0 ? '+' : ''}{(asset.pnl24h ?? asset.priceChange24h ?? 0).toFixed(2)}%
+                              </small>
+                            </span>
+                          </button>
+                        );
+                      }) : (
+                        <div className="my-investment-empty">No wallet positions loaded yet.</div>
+                      )}
+                    </div>
+                    <button className="front-inline-link" onClick={() => wallets.length > 0 ? setActiveTab('assets') : setIsAddingWallet(true)}>
+                      {wallets.length > 0 ? 'Open wallet details' : 'Add your first wallet'} <ChevronRight size={14} />
+                    </button>
+                  </section>
+
+                  <section className="my-investment-hero">
+                    <div className="my-investment-hero-copy">
+                      <span className="my-investment-kicker">Portfolio command</span>
+                      <h1>My Investment</h1>
+                      <p>
+                        One page for invested capital, wallet exposure, allocation, performance, and PulseChain portfolio mix.
+                      </p>
+                      <div className="my-investment-hero-actions">
+                        <button className="front-inline-link" onClick={() => setActiveTab('assets')}>
+                          Open wallet <ChevronRight size={14} />
+                        </button>
+                        <button className="front-inline-link" onClick={() => setActiveTab('history')}>
+                          Open transaction <ChevronRight size={14} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="my-investment-hero-panel">
+                      <div className="my-investment-panel-head">
+                        <span>Live snapshot</span>
+                        <strong>{selectedWallet?.name || (isAllWallets ? 'All wallets' : shortenAddr(selectedWalletAddr))}</strong>
+                      </div>
+                      <div className="my-investment-mini-grid">
+                        <div>
+                          <span>Wallet value</span>
+                          <strong>${investmentWalletUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong>
+                        </div>
+                        <div>
+                          <span>Staking value</span>
+                          <strong>${investmentStakingUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong>
+                        </div>
+                        <div>
+                          <span>24h move</span>
+                          <strong className={summary.pnl24h >= 0 ? 'is-up' : 'is-down'}>
+                            {summary.pnl24h >= 0 ? '+' : '-'}${Math.abs(summary.pnl24h).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                          </strong>
+                        </div>
+                        <div>
+                          <span>PulseChain share</span>
+                          <strong>{summary.totalValue > 0 ? `${((frontPageChainRows.find(row => row.chain === 'pulsechain')?.value || 0) / summary.totalValue * 100).toFixed(1)}%` : '0.0%'}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className="tx-module-card my-investment-performance">
+                    <div className="tx-module-header" style={{ borderBottom: '1px solid var(--border)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>Portfolio Performance</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: periodChange >= 0 ? t.green : t.red }}>
+                          {periodChange >= 0 ? '+' : ''}{periodChange.toFixed(2)}%
+                        </div>
+                        {isSimulated && <div style={{ fontSize: 10, color: t.textMuted, fontStyle: 'italic' }}>simulated</div>}
+                      </div>
+                      <div style={{ display: 'flex', gap: 2, background: t.cardHigh, border: `1px solid ${t.border}`, borderRadius: 8, padding: 3 }}>
+                        {(['1w','1m','1y','all'] as const).map(p => (
+                          <button key={p} onClick={() => setPerfPeriod(p)}
+                            style={{ padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none', transition: 'all .12s',
+                              background: perfPeriod === p ? 'var(--accent)' : 'var(--bg-elevated)',
+                              color: perfPeriod === p ? (theme === 'dark' ? '#000' : '#fff') : 'var(--fg-muted)',
+                              boxShadow: perfPeriod === p ? '0 0 10px rgba(0,255,159,0.25)' : 'none' }}>
+                            {periodLabel[p]}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ padding: '14px 8px 14px 0' }}>
+                      <div style={{ width: '100%', minWidth: 1, minHeight: 1, height: 290 }}>
+                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} debounce={50}>
+                          <AreaChart data={chartPoints} margin={{ top: 4, right: 18, left: 0, bottom: 0 }}>
+                            <defs>
+                              <linearGradient id="myInvestmentValue" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.22}/>
+                                <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#1e1e1e' : '#e8e8e8'} vertical={false} />
+                            <XAxis dataKey="day" stroke={theme === 'dark' ? '#333' : '#ccc'} fontSize={11} tickLine={false} axisLine={false} tick={{ fill: t.textSecondary }} interval={xInterval} />
+                            <YAxis width={54} fontSize={11} tickLine={false} axisLine={false} tick={{ fill: t.textSecondary }} tickFormatter={fmtYAxis} domain={[yMin - yPad, yMax + yPad]} />
+                            <RechartsTooltip
+                              contentStyle={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 13, color: t.text }}
+                              formatter={(v: any) => [`$${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}`, 'Portfolio Value']}
+                              labelStyle={{ color: t.textSecondary, marginBottom: 4 }}
+                            />
+                            <Area type="monotone" dataKey="value" stroke="var(--accent)" fillOpacity={1} fill="url(#myInvestmentValue)" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: 'var(--accent)', strokeWidth: 0 }} />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className="tx-module-card">
+                    <div className="tx-module-header" style={{ borderBottom: allocWheelOpen ? '1px solid var(--border)' : 'none' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
+                        <PieChartIcon size={16} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>Portfolio Allocation</span>
+                        <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>By token value</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <button
+                          onClick={() => setAllocWheelOpen(v => !v)}
+                          title={allocWheelOpen ? 'Hide allocation' : 'Show allocation'}
+                          style={{ padding: '6px 8px', borderRadius: 8, border: `1px solid ${allocWheelOpen ? 'var(--accent-border)' : t.border}`,
+                            background: allocWheelOpen ? 'var(--accent-dim)' : t.cardHigh,
+                            color: allocWheelOpen ? 'var(--accent)' : t.textSecondary,
+                            cursor: 'pointer', transition: 'all .12s', display: 'flex', alignItems: 'center' }}>
+                          <PieChartIcon size={14} />
+                        </button>
+                        {allocWheelOpen && (
+                          <button
+                            onClick={() => setAllocationCalculatorOpen(v => !v)}
+                            style={{ padding: '6px 10px', borderRadius: 8, border: `1px solid ${allocationCalculatorOpen ? 'var(--accent-border)' : t.border}`,
+                              background: allocationCalculatorOpen ? 'var(--accent-dim)' : t.cardHigh,
+                              color: allocationCalculatorOpen ? 'var(--accent)' : t.textSecondary,
+                              cursor: 'pointer', transition: 'all .12s', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700 }}>
+                            <Calculator size={13} />
+                            {allocationCalculatorOpen ? 'Close Calculator' : 'Open Calculator'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    {allocWheelOpen && (() => {
+                      const ALLOC_COLORS_P = ['#00FF9F','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
+                      const alloc = assetAllocation.length > 0 ? assetAllocation : [];
+                      return (
+                        <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, padding: '16px 20px', display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap', transition: 'all .2s ease', margin: 16 }}>
+                          {!allocationCalculatorOpen ? (
+                            <>
+                              <div style={{ width: 146, height: 146, flexShrink: 0, display: 'grid', placeItems: 'center' }}>
+                                {alloc.length > 0 ? (
+                                  <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} debounce={50}>
+                                    <PieChart>
+                                      <Pie data={alloc} cx="50%" cy="50%" innerRadius={43} outerRadius={66} paddingAngle={3} dataKey="value" strokeWidth={0}>
+                                        {alloc.map((_, i) => (
+                                          <Cell key={i} fill={ALLOC_COLORS_P[i % ALLOC_COLORS_P.length]} />
+                                        ))}
+                                      </Pie>
+                                      <RechartsTooltip contentStyle={{ background: 'var(--bg-surface)', border: '1px solid rgba(0,255,159,0.15)', borderRadius: 10, fontSize: 12, color: 'var(--fg)', boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }} />
+                                    </PieChart>
+                                  </ResponsiveContainer>
+                                ) : (
+                                  <div style={{ width: 112, height: 112, borderRadius: '50%', border: `14px solid ${t.border}`, opacity: 0.8 }} aria-hidden="true" />
+                                )}
+                              </div>
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 7, minWidth: 160 }}>
+                                {alloc.length > 0 ? alloc.map((a, i) => {
+                                  const pct = (a.value / (summary.totalValue || 1)) * 100;
+                                  const valFmt = a.value >= 1e6 ? `$${(a.value/1e6).toFixed(1)}M` : a.value >= 1e3 ? `$${(a.value/1e3).toFixed(0)}K` : `$${a.value.toFixed(0)}`;
+                                  return (
+                                    <div key={a.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                      <div style={{ width: 8, height: 8, borderRadius: 2, background: ALLOC_COLORS_P[i % ALLOC_COLORS_P.length], flexShrink: 0, boxShadow: `0 0 6px ${ALLOC_COLORS_P[i % ALLOC_COLORS_P.length]}66` }} />
+                                      <span style={{ fontSize: 14, color: t.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</span>
+                                      <span style={{ fontSize: 14, fontWeight: 800, color: t.textSecondary, fontFamily: 'JetBrains Mono, monospace', fontVariantNumeric: 'tabular-nums', marginLeft: 4 }}>{pct.toFixed(1)}%</span>
+                                      <span style={{ fontSize: 13, color: t.textMuted, fontFamily: 'JetBrains Mono, monospace', minWidth: 58, textAlign: 'right' }}>{valFmt}</span>
+                                    </div>
+                                  );
+                                }) : (
+                                  <div style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>Add wallets to see allocation</div>
+                                )}
+                              </div>
+                            </>
+                          ) : (
+                            <div style={{ width: '100%', display: 'grid', gap: 10 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>Adjust Allocation</div>
+                                <div style={{ fontSize: 12, color: t.textSecondary }}>
+                                  Total: {allocationCalculatorRows.reduce((sum, r) => sum + r.percent, 0).toFixed(1)}%
+                                </div>
+                              </div>
+                              {allocationCalculatorRows.length > 0 ? allocationCalculatorRows.map((row, i) => (
+                                <div key={row.name} style={{ display: 'grid', gridTemplateColumns: '100px 1fr 80px 80px', alignItems: 'center', gap: 10 }} className="max-sm:grid-cols-1">
+                                  <span style={{ fontSize: 13, color: t.text }}>{row.name}</span>
+                                  <input
+                                    type="range"
+                                    min={0}
+                                    max={100}
+                                    step={0.1}
+                                    value={row.percent}
+                                    onChange={(e) => {
+                                      const next = Number(e.target.value);
+                                      setAllocationDraftPercentages(prev => ({ ...prev, [row.name]: next }));
+                                    }}
+                                    style={{ accentColor: ALLOC_COLORS_P[i % ALLOC_COLORS_P.length] }}
+                                  />
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    max={100}
+                                    step={0.1}
+                                    value={row.percent.toFixed(1)}
+                                    onChange={(e) => {
+                                      const next = Number(e.target.value);
+                                      if (!Number.isFinite(next)) return;
+                                      setAllocationDraftPercentages(prev => ({ ...prev, [row.name]: Math.min(100, Math.max(0, next)) }));
+                                    }}
+                                    style={{ width: '100%', background: t.cardHigh, color: t.text, border: `1px solid ${t.border}`, borderRadius: 6, padding: '5px 8px', fontSize: 12, fontFamily: 'JetBrains Mono, monospace' }}
+                                  />
+                                  <span style={{ fontSize: 12, color: t.textSecondary, textAlign: 'right', fontFamily: 'JetBrains Mono, monospace' }}>
+                                    ${row.value.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                                  </span>
+                                </div>
+                              )) : (
+                                <div style={{ fontSize: 13, color: t.textMuted }}>No holdings available for allocation calculator.</div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </section>
+
+                  <section className="front-intel-panel my-investment-card">
+                    <div className="front-section-head">
+                      <span>Portfolio intel</span>
+                      <h2>See where the portfolio is concentrated across chains and modules.</h2>
+                    </div>
+                    <div className="front-chain-stack">
+                      {frontPageChainRows.map(row => {
+                        const pct = summary.totalValue > 0 ? (row.value / summary.totalValue) * 100 : row.value;
+                        const chainColor = CHAIN_COLORS[row.chain] || 'var(--accent)';
+                        return (
+                          <div className="front-chain-row" key={row.chain}>
+                            <div>
+                              <span style={{ background: chainColor }} />
+                              <strong>{row.chain.charAt(0).toUpperCase() + row.chain.slice(1)}</strong>
+                            </div>
+                            <small>{Math.max(0, pct).toFixed(1)}%</small>
+                            <em><i style={{ width: `${Math.min(100, Math.max(4, pct))}%`, background: chainColor }} /></em>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="front-intel-links">
+                      {[
+                        { label: 'HEX stakes', tab: 'stakes' as const, icon: Lock },
+                        { label: 'DeFi positions', tab: 'defi' as const, icon: Droplets },
+                        { label: 'Transaction', tab: 'history' as const, icon: History },
+                        { label: 'Bridge', tab: 'bridge' as const, icon: ArrowLeftRight },
+                      ].map(({ label, tab, icon: Icon }) => (
+                        <button key={label} onClick={() => setActiveTab(tab)}>
+                          <Icon size={15} />
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                </div>
+              );
+            })()}
           </motion.div>
         )}
 
