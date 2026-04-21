@@ -27,7 +27,7 @@ import {
   Filter, TrendingUp, TrendingDown,
   ArrowLeftRight,
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, formatDistanceToNowStrict } from 'date-fns';
 import type { Transaction } from '../types';
 import type { Asset, Wallet } from '../types';
 
@@ -348,6 +348,16 @@ export function TransactionList({
 
               {/* Right: actions */}
               <div className="tx-card__actions">
+                <div className="tx-card__side-meta">
+                  {tx.valueUsd != null && (
+                    <span className="tx-card__side-value">
+                      ${tx.valueUsd.toLocaleString('en-US', { maximumFractionDigits: compact ? 0 : 2 })}
+                    </span>
+                  )}
+                  <span className="tx-card__side-time">
+                    {formatDistanceToNowStrict(tx.timestamp, { addSuffix: true })}
+                  </span>
+                </div>
                 {coinLogo && onFilterByAsset && (
                   <button
                     onClick={e => { e.stopPropagation(); onFilterByAsset(tx.asset); }}

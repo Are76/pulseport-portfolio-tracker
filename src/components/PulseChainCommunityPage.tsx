@@ -211,14 +211,15 @@ function ProjectCard({ item }: { item: Project }) {
 function LaneSection({ lane }: { lane: Lane }) {
   const Icon = lane.icon;
   return (
-    <section className="pce-lane" style={{ ['--lane-color' as string]: lane.color }}>
-      <div className="pce-lane-head">
+    <details className="pce-lane pce-section-dropdown" style={{ ['--lane-color' as string]: lane.color }} open>
+      <summary className="pce-section-summary pce-lane-head">
         <span><Icon size={18} /></span>
         <div>
           <small>{lane.kicker}</small>
           <h2>{lane.title}</h2>
         </div>
-      </div>
+        <b className="pce-section-caret" aria-hidden="true">{'>'}</b>
+      </summary>
       <div className="pce-project-grid">
         {lane.items.map(item => (
           <div key={item.name}>
@@ -226,7 +227,7 @@ function LaneSection({ lane }: { lane: Lane }) {
           </div>
         ))}
       </div>
-    </section>
+    </details>
   );
 }
 
@@ -300,11 +301,16 @@ export default function PulseChainCommunityPage() {
 
       <NetworkSnapshot />
 
-      <section className="pce-featured">
-        <div className="pce-section-intro">
-          <span>Official routes</span>
-          <h2>Start with the main rails.</h2>
-        </div>
+      <InfoDropdown />
+
+      <details className="pce-featured pce-section-dropdown" open>
+        <summary className="pce-section-summary">
+          <div className="pce-section-intro">
+            <span>Official routes</span>
+            <h2>Start with the main rails.</h2>
+          </div>
+          <b className="pce-section-caret" aria-hidden="true">{'>'}</b>
+        </summary>
         <div className="pce-official-grid">
           {OFFICIAL_PROJECTS.map(item => (
             <div key={item.name}>
@@ -312,7 +318,7 @@ export default function PulseChainCommunityPage() {
             </div>
           ))}
         </div>
-      </section>
+      </details>
 
       <div className="pce-lanes">
         {LANES.map(lane => (
@@ -321,8 +327,6 @@ export default function PulseChainCommunityPage() {
           </div>
         ))}
       </div>
-
-      <InfoDropdown />
     </div>
   );
 }

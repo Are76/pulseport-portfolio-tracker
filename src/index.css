@@ -618,6 +618,26 @@ textarea:focus-visible,
   background: var(--bg-elevated);
 }
 
+.app-header {
+  display: grid;
+  gap: 10px;
+}
+
+.app-header-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.app-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .sidebar-wallet-zone {
   border-top: 1px solid var(--border);
   background:
@@ -3723,6 +3743,45 @@ textarea:focus-visible,
   min-width: 0;
 }
 
+.mobile-more-sheet {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 0 12px;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height .2s ease, opacity .2s ease, padding .2s ease;
+  border-bottom: 1px solid transparent;
+}
+
+.mobile-more-sheet.is-open {
+  max-height: 320px;
+  opacity: 1;
+  padding: 10px 12px 12px;
+  border-bottom-color: var(--border);
+}
+
+.mobile-more-link {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.02);
+  color: var(--fg-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.mobile-more-link.is-active {
+  color: var(--accent);
+  border-color: var(--accent-border);
+  background: var(--accent-dim);
+}
+
 /* -- PnLModal: bottom-sheet on small screens ---------------------------------- */
 @media (max-width: 639px) {
   .pnl-modal-backdrop {
@@ -6630,15 +6689,24 @@ textarea:focus-visible,
   justify-content: space-between;
   gap: 12px;
   padding: 10px 18px;
-  transition: background 0.1s;
+  transition: background 0.12s, border-color 0.12s, transform 0.12s;
   cursor: default;
   min-width: 0;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)),
+    rgba(9,10,16,0.92);
 }
 .tx-card:hover {
-  background: var(--bg-elevated, rgba(255,255,255,0.04)) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02)),
+    rgba(12,14,21,0.98) !important;
+  border-color: rgba(255,255,255,0.12);
+  transform: translateY(-1px);
 }
 .tx-card--compact {
-  padding: 6px 14px;
+  padding: 9px 12px;
 }
 .tx-card--hidden {
   opacity: 0.38;
@@ -6676,7 +6744,7 @@ textarea:focus-visible,
 .tx-card__meta {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -6690,12 +6758,13 @@ textarea:focus-visible,
 
 /* Pill badge for deposit / withdraw / swap */
 .tx-card__type-badge {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 999px;
   white-space: nowrap;
-  letter-spacing: 0.015em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 /* Chain dot */
@@ -6724,12 +6793,13 @@ textarea:focus-visible,
 /* Amount line */
 .tx-card__amount {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
+  line-height: 1.4;
 }
 
 /* USD approximation inside amount */
@@ -6744,9 +6814,31 @@ textarea:focus-visible,
 .tx-card__actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   flex-shrink: 0;
   min-width: 0;
+}
+
+.tx-card__side-meta {
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+  min-width: 92px;
+}
+
+.tx-card__side-value {
+  color: var(--fg);
+  font-size: 12px;
+  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tx-card__side-time {
+  color: var(--fg-subtle);
+  font-size: 11px;
+  white-space: nowrap;
 }
 
 @media (max-width: 639px) {
@@ -7648,6 +7740,52 @@ body,
   margin-bottom: 26px;
 }
 
+.pce-section-dropdown summary::-webkit-details-marker {
+  display: none;
+}
+
+.pce-section-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: pointer;
+}
+
+.pce-section-dropdown > summary + * {
+  margin-top: 24px;
+}
+
+.pce-section-dropdown > summary .pce-section-intro {
+  margin-bottom: 0;
+}
+
+.pce-section-caret {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--fg-subtle);
+  font-size: 16px;
+  font-weight: 700;
+  transform: rotate(90deg);
+  transition: transform .14s ease, color .14s ease, border-color .14s ease;
+}
+
+.pce-section-dropdown:not([open]) .pce-section-caret {
+  transform: rotate(0deg);
+}
+
+.pce-section-dropdown[open] .pce-section-caret {
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+
 .pce-section-intro h2,
 .pce-bridge-strip h2,
 .pce-lane h2 {
@@ -8132,6 +8270,19 @@ body,
 }
 
 @media (max-width: 980px) {
+  .app-header {
+    padding: 10px 14px !important;
+    gap: 0;
+  }
+
+  .app-header-main {
+    justify-content: space-between;
+  }
+
+  .app-header-actions {
+    gap: 6px;
+  }
+
   .pce-hero,
   .pce-network-snapshot,
   .pce-bridge-strip,
@@ -8157,6 +8308,10 @@ body,
   .pce-project-grid,
   .pce-official-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pce-section-summary {
+    align-items: flex-start;
   }
 }
 
@@ -8265,6 +8420,170 @@ body,
   min-width: 0;
 }
 
+.wallet-dashboard-shell {
+  display: grid;
+  gap: 16px;
+}
+
+.wallet-hero-panel {
+  display: grid;
+  gap: 18px;
+  padding: clamp(18px, 2.6vw, 28px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 10% 16%, rgba(0,255,159,.12), transparent 30%),
+    radial-gradient(circle at 86% 16%, rgba(247,57,255,.12), transparent 30%),
+    linear-gradient(145deg, rgba(11,13,19,.98), rgba(7,8,14,.96));
+}
+
+.wallet-hero-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.wallet-hero-eyebrow,
+.wallet-section-label,
+.transaction-page-kicker {
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.wallet-hero-title {
+  margin-top: 6px;
+  color: var(--fg);
+  font-size: clamp(25px, 3vw, 36px);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.wallet-hero-address {
+  margin-top: 8px;
+  color: var(--fg-subtle);
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  overflow-wrap: anywhere;
+}
+
+.wallet-hero-summary {
+  min-width: 180px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.03);
+  display: grid;
+  gap: 6px;
+}
+
+.wallet-hero-summary span {
+  color: var(--fg-subtle);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.wallet-hero-summary strong,
+.wallet-hero-value {
+  color: var(--fg);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.wallet-hero-summary strong {
+  font-size: 22px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.wallet-hero-value {
+  font-size: clamp(34px, 5vw, 52px);
+  line-height: .95;
+}
+
+.wallet-summary-strip,
+.wallet-hex-strip,
+.wallet-chain-strip,
+.wallet-holdings-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.wallet-summary-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.wallet-summary-pill--liquid {
+  background: rgba(0,255,159,.1);
+  border-color: rgba(0,255,159,.18);
+  color: var(--positive);
+}
+
+.wallet-summary-pill--staking {
+  background: rgba(255,78,127,.1);
+  border-color: rgba(255,78,127,.18);
+  color: #ff8aa9;
+}
+
+.wallet-hex-strip span {
+  color: var(--fg-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.wallet-holdings-card,
+.transaction-page-head {
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+}
+
+.wallet-section-title {
+  color: var(--fg);
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.wallet-section-subtitle {
+  margin-top: 4px;
+  color: var(--fg-muted);
+  font-size: 13px;
+}
+
+.wallet-holdings-head {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+}
+
+.wallet-period-switch button {
+  min-width: 44px;
+}
+
+.transaction-page-shell {
+  display: grid;
+  gap: 14px;
+}
+
+.transaction-page-head {
+  padding: 18px 20px;
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 86% 16%, rgba(247,57,255,.08), transparent 30%),
+    linear-gradient(145deg, rgba(11,13,19,.98), rgba(8,10,16,.96));
+}
+
 .my-investment-page {
   display: grid;
   gap: 20px;
@@ -8293,6 +8612,44 @@ body,
   display: grid;
   align-content: center;
   gap: 14px;
+}
+
+.my-investment-snapshot-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.my-investment-snapshot-card {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.03);
+  display: grid;
+  gap: 7px;
+}
+
+.my-investment-snapshot-label {
+  color: var(--fg-subtle);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.my-investment-snapshot-value {
+  font-size: 24px;
+  line-height: 1;
+  font-weight: 900;
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.my-investment-snapshot-sub {
+  color: var(--fg-muted);
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .my-investment-kicker,
@@ -8517,6 +8874,27 @@ body,
     padding-inline: 0;
   }
 
+  .wallet-hero-header,
+  .wallet-summary-strip,
+  .wallet-hex-strip,
+  .wallet-chain-strip,
+  .wallet-holdings-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .wallet-hero-summary {
+    min-width: 0;
+  }
+
+  .transaction-page-head {
+    padding: 16px 14px;
+  }
+
+  .mobile-more-sheet {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .my-investment-hero {
     grid-template-columns: 1fr;
   }
@@ -8527,6 +8905,10 @@ body,
   }
 
   .my-investment-mini-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .my-investment-snapshot-grid {
     grid-template-columns: 1fr;
   }
 
@@ -8600,5 +8982,10 @@ body,
     max-width: 100%;
     width: 100%;
     justify-content: flex-start;
+  }
+
+  .tx-card__side-meta {
+    justify-items: start;
+    min-width: 0;
   }
 }

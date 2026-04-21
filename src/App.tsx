@@ -552,6 +552,7 @@ export default function App() {
   };
   const [sidebarWalletsOpen, setSidebarWalletsOpen] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activeWallet, setActiveWallet] = useState<string | null>(null);
   const isFetchingRef = useRef(false);
@@ -648,6 +649,14 @@ export default function App() {
     }
   }, [selectedWalletAddr, wallets]);
 
+  useEffect(() => {
+    if (activeTab !== 'history') return;
+    setTxTypeFilter('all');
+    setTxAssetFilter('all');
+    setTxYearFilter('all');
+    setTxCoinCategory('all');
+  }, [activeTab]);
+
   // Apply theme to document
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -670,6 +679,10 @@ export default function App() {
       document.body.style.overflow = previousOverflow;
     };
   }, [sidebarOpen]);
+
+  useEffect(() => {
+    setMobileMoreOpen(false);
+  }, [activeTab]);
 
   // Theme-aware color helpers - CSS variable-backed for automatic light/dark theming
   const t = useMemo(() => ({
@@ -3430,14 +3443,17 @@ export default function App() {
   const navItems = [
     { id: 'home', label: 'Home', icon: Activity },
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-    { id: 'assets', label: 'Wallet', icon: Coins },
     { id: 'stakes', label: 'HEX Stakes', icon: Lock },
-    { id: 'defi', label: 'DeFi', icon: Droplets },
-    { id: 'history', label: 'Transaction', icon: History },
+    { id: 'assets', label: 'Wallet', icon: Coins },
     { id: 'pulsechain-official', label: 'My Investment', icon: Zap },
+    { id: 'history', label: 'Transaction', icon: History },
     { id: 'pulsechain-community', label: 'Ecosystem', icon: Layers },
     { id: 'bridge', label: 'Bridge', icon: ArrowLeftRight },
+    { id: 'defi', label: 'DeFi', icon: Droplets },
   ] as const;
+  const mobilePrimaryNavItems = navItems.filter(item => ['home', 'assets', 'history'].includes(item.id));
+  const mobileMoreNavItems = navItems.filter(item => !['home', 'assets', 'history'].includes(item.id));
+  const mobileMoreActive = mobileMoreNavItems.some(item => item.id === activeTab);
 
   return (
     <div className="app-shell min-h-screen font-sans flex" style={{ fontSize: 14, color: 'var(--fg)' }}>
@@ -3619,23 +3635,68 @@ export default function App() {
       <main className="app-main flex-1 min-w-0 flex flex-col">
         {/* Top Nav / Header */}
         <header
-          className="glass flex items-center justify-between gap-4 shrink-0"
+          className="glass app-header shrink-0"
           style={{
-            height: 56, background: 'var(--bg-header)',
+            background: 'var(--bg-header)',
             borderBottom: '1px solid var(--border)',
             position: 'sticky', top: 0, zIndex: 50,
-            padding: '0 20px',
+            padding: '10px 20px 8px',
           }}>
-          {/* Logo */}
-          <div className="flex items-center gap-2">
-            <div style={{
-              width: 26, height: 26, background: 'var(--accent)', borderRadius: 7,
-              boxShadow: '0 0 12px rgba(0,255,159,.3)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Activity size={14} style={{ color: '#000' }} />
+          <div className="app-header-main">
+            {/* Logo */}
+            <div className="flex items-center gap-2">
+              <div style={{
+                width: 26, height: 26, background: 'var(--accent)', borderRadius: 7,
+                boxShadow: '0 0 12px rgba(0,255,159,.3)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Activity size={14} style={{ color: '#000' }} />
+              </div>
+              <span className="logo-wordmark" style={{ fontSize: 14 }}>PULSEPORT</span>
             </div>
-            <span className="logo-wordmark" style={{ fontSize: 14 }}>PULSEPORT</span>
+
+            {/* Right controls */}
+            <div className="app-header-actions">
+              {/* Live indicator */}
+              <div className="hidden sm:flex items-center gap-2">
+                <div className={`status-dot ${lastUpdated ? 'status-dot-live' : ''}`} />
+                {lastUpdated && (
+                  <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                    {timeSinceLastUpdate}s ago
+                  </span>
+                )}
+              </div>
+
+              {/* Theme toggle */}
+              <button
+                onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
+                className="theme-toggle"
+                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
+                {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+              </button>
+
+              {/* API Key */}
+              <button onClick={() => { setApiKeyInput(etherscanApiKey); setIsApiKeyModalOpen(true); }}
+                title={etherscanApiKey ? 'API key set' : 'Set Etherscan API key'}
+                aria-label={etherscanApiKey ? 'API key set. Open API key settings' : 'Open API key settings'}
+                className="header-action-btn"
+                style={etherscanApiKey ? {
+                  background: 'var(--accent-dim)',
+                  borderColor: 'var(--accent-border)',
+                  color: 'var(--accent)',
+                } : {}}>
+                {etherscanApiKey ? <Check size={12} /> : <Settings size={12} />}
+                <span>{etherscanApiKey ? 'API set' : 'API'}</span>
+              </button>
+
+              {/* Refresh */}
+              <button onClick={fetchPortfolio}
+                className={`header-action-btn${isLoading ? ' btn-loading' : ''}`}
+                style={{ color: 'var(--fg)' }}>
+                <RefreshCcw size={12} className={isLoading ? 'animate-spin' : ''} />
+                <span className="hidden sm:inline">Refresh</span>
+              </button>
+            </div>
           </div>
 
           <nav className="app-top-nav hidden md:flex">
@@ -3654,49 +3715,6 @@ export default function App() {
               );
             })}
           </nav>
-
-          {/* Right controls */}
-          <div className="flex items-center gap-2 ml-auto">
-            {/* Live indicator */}
-            <div className="hidden sm:flex items-center gap-2">
-              <div className={`status-dot ${lastUpdated ? 'status-dot-live' : ''}`} />
-              {lastUpdated && (
-                <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontVariantNumeric: 'tabular-nums' }}>
-                  {timeSinceLastUpdate}s ago
-                </span>
-              )}
-            </div>
-
-            {/* Theme toggle */}
-            <button
-              onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
-              className="theme-toggle"
-              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
-              {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-            </button>
-
-            {/* API Key */}
-            <button onClick={() => { setApiKeyInput(etherscanApiKey); setIsApiKeyModalOpen(true); }}
-              title={etherscanApiKey ? 'API key set' : 'Set Etherscan API key'}
-              aria-label={etherscanApiKey ? 'API key set. Open API key settings' : 'Open API key settings'}
-              className="header-action-btn"
-              style={etherscanApiKey ? {
-                background: 'var(--accent-dim)',
-                borderColor: 'var(--accent-border)',
-                color: 'var(--accent)',
-              } : {}}>
-              {etherscanApiKey ? <Check size={12} /> : <Settings size={12} />}
-              <span>{etherscanApiKey ? 'API set' : 'API'}</span>
-            </button>
-
-            {/* Refresh */}
-            <button onClick={fetchPortfolio}
-              className={`header-action-btn${isLoading ? ' btn-loading' : ''}`}
-              style={{ color: 'var(--fg)' }}>
-              <RefreshCcw size={12} className={isLoading ? 'animate-spin' : ''} />
-              <span className="hidden sm:inline">Refresh</span>
-            </button>
-          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar pb-16 md:pb-0">
@@ -5425,153 +5443,19 @@ export default function App() {
 
 
         {activeTab === 'history' && (
-          <motion.div key="history" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+            <motion.div key="history" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="transaction-page-shell space-y-4">
 
             {/* Page header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 0 }}>
+            <div className="transaction-page-head" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)', marginBottom: 2 }}>Transaction</div>
-                  <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Transaction history, filters, and portfolio performance tracking</div>
+                  <div className="transaction-page-kicker">PulseChain activity</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--fg)', marginBottom: 2 }}>Transaction</div>
+                  <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Swaps, received, and sent activity for tracked PulseChain wallets.</div>
                 </div>
               </div>
             </div>
 
-            {/* Stats grid */}
-            <div className="stat-grid-4">
-              {[
-                { label: 'Total Invested', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `$${Math.abs(summary.netInvestment).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '-', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? 'ETH + stablecoin inflows' : 'No ETH/stable inflows found', color: 'var(--fg)' },
-                { label: 'Total P&L', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '-', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}${((summary.unifiedPnl / summary.netInvestment) * 100).toFixed(1)}% vs invested` : 'P&L % needs ETH/stable history', color: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? t.green : t.red) : 'var(--fg)' },
-                { label: 'Realized P&L', val: `${summary.realizedPnl >= 0 ? '+' : ''}$${Math.abs(summary.realizedPnl).toLocaleString('en-US', { maximumFractionDigits: 0 })}`, sub: 'Closed trade profit', color: summary.realizedPnl >= 0 ? t.green : t.red },
-                { label: 'Unrealized P&L', val: `${summary.pnl24h >= 0 ? '+' : ''}$${Math.abs(summary.pnl24h).toLocaleString('en-US', { maximumFractionDigits: 0 })}`, sub: "Today's portfolio change", color: summary.pnl24h >= 0 ? t.green : t.red },
-              ].map(({ label, val, sub, color }) => (
-                <div key={label} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 18 }}>
-                  <div style={{ fontSize: 13, color: 'var(--fg-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>{label}</div>
-                  <div style={{ fontSize: 20, fontWeight: 700, color, marginBottom: 2 }}>{val}</div>
-                  <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>{sub}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="tx-module-card">
-              <div className="tx-module-header" style={{ borderBottom: allocWheelOpen ? '1px solid var(--border)' : 'none' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
-                  <PieChartIcon size={16} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-                  <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>Portfolio Allocation</span>
-                  <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>By token value</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <button
-                    onClick={() => setAllocWheelOpen(v => !v)}
-                    title={allocWheelOpen ? 'Hide allocation' : 'Show allocation'}
-                    style={{ padding: '6px 8px', borderRadius: 8, border: `1px solid ${allocWheelOpen ? 'var(--accent-border)' : t.border}`,
-                      background: allocWheelOpen ? 'var(--accent-dim)' : t.cardHigh,
-                      color: allocWheelOpen ? 'var(--accent)' : t.textSecondary,
-                      cursor: 'pointer', transition: 'all .12s', display: 'flex', alignItems: 'center' }}>
-                    <PieChartIcon size={14} />
-                  </button>
-                  {allocWheelOpen && (
-                    <button
-                      onClick={() => setAllocationCalculatorOpen(v => !v)}
-                      style={{ padding: '6px 10px', borderRadius: 8, border: `1px solid ${allocationCalculatorOpen ? 'var(--accent-border)' : t.border}`,
-                        background: allocationCalculatorOpen ? 'var(--accent-dim)' : t.cardHigh,
-                        color: allocationCalculatorOpen ? 'var(--accent)' : t.textSecondary,
-                        cursor: 'pointer', transition: 'all .12s', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700 }}>
-                      <Calculator size={13} />
-                      {allocationCalculatorOpen ? 'Close Calculator' : 'Open Calculator'}
-                    </button>
-                  )}
-                </div>
-              </div>
-                {allocWheelOpen && (() => {
-                  const ALLOC_COLORS_P = ['#00FF9F','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
-                  const alloc = assetAllocation.length > 0 ? assetAllocation : [];
-                  return (
-                    <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, padding: '16px 20px', display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap', transition: 'all .2s ease' }}>
-                      {!allocationCalculatorOpen ? (
-                        <>
-                          <div style={{ width: 146, height: 146, flexShrink: 0, display: 'grid', placeItems: 'center' }}>
-                            {alloc.length > 0 ? (
-                              <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} debounce={50}>
-                                <PieChart>
-                                  <Pie data={alloc} cx="50%" cy="50%" innerRadius={43} outerRadius={66} paddingAngle={3} dataKey="value" strokeWidth={0}>
-                                    {alloc.map((_, i) => (
-                                      <Cell key={i} fill={ALLOC_COLORS_P[i % ALLOC_COLORS_P.length]} />
-                                    ))}
-                                  </Pie>
-                                  <RechartsTooltip contentStyle={{ background: 'var(--bg-surface)', border: '1px solid rgba(0,255,159,0.15)', borderRadius: 10, fontSize: 12, color: 'var(--fg)', boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }} />
-                                </PieChart>
-                              </ResponsiveContainer>
-                            ) : (
-                              <div style={{ width: 112, height: 112, borderRadius: '50%', border: `14px solid ${t.border}`, opacity: 0.8 }} aria-hidden="true" />
-                            )}
-                          </div>
-                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 7, minWidth: 160 }}>
-                            {alloc.length > 0 ? alloc.map((a, i) => {
-                              const pct = (a.value / (summary.totalValue || 1)) * 100;
-                              const valFmt = a.value >= 1e6 ? `$${(a.value/1e6).toFixed(1)}M` : a.value >= 1e3 ? `$${(a.value/1e3).toFixed(0)}K` : `$${a.value.toFixed(0)}`;
-                              return (
-                                <div key={a.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                  <div style={{ width: 8, height: 8, borderRadius: 2, background: ALLOC_COLORS_P[i % ALLOC_COLORS_P.length], flexShrink: 0, boxShadow: `0 0 6px ${ALLOC_COLORS_P[i % ALLOC_COLORS_P.length]}66` }} />
-                                  <span style={{ fontSize: 14, color: t.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</span>
-                                  <span style={{ fontSize: 14, fontWeight: 800, color: t.textSecondary, fontFamily: 'JetBrains Mono, monospace', fontVariantNumeric: 'tabular-nums', marginLeft: 4 }}>{pct.toFixed(1)}%</span>
-                                  <span style={{ fontSize: 13, color: t.textMuted, fontFamily: 'JetBrains Mono, monospace', minWidth: 58, textAlign: 'right' }}>{valFmt}</span>
-                                </div>
-                              );
-                            }) : (
-                              <div style={{ fontSize: 13, color: 'var(--fg-subtle)' }}>Add wallets to see allocation</div>
-                            )}
-                          </div>
-                        </>
-                      ) : (
-                        <div style={{ width: '100%', display: 'grid', gap: 10 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>Adjust Allocation</div>
-                            <div style={{ fontSize: 12, color: t.textSecondary }}>
-                              Total: {allocationCalculatorRows.reduce((sum, r) => sum + r.percent, 0).toFixed(1)}%
-                            </div>
-                          </div>
-                          {allocationCalculatorRows.length > 0 ? allocationCalculatorRows.map((row, i) => (
-                            <div key={row.name} style={{ display: 'grid', gridTemplateColumns: '100px 1fr 80px 80px', alignItems: 'center', gap: 10 }} className="max-sm:grid-cols-1">
-                              <span style={{ fontSize: 13, color: t.text }}>{row.name}</span>
-                              <input
-                                type="range"
-                                min={0}
-                                max={100}
-                                step={0.1}
-                                value={row.percent}
-                                onChange={(e) => {
-                                  const next = Number(e.target.value);
-                                  setAllocationDraftPercentages(prev => ({ ...prev, [row.name]: next }));
-                                }}
-                                style={{ accentColor: ALLOC_COLORS_P[i % ALLOC_COLORS_P.length] }}
-                              />
-                              <input
-                                type="number"
-                                min={0}
-                                max={100}
-                                step={0.1}
-                                value={row.percent.toFixed(1)}
-                                onChange={(e) => {
-                                  const next = Number(e.target.value);
-                                  if (!Number.isFinite(next)) return;
-                                  setAllocationDraftPercentages(prev => ({ ...prev, [row.name]: Math.min(100, Math.max(0, next)) }));
-                                }}
-                                style={{ width: '100%', background: t.cardHigh, color: t.text, border: `1px solid ${t.border}`, borderRadius: 6, padding: '5px 8px', fontSize: 12, fontFamily: 'JetBrains Mono, monospace' }}
-                              />
-                              <span style={{ fontSize: 12, color: t.textSecondary, textAlign: 'right', fontFamily: 'JetBrains Mono, monospace' }}>
-                                ${row.value.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                              </span>
-                            </div>
-                          )) : (
-                            <div style={{ fontSize: 13, color: t.textMuted }}>No holdings available for allocation calculator.</div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-            </div>
             <div className="tx-module-card">
               <div className="tx-module-header" style={{ borderBottom: isCollapsed('holdings-txs') ? 'none' : '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
@@ -5654,74 +5538,6 @@ export default function App() {
                   </div>
                 </>
               )}
-            </div>
-
-            {/* Charts row */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
-              {/* Portfolio Performance */}
-              {(() => {
-                const now = Date.now();
-                const cutoffs: Record<string, number> = { '1w': now - 7*24*3600*1000, '1m': now - 30*24*3600*1000, '1y': now - 365*24*3600*1000, 'all': 0 };
-                const cutoff = cutoffs[perfPeriod];
-                const realHistory = (wallets.length > 0 ? history : []).filter(p => p.timestamp >= cutoff);
-                const currentVal = summary.totalValue || 1;
-                const mockLast = MOCK_HISTORY[MOCK_HISTORY.length - 1]?.value || 1;
-                const scale = currentVal / mockLast;
-                const byBucket = new Map<string, { value: number; ts: number }>();
-                realHistory.forEach(p => {
-                  const key = perfPeriod === '1w' ? format(p.timestamp, 'yyyy-MM-dd HH') : format(p.timestamp, 'yyyy-MM-dd');
-                  byBucket.set(key, { value: p.value, ts: p.timestamp });
-                });
-                const uniquePts = [...byBucket.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, { value, ts }]) => ({ day: fmtLabel(ts), value }));
-                let histChartPoints: { day: string; value: number }[];
-                if (uniquePts.length >= 3) {
-                  histChartPoints = uniquePts;
-                } else {
-                  const mockCount = perfPeriod === '1w' ? 28 : perfPeriod === '1m' ? 30 : perfPeriod === '1y' ? 52 : 60;
-                  histChartPoints = MOCK_HISTORY.slice(-mockCount).map(p => ({ day: fmtLabel(p.timestamp), value: p.value * scale }));
-                  if (histChartPoints.length > 0) histChartPoints[histChartPoints.length - 1].value = currentVal;
-                }
-                const histPeriodLabel: Record<string, string> = { '1w': 'Week', '1m': 'Month', '1y': 'Year', 'all': 'All' };
-                const histYMin = Math.min(...histChartPoints.map(p => p.value));
-                const histYMax = Math.max(...histChartPoints.map(p => p.value));
-                const histYPad = (histYMax - histYMin) * 0.1 || histYMax * 0.1;
-                const fmtHistY = (v: number) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v.toFixed(0)}`;
-                return (
-                  <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 4px 10px 0' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, paddingLeft: 18, paddingRight: 18 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.6px' }}>Portfolio Performance</div>
-                      <div style={{ display: 'flex', gap: 2, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, padding: 3 }}>
-                        {(['1w','1m','1y','all'] as const).map(p => (
-                          <button key={p} onClick={() => setPerfPeriod(p)}
-                            style={{ padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
-                              background: perfPeriod === p ? 'var(--accent)' : 'transparent',
-                              color: perfPeriod === p ? (theme === 'dark' ? '#000' : '#fff') : 'var(--fg-subtle)' }}>
-                            {histPeriodLabel[p]}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <ResponsiveContainer width="100%" height={230} minWidth={1} minHeight={1}>
-                      <AreaChart data={histChartPoints} margin={{ top: 4, right: 18, left: 0, bottom: 0 }}>
-                        <defs>
-                          <linearGradient id="histColorValue" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.2}/>
-                            <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                        <XAxis dataKey="day" tick={{ fill: '#7c8798', fontSize: 11 }} axisLine={{ stroke: '#222' }} tickLine={false} interval={Math.max(0, Math.floor(histChartPoints.length / 7) - 1)} />
-                        <YAxis width={54} fontSize={11} tickLine={false} axisLine={false} tick={{ fill: '#7c8798' }} tickFormatter={fmtHistY} domain={[histYMin - histYPad, histYMax + histYPad]} />
-                        <RechartsTooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13 }}
-                          formatter={(v: any) => [`$${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}`, 'Portfolio Value']}
-                          labelStyle={{ color: '#7c8798', marginBottom: 4 }} />
-                        <Area type="monotone" dataKey="value" stroke="var(--accent)" fillOpacity={1} fill="url(#histColorValue)" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: 'var(--accent)', strokeWidth: 0 }} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                );
-              })()}
-
             </div>
 
             {/* -- TOKEN P&L SUMMARY CARD - shown when a specific asset filter is active -- */}
@@ -5869,7 +5685,7 @@ export default function App() {
           const fmtHexCount = (n: number) => n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(0)}K` : Math.round(n).toLocaleString('en-US');
 
           return (
-            <motion.div key="wallets" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="wallet-page-shell space-y-4">
+            <motion.div key="wallets" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="wallet-page-shell wallet-dashboard-shell space-y-4">
               <WalletSelector
                 wallets={wallets.map(w => w.address.toLowerCase())}
                 activeWallet={selectedWalletAddr === 'all' ? null : selectedWalletAddr}
@@ -5882,37 +5698,46 @@ export default function App() {
               />
 
               {/* Hero card */}
-              <div style={{ background: 'var(--bg-elevated)', borderRadius: 16, padding: '24px', border: '1px solid var(--accent-border)' }}>
-                <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 8 }}>{isAll ? 'All Wallets' : selWallet?.name}</div>
-                {!isAll && <div style={{ fontSize: 13, color: 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace', marginBottom: 12 }}>{selWallet?.address}</div>}
-                <div style={{ fontSize: 36, fontWeight: 800, color: 'var(--fg)', marginBottom: 16 }}>
+              <div className="wallet-hero-panel">
+                <div className="wallet-hero-header">
+                  <div>
+                    <div className="wallet-hero-eyebrow">{isAll ? 'Tracked wallets' : 'Tracked wallet'}</div>
+                    <div className="wallet-hero-title">{isAll ? 'Wallet view' : selWallet?.name}</div>
+                    {!isAll && <div className="wallet-hero-address">{selWallet?.address}</div>}
+                  </div>
+                  <div className="wallet-hero-summary">
+                    <span>PulseChain-ready holdings</span>
+                    <strong>{filteredViewAssets.length} assets</strong>
+                  </div>
+                </div>
+                <div className="wallet-hero-value">
                   ${totalUsdValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                 </div>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-                  <span className="wallet-stat-pill-green">
+                <div className="wallet-summary-strip">
+                  <span className="wallet-summary-pill wallet-summary-pill--liquid">
                     Wallet ${walletUsdValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                   </span>
-                  <span style={{ background: 'rgba(239,68,68,0.12)', color: t.red, padding: '4px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: '1px solid rgba(239,68,68,0.20)' }}>
+                  <span className="wallet-summary-pill wallet-summary-pill--staking">
                     Staking ${stakingUsdValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                   </span>
                 </div>
                 {/* pHEX / eHEX totals - matches Overview hero */}
                 {(walletPHex > 0 || walletEHex > 0) && (
-                  <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+                  <div className="wallet-hex-strip">
                     {walletPHex > 0 && (
-                      <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>
-                        pHEX: <span style={{ color: '#fb923c', fontWeight: 700 }}>{fmtHexCount(walletPHex)}</span>
+                      <span>
+                        pHEX <strong style={{ color: '#fb923c' }}>{fmtHexCount(walletPHex)}</strong>
                       </span>
                     )}
                     {walletEHex > 0 && (
-                      <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>
-                        eHEX: <span style={{ color: '#627EEA', fontWeight: 700 }}>{fmtHexCount(walletEHex)}</span>
+                      <span>
+                        eHEX <strong style={{ color: '#627EEA' }}>{fmtHexCount(walletEHex)}</strong>
                       </span>
                     )}
                   </div>
                 )}
                 {/* Chain filter chips */}
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <div className="wallet-chain-strip">
                   {(['all', 'pulsechain', 'ethereum', 'base'] as const).map(c => (
                     <button key={c} onClick={() => setWalletChainFilter(c)}
                       className={`filter-pill${walletChainFilter === c ? ' active' : ''}`}>
@@ -5923,14 +5748,15 @@ export default function App() {
               </div>
 
               {/* Asset list - full Token Positions module */}
-              <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
-                <div style={{ padding: '14px 16px', borderBottom: isCollapsed('wallet-holdings') ? 'none' : `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+              <div className="wallet-holdings-card" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+                <div className="wallet-holdings-head" style={{ padding: '14px 16px', borderBottom: isCollapsed('wallet-holdings') ? 'none' : `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                   <div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)' }}>Holdings</div>
-                    <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginTop: 2 }}>{filteredViewAssets.length} tokens  -  ${walletUsdValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
+                    <div className="wallet-section-label">Wallet</div>
+                    <div className="wallet-section-title">Holdings</div>
+                    <div className="wallet-section-subtitle">{filteredViewAssets.length} tokens  -  ${walletUsdValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ display: 'flex', gap: 3, background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 8, padding: 3 }}>
+                  <div className="wallet-holdings-actions" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div className="wallet-period-switch" style={{ display: 'flex', gap: 3, background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 8, padding: 3 }}>
                       {([['1h','1H'],['6h','6H'],['24h','24H'],['7d','7D']] as const).map(([p, label]) => (
                         <button key={p} onClick={() => setPriceChangePeriod(p)}
                           style={{ padding: '4px 10px', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all .12s', border: 'none',
@@ -6476,25 +6302,6 @@ export default function App() {
           <motion.div key="pulsechain-official" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             {(() => {
               const HEX_ADDR = '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39';
-              const isAllWallets = selectedWalletAddr === 'all';
-              const selectedWallet = wallets.find(w => w.address.toLowerCase() === selectedWalletAddr);
-              const investmentAssets = (isAllWallets ? currentAssets : (walletAssets[selectedWalletAddr] || []))
-                .filter(a => !hiddenTokens.includes(a.id) && !(a as any).isSpam);
-              const investmentStakes = isAllWallets
-                ? currentStakes
-                : currentStakes.filter(s => s.walletAddress === selectedWalletAddr);
-              const investmentWalletUsd = investmentAssets.reduce((sum, asset) => sum + asset.value, 0);
-              const investmentStakingUsd = investmentStakes.reduce((sum, stake) => {
-                const hexPrice = stake.chain === 'ethereum'
-                  ? (prices[`ethereum:${HEX_ADDR}`]?.usd || prices['hex']?.usd || 0)
-                  : (prices[`pulsechain:${HEX_ADDR}`]?.usd || prices['pulsechain:hex']?.usd || 0);
-                return sum + (((stake.stakedHex ?? 0) + (stake.accruedHex ?? 0)) * hexPrice);
-              }, 0);
-              const investmentTotalUsd = investmentWalletUsd + investmentStakingUsd;
-              const investmentTopAssets = investmentAssets
-                .slice()
-                .sort((a, b) => b.value - a.value)
-                .slice(0, 5);
               const investedRatio = summary.netInvestment > MIN_INVESTMENT_THRESHOLD
                 ? (summary.unifiedPnl / summary.netInvestment) * 100
                 : 0;
@@ -6545,66 +6352,6 @@ export default function App() {
 
               return (
                 <div className="wallet-page-shell my-investment-page">
-                  <section className="front-portfolio-preview my-investment-card">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                      <div className="front-section-head">
-                        <span>Your wallet</span>
-                        <h2>{wallets.length > 0 ? 'Drill into wallets and top positions.' : 'Paste a wallet to load your portfolio.'}</h2>
-                      </div>
-                      <button onClick={fetchPortfolio} className="front-refresh-btn">
-                        <RefreshCcw size={13} className={isLoading ? 'animate-spin' : ''} />
-                        Refresh
-                      </button>
-                    </div>
-                    <div style={{ marginTop: 18 }}>
-                      <WalletSelector
-                        wallets={wallets.map(w => w.address.toLowerCase())}
-                        activeWallet={selectedWalletAddr === 'all' ? null : selectedWalletAddr}
-                        onSelect={(addr) => {
-                          setSelectedWalletAddr(addr ? addr.toLowerCase() : 'all');
-                          setActiveWallet(addr);
-                        }}
-                        onAdd={() => setIsAddingWallet(true)}
-                        walletLabels={Object.fromEntries(wallets.map(w => [w.address.toLowerCase(), w.name || shortenAddr(w.address)]))}
-                      />
-                    </div>
-                    <div className="front-value-row">
-                      <div>
-                        <span>Selected value</span>
-                        <strong>${investmentTotalUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong>
-                      </div>
-                      <div>
-                        <span>Tracked positions</span>
-                        <strong>{investmentAssets.length + investmentStakes.length}</strong>
-                      </div>
-                    </div>
-                    <div className="front-holding-list">
-                      {investmentTopAssets.length > 0 ? investmentTopAssets.map(asset => {
-                        const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()] || (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()] || getTokenLogoUrl(asset);
-                        return (
-                          <button key={asset.id} className="front-holding-row" onClick={() => { setActiveTab('assets'); setOverviewTokenSearch(asset.symbol); }}>
-                            <span className="front-holding-logo">{logo ? <img src={logo} alt={asset.symbol} /> : asset.symbol.slice(0, 1)}</span>
-                            <span>
-                              <strong>{asset.symbol}</strong>
-                              <small>{asset.chain}</small>
-                            </span>
-                            <span>
-                              <strong>${asset.value.toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong>
-                              <small className={(asset.pnl24h ?? asset.priceChange24h ?? 0) >= 0 ? 'is-up' : 'is-down'}>
-                                {(asset.pnl24h ?? asset.priceChange24h ?? 0) >= 0 ? '+' : ''}{(asset.pnl24h ?? asset.priceChange24h ?? 0).toFixed(2)}%
-                              </small>
-                            </span>
-                          </button>
-                        );
-                      }) : (
-                        <div className="my-investment-empty">No wallet positions loaded yet.</div>
-                      )}
-                    </div>
-                    <button className="front-inline-link" onClick={() => wallets.length > 0 ? setActiveTab('assets') : setIsAddingWallet(true)}>
-                      {wallets.length > 0 ? 'Open wallet details' : 'Add your first wallet'} <ChevronRight size={14} />
-                    </button>
-                  </section>
-
                   <section className="my-investment-hero">
                     <div className="my-investment-hero-copy">
                       <span className="my-investment-kicker">Portfolio command</span>
@@ -6612,6 +6359,46 @@ export default function App() {
                       <p>
                         One page for invested capital, wallet exposure, allocation, performance, and PulseChain portfolio mix.
                       </p>
+                      <div className="my-investment-snapshot-grid">
+                        {[
+                          {
+                            label: 'Total Invested',
+                            val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `$${Math.abs(summary.netInvestment).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '-',
+                            sub: 'ETH + stablecoin inflows',
+                            color: 'var(--fg)',
+                          },
+                          {
+                            label: 'Total P&L',
+                            val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '-',
+                            sub: 'Net profit vs invested capital',
+                            color: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? t.green : t.red) : 'var(--fg)',
+                          },
+                          {
+                            label: 'P&L %',
+                            val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}${((summary.unifiedPnl / summary.netInvestment) * 100).toFixed(1)}%` : '-',
+                            sub: 'Performance against invested amount',
+                            color: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? t.green : t.red) : 'var(--fg)',
+                          },
+                          {
+                            label: 'Realized',
+                            val: `${summary.realizedPnl >= 0 ? '+' : ''}$${Math.abs(summary.realizedPnl).toLocaleString('en-US', { maximumFractionDigits: 0 })}`,
+                            sub: 'Closed trade profit',
+                            color: summary.realizedPnl >= 0 ? t.green : t.red,
+                          },
+                          {
+                            label: "Today's portfolio change",
+                            val: `${summary.pnl24h >= 0 ? '+' : ''}$${Math.abs(summary.pnl24h).toLocaleString('en-US', { maximumFractionDigits: 0 })}`,
+                            sub: '24h move',
+                            color: summary.pnl24h >= 0 ? t.green : t.red,
+                          },
+                        ].map(({ label, val, sub, color }) => (
+                          <div key={label} className="my-investment-snapshot-card">
+                            <div className="my-investment-snapshot-label">{label}</div>
+                            <div className="my-investment-snapshot-value" style={{ color }}>{val}</div>
+                            <div className="my-investment-snapshot-sub">{sub}</div>
+                          </div>
+                        ))}
+                      </div>
                       <div className="my-investment-hero-actions">
                         <button className="front-inline-link" onClick={() => setActiveTab('assets')}>
                           Open wallet <ChevronRight size={14} />
@@ -6619,33 +6406,6 @@ export default function App() {
                         <button className="front-inline-link" onClick={() => setActiveTab('history')}>
                           Open transaction <ChevronRight size={14} />
                         </button>
-                      </div>
-                    </div>
-
-                    <div className="my-investment-hero-panel">
-                      <div className="my-investment-panel-head">
-                        <span>Live snapshot</span>
-                        <strong>{selectedWallet?.name || (isAllWallets ? 'All wallets' : shortenAddr(selectedWalletAddr))}</strong>
-                      </div>
-                      <div className="my-investment-mini-grid">
-                        <div>
-                          <span>Wallet value</span>
-                          <strong>${investmentWalletUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong>
-                        </div>
-                        <div>
-                          <span>Staking value</span>
-                          <strong>${investmentStakingUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong>
-                        </div>
-                        <div>
-                          <span>24h move</span>
-                          <strong className={summary.pnl24h >= 0 ? 'is-up' : 'is-down'}>
-                            {summary.pnl24h >= 0 ? '+' : '-'}${Math.abs(summary.pnl24h).toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                          </strong>
-                        </div>
-                        <div>
-                          <span>PulseChain share</span>
-                          <strong>{summary.totalValue > 0 ? `${((frontPageChainRows.find(row => row.chain === 'pulsechain')?.value || 0) / summary.totalValue * 100).toFixed(1)}%` : '0.0%'}</strong>
-                        </div>
                       </div>
                     </div>
                   </section>
@@ -6713,17 +6473,6 @@ export default function App() {
                             cursor: 'pointer', transition: 'all .12s', display: 'flex', alignItems: 'center' }}>
                           <PieChartIcon size={14} />
                         </button>
-                        {allocWheelOpen && (
-                          <button
-                            onClick={() => setAllocationCalculatorOpen(v => !v)}
-                            style={{ padding: '6px 10px', borderRadius: 8, border: `1px solid ${allocationCalculatorOpen ? 'var(--accent-border)' : t.border}`,
-                              background: allocationCalculatorOpen ? 'var(--accent-dim)' : t.cardHigh,
-                              color: allocationCalculatorOpen ? 'var(--accent)' : t.textSecondary,
-                              cursor: 'pointer', transition: 'all .12s', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700 }}>
-                            <Calculator size={13} />
-                            {allocationCalculatorOpen ? 'Close Calculator' : 'Open Calculator'}
-                          </button>
-                        )}
                       </div>
                     </div>
                     {allocWheelOpen && (() => {
@@ -6996,14 +6745,24 @@ export default function App() {
           background: 'var(--bg-header)',
           borderTop: '1px solid var(--border)',
         }}>
+        <div className={`mobile-more-sheet${mobileMoreOpen ? ' is-open' : ''}`}>
+          {mobileMoreNavItems.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              className={`mobile-more-link${activeTab === id ? ' is-active' : ''}`}
+              onClick={() => {
+                setActiveTab(id);
+                setMobileMoreOpen(false);
+              }}
+            >
+              <Icon size={16} />
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
         <div className="mobile-bottom-nav-inner">
-        {([
-          { id: 'home',     label: 'Home',              icon: Activity },
-          { id: 'overview', label: 'Portfolio',         icon: LayoutDashboard },
-          { id: 'assets',   label: 'Wallet',             icon: Coins },
-          { id: 'stakes',   label: 'Stakes',            icon: Lock },
-          { id: 'defi',     label: 'DeFi',              icon: Droplets },
-        ] as const).map(({ id, label, icon: Icon }) => (
+        {mobilePrimaryNavItems.map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setActiveTab(id)}
             className="mobile-nav-tab-btn"
             style={{
@@ -7015,6 +6774,19 @@ export default function App() {
             <span style={{ fontSize: 9, fontWeight: activeTab === id ? 700 : 500, lineHeight: 1, marginTop: 3 }}>{label}</span>
           </button>
         ))}
+          <button
+            type="button"
+            onClick={() => setMobileMoreOpen(v => !v)}
+            className="mobile-nav-tab-btn"
+            style={{
+              color: mobileMoreOpen || mobileMoreActive ? 'var(--accent)' : 'var(--fg-muted)',
+            }}
+          >
+            <div className={mobileMoreOpen || mobileMoreActive ? 'bottom-nav-dot' : ''}>
+              <Layers size={19} />
+            </div>
+            <span style={{ fontSize: 9, fontWeight: mobileMoreOpen || mobileMoreActive ? 700 : 500, lineHeight: 1, marginTop: 3 }}>More</span>
+          </button>
         </div>
       </nav>
 
