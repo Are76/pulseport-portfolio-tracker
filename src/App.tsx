@@ -73,6 +73,7 @@ import { HoldingsTable } from './components/HoldingsTable';
 import type { HoldingDisplayAsset, HoldingSortField } from './components/HoldingsTable';
 import { normalizeTransactions } from './utils/normalizeTransactions';
 import { scheduleLocalStorageWrite, resolveBlockscoutBase, resolveEtherscanCompatBase } from './utils/localStorageDebounce';
+import { BRAND_ASSETS } from './branding/brand-assets';
 
 const ERC20_ABI = [
   {
@@ -3441,16 +3442,54 @@ export default function App() {
   };
 
   const navItems = [
-    { id: 'home', label: 'Home', icon: Activity },
-    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'home', label: 'Dashboard', icon: Activity },
+    { id: 'overview', label: 'Portfolio', icon: LayoutDashboard },
     { id: 'stakes', label: 'HEX Stakes', icon: Lock },
-    { id: 'assets', label: 'Wallet', icon: Coins },
-    { id: 'pulsechain-official', label: 'My Investment', icon: Zap },
-    { id: 'history', label: 'Transaction', icon: History },
+    { id: 'assets', label: 'Wallets & Bridges', icon: Coins },
+    { id: 'pulsechain-official', label: 'My Investments', icon: Zap },
+    { id: 'history', label: 'Transactions', icon: History },
     { id: 'pulsechain-community', label: 'Ecosystem', icon: Layers },
-    { id: 'bridge', label: 'Bridge', icon: ArrowLeftRight },
+    { id: 'bridge', label: 'Bridges', icon: ArrowLeftRight },
     { id: 'defi', label: 'DeFi', icon: Droplets },
   ] as const;
+  const pageMeta: Record<(typeof navItems)[number]['id'], { title: string; subtitle: string }> = {
+    home: {
+      title: 'Dashboard',
+      subtitle: 'Current portfolio state across PulseChain, Ethereum, and Base.',
+    },
+    overview: {
+      title: 'Portfolio',
+      subtitle: 'Holdings, allocation, and performance by exact asset identity.',
+    },
+    stakes: {
+      title: 'HEX Staking',
+      subtitle: 'Liquid and staked HEX exposure across PulseChain and Ethereum.',
+    },
+    assets: {
+      title: 'Wallets & Bridges',
+      subtitle: 'Wallet-level holdings, bridge activity, and cross-chain movement.',
+    },
+    'pulsechain-official': {
+      title: 'My Investments',
+      subtitle: 'Initial capital mapped against current PulseChain ownership.',
+    },
+    history: {
+      title: 'Transactions',
+      subtitle: 'Full ledger for bridges, swaps, and cost-basis drill-down.',
+    },
+    'pulsechain-community': {
+      title: 'Ecosystem',
+      subtitle: 'PulseChain reference, contracts, bridges, and community resources.',
+    },
+    bridge: {
+      title: 'Bridges',
+      subtitle: 'Bridge routes, token references, and cross-chain operational context.',
+    },
+    defi: {
+      title: 'DeFi',
+      subtitle: 'Liquidity, farms, and protocol-level PulseChain positions.',
+    },
+  };
   const mobilePrimaryNavItems = navItems.filter(item => ['home', 'assets', 'history'].includes(item.id));
   const mobileMoreNavItems = navItems.filter(item => !['home', 'assets', 'history'].includes(item.id));
   const mobileMoreActive = mobileMoreNavItems.some(item => item.id === activeTab);
@@ -3461,23 +3500,26 @@ export default function App() {
       <div className={`sidebar-backdrop${sidebarOpen ? ' open' : ''}`} onClick={() => setSidebarOpen(false)} />
       {/* -- SIDEBAR -- */}
       <aside style={{
-          width: 220, minWidth: 220,
-          background: 'var(--bg-sidebar)',
-          borderRight: '1px solid var(--border)',
+          width: 248, minWidth: 248,
+          background: 'rgba(13,17,24,0.96)',
+          borderRight: '1px solid rgba(255,255,255,0.08)',
         }}
         className={`app-sidebar flex flex-col sticky top-0 h-screen overflow-y-auto custom-scrollbar${sidebarOpen ? ' open' : ''}`}>
         {/* Logo */}
-        <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--border)' }} className="flex items-center gap-2.5">
+        <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)' }} className="flex items-center gap-3">
           <div style={{
-            width: 30, height: 30,
-            background: 'var(--accent)',
-            borderRadius: 9,
-            boxShadow: '0 0 0 1px rgba(0,255,159,.35), 0 0 16px rgba(0,255,159,.2)',
+            width: 40, height: 40,
+            background: 'linear-gradient(135deg, rgba(0,214,143,0.14), rgba(109,99,255,0.18))',
+            borderRadius: 14,
+            border: '1px solid rgba(0,214,143,0.18)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}>
-            <Activity size={16} style={{ color: '#000' }} />
+            <img src={BRAND_ASSETS.logo} alt="Pulseport logo" style={{ width: 22, height: 22 }} />
           </div>
-          <span className="logo-wordmark">PULSEPORT</span>
+          <div style={{ minWidth: 0 }}>
+            <img src={BRAND_ASSETS.wordmark} alt="Pulseport wordmark" style={{ width: 126, height: 'auto' }} />
+            <div style={{ marginTop: 6, fontSize: 11, color: 'var(--fg-subtle)', letterSpacing: '.08em', textTransform: 'uppercase' }}>Portfolio terminal</div>
+          </div>
         </div>
 
         {/* Nav */}
@@ -3497,12 +3539,12 @@ export default function App() {
                   background: isActive ? (isDefi ? defiDim : 'var(--accent-dim)') : 'transparent',
                   color: isActive ? (isDefi ? defiColor : 'var(--accent)') : 'var(--fg-muted)',
                   fontWeight: isActive ? 600 : 500,
-                  fontSize: 13, border: 'none', cursor: 'pointer',
+                  fontSize: 13, border: '1px solid transparent', cursor: 'pointer',
                   transition: 'all .15s', width: '100%', textAlign: 'left',
                   borderLeft: isActive ? `2px solid ${isDefi ? defiLine : 'var(--accent)'}` : '2px solid transparent',
                 }}
-                onMouseOver={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)'; (e.currentTarget as HTMLElement).style.color = 'var(--fg)'; } }}
-                onMouseOut={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--fg-muted)'; } }}
+                onMouseOver={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)'; (e.currentTarget as HTMLElement).style.color = 'var(--fg)'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,214,143,0.18)'; } }}
+                onMouseOut={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--fg-muted)'; (e.currentTarget as HTMLElement).style.borderColor = 'transparent'; } }}
               >
                 <Icon size={16} />
                 {label}
@@ -3643,16 +3685,19 @@ export default function App() {
             padding: '10px 20px 8px',
           }}>
           <div className="app-header-main">
-            {/* Logo */}
-            <div className="flex items-center gap-2">
-              <div style={{
-                width: 26, height: 26, background: 'var(--accent)', borderRadius: 7,
-                boxShadow: '0 0 12px rgba(0,255,159,.3)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Activity size={14} style={{ color: '#000' }} />
+            {/* Page title */}
+            <div className="flex items-center gap-3">
+              <div>
+                <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', marginBottom: 4 }}>
+                  Pulseport Workspace
+                </div>
+                <div style={{ fontFamily: 'var(--font-shell-display)', fontSize: 26, lineHeight: 1.05, letterSpacing: '-0.04em', color: 'var(--fg)', fontWeight: 800 }}>
+                  {pageMeta[activeTab].title}
+                </div>
+                <div style={{ color: 'var(--fg-muted)', fontSize: 13, marginTop: 4 }}>
+                  {pageMeta[activeTab].subtitle}
+                </div>
               </div>
-              <span className="logo-wordmark" style={{ fontSize: 14 }}>PULSEPORT</span>
             </div>
 
             {/* Right controls */}
