@@ -16,7 +16,7 @@ export function buildPulsechainInsights(assets: Asset[], transactions: Transacti
   const pulseShare = totalValue > 0 ? (pulseValue / totalValue) * 100 : 0;
 
   const bridgedValue = pulseAssets
-    .filter(asset => asset.isBridged || /\(from ethereum\)/i.test(asset.name))
+    .filter(asset => asset.isBridged || /\(from (ethereum|eth)\)/i.test(asset.name))
     .reduce((sum, asset) => sum + asset.value, 0);
   const bridgedShare = pulseValue > 0 ? (bridgedValue / pulseValue) * 100 : 0;
 
