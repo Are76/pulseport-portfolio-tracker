@@ -3744,7 +3744,7 @@ export default function App() {
             </div>
           </div>
 
-          <nav className="app-top-nav hidden md:flex">
+          <nav className="app-top-nav hidden">
             {navItems.map(({ id, label, icon: Icon }) => {
               const isActive = activeTab === id;
               return (

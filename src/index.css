@@ -588,7 +588,10 @@ textarea:focus-visible,
   box-shadow: 0 0 18px color-mix(in srgb, currentColor 55%, transparent);
 }
 
-.app-sidebar,
+.app-sidebar {
+  display: flex;
+}
+
 .sidebar-backdrop {
   display: none !important;
 }
