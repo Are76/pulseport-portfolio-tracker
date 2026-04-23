@@ -26,6 +26,16 @@ npm run build
 npm run preview
 ```
 
+## Vercel auto-deploy (GitHub Actions)
+
+This repo includes `.github/workflows/deploy-vercel.yml` for production deploys on pushes to `main`/`master` (and manual dispatch).
+
+Set these GitHub repository secrets before using it:
+
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
+
 ## Desktop (Electron) builds
 
 - `npm run electron:build` (Windows installer + portable + zip)
