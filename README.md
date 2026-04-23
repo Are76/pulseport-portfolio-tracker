@@ -40,6 +40,14 @@ npm run build
 npm run preview
 ```
 
+## Launch readiness check
+
+Run the full premium-launch gate locally:
+
+```bash
+./scripts/launch-readiness-check.sh
+```
+
 ## Vercel auto-deploy (GitHub Actions)
 
 This repo includes `.github/workflows/deploy-vercel.yml` for production deploys on pushes to `main`/`master` (and manual dispatch).
