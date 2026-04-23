@@ -73,6 +73,7 @@ import { HoldingsTable } from './components/HoldingsTable';
 import type { HoldingDisplayAsset, HoldingSortField } from './components/HoldingsTable';
 import { normalizeTransactions } from './utils/normalizeTransactions';
 import { scheduleLocalStorageWrite, resolveBlockscoutBase, resolveEtherscanCompatBase } from './utils/localStorageDebounce';
+import { buildPulsechainInsights } from './utils/pulsechainInsights';
 import { BRAND_ASSETS } from './branding/brand-assets';
 
 const ERC20_ABI = [
@@ -2696,6 +2697,11 @@ export default function App() {
 
   const COLORS = [CHAINS.pulsechain.color, CHAINS.ethereum.color, CHAINS.base.color];
 
+  const pulsechainInsights = useMemo(
+    () => buildPulsechainInsights(currentAssets, currentTransactions),
+    [currentAssets, currentTransactions],
+  );
+
   const stakeSummary = useMemo(() => {
     const stakes = wallets.length > 0 ? realStakes : MOCK_STAKES;
     const activeStakes = stakes.filter(s => (s.daysRemaining ?? 0) > 0);
@@ -3501,12 +3507,12 @@ export default function App() {
       {/* -- SIDEBAR -- */}
       <aside style={{
           width: 248, minWidth: 248,
-          background: 'rgba(13,17,24,0.96)',
-          borderRight: '1px solid rgba(255,255,255,0.08)',
+          background: 'var(--bg-sidebar)',
+          borderRight: '1px solid var(--border)',
         }}
         className={`app-sidebar flex flex-col sticky top-0 h-screen overflow-y-auto custom-scrollbar${sidebarOpen ? ' open' : ''}`}>
         {/* Logo */}
-        <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)' }} className="flex items-center gap-3">
+        <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--border)' }} className="flex items-center gap-3">
           <div style={{
             width: 40, height: 40,
             background: 'linear-gradient(135deg, rgba(0,214,143,0.14), rgba(109,99,255,0.18))',
@@ -3527,9 +3533,9 @@ export default function App() {
           {navItems.map(({ id, label, icon: Icon }) => {
             const isDefi = id === 'defi';
             const isActive = activeTab === id;
-            const defiColor = 'rgba(247,57,255,0.9)';
-            const defiDim   = 'rgba(247,57,255,0.10)';
-            const defiLine  = '#f739ff';
+            const defiColor = 'var(--chain-pulse)';
+            const defiDim   = 'color-mix(in srgb, var(--chain-pulse) 12%, transparent)';
+            const defiLine  = 'var(--chain-pulse)';
             return (
               <button key={id} onClick={() => { setActiveTab(id); setSidebarOpen(false); }}
                 className={`app-nav-item${isActive ? ' nav-item-active' : ''}`}
@@ -3543,7 +3549,7 @@ export default function App() {
                   transition: 'all .15s', width: '100%', textAlign: 'left',
                   borderLeft: isActive ? `2px solid ${isDefi ? defiLine : 'var(--accent)'}` : '2px solid transparent',
                 }}
-                onMouseOver={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)'; (e.currentTarget as HTMLElement).style.color = 'var(--fg)'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,214,143,0.18)'; } }}
+                onMouseOver={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)'; (e.currentTarget as HTMLElement).style.color = 'var(--fg)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent-border)'; } }}
                 onMouseOut={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--fg-muted)'; (e.currentTarget as HTMLElement).style.borderColor = 'transparent'; } }}
               >
                 <Icon size={16} />
@@ -3605,7 +3611,7 @@ export default function App() {
               )}
               <div className="overflow-y-auto custom-scrollbar" style={{ maxHeight: 180, padding: '2px 0', display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {wallets.map((w, wIdx) => {
-                  const dotColors = ['#00FF9F','#f739ff','#627EEA','#f97316','#a855f7','#f59e0b'];
+                  const dotColors = ['var(--accent)', 'var(--chain-pulse)', 'var(--chain-eth)', 'var(--chain-base)', 'var(--warning)', 'var(--fg-subtle)'];
                   const isActive = selectedWalletAddr === w.address.toLowerCase() && activeTab === 'assets';
                   const walletKey = w.address.toLowerCase();
                   const walletValue = (walletAssets[walletKey] || []).reduce((sum, asset) => sum + asset.value, 0);
@@ -3663,7 +3669,7 @@ export default function App() {
                     border: '1px solid var(--accent-border)', borderRadius: 8, padding: '8px 0', cursor: 'pointer',
                     transition: 'all .15s', width: '100%',
                   }}
-                  onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,255,159,.18)'; }}
+                  onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'color-mix(in srgb, var(--accent) 18%, transparent)'; }}
                   onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent-dim)'; }}>
                   <Plus size={13} /> Add Wallet
                 </button>
@@ -3744,22 +3750,6 @@ export default function App() {
             </div>
           </div>
 
-          <nav className="app-top-nav hidden md:flex">
-            {navItems.map(({ id, label, icon: Icon }) => {
-              const isActive = activeTab === id;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  className={`app-top-nav-btn${isActive ? ' is-active' : ''}`}
-                  onClick={() => setActiveTab(id)}
-                >
-                  <Icon size={15} />
-                  <span>{label}</span>
-                </button>
-              );
-            })}
-          </nav>
         </header>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar pb-16 md:pb-0">
@@ -3798,6 +3788,14 @@ export default function App() {
                         <span>Wallets</span>
                         <strong>{wallets.length}</strong>
                       </div>
+                    </div>
+                    <div className="front-insight-strip">
+                      {pulsechainInsights.map((insight) => (
+                        <div key={insight.id} className={`front-insight-pill tone-${insight.tone}`}>
+                          <span>{insight.label}</span>
+                          <strong>{insight.value}</strong>
+                        </div>
+                      ))}
                     </div>
                     <div className="front-actions">
                       <button className="btn-primary front-primary-action" onClick={() => wallets.length > 0 ? setActiveTab('overview') : setIsAddingWallet(true)}>
