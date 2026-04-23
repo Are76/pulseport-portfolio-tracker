@@ -588,7 +588,10 @@ textarea:focus-visible,
   box-shadow: 0 0 18px color-mix(in srgb, currentColor 55%, transparent);
 }
 
-.app-sidebar,
+.app-sidebar {
+  display: flex;
+}
+
 .sidebar-backdrop {
   display: none !important;
 }
@@ -7568,7 +7571,7 @@ body,
 
 .pce-hero-actions a:first-child {
   border-color: var(--accent-border);
-  color: #000;
+  color: var(--md-sys-color-on-primary);
   background: var(--accent);
 }
 
@@ -7967,7 +7970,7 @@ body,
 
 .pce-bridge-grid strong {
   display: block;
-  color: #22d3ee;
+  color: var(--chain-base);
   font-size: 15px;
   margin-bottom: 4px;
 }
@@ -8185,7 +8188,7 @@ body,
 }
 
 .pce-faq-grid svg {
-  color: #627EEA;
+  color: var(--chain-eth);
   margin-bottom: 10px;
 }
 
