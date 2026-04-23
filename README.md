@@ -19,6 +19,20 @@ npm run dev
 
 App runs on **http://localhost:5174** by default.
 
+## npm proxy warning fix (local shells)
+
+If you see:
+
+`npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.`
+
+run npm through the helper script that clears deprecated env vars:
+
+```bash
+./scripts/npm-clean-env.sh run lint
+./scripts/npm-clean-env.sh run test
+./scripts/npm-clean-env.sh run build
+```
+
 ## Build for production
 
 ```bash
