@@ -19,12 +19,44 @@ npm run dev
 
 App runs on **http://localhost:5174** by default.
 
+## npm proxy warning fix (local shells)
+
+If you see:
+
+`npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.`
+
+run npm through the helper script that clears deprecated env vars:
+
+```bash
+./scripts/npm-clean-env.sh run lint
+./scripts/npm-clean-env.sh run test
+./scripts/npm-clean-env.sh run build
+```
+
 ## Build for production
 
 ```bash
 npm run build
 npm run preview
 ```
+
+## Launch readiness check
+
+Run the full premium-launch gate locally:
+
+```bash
+./scripts/launch-readiness-check.sh
+```
+
+## Vercel auto-deploy (GitHub Actions)
+
+This repo includes `.github/workflows/deploy-vercel.yml` for production deploys on pushes to `main`/`master` (and manual dispatch).
+
+Set these GitHub repository secrets before using it:
+
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
 
 ## Desktop (Electron) builds
 
