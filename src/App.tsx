@@ -3739,6 +3739,22 @@ export default function App() {
             </div>
           </div>
 
+          <nav className="app-top-nav hidden">
+            {navItems.map(({ id, label, icon: Icon }) => {
+              const isActive = activeTab === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  className={`app-top-nav-btn${isActive ? ' is-active' : ''}`}
+                  onClick={() => setActiveTab(id)}
+                >
+                  <Icon size={15} />
+                  <span>{label}</span>
+                </button>
+              );
+            })}
+          </nav>
         </header>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar pb-16 md:pb-0">
