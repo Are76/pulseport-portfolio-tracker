@@ -1706,6 +1706,55 @@ textarea:focus-visible,
   background: var(--accent-dim);
 }
 
+.dashboard-premium .front-section,
+.dashboard-premium .front-portfolio-preview,
+.dashboard-premium .front-intel-panel {
+  border: 1px solid color-mix(in srgb, var(--accent) 14%, var(--border));
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-surface) 80%, transparent), color-mix(in srgb, var(--bg-inset) 94%, transparent));
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.22);
+}
+
+.dashboard-premium .front-stat {
+  border-radius: 12px;
+  border-color: color-mix(in srgb, var(--accent) 16%, var(--border));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bg-elevated) 80%, transparent), color-mix(in srgb, var(--bg-inset) 92%, transparent));
+}
+
+.dashboard-premium .front-stat strong {
+  font-size: clamp(18px, 2.3vw, 24px);
+  letter-spacing: -0.01em;
+}
+
+.dashboard-premium .front-value-row > div {
+  border-radius: 12px;
+  border-color: color-mix(in srgb, var(--accent) 18%, var(--border));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bg-elevated) 85%, transparent), color-mix(in srgb, var(--bg-inset) 95%, transparent));
+}
+
+.dashboard-premium .front-holding-row {
+  border-radius: 12px;
+  border-color: color-mix(in srgb, var(--accent) 12%, var(--border));
+  background: color-mix(in srgb, var(--bg-elevated) 32%, transparent);
+}
+
+.dashboard-premium .front-holding-row:hover {
+  transform: translateX(3px);
+  background: color-mix(in srgb, var(--bg-elevated) 60%, transparent);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22);
+}
+
+.dashboard-premium .front-intel-links button {
+  border-radius: 10px;
+  border-color: color-mix(in srgb, var(--accent) 14%, var(--border));
+}
+
+.dashboard-premium .front-inline-link {
+  margin-top: 20px;
+  min-height: 32px;
+}
+
 .front-info-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

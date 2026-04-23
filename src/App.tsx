@@ -3767,7 +3767,7 @@ export default function App() {
 
           <AnimatePresence mode="wait">
             {activeTab === 'home' && (
-              <motion.div key="home" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="front-page">
+              <motion.div key="home" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="front-page dashboard-premium">
                 <section className="front-hero">
                   <div className="front-data-field" aria-hidden="true">
                     {Array.from({ length: 18 }).map((_, i) => (
