@@ -31,7 +31,24 @@ type MoralisStreamBody = {
   txsInternal?: Array<Record<string, unknown>>;
 };
 
-function summarizePayload(body: MoralisStreamBody) {
+type MoralisStreamSummary = {
+  tag: string | null;
+  chainId: string | null;
+  confirmed: boolean | null;
+  blockNumber: string | number | null;
+  timestamp: string | number | null;
+  txCount: number;
+  erc20TransferCount: number;
+  internalTxCount: number;
+  logCount: number;
+};
+
+let latestWebhook: {
+  receivedAt: string;
+  summary: MoralisStreamSummary;
+} | null = null;
+
+function summarizePayload(body: MoralisStreamBody): MoralisStreamSummary {
   return {
     tag: body.tag ?? null,
     chainId: body.chainId ?? null,
@@ -53,6 +70,7 @@ export default async function handler(req: MoralisStreamRequest, res: MoralisStr
       ok: true,
       endpoint: '/api/moralis/stream',
       usage: 'POST Moralis Streams webhooks here.',
+      latestWebhook,
     });
   }
 
@@ -71,6 +89,11 @@ export default async function handler(req: MoralisStreamRequest, res: MoralisStr
         : {};
 
     const summary = summarizePayload(body);
+
+    latestWebhook = {
+      receivedAt: new Date().toISOString(),
+      summary,
+    };
 
     console.log('[moralis-stream] webhook received', {
       headers: req.headers ?? {},
