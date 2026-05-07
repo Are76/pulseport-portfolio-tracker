@@ -3440,8 +3440,9 @@ export default function App() {
   };
 
   const openProductPage = (asset: Asset, origin: ActiveTab = activeTab) => {
+    const nextOrigin = origin === 'product' ? productReturnTab : origin;
     setSelectedProductAsset(asset);
-    setProductReturnTab(origin === 'product' ? 'overview' : origin);
+    setProductReturnTab(nextOrigin);
     setActiveTab('product');
   };
 

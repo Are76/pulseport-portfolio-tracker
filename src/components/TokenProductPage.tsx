@@ -159,6 +159,11 @@ export function TokenProductPage({
   const websiteLinks = (marketData?.websites ?? []).filter((item) => item.url);
   const activeColor = priceChange24h >= 0 ? green : red;
   const resolvedLogo = logoUrl || getTokenLogoUrl(asset);
+  const [logoErrored, setLogoErrored] = React.useState(false);
+
+  React.useEffect(() => {
+    setLogoErrored(false);
+  }, [asset.id, resolvedLogo]);
 
   return (
     <div className="product-page-shell">
@@ -172,7 +177,9 @@ export function TokenProductPage({
             <button
               type="button"
               className="product-link-chip"
-              onClick={() => navigator.clipboard.writeText(address!)}
+              onClick={() => {
+                if (address) navigator.clipboard.writeText(address);
+              }}
             >
               <Copy size={13} />
               {shortAddress}
@@ -197,17 +204,13 @@ export function TokenProductPage({
         <div className="product-hero-main">
           <div className="product-token-ident">
             <div className="product-token-logo">
-              {resolvedLogo ? (
+              {resolvedLogo && !logoErrored ? (
                 <>
                   <img
                     src={resolvedLogo}
                     alt={asset.symbol}
-                    onError={(event) => {
-                      (event.currentTarget as HTMLImageElement).style.display = 'none';
-                      (event.currentTarget.nextElementSibling as HTMLElement | null)?.removeAttribute('hidden');
-                    }}
+                    onError={() => setLogoErrored(true)}
                   />
-                  <span hidden>{asset.symbol.slice(0, 1)}</span>
                 </>
               ) : (
                 <span>{asset.symbol.slice(0, 1)}</span>
