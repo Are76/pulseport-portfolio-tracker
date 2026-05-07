@@ -69,7 +69,7 @@ const fmtBalance = (value: number) => {
   return value.toLocaleString('en-US', { maximumFractionDigits: 4 });
 };
 
-function ChangePill({ label, value, theme }: { label: string; value: number | null | undefined; theme: 'dark' | 'light' }) {
+function PriceChangePill({ label, value, theme }: { label: string; value: number | null | undefined; theme: 'dark' | 'light' }) {
   const green = theme === 'dark' ? '#00FF9F' : '#059669';
   const red = theme === 'dark' ? '#f43f5e' : '#dc2626';
   const isPositive = (value ?? 0) >= 0;
@@ -89,6 +89,12 @@ function ChangePill({ label, value, theme }: { label: string; value: number | nu
     </div>
   );
 }
+
+const SOCIAL_ICONS: Record<string, typeof Twitter> = {
+  telegram: Send,
+  twitter: Twitter,
+  x: Twitter,
+};
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
@@ -259,10 +265,10 @@ export function TokenProductPage({
 
           <DetailCard title="Price action">
             <div className="product-change-grid">
-              <ChangePill label="1H" value={asset.priceChange1h ?? marketData?.priceChange1h} theme={theme} />
-              <ChangePill label="6H" value={marketData?.priceChange6h} theme={theme} />
-              <ChangePill label="24H" value={asset.priceChange24h ?? asset.pnl24h ?? marketData?.priceChange24h} theme={theme} />
-              <ChangePill label="7D" value={asset.priceChange7d ?? marketData?.priceChange7d} theme={theme} />
+              <PriceChangePill label="1H" value={asset.priceChange1h ?? marketData?.priceChange1h} theme={theme} />
+              <PriceChangePill label="6H" value={marketData?.priceChange6h} theme={theme} />
+              <PriceChangePill label="24H" value={asset.priceChange24h ?? asset.pnl24h ?? marketData?.priceChange24h} theme={theme} />
+              <PriceChangePill label="7D" value={asset.priceChange7d ?? marketData?.priceChange7d} theme={theme} />
             </div>
             {isLoadingMarketData && <div className="product-loading-note">Loading live market data…</div>}
           </DetailCard>
@@ -279,7 +285,8 @@ export function TokenProductPage({
                 </a>
               ))}
               {socialLinks.map((social) => {
-                const Icon = social.type?.toLowerCase().includes('telegram') ? Send : Twitter;
+                const normalizedType = social.type?.toLowerCase() ?? '';
+                const Icon = Object.entries(SOCIAL_ICONS).find(([key]) => normalizedType.includes(key))?.[1] || ExternalLink;
                 return (
                   <a key={social.url} className="product-resource-link" href={social.url} target="_blank" rel="noopener noreferrer">
                     <Icon size={13} />
