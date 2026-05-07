@@ -38,6 +38,7 @@ interface HoldingsTableProps {
   dexScreenerUrl: (chain: string, address: string) => string | null;
   onSort: (field: HoldingSortField) => void;
   onToggleExpanded: (id: string) => void;
+  onSelectAsset?: (asset: Asset) => void;
   onOpenPnl: (asset: Asset) => void;
   onHide?: (id: string) => void;
   onSetEntry: (id: string, value: number) => void;
@@ -102,6 +103,7 @@ export function HoldingsTable({
   dexScreenerUrl,
   onSort,
   onToggleExpanded,
+  onSelectAsset,
   onOpenPnl,
   onHide,
   onSetEntry,
@@ -193,7 +195,7 @@ export function HoldingsTable({
               </td>
             </tr>
           ) : sortedAssets.map((asset) => {
-            const addr = (asset as any).address;
+            const addr = asset.address;
             const addrLower = addr?.toLowerCase?.() ?? '';
             const logo = staticLogos[addrLower] || asset.logoUrl || tokenLogos[addrLower] || getTokenLogoUrl(asset);
             const explUrl = explorerUrl(asset.chain, addr);
@@ -226,7 +228,15 @@ export function HoldingsTable({
                       </div>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                          {explUrl ? (
+                          {onSelectAsset ? (
+                            <button
+                              type="button"
+                              onClick={e => { e.stopPropagation(); onSelectAsset(asset); }}
+                              style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)', textDecoration: 'none', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}
+                            >
+                              {asset.name || asset.symbol}
+                            </button>
+                          ) : explUrl ? (
                             <a href={explUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)', textDecoration: 'none' }}>
                               {asset.name || asset.symbol}
                             </a>
@@ -237,11 +247,6 @@ export function HoldingsTable({
                             <button onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(addr); }} title={`Copy contract address: ${addr}`} style={{ padding: '1px 3px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', lineHeight: 1 }}>
                               <Copy size={10} />
                             </button>
-                          )}
-                          {dsUrl && addr !== 'native' && (
-                            <a href={dsUrl} target="_blank" rel="noopener noreferrer" title="View on DexScreener" onClick={e => e.stopPropagation()} style={{ padding: '1px 3px', color: 'var(--fg-subtle)', lineHeight: 1, display: 'inline-flex' }}>
-                              <ExternalLink size={10} />
-                            </a>
                           )}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3 }}>

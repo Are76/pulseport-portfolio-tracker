@@ -65,8 +65,8 @@ import { TokenPnLCard } from './components/TokenPnLCard';
 import { PnLModal } from './components/PnLModal';
 import { ProfitPlannerModal } from './components/ProfitPlannerModal';
 import { StakesSection } from './components/StakesSection';
-import { TokenCardModal } from './components/TokenCardModal';
 import { MarketWatchModal } from './components/MarketWatchModal';
+import { TokenProductPage } from './components/TokenProductPage';
 import { TransactionList } from './components/TransactionList';
 import { HoldingsTable } from './components/HoldingsTable';
 import type { HoldingDisplayAsset, HoldingSortField } from './components/HoldingsTable';
@@ -476,8 +476,8 @@ function decodeLibertySwapInput(input: string): { dstChainId: number; orderId: s
   }
 }
 
-type ActiveTab = 'home' | 'overview' | 'assets' | 'stakes' | 'history' | 'tracker' | 'wallets' | 'defi' | 'bridge';
-const ACTIVE_TABS: ActiveTab[] = ['home', 'overview', 'assets', 'stakes', 'history', 'tracker', 'defi', 'bridge'];
+type ActiveTab = 'home' | 'overview' | 'assets' | 'stakes' | 'history' | 'tracker' | 'wallets' | 'defi' | 'bridge' | 'product';
+const ACTIVE_TABS: ActiveTab[] = ['home', 'overview', 'assets', 'stakes', 'history', 'tracker', 'wallets', 'defi', 'bridge'];
 const ACTIVE_TAB_STORAGE_KEY = 'pulseport_active_tab';
 type FrontMarketPeriod = '5m' | '1h' | '6h' | '24h' | '7d';
 const FRONT_MARKET_PERIODS: FrontMarketPeriod[] = ['5m', '1h', '6h', '24h', '7d'];
@@ -485,7 +485,7 @@ const FRONT_MARKET_PERIODS: FrontMarketPeriod[] = ['5m', '1h', '6h', '24h', '7d'
 const readStoredActiveTab = (): ActiveTab => {
   if (typeof window === 'undefined') return 'home';
   const saved = window.localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
-  if (saved === 'wallets') return 'assets';
+  if (saved === 'product') return 'home';
   return ACTIVE_TABS.includes(saved as ActiveTab) ? (saved as ActiveTab) : 'home';
 };
 
@@ -626,8 +626,9 @@ export default function App() {
   const [scanResult, setScanResult] = useState<number | null>(null);
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => readStoredJSON<Record<string, boolean>>('pulseport_collapsed', {}));
   const [tokenMarketData, setTokenMarketData] = useState<Record<string, any>>({});
-  const [tokenCardModal, setTokenCardModal] = useState<Asset | null>(null);
-  const [tokenCardModalLoading, setTokenCardModalLoading] = useState(false);
+  const [selectedProductAsset, setSelectedProductAsset] = useState<Asset | null>(null);
+  const [productPageLoading, setProductPageLoading] = useState(false);
+  const [productReturnTab, setProductReturnTab] = useState<ActiveTab>('home');
   const [showMarketWatch, setShowMarketWatch] = useState(false);
   const [marketWatchInitialSearch, setMarketWatchInitialSearch] = useState('');
   const [homeSearch, setHomeSearch] = useState('');
@@ -638,8 +639,14 @@ export default function App() {
   });
 
   useEffect(() => {
-    localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, activeTab);
-  }, [activeTab]);
+    localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, activeTab === 'product' ? productReturnTab : activeTab);
+  }, [activeTab, productReturnTab]);
+
+  useEffect(() => {
+    if (activeTab === 'product' && !selectedProductAsset) {
+      setActiveTab(productReturnTab === 'product' ? 'home' : productReturnTab);
+    }
+  }, [activeTab, productReturnTab, selectedProductAsset]);
 
   useEffect(() => {
     if (selectedWalletAddr === 'all') return;
@@ -2993,21 +3000,21 @@ export default function App() {
   // For native PLS, use the WPLS contract address since DexScreener tracks WPLS pairs.
   const WPLS_ADDR = '0xa1077a294dde1b09bb078844df40758a5d0f9a27';
   useEffect(() => {
-    if (!tokenCardModal) return;
-    const id   = tokenCardModal.id;
-    const rawAddr = (tokenCardModal as any).address as string | undefined;
+    if (!selectedProductAsset) return;
+    const id = selectedProductAsset.id;
+    const rawAddr = selectedProductAsset.address;
     // PLS is native - fall back to WPLS so we can show DexScreener market data
-    const isNativePls = (!rawAddr || rawAddr === 'native') && tokenCardModal.chain === 'pulsechain';
+    const isNativePls = (!rawAddr || rawAddr === 'native') && selectedProductAsset.chain === 'pulsechain';
     const addr = isNativePls ? WPLS_ADDR : rawAddr;
     if (!addr || addr === 'native') return;
-    if (tokenMarketData[id]) { setTokenCardModalLoading(false); return; }
-    setTokenCardModalLoading(true);
+    if (tokenMarketData[id]) { setProductPageLoading(false); return; }
+    setProductPageLoading(true);
     (async () => {
       try {
         const bsBase = resolveBlockscoutBase();
         const [dsResult, holderResult] = await Promise.allSettled([
           fetch(`https://api.dexscreener.com/latest/dex/tokens/${addr}`).then(r => r.ok ? r.json() : null),
-          tokenCardModal?.chain === 'pulsechain' && !isNativePls
+          selectedProductAsset.chain === 'pulsechain' && !isNativePls
             ? fetch(`${bsBase}/tokens/${addr}`).then(r => r.ok ? r.json() : null)
             : Promise.resolve(null),
         ]);
@@ -3043,9 +3050,9 @@ export default function App() {
         const dsImg = top?.info?.imageUrl;
         if (dsImg && !isNativePls && !STATIC_LOGOS[addr.toLowerCase()]) setTokenLogos(prev => ({ ...prev, [addr.toLowerCase()]: dsImg }));
       } catch { /* ignore */ }
-      finally { setTokenCardModalLoading(false); }
+      finally { setProductPageLoading(false); }
     })();
-  }, [tokenCardModal?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedProductAsset?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // -- Auto-fetch market data for top 9 overview assets when Overview tab is active --
   // This ensures all cards show live market data (mcap, liquidity, vol) without requiring
@@ -3176,6 +3183,10 @@ export default function App() {
     if (addrKey0 && tokenLogos[addrKey0]) return tokenLogos[addrKey0];
     return '';
   };
+
+  const activeProductAsset = selectedProductAsset
+    ? currentAssets.find(asset => asset.id === selectedProductAsset.id) || selectedProductAsset
+    : null;
 
   // -- RENDER ----------------------------------------------------------------
 
@@ -3428,6 +3439,12 @@ export default function App() {
     setShowMarketWatch(true);
   };
 
+  const openProductPage = (asset: Asset, origin: ActiveTab = activeTab) => {
+    setSelectedProductAsset(asset);
+    setProductReturnTab(origin === 'product' ? 'overview' : origin);
+    setActiveTab('product');
+  };
+
   const runHomeSearch = (raw: string) => {
     const q = raw.trim();
     if (!q) return;
@@ -3455,7 +3472,7 @@ export default function App() {
     { id: 'bridge', label: 'Bridges', icon: ArrowLeftRight },
     { id: 'defi', label: 'DeFi', icon: Droplets },
   ] as const;
-  const pageMeta: Record<(typeof navItems)[number]['id'], { title: string; subtitle: string }> = {
+  const pageMeta: Record<string, { title: string; subtitle: string }> = {
     home: {
       title: 'Dashboard',
       subtitle: 'Current portfolio state across PulseChain, Ethereum, and Base.',
@@ -3472,6 +3489,10 @@ export default function App() {
       title: 'Wallets & Bridges',
       subtitle: 'Wallet-level holdings, bridge activity, and cross-chain movement.',
     },
+    wallets: {
+      title: 'Wallet detail',
+      subtitle: 'Deep dive into a selected wallet, holdings mix, and staking exposure.',
+    },
     history: {
       title: 'Transactions',
       subtitle: 'Full ledger for bridges, swaps, and cost-basis drill-down.',
@@ -3485,6 +3506,14 @@ export default function App() {
       subtitle: 'Liquidity, farms, and protocol-level PulseChain positions.',
     },
   };
+  const pageTitle = activeTab === 'product'
+    ? (activeProductAsset ? `${activeProductAsset.symbol} product page` : 'Token product page')
+    : pageMeta[activeTab as keyof typeof pageMeta]?.title || 'Pulseport';
+  const pageSubtitle = activeTab === 'product'
+    ? (activeProductAsset
+        ? `${activeProductAsset.name || activeProductAsset.symbol} across your wallet, overview, and holdings data surfaces.`
+        : 'Token-level wallet detail.')
+    : pageMeta[activeTab as keyof typeof pageMeta]?.subtitle || '';
   const mobilePrimaryNavItems = navItems.filter(item => ['home', 'assets', 'history'].includes(item.id));
   const mobileMoreNavItems = navItems.filter(item => !['home', 'assets', 'history'].includes(item.id));
   const mobileMoreActive = mobileMoreNavItems.some(item => item.id === activeTab);
@@ -3687,10 +3716,10 @@ export default function App() {
                   Pulseport Workspace
                 </div>
                 <div style={{ fontFamily: 'var(--font-shell-display)', fontSize: 26, lineHeight: 1.05, letterSpacing: '-0.04em', color: 'var(--fg)', fontWeight: 800 }}>
-                  {pageMeta[activeTab].title}
+                  {pageTitle}
                 </div>
                 <div style={{ color: 'var(--fg-muted)', fontSize: 13, marginTop: 4 }}>
-                  {pageMeta[activeTab].subtitle}
+                  {pageSubtitle}
                 </div>
               </div>
             </div>
@@ -3916,6 +3945,66 @@ export default function App() {
                   </div>
                 </section>
 
+                <section className="front-section front-section-tight">
+                  <div className="front-section-head">
+                    <span>Workspace access</span>
+                    <h2>Jump into every part of Pulseport from home.</h2>
+                  </div>
+                  <div className="front-info-grid">
+                    {[
+                      { eyebrow: 'Portfolio', title: 'Overview', detail: 'Allocation, summary, and top holdings.', icon: LayoutDashboard, action: () => setActiveTab('overview') },
+                      { eyebrow: 'Wallets', title: 'Wallet detail', detail: 'Per-wallet holdings, balances, and bridge context.', icon: WalletIcon, action: () => setActiveTab('wallets') },
+                      { eyebrow: 'HEX', title: 'HEX stakes', detail: 'Track pHEX and eHEX stake performance.', icon: Lock, action: () => setActiveTab('stakes') },
+                      { eyebrow: 'Transactions', title: 'History', detail: 'Review swaps, transfers, and filters.', icon: History, action: () => setActiveTab('history') },
+                      { eyebrow: 'DeFi', title: 'Liquidity & farms', detail: 'See LP and farm positions in one place.', icon: Droplets, action: () => setActiveTab('defi') },
+                      { eyebrow: 'Bridges', title: 'Bridge dashboard', detail: 'Open bridge routes and token references.', icon: ArrowLeftRight, action: () => setActiveTab('bridge') },
+                    ].map(({ eyebrow, title, detail, icon: Icon, action }) => (
+                      <button key={title} className="front-info-card" onClick={action}>
+                        <span className="front-info-icon">
+                          <Icon size={16} />
+                        </span>
+                        <span className="front-info-copy">
+                          <small>{eyebrow}</small>
+                          <strong>{title}</strong>
+                          <em>{detail}</em>
+                          <b>
+                            Open <ChevronRight size={13} />
+                          </b>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="front-section front-section-tight">
+                  <div className="front-section-head">
+                    <span>Explorer shortcuts</span>
+                    <h2>Keep the external tools on the homepage.</h2>
+                  </div>
+                  <div className="front-info-grid">
+                    {[
+                      { eyebrow: 'PulseChain', title: 'PulseScan', detail: 'Inspect PulseChain wallets, tokens, and contracts.', icon: Shield, href: 'https://scan.pulsechain.com' },
+                      { eyebrow: 'Ethereum', title: 'Etherscan', detail: 'Open Ethereum token and wallet explorer views.', icon: ExternalLink, href: 'https://etherscan.io' },
+                      { eyebrow: 'Base', title: 'Base explorer', detail: 'Jump straight into Base activity and balances.', icon: Layers, href: 'https://base.blockscout.com' },
+                      { eyebrow: 'Market', title: 'DexScreener', detail: 'Monitor live PulseChain token pair activity.', icon: Activity, href: 'https://dexscreener.com/pulsechain' },
+                    ].map(({ eyebrow, title, detail, icon: Icon, href }) => (
+                      <a key={title} className="front-info-card" href={href} target="_blank" rel="noopener noreferrer">
+                        <span className="front-info-icon">
+                          <Icon size={16} />
+                        </span>
+                        <span className="front-info-copy">
+                          <small>{eyebrow}</small>
+                          <strong>{title}</strong>
+                          <em>{detail}</em>
+                          <b>
+                            Launch <ArrowUpRight size={13} />
+                          </b>
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                </section>
+
                 <section className="front-split-section">
                   <div className="front-portfolio-preview">
                     <div className="front-section-head">
@@ -3939,7 +4028,7 @@ export default function App() {
                       {frontPagePortfolioRows.map(asset => {
                         const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()] || (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()] || getTokenLogoUrl(asset);
                         return (
-                          <button key={asset.id} className="front-holding-row" onClick={() => { setActiveTab('assets'); setOverviewTokenSearch(asset.symbol); }}>
+                          <button key={asset.id} className="front-holding-row" onClick={() => openProductPage(asset, 'home')}>
                             <span className="front-holding-logo">{logo ? <img src={logo} alt={asset.symbol} /> : asset.symbol.slice(0, 1)}</span>
                             <span>
                               <strong>{asset.symbol}</strong>
@@ -3985,8 +4074,8 @@ export default function App() {
                       {[
                         { label: 'HEX stakes', tab: 'stakes' as const, icon: Lock },
                         { label: 'DeFi positions', tab: 'defi' as const, icon: Droplets },
-                        { label: 'Transaction', tab: 'history' as const, icon: History },
-                        { label: 'Wallets', tab: 'assets' as const, icon: WalletIcon },
+                        { label: 'Transactions', tab: 'history' as const, icon: History },
+                        { label: 'Wallets', tab: 'wallets' as const, icon: WalletIcon },
                       ].map(({ label, tab, icon: Icon }) => (
                         <button key={label} onClick={() => setActiveTab(tab)}>
                           <Icon size={15} />
@@ -3998,6 +4087,32 @@ export default function App() {
                 </section>
 
 
+              </motion.div>
+            )}
+
+            {activeTab === 'product' && activeProductAsset && (
+              <motion.div key="product" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
+                <TokenProductPage
+                  asset={activeProductAsset}
+                  portfolioTotal={summary.totalValue}
+                  plsUsdPrice={prices['pulsechain']?.usd || 0}
+                  logoUrl={STATIC_LOGOS[activeProductAsset.address?.toLowerCase?.() ?? ''] || activeProductAsset.logoUrl || tokenLogos[activeProductAsset.address?.toLowerCase?.() ?? ''] || getTokenLogoUrl(activeProductAsset)}
+                  marketData={tokenMarketData[activeProductAsset.id]}
+                  isLoadingMarketData={productPageLoading}
+                  theme={theme}
+                  explorerUrl={explorerUrl(activeProductAsset.chain, activeProductAsset.address || '')}
+                  dexScreenerUrl={dexScreenerUrl(activeProductAsset.chain, activeProductAsset.address || '')}
+                  transactions={currentTransactions}
+                  wallets={wallets}
+                  allAssets={currentAssets}
+                  tokenLogos={tokenLogos}
+                  getTokenLogoUrl={getTokenLogoUrl}
+                  onBack={() => {
+                    setActiveTab(productReturnTab === 'product' ? 'home' : productReturnTab);
+                    setSelectedProductAsset(null);
+                  }}
+                  onOpenPnl={asset => setPnlAsset(asset)}
+                />
               </motion.div>
             )}
 
@@ -4212,13 +4327,14 @@ export default function App() {
                                    getTokenLogoUrl={getTokenLogoUrl}
                                    explorerUrl={explorerUrl}
                                    dexScreenerUrl={dexScreenerUrl}
-                                   onSort={(field) => {
-                                     if (assetSortField === field) setAssetSortDir(d => d === 'desc' ? 'asc' : 'desc');
-                                     else { setAssetSortField(field); setAssetSortDir('desc'); }
-                                   }}
-                                   onToggleExpanded={(id) => setExpandedAssetIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; })}
-                                   onOpenPnl={asset => setPnlAsset(asset)}
-                                  onHide={hideToken}
+                                    onSort={(field) => {
+                                      if (assetSortField === field) setAssetSortDir(d => d === 'desc' ? 'asc' : 'desc');
+                                      else { setAssetSortField(field); setAssetSortDir('desc'); }
+                                    }}
+                                    onToggleExpanded={(id) => setExpandedAssetIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; })}
+                                    onSelectAsset={asset => openProductPage(asset, 'overview')}
+                                    onOpenPnl={asset => setPnlAsset(asset)}
+                                   onHide={hideToken}
                                    onSetEntry={(id, value) => setManualEntries(prev => ({ ...prev, [id]: value }))}
                                    onClearEntry={(id) => setManualEntries(prev => { const n = { ...prev }; delete n[id]; return n; })}
                                    onFilterByAsset={symbol => { setTxAssetFilter(symbol); setActiveTab('assets'); }}
@@ -4276,9 +4392,9 @@ export default function App() {
                                              const nativeSymbol = isEthChain ? 'ETH' : 'PLS';
                                              const nativePrice = asset.price > 0 && nativePriceUsd > 0 ? asset.price / nativePriceUsd : null;
                                              return (
-                                               <tr
-                                                 key={asset.id}
-                                                 onClick={() => setTokenCardModal(asset)}
+                                                <tr
+                                                  key={asset.id}
+                                                  onClick={() => openProductPage(asset, 'overview')}
                                                  style={{ borderBottom: `1px solid ${t.borderLight}`, cursor: 'pointer' }}
                                                  onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
                                                  onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
@@ -4892,13 +5008,14 @@ export default function App() {
                     getTokenLogoUrl={getTokenLogoUrl}
                     explorerUrl={explorerUrl}
                     dexScreenerUrl={dexScreenerUrl}
-                    onSort={(field) => {
-                      if (assetSortField === field) setAssetSortDir(d => d === 'desc' ? 'asc' : 'desc');
-                      else { setAssetSortField(field); setAssetSortDir('desc'); }
-                    }}
-                    onToggleExpanded={(id) => setExpandedAssetIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; })}
-                    onOpenPnl={asset => setPnlAsset(asset)}
-                    onHide={hideToken}
+                     onSort={(field) => {
+                       if (assetSortField === field) setAssetSortDir(d => d === 'desc' ? 'asc' : 'desc');
+                       else { setAssetSortField(field); setAssetSortDir('desc'); }
+                     }}
+                     onToggleExpanded={(id) => setExpandedAssetIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; })}
+                     onSelectAsset={asset => openProductPage(asset, 'assets')}
+                     onOpenPnl={asset => setPnlAsset(asset)}
+                     onHide={hideToken}
                     onSetEntry={(id, value) => setManualEntries(prev => ({ ...prev, [id]: value }))}
                     onClearEntry={(id) => setManualEntries(prev => { const n = { ...prev }; delete n[id]; return n; })}
                     onFilterByAsset={symbol => { setTxAssetFilter(symbol); setActiveTab('assets'); }}
@@ -5844,13 +5961,14 @@ export default function App() {
                   getTokenLogoUrl={getTokenLogoUrl}
                   explorerUrl={explorerUrl}
                   dexScreenerUrl={dexScreenerUrl}
-                  onSort={(field) => {
-                    if (assetSortField === field) setAssetSortDir(d => d === 'desc' ? 'asc' : 'desc');
-                    else { setAssetSortField(field); setAssetSortDir('desc'); }
-                  }}
-                  onToggleExpanded={(id) => setExpandedWalletAssetIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; })}
-                  onOpenPnl={asset => setPnlAsset(asset)}
-                  onHide={hideToken}
+                   onSort={(field) => {
+                     if (assetSortField === field) setAssetSortDir(d => d === 'desc' ? 'asc' : 'desc');
+                     else { setAssetSortField(field); setAssetSortDir('desc'); }
+                   }}
+                   onToggleExpanded={(id) => setExpandedWalletAssetIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; })}
+                   onSelectAsset={asset => openProductPage(asset, 'wallets')}
+                   onOpenPnl={asset => setPnlAsset(asset)}
+                   onHide={hideToken}
                   onSetEntry={(id, value) => setManualEntries(prev => ({ ...prev, [id]: value }))}
                   onClearEntry={(id) => setManualEntries(prev => { const n = { ...prev }; delete n[id]; return n; })}
                   onFilterByAsset={symbol => { setTxAssetFilter(symbol); setActiveTab('assets'); }}
@@ -6700,21 +6818,6 @@ export default function App() {
           logoUrl={STATIC_LOGOS[(pnlAsset as any).address?.toLowerCase?.()] || (pnlAsset as any).logoUrl || tokenLogos[(pnlAsset as any).address?.toLowerCase?.()] || getTokenLogoUrl(pnlAsset)}
           onClose={() => setPnlAsset(null)}
           walletAddress={selectedWalletAddr !== 'all' ? selectedWalletAddr : undefined}
-        />
-      )}
-
-      {/* -- Token Card Detail Modal -- */}
-      {tokenCardModal && (
-        <TokenCardModal
-          asset={tokenCardModal}
-          portfolioTotal={summary.totalValue}
-          logoUrl={STATIC_LOGOS[(tokenCardModal as any).address?.toLowerCase?.()] || (tokenCardModal as any).logoUrl || tokenLogos[(tokenCardModal as any).address?.toLowerCase?.()] || getTokenLogoUrl(tokenCardModal)}
-          marketData={tokenMarketData[tokenCardModal.id]}
-          isLoadingMarketData={tokenCardModalLoading}
-          theme={theme}
-          onClose={() => setTokenCardModal(null)}
-          dexScreenerUrl={dexScreenerUrl(tokenCardModal.chain, (tokenCardModal as any).address)}
-          explorerUrl={explorerUrl(tokenCardModal.chain, (tokenCardModal as any).address)}
         />
       )}
 
