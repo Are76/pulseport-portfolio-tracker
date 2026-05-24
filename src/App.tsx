@@ -3470,9 +3470,8 @@ export default function App() {
 
   const navItems = [
     { id: 'home', label: 'Dashboard', icon: Activity },
-    { id: 'overview', label: 'Portfolio', icon: LayoutDashboard },
-    { id: 'stakes', label: 'HEX Stakes', icon: Lock },
     { id: 'assets', label: 'Wallets', icon: Coins },
+    { id: 'stakes', label: 'HEX Stakes', icon: Lock },
     { id: 'history', label: 'Transactions', icon: History },
     { id: 'bridge', label: 'Bridges', icon: ArrowLeftRight },
     { id: 'defi', label: 'DeFi', icon: Droplets },
@@ -3483,7 +3482,7 @@ export default function App() {
       subtitle: 'Current portfolio state across PulseChain, Ethereum, and Base.',
     },
     overview: {
-      title: 'Portfolio',
+      title: 'Portfolio Insights',
       subtitle: 'Holdings, allocation, and performance by exact asset identity.',
     },
     stakes: {
@@ -3491,8 +3490,8 @@ export default function App() {
       subtitle: 'Liquid and staked HEX exposure across PulseChain and Ethereum.',
     },
     assets: {
-      title: 'Wallets & Bridges',
-      subtitle: 'Wallet-level holdings, bridge activity, and cross-chain movement.',
+      title: 'Wallets',
+      subtitle: 'Wallet-level holdings and cross-chain balances.',
     },
     wallets: {
       title: 'Wallet detail',
@@ -3519,8 +3518,8 @@ export default function App() {
         ? `${activeProductAsset.name || activeProductAsset.symbol} across your wallet, overview, and holdings data surfaces.`
         : 'Token-level wallet detail.')
     : pageMeta[activeTab as keyof typeof pageMeta]?.subtitle || '';
-  const mobilePrimaryNavItems = navItems.filter(item => ['home', 'assets', 'history'].includes(item.id));
-  const mobileMoreNavItems = navItems.filter(item => !['home', 'assets', 'history'].includes(item.id));
+  const mobilePrimaryNavItems = navItems.filter(item => ['home', 'assets', 'stakes'].includes(item.id));
+  const mobileMoreNavItems = navItems.filter(item => !['home', 'assets', 'stakes'].includes(item.id));
   const mobileMoreActive = mobileMoreNavItems.some(item => item.id === activeTab);
 
   return (
@@ -4727,6 +4726,18 @@ export default function App() {
                   const chainDisplayAssets = normalizeHoldingAssets(chainAssets);
                   const hiddenChainAssets = walletChainFilter === 'all' ? hiddenAssetRows : hiddenAssetRows.filter(a => a.chain === walletChainFilter);
                   return (<>
+
+                {/* -- Portfolio Insights link -- */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    className="btn-ghost"
+                    style={{ fontSize: 13, padding: '8px 14px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    onClick={() => setActiveTab('overview')}
+                  >
+                    <LayoutDashboard size={14} />
+                    Portfolio Insights
+                  </button>
+                </div>
 
                 {/* -- Wallet scope + management banner -- */}
                 <div style={{ background: 'var(--bg-elevated)', borderRadius: 16, padding: '24px', border: '1px solid var(--accent-border)' }}>
