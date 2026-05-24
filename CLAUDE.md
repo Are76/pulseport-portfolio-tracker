@@ -61,3 +61,13 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+## 5. Git Workflow
+
+**Every change goes through a PR. Never push directly to master.**
+
+- All work must be done on a feature branch, not on master.
+- Every set of changes — no matter how small — must be submitted as a pull request to master.
+- Branch naming: `fix/<short-description>`, `feat/<short-description>`, `chore/<short-description>`.
+- Only push to master indirectly via a merged PR.
+- This applies to housekeeping, single-line fixes, and documentation changes too.
