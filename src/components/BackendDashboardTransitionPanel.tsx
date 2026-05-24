@@ -28,7 +28,7 @@ export function BackendDashboardTransitionPanel({
             <div>schemaVersion: {backendDashboardResponse.data.schemaVersion}</div>
             <div>status: {backendDashboardResponse.data.status}</div>
             <div>warnings: {backendDashboardResponse.data.warnings.length ? backendDashboardResponse.data.warnings.join(' • ') : 'none'}</div>
-            <div>PLS balance: {backendDashboardResponse.data.balances.find((b) => b.assetId === 'native-pls')?.quantity ?? 'n/a'}</div>
+            <div>PLS balance: {backendDashboardResponse.data.balances.find((b) => b.assetId === 'native:369:pls')?.quantity ?? 'n/a'}</div>
           </div>
         ) : (
           <div>Backend status unavailable: {backendDashboardResponse?.error?.message ?? 'unknown error'}</div>

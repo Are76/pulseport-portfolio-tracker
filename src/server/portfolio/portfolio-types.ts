@@ -3,7 +3,10 @@ export type PortfolioComputationStatus = 'available' | 'unavailable';
 
 export type PortfolioBalanceDto = {
   assetId: string;
+  chainId: number;
+  address: string;
   symbol: string;
+  name?: string;
   quantity: string;
   pricingStatus: PortfolioComputationStatus;
   valuationStatus: PortfolioComputationStatus;
