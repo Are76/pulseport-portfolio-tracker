@@ -53,7 +53,7 @@ describe('hex stake service native contract reads', () => {
     expect(dto.positions[0].tShares).toBe('2.5');
     expect(dto.positions[0].yieldHex).toBe('0');
     expect(dto.positions[1].yieldHex).toBe('0');
-    expect(dto.positions[2].yieldHex).toBe('20');
+    expect(dto.positions[2].yieldHex).toBe('10');
     expect(dto.positions[0].warnings.some((w) => w.includes('Pending stake has no realized yield'))).toBe(true);
     expect(dto.positions[0].provenance.notes?.some((n) => n.includes('yield.pending=no-realized-yield'))).toBe(true);
     expect(dto.positions[0].pricing.status).toBe('unavailable');
@@ -62,7 +62,7 @@ describe('hex stake service native contract reads', () => {
     expect(dto.summary.activeStakeCount).toBe(1);
     expect(dto.summary.totalPrincipalHex).toBe('13.73456789');
     expect(dto.summary.totalTShares).toBe('6.5');
-    expect(dto.summary.totalYieldHex).toBe('20');
+    expect(dto.summary.totalYieldHex).toBe('10');
   });
 
   it('returns partial success when one stakeLists index fails', async () => {
@@ -172,6 +172,48 @@ describe('hex stake service native contract reads', () => {
     const dto = await getHexStakeDashboard(testWalletAddress, 369);
     expect(dto.positions[0].warnings.some((w) => w.includes('dailyDataRange returned incomplete data'))).toBe(true);
     expect(dto.positions[0].warnings.some((w) => w.includes('dailyData missing for day'))).toBe(true);
+    expect(dto.positions[0].yieldHex).toBe('5');
+    expect(dto.summary.totalYieldHex).toBe('5');
+  });
+
+
+  it('overdue stake yield stops accruing at maturityDay', async () => {
+    mockReadContract.mockReset();
+    mockReadContract
+      .mockResolvedValueOnce(1n)
+      .mockResolvedValueOnce(120n)
+      .mockResolvedValueOnce([1n, 100000000n, 1000000000000n, 100n, 2n, 0n, false])
+      .mockResolvedValueOnce(Array.from({ length: 20 }, () => [100000000n, 1000000000000n, 0n]));
+
+    const dto = await getHexStakeDashboard(testWalletAddress, 369);
+    expect(dto.positions[0].stakeStatus).toBe('overdue');
+    expect(dto.positions[0].yieldHex).toBe('2');
+    expect(dto.summary.totalYieldHex).toBe('2');
+  });
+
+  it('lockedDay equals currentDay yields zero and no false missing-data warning', async () => {
+    mockReadContract.mockReset();
+    mockReadContract
+      .mockResolvedValueOnce(1n)
+      .mockResolvedValueOnce(100n)
+      .mockResolvedValueOnce([1n, 100000000n, 1000000000000n, 100n, 10n, 0n, false])
+      .mockResolvedValueOnce(Array.from({ length: 1 }, () => [100000000n, 1000000000000n, 0n]));
+
+    const dto = await getHexStakeDashboard(testWalletAddress, 369);
+    expect(dto.positions[0].yieldHex).toBe('0');
+    expect(dto.positions[0].warnings.some((w) => w.includes('dailyData missing for day'))).toBe(false);
+  });
+
+  it('active stake uses completed in-term days only', async () => {
+    mockReadContract.mockReset();
+    mockReadContract
+      .mockResolvedValueOnce(1n)
+      .mockResolvedValueOnce(105n)
+      .mockResolvedValueOnce([1n, 100000000n, 1000000000000n, 100n, 10n, 0n, false])
+      .mockResolvedValueOnce(Array.from({ length: 5 }, () => [100000000n, 1000000000000n, 0n]));
+
+    const dto = await getHexStakeDashboard(testWalletAddress, 369);
+    expect(dto.positions[0].stakeStatus).toBe('active');
     expect(dto.positions[0].yieldHex).toBe('5');
     expect(dto.summary.totalYieldHex).toBe('5');
   });

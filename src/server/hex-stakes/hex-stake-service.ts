@@ -169,10 +169,9 @@ export async function getHexStakeDashboard(walletAddress: string, chainId = PULS
       if (stakeStatus === 'pending') {
         warnings.push('Pending stake has no realized yield yet; yieldHex remains 0.');
         provenanceNotes.push('yield.pending=no-realized-yield');
-      } else if (lockedDay > currentDay) {
-        warnings.push('Current day is before lockedDay; yield cannot be determined.');
       } else {
-        const endDay = Math.max(lockedDay, latestYieldDay);
+        const maturityDay = lockedDay + stakedDays - 1;
+        const endDay = Math.min(maturityDay, latestYieldDay);
         const days: HexDailyDataEntry[] = [];
         for (let day = lockedDay; day <= endDay; day += 1) {
           const entry = dailyDataByDay.get(day);
