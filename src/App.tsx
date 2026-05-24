@@ -2824,7 +2824,7 @@ export default function App() {
       estimatedDailyPayoutHex,
       estimatedDailyPayoutUsd
     };
-  }, [wallets.length, realStakes, prices]);
+  }, [wallets.length, realStakes, prices, hexDailyData]);
 
   const assetAllocation = useMemo(() => {
     // Aggregate by symbol across chains (e.g. ETH on Ethereum + ETH on Base)
