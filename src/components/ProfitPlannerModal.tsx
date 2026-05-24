@@ -544,7 +544,7 @@ export function ProfitPlannerModal({ open, onClose, assets, totalValue }: Profit
                       <YAxis hide />
                       <RechartsTooltip
                         contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
-                        formatter={(value: number) => fmtD(value)}
+                        formatter={(value) => fmtD(Number(value ?? 0))}
                       />
                       <Bar dataKey="Current" radius={[4, 4, 0, 0]}>
                         {calc.coinCalcs.map((_, i) => <Cell key={i} fill="#627EEA" />)}
