@@ -33,10 +33,11 @@ describe('portfolio service dashboard dto', () => {
     expect(native).toBeDefined();
     expect(native?.chainId).toBe(369);
     expect(native?.address).toBe('native');
-    expect(native?.pricingStatus).toBe('unavailable');
-    expect(native?.valuationStatus).toBe('unavailable');
-    expect(native?.priceUsd).toBeNull();
-    expect(native?.valueUsd).toBeNull();
+    expect(native?.pricing.status).toBe('unavailable');
+    expect(native?.valuation.status).toBe('unavailable');
+    expect(native?.pricing.priceUsd).toBeNull();
+    expect(native?.valuation.valueUsd).toBeNull();
+    expect(native?.warnings.length).toBeGreaterThan(0);
   });
 
   it('adds known ERC20 balances keyed by contract address identity', async () => {

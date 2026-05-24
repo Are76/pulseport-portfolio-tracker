@@ -83,10 +83,15 @@ export async function getPortfolioDashboard(
             symbol: token.symbol,
             name: token.name,
             quantity: formatUnits(rawBalance, token.decimals),
-            pricingStatus: 'unavailable' as const,
-            valuationStatus: 'unavailable' as const,
-            priceUsd: null,
-            valueUsd: null,
+            pricing: {
+              status: 'unavailable' as const,
+              priceUsd: null,
+            },
+            valuation: {
+              status: 'unavailable' as const,
+              valueUsd: null,
+            },
+            warnings: ['Pricing and valuation are not yet migrated to backend in schema v1.'],
           };
         } catch {
           return null;
@@ -102,10 +107,15 @@ export async function getPortfolioDashboard(
         symbol: 'PLS',
         name: 'PulseChain',
         quantity,
-        pricingStatus: 'unavailable' as const,
-        valuationStatus: 'unavailable' as const,
-        priceUsd: null,
-        valueUsd: null,
+        pricing: {
+          status: 'unavailable' as const,
+          priceUsd: null,
+        },
+        valuation: {
+          status: 'unavailable' as const,
+          valueUsd: null,
+        },
+        warnings: ['Pricing and valuation are not yet migrated to backend in schema v1.'],
       },
       ...erc20Balances.filter((balance) => balance !== null),
     ];
