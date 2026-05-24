@@ -298,7 +298,7 @@ export function HoldingsTable({
                   </td>
                   <td style={{ padding: '12px 12px', textAlign: 'right' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2 }}>
-                      {showActions && (
+                      {showActions && !isMobileLayout && (
                         <>
                           <button onClick={e => { e.stopPropagation(); onOpenPnl(asset); }} title="View P&L" style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#777' }}>
                             <Calculator size={13} />
@@ -319,7 +319,7 @@ export function HoldingsTable({
                 {isExpanded && (
                   <tr style={{ borderBottom: '1px solid var(--border)', borderLeft: `3px solid ${chainColors[asset.chain] || '#333'}`, background: 'var(--bg-elevated)' }}>
                     <td colSpan={isMobileLayout ? columns.filter(c => !c.hideMobile).length : columns.length} style={{ padding: '0 12px 14px', maxWidth: 0 }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, paddingTop: 12 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: isMobileLayout ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, paddingTop: 12 }}>
                         <DetailCard title="Price">
                           <DetailRow label="USD" value={fmtPrice(asset.priceUsd)} />
                           <DetailRow label="PLS" value={`${fmtCompact(asset.pricePls)} PLS`} accent />

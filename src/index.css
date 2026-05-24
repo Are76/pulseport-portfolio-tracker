@@ -6182,6 +6182,12 @@ textarea:focus-visible,
   .hide-mobile {
     display: none !important;
   }
+  /* Reduce horizontal padding so Token|24H|USD Value|expand fits in ~390px */
+  .holdings-unified-table td,
+  .holdings-unified-table th {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
