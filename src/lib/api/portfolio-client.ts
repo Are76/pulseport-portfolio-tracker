@@ -6,7 +6,7 @@ export async function fetchPortfolioDashboard(params: {
 }): Promise<PortfolioDashboardResponse> {
   const query = new URLSearchParams({
     walletAddress: params.walletAddress,
-    ...(params.chainId ? { chainId: String(params.chainId) } : {}),
+    ...(params.chainId !== undefined ? { chainId: String(params.chainId) } : {}),
   });
 
   const response = await fetch(`/api/portfolio/dashboard?${query.toString()}`);
