@@ -230,7 +230,7 @@ export function HoldingsTable({
               <React.Fragment key={asset.id}>
                 <tr
                   style={{ borderBottom: isExpanded ? 'none' : '1px solid var(--border)', borderLeft: `3px solid ${chainColors[asset.chain] || '#333'}`, transition: 'background .1s', cursor: 'pointer' }}
-                  onClick={() => isMobileLayout ? onSelectAsset?.(asset) : onToggleExpanded(asset.id)}
+                  onClick={() => isMobileLayout ? (onSelectAsset ? onSelectAsset(asset) : onToggleExpanded(asset.id)) : onToggleExpanded(asset.id)}
                   onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
                   onMouseOut={e => (e.currentTarget.style.background = isExpanded ? 'var(--bg-elevated)' : 'transparent')}
                 >
