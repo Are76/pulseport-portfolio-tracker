@@ -111,7 +111,7 @@
   --md-sys-color-outline: rgba(0,0,0,0.08);
   /* Glass/card backgrounds for light mode */
   --bg-glass: rgba(255,255,255,0.92);
-  /* Accent — teal-600, 4.5:1 on white ✅ */
+  /* Accent — indigo/blue, 4.5:1 on white ✅ */
   --accent: #3B5BDB;
   --accent-glow: rgba(59,91,219,0.15);
   --accent-dim: rgba(59,91,219,0.08);

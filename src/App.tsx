@@ -4623,7 +4623,7 @@ export default function App() {
                                 <button key={p} onClick={() => setPerfPeriod(p)}
                                   style={{ padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none', transition: 'all .12s',
                                     background: perfPeriod === p ? 'var(--accent)' : 'var(--bg-elevated)',
-                                    color: perfPeriod === p ? (theme === 'dark' ? '#000' : '#fff') : 'var(--fg-muted)',
+                                    color: perfPeriod === p ? '#fff' : 'var(--fg-muted)',
                                     boxShadow: perfPeriod === p ? '0 0 10px rgba(66,99,235,0.25)' : 'none' }}>
                                   {periodLabel[p]}
                                 </button>
@@ -4896,7 +4896,7 @@ export default function App() {
                         <button key={p} onClick={() => setPriceChangePeriod(p)}
                           style={{ padding: '4px 10px', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all .12s', border: 'none',
                             background: priceChangePeriod === p ? 'var(--accent)' : 'transparent',
-                            color: priceChangePeriod === p ? (theme === 'dark' ? '#000' : '#fff') : t.textMuted }}>
+                            color: priceChangePeriod === p ? '#fff' : t.textMuted }}>
                           {label}
                         </button>
                       ))}
