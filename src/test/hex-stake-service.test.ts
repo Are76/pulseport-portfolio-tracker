@@ -17,14 +17,16 @@ vi.mock('viem', () => ({
 
 import { getHexStakeDashboard } from '../server/hex-stakes/hex-stake-service';
 
+const testWalletAddress = '0x0000000000000000000000000000000000000001';
+
 describe('hex stake service native contract reads', () => {
-  const walletAddress = '0x0000000000000000000000000000000000000001';
+  const walletAddress = testWalletAddress;
 
   it('stakeCount=0 returns empty positions with partial status and warnings', async () => {
     mockReadContract.mockReset();
     mockReadContract.mockResolvedValueOnce(0n).mockResolvedValueOnce(100n);
 
-    const dto = await getHexStakeDashboard(walletAddress, 369);
+    const dto = await getHexStakeDashboard(testWalletAddress, 369);
     expect(dto.status).toBe('partial');
     expect(dto.positions).toEqual([]);
     expect(dto.summary.activeStakeCount).toBe(0);
@@ -38,9 +40,10 @@ describe('hex stake service native contract reads', () => {
       .mockResolvedValueOnce(100n)
       .mockResolvedValueOnce([1n, 123456789n, 2500000000000n, 110n, 10n, 0n, false])
       .mockResolvedValueOnce([2n, 500000000n, 3000000000000n, 100n, 5n, 0n, false])
-      .mockResolvedValueOnce([3n, 750000000n, 1000000000000n, 80n, 10n, 0n, false]);
+      .mockResolvedValueOnce([3n, 750000000n, 1000000000000n, 80n, 10n, 0n, false])
+      .mockResolvedValueOnce(Array.from({ length: 20 }, () => [100000000n, 1000000000000n, 0n]));
 
-    const dto = await getHexStakeDashboard(walletAddress, 369);
+    const dto = await getHexStakeDashboard(testWalletAddress, 369);
     expect(dto.positions).toHaveLength(3);
     expect(dto.positions[0].stakeStatus).toBe('pending');
     expect(dto.positions[1].stakeStatus).toBe('active');
@@ -48,12 +51,17 @@ describe('hex stake service native contract reads', () => {
     expect(dto.positions[0].principalHex).toBe('1.23456789');
     expect(dto.positions[0].stakeShares).toBe('2500000000000');
     expect(dto.positions[0].tShares).toBe('2.5');
+    expect(dto.positions[0].yieldHex).toBe('0');
+    expect(dto.positions[1].yieldHex).toBe('0');
+    expect(dto.positions[2].yieldHex).toBe('20');
+    expect(dto.positions[0].warnings.some((w) => w.includes('Pending stake has no realized yield'))).toBe(true);
     expect(dto.positions[0].pricing.status).toBe('unavailable');
     expect(dto.positions[0].valuation.status).toBe('unavailable');
     expect(dto.positions[0].pnl.status).toBe('unavailable');
     expect(dto.summary.activeStakeCount).toBe(1);
     expect(dto.summary.totalPrincipalHex).toBe('13.73456789');
     expect(dto.summary.totalTShares).toBe('6.5');
+    expect(dto.summary.totalYieldHex).toBe('20');
   });
 
   it('returns partial success when one stakeLists index fails', async () => {
@@ -63,9 +71,10 @@ describe('hex stake service native contract reads', () => {
       .mockResolvedValueOnce(100n)
       .mockResolvedValueOnce([1n, 100000000n, 1000000000000n, 100n, 10n, 0n, false])
       .mockRejectedValueOnce(new Error('stake idx 1 failed'))
-      .mockResolvedValueOnce([3n, 300000000n, 3000000000000n, 80n, 10n, 0n, false]);
+      .mockResolvedValueOnce([3n, 300000000n, 3000000000000n, 80n, 10n, 0n, false])
+      .mockResolvedValueOnce(Array.from({ length: 20 }, () => [100000000n, 1000000000000n, 0n]));
 
-    const dto = await getHexStakeDashboard(walletAddress, 369);
+    const dto = await getHexStakeDashboard(testWalletAddress, 369);
     expect(dto.positions).toHaveLength(2);
     expect(dto.status).toBe('available');
     expect(dto.warnings.some((w) => w.includes('Partial native stake read'))).toBe(true);
@@ -80,7 +89,7 @@ describe('hex stake service native contract reads', () => {
       .mockRejectedValueOnce(new Error('idx0'))
       .mockRejectedValueOnce(new Error('idx1'));
 
-    await expect(getHexStakeDashboard(walletAddress, 369)).rejects.toMatchObject({
+    await expect(getHexStakeDashboard(testWalletAddress, 369)).rejects.toMatchObject({
       code: 'backend_unavailable',
       message: 'HEX stakes backend is currently unavailable.',
     });
@@ -105,10 +114,11 @@ describe('hex stake service native contract reads', () => {
           }, 1);
         });
       }
+      if (functionName === 'dailyDataRange') return Promise.resolve(Array.from({ length: 1 }, () => [100000000n, 1000000000000n, 0n]));
       return Promise.reject(new Error('unexpected call'));
     });
 
-    const dto = await getHexStakeDashboard(walletAddress, 369);
+    const dto = await getHexStakeDashboard(testWalletAddress, 369);
     expect(dto.positions).toHaveLength(25);
     expect(maxInFlight).toBeLessThanOrEqual(10);
   });
@@ -117,9 +127,37 @@ describe('hex stake service native contract reads', () => {
     mockReadContract.mockReset();
     mockReadContract.mockRejectedValueOnce(new Error('rpc down'));
 
-    await expect(getHexStakeDashboard(walletAddress, 369)).rejects.toMatchObject({
+    await expect(getHexStakeDashboard(testWalletAddress, 369)).rejects.toMatchObject({
       code: 'backend_unavailable',
       message: 'HEX stakes backend is currently unavailable.',
     });
   });
+
+  it('keeps yield 0 when dailyDataRange fails', async () => {
+    mockReadContract.mockReset();
+    mockReadContract
+      .mockResolvedValueOnce(1n)
+      .mockResolvedValueOnce(100n)
+      .mockResolvedValueOnce([1n, 100000000n, 1000000000000n, 90n, 5n, 0n, false])
+      .mockRejectedValueOnce(new Error('dailyDataRange failed'));
+
+    const dto = await getHexStakeDashboard(testWalletAddress, 369);
+    expect(dto.positions[0].yieldHex).toBe('0');
+    expect(dto.positions[0].warnings.some((w) => w.includes('dailyDataRange call failed'))).toBe(true);
+  });
+
+  it('preserves bigint precision for yield math', async () => {
+    mockReadContract.mockReset();
+    mockReadContract
+      .mockResolvedValueOnce(1n)
+      .mockResolvedValueOnce(10n)
+      .mockResolvedValueOnce([1n, 100000000n, 1234567890123456n, 1n, 5n, 0n, false])
+      .mockResolvedValueOnce(Array.from({ length: 9 }, () => [98765432109876n, 3333333333333333n, 0n]));
+
+    const dto = await getHexStakeDashboard(testWalletAddress, 369);
+    expect(dto.positions[0].yieldHex).not.toBe('0');
+    expect(dto.positions[0].yieldHex?.includes('e')).toBe(false);
+  });
+
 });
+
