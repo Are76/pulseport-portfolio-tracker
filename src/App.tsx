@@ -708,7 +708,7 @@ export default function App() {
     header: 'var(--bg-header)',
     hoverBg: 'var(--bg-elevated)',
     expandedBg: 'var(--bg-elevated)',
-    green: theme === 'dark' ? '#7B8FFF' : '#059669',
+    green: theme === 'dark' ? '#34D399' : '#059669',
     red: theme === 'dark' ? '#F87171' : '#DC2626',
     purple: '#818CF8',
     orange: '#f97316',
