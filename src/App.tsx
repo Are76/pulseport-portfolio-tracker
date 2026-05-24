@@ -672,7 +672,14 @@ export default function App() {
     setTxCoinCategory('all');
   }, [activeTab]);
 
-  const backendWalletAddress = useMemo(() => activeWallet ?? wallets[0]?.address ?? null, [activeWallet, wallets]);
+  const backendWalletAddress = useMemo(() => {
+    const activeWalletExists = activeWallet
+      ? wallets.some((wallet) => wallet.address.toLowerCase() === activeWallet.toLowerCase())
+      : false;
+
+    if (activeWallet && activeWalletExists) return activeWallet;
+    return wallets[0]?.address ?? null;
+  }, [activeWallet, wallets]);
 
   useEffect(() => {
     if (!backendWalletAddress) {
