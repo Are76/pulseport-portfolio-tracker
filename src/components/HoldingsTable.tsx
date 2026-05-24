@@ -52,9 +52,11 @@ interface HoldingsTableProps {
   shareBaseUsd?: number;
 }
 
+/** Formats a token balance with up to `maxDigits` decimal places. */
 const fmtAmount = (value: number, maxDigits = 4) =>
   value.toLocaleString('en-US', { maximumFractionDigits: maxDigits });
 
+/** Formats large numbers with K/M/B suffixes; preserves sign and appends optional suffix. */
 const fmtCompact = (value: number, suffix = '') => {
   const abs = Math.abs(value);
   const sign = value < 0 ? '-' : '';
@@ -65,15 +67,18 @@ const fmtCompact = (value: number, suffix = '') => {
   return `${sign}${abs.toLocaleString('en-US', { maximumFractionDigits: 6 })}${suffix}`;
 };
 
+/** Formats a value as a USD string with up to `maxDigits` decimal places. */
 const fmtUsd = (value: number, maxDigits = 2) =>
   `$${value.toLocaleString('en-US', { maximumFractionDigits: maxDigits })}`;
 
+/** Formats a token price with precision scaled to magnitude (6 decimals below $1, 2 above). */
 const fmtPrice = (price: number) => {
   if (!price) return '$0.00';
   if (price < 0.0001) return `$${price.toFixed(10).replace(/0+$/, '')}`;
   return `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: price < 1 ? 6 : 2 })}`;
 };
 
+/** Returns the price-change percentage for the active time period selector. */
 const pctForPeriod = (asset: HoldingDisplayAsset, period: HoldingsTableProps['priceChangePeriod']) => {
   if (period === '1h') return asset.priceChange1h ?? 0;
   if (period === '7d') return asset.priceChange7d ?? 0;
@@ -81,6 +86,7 @@ const pctForPeriod = (asset: HoldingDisplayAsset, period: HoldingsTableProps['pr
   return asset.priceChange24h ?? asset.pnl24h ?? 0;
 };
 
+/** Sortable, paginated holdings table with per-row expand panels and mobile-responsive column hiding. */
 export function HoldingsTable({
   assets,
   allAssets,
@@ -137,7 +143,7 @@ export function HoldingsTable({
 
   const columns = [
     { label: 'Token', field: null, align: 'left', hideMobile: false },
-    { label: 'Price', field: null, align: 'right', hideMobile: false },
+    { label: 'Price', field: null, align: 'right', hideMobile: true },
     { label: priceChangePeriod.toUpperCase(), field: 'change' as const, align: 'right', hideMobile: false },
     { label: 'Amount', field: null, align: 'right', hideMobile: true },
     { label: 'USD Value', field: 'value' as const, align: 'right', hideMobile: false },
@@ -263,7 +269,7 @@ export function HoldingsTable({
                       </div>
                     </div>
                   </td>
-                  <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                  <td className="hide-mobile" style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace' }}>{fmtPrice(asset.priceUsd)}</div>
                     <div style={{ fontSize: 12, color: '#f739ff', marginTop: 2 }}>{fmtCompact(asset.pricePls)} PLS</div>
                   </td>
@@ -298,17 +304,15 @@ export function HoldingsTable({
                   </td>
                   <td style={{ padding: '12px 12px', textAlign: 'right' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2 }}>
-                      {showActions && (
-                        <>
-                          <button onClick={e => { e.stopPropagation(); onOpenPnl(asset); }} title="View P&L" style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#777' }}>
-                            <Calculator size={13} />
-                          </button>
-                          {onHide && (
-                            <button onClick={e => { e.stopPropagation(); onHide(asset.id); }} title="Hide" style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)' }}>
-                              <Trash2 size={13} />
-                            </button>
-                          )}
-                        </>
+                      {showActions && !isMobileLayout && (
+                        <button onClick={e => { e.stopPropagation(); onOpenPnl(asset); }} title="View P&L" style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#777' }}>
+                          <Calculator size={13} />
+                        </button>
+                      )}
+                      {showActions && onHide && (
+                        <button onClick={e => { e.stopPropagation(); onHide(asset.id); }} title="Hide" style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)' }}>
+                          <Trash2 size={13} />
+                        </button>
                       )}
                       <span style={{ color: isExpanded ? 'var(--accent)' : 'var(--fg-subtle)', padding: 4, display: 'inline-flex' }}>
                         {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
@@ -319,7 +323,7 @@ export function HoldingsTable({
                 {isExpanded && (
                   <tr style={{ borderBottom: '1px solid var(--border)', borderLeft: `3px solid ${chainColors[asset.chain] || '#333'}`, background: 'var(--bg-elevated)' }}>
                     <td colSpan={isMobileLayout ? columns.filter(c => !c.hideMobile).length : columns.length} style={{ padding: '0 12px 14px', maxWidth: 0 }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, paddingTop: 12 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: isMobileLayout ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, paddingTop: 12 }}>
                         <DetailCard title="Price">
                           <DetailRow label="USD" value={fmtPrice(asset.priceUsd)} />
                           <DetailRow label="PLS" value={`${fmtCompact(asset.pricePls)} PLS`} accent />
@@ -403,6 +407,7 @@ export function HoldingsTable({
   );
 }
 
+/** Bordered card with a small-caps title used inside expanded row panels. */
 function DetailCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px' }}>
@@ -412,6 +417,7 @@ function DetailCard({ title, children }: { title: string; children: React.ReactN
   );
 }
 
+/** A muted label paired with a right-aligned value; use `accent` for PLS-pink or `valueColor` for custom colour. */
 function DetailRow({ label, value, accent, valueColor }: { label: string; value: React.ReactNode; accent?: boolean; valueColor?: string }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
@@ -421,6 +427,7 @@ function DetailRow({ label, value, accent, valueColor }: { label: string; value:
   );
 }
 
+/** An external anchor with an icon used inside DetailCard for explorer/DEX links. */
 function DetailLink({ href, label }: { href: string; label: string }) {
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--accent)', textDecoration: 'none' }}>
