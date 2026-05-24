@@ -150,7 +150,7 @@ export function HoldingsTable({
     { label: 'PLS Value', field: null, align: 'right', hideMobile: true },
     { label: 'League', field: null, align: 'right', hideMobile: true },
     { label: '% Portfolio', field: null, align: 'right', hideMobile: true },
-    { label: '', field: null, align: 'right', hideMobile: false },
+    { label: '', field: null, align: 'right', hideMobile: true },
   ];
 
   return (
@@ -230,33 +230,33 @@ export function HoldingsTable({
               <React.Fragment key={asset.id}>
                 <tr
                   style={{ borderBottom: isExpanded ? 'none' : '1px solid var(--border)', borderLeft: `3px solid ${chainColors[asset.chain] || '#333'}`, transition: 'background .1s', cursor: 'pointer' }}
-                  onClick={() => onToggleExpanded(asset.id)}
+                  onClick={() => isMobileLayout ? onSelectAsset?.(asset) : onToggleExpanded(asset.id)}
                   onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
                   onMouseOut={e => (e.currentTarget.style.background = isExpanded ? 'var(--bg-elevated)' : 'transparent')}
                 >
-                  <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'var(--bg-elevated)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 800, color: 'var(--fg)', flexShrink: 0, overflow: 'hidden' }}>
+                  <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', ...(isMobileLayout ? { maxWidth: 0, overflow: 'hidden' } : {}) }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: isMobileLayout ? 8 : 12 }}>
+                      <div style={{ width: isMobileLayout ? 36 : 42, height: isMobileLayout ? 36 : 42, borderRadius: '50%', background: 'var(--bg-elevated)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 800, color: 'var(--fg)', flexShrink: 0, overflow: 'hidden' }}>
                         {logo ? <img src={logo} alt={asset.symbol} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} /> : asset.symbol[0]}
                       </div>
-                      <div style={{ minWidth: 0 }}>
+                      <div style={{ minWidth: 0, overflow: 'hidden' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                           {onSelectAsset ? (
                             <button
                               type="button"
                               onClick={e => { e.stopPropagation(); onSelectAsset(asset); }}
-                              style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)', textDecoration: 'none', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}
+                              style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)', textDecoration: 'none', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', ...(isMobileLayout ? { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%', display: 'block' } : {}) }}
                             >
                               {asset.name || asset.symbol}
                             </button>
                           ) : explUrl ? (
-                            <a href={explUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)', textDecoration: 'none' }}>
+                            <a href={explUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)', textDecoration: 'none', ...(isMobileLayout ? { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%', display: 'block' } : {}) }}>
                               {asset.name || asset.symbol}
                             </a>
                           ) : (
-                            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>{asset.name || asset.symbol}</span>
+                            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)', ...(isMobileLayout ? { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%', display: 'block' } : {}) }}>{asset.name || asset.symbol}</span>
                           )}
-                          {addr && addr !== 'native' && (
+                          {addr && addr !== 'native' && !isMobileLayout && (
                             <button onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(addr); }} title={`Copy contract address: ${addr}`} style={{ padding: '1px 3px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', lineHeight: 1 }}>
                               <Copy size={10} />
                             </button>
@@ -302,9 +302,9 @@ export function HoldingsTable({
                       <div style={{ height: '100%', width: `${Math.min(share, 100)}%`, background: 'var(--accent)', borderRadius: 1 }} />
                     </div>
                   </td>
-                  <td style={{ padding: '12px 12px', textAlign: 'right' }}>
+                  <td className="hide-mobile" style={{ padding: '12px 12px', textAlign: 'right' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2 }}>
-                      {showActions && !isMobileLayout && (
+                      {showActions && (
                         <button onClick={e => { e.stopPropagation(); onOpenPnl(asset); }} title="View P&L" style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#777' }}>
                           <Calculator size={13} />
                         </button>
@@ -320,7 +320,7 @@ export function HoldingsTable({
                     </div>
                   </td>
                 </tr>
-                {isExpanded && (
+                {isExpanded && !isMobileLayout && (
                   <tr style={{ borderBottom: '1px solid var(--border)', borderLeft: `3px solid ${chainColors[asset.chain] || '#333'}`, background: 'var(--bg-elevated)' }}>
                     <td colSpan={isMobileLayout ? columns.filter(c => !c.hideMobile).length : columns.length} style={{ padding: '0 12px 14px', ...(isMobileLayout ? { overflow: 'hidden' } : { maxWidth: 0 }) }}>
                       <div style={{ display: 'grid', gridTemplateColumns: isMobileLayout ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, paddingTop: 12, ...(isMobileLayout ? { width: '100%' } : {}) }}>
