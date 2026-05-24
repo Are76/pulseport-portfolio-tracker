@@ -52,9 +52,11 @@ interface HoldingsTableProps {
   shareBaseUsd?: number;
 }
 
+/** Formats a token balance with up to `maxDigits` decimal places. */
 const fmtAmount = (value: number, maxDigits = 4) =>
   value.toLocaleString('en-US', { maximumFractionDigits: maxDigits });
 
+/** Formats large numbers with K/M/B suffixes; preserves sign and appends optional suffix. */
 const fmtCompact = (value: number, suffix = '') => {
   const abs = Math.abs(value);
   const sign = value < 0 ? '-' : '';
@@ -65,15 +67,18 @@ const fmtCompact = (value: number, suffix = '') => {
   return `${sign}${abs.toLocaleString('en-US', { maximumFractionDigits: 6 })}${suffix}`;
 };
 
+/** Formats a value as a USD string with up to `maxDigits` decimal places. */
 const fmtUsd = (value: number, maxDigits = 2) =>
   `$${value.toLocaleString('en-US', { maximumFractionDigits: maxDigits })}`;
 
+/** Formats a token price with precision scaled to magnitude (6 decimals below $1, 2 above). */
 const fmtPrice = (price: number) => {
   if (!price) return '$0.00';
   if (price < 0.0001) return `$${price.toFixed(10).replace(/0+$/, '')}`;
   return `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: price < 1 ? 6 : 2 })}`;
 };
 
+/** Returns the price-change percentage for the active time period selector. */
 const pctForPeriod = (asset: HoldingDisplayAsset, period: HoldingsTableProps['priceChangePeriod']) => {
   if (period === '1h') return asset.priceChange1h ?? 0;
   if (period === '7d') return asset.priceChange7d ?? 0;
@@ -81,6 +86,7 @@ const pctForPeriod = (asset: HoldingDisplayAsset, period: HoldingsTableProps['pr
   return asset.priceChange24h ?? asset.pnl24h ?? 0;
 };
 
+/** Sortable, paginated holdings table with per-row expand panels and mobile-responsive column hiding. */
 export function HoldingsTable({
   assets,
   allAssets,
@@ -401,6 +407,7 @@ export function HoldingsTable({
   );
 }
 
+/** Bordered card with a small-caps title used inside expanded row panels. */
 function DetailCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px' }}>
@@ -410,6 +417,7 @@ function DetailCard({ title, children }: { title: string; children: React.ReactN
   );
 }
 
+/** A muted label paired with a right-aligned value; use `accent` for PLS-pink or `valueColor` for custom colour. */
 function DetailRow({ label, value, accent, valueColor }: { label: string; value: React.ReactNode; accent?: boolean; valueColor?: string }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
@@ -419,6 +427,7 @@ function DetailRow({ label, value, accent, valueColor }: { label: string; value:
   );
 }
 
+/** An external anchor with an icon used inside DetailCard for explorer/DEX links. */
 function DetailLink({ href, label }: { href: string; label: string }) {
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--accent)', textDecoration: 'none' }}>
