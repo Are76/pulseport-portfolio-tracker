@@ -436,53 +436,50 @@ function SwapDetail({ tx, coinAsset, counterAsset, coinLogo, getLogoUrl, display
     ? (tx.amount * nowPriceReceived) - tx.valueUsd
     : null;
 
+  /* Stat cells — same pattern as TransferDetail */
+  const swapStats: Array<{ label: string; val: string; sub: string; color?: string }> = [
+    {
+      label: 'Value',
+      val: tx.valueUsd != null ? `$${tx.valueUsd.toLocaleString('en-US', { maximumFractionDigits: 2 })}` : '-',
+      sub: 'At time of swap',
+    },
+    ...(dollarPnl !== null ? [{
+      label: 'Position P/L',
+      val: fmtPnl(dollarPnl),
+      sub: 'At current prices',
+      color: dollarPnl >= 0 ? 'var(--positive-text)' : 'var(--negative-text)',
+    }] : []),
+    {
+      label: 'Chain',
+      val: tx.chain === 'pulsechain' ? 'PulseChain' : tx.chain === 'ethereum' ? 'Ethereum' : 'Base',
+      sub: `${displayAddr(tx.from)} → ${displayAddr(tx.to)}`,
+    },
+    {
+      label: 'Date',
+      val: format(tx.timestamp, 'MMM d, yyyy'),
+      sub: format(tx.timestamp, 'HH:mm:ss'),
+    },
+    ...(tx.fee != null && tx.fee > 0 ? [{
+      label: 'Fee',
+      val: `${tx.fee.toLocaleString('en-US', { maximumFractionDigits: 6 })} ${tx.chain === 'ethereum' ? 'ETH' : 'PLS'}`,
+      sub: 'Network fee',
+    }] : []),
+  ];
+
   return (
     <div style={{ paddingTop: 10, borderTop: '1px solid var(--border)' }}>
-      {/* Context line */}
-      <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 10, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-        <span>
-          Swap from{' '}
-          <strong style={{ color: isOwn(tx.from) ? 'var(--accent)' : 'var(--fg)' }}>{displayAddr(tx.from)}</strong>
-          {' '}to{' '}
-          <strong style={{ color: isOwn(tx.to) ? 'var(--accent)' : 'var(--fg)' }}>{displayAddr(tx.to)}</strong>
-        </span>
-        {tx.fee != null && tx.fee > 0 && (
-          <span style={{ color: 'var(--fg-subtle)', fontSize: 11 }}>
-            &#x26FD; {tx.fee.toLocaleString('en-US', { maximumFractionDigits: 4 })} {tx.chain === 'ethereum' ? 'ETH' : 'PLS'}
-          </span>
-        )}
-        <span style={{ marginLeft: 'auto', color: 'var(--fg-subtle)', fontSize: 11 }}>
-          {format(tx.timestamp, 'MMM d, yyyy HH:mm')}
-        </span>
+      {/* Stat grid — same style as TransferDetail */}
+      <div className="tx-transfer-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8, marginBottom: 10 }}>
+        {swapStats.map(({ label, val, sub, color }) => (
+          <div key={label} style={{ background: 'var(--bg-elevated)', borderRadius: 8, padding: '9px 10px' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 3 }}>{label}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: color ?? 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{val}</div>
+            <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 1 }}>{sub}</div>
+          </div>
+        ))}
       </div>
 
-      {/* P&L card */}
-      {dollarPnl !== null && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-          <div
-            className="tx-pnl-card"
-            style={{
-              background: dollarPnl >= 0 ? 'rgba(52,211,153,0.07)' : 'rgba(248,113,113,0.07)',
-              border: `1px solid ${dollarPnl >= 0 ? 'rgba(52,211,153,0.20)' : 'rgba(248,113,113,0.20)'}`,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              {dollarPnl >= 0
-                ? <TrendingUp size={11} style={{ color: 'var(--positive-text)' }} />
-                : <TrendingDown size={11} style={{ color: 'var(--negative-text)' }} />}
-              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px' }}>
-                Position P/L
-              </span>
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 800, color: dollarPnl >= 0 ? 'var(--positive-text)' : 'var(--negative-text)', fontFamily: 'JetBrains Mono, monospace' }}>
-              {fmtPnl(dollarPnl)}
-            </div>
-            <div style={{ fontSize: 10, color: 'var(--fg-subtle)' }}>At current prices</div>
-          </div>
-        </div>
-      )}
-
-      {/* Received leg */}
+      {/* Token legs */}
       <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.55px', marginBottom: 5 }}>
         Got
       </div>
@@ -498,7 +495,6 @@ function SwapDetail({ tx, coinAsset, counterAsset, coinLogo, getLogoUrl, display
         onFilter={onFilterByAsset ? () => onFilterByAsset(tx.asset) : undefined}
       />
 
-      {/* Spent leg */}
       {tx.counterAsset != null && tx.counterAmount != null && (
         <div style={{ marginTop: 6 }}>
           <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.55px', marginBottom: 5 }}>
