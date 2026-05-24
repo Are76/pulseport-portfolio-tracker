@@ -13,3 +13,6 @@ coverage/
 __pycache__/
 *.pyc
 *.pyo
+
+# Local Claude Code session settings (machine-specific, not for version control)
+.claude/settings.local.json
