@@ -6,7 +6,7 @@ import type { Wallet } from '../types';
 
 const wallets: Wallet[] = [
   { address: '0x1111111111111111111111111111111111111111', name: 'One' },
-  { address: '0x2222222222222222222222222222222222222222', name: 'Two' },
+  { address: '0xaabbccddeeff00112233445566778899aabbccdd', name: 'Two' },
 ];
 
 describe('resolveBackendWalletAddress', () => {
@@ -20,6 +20,20 @@ describe('resolveBackendWalletAddress', () => {
 
   it('returns null when there are no saved wallets', () => {
     expect(resolveBackendWalletAddress([], '0x3333333333333333333333333333333333333333')).toBeNull();
+  });
+
+
+  it('matches activeWallet case-insensitively against saved wallets', () => {
+    const mixedCaseAddress = '0xAaBbCcDdEeFf00112233445566778899AaBbCcDd';
+    expect(resolveBackendWalletAddress(wallets, mixedCaseAddress)).toBe(wallets[1].address);
+  });
+
+  it('falls back to first saved wallet when activeWallet is null', () => {
+    expect(resolveBackendWalletAddress(wallets, null)).toBe(wallets[0].address);
+  });
+
+  it('returns null when activeWallet is null and there are no saved wallets', () => {
+    expect(resolveBackendWalletAddress([], null)).toBeNull();
   });
 });
 
