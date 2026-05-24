@@ -25,7 +25,7 @@ function fmtD(n: number): string {
   return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-const ALLOC_COLORS = ['#00FF9F', '#627EEA', '#f97316', '#a855f7', '#f59e0b', '#06b6d4', '#ec4899'];
+const ALLOC_COLORS = ['#34D399', '#627EEA', '#f97316', '#a855f7', '#f59e0b', '#06b6d4', '#ec4899'];
 
 // Weight applied to top-coin concentration in the diversification score formula:
 // score = 100 - (topCoinPct * CONCENTRATION_WEIGHT). Higher weight = harsher penalty.
@@ -214,7 +214,7 @@ export function ProfitPlannerModal({ open, onClose, assets, totalValue }: Profit
   };
 
   const divScoreColor =
-    calc.diversificationScore >= 70 ? '#00FF9F'
+    calc.diversificationScore >= 70 ? '#34D399'
     : calc.diversificationScore >= 40 ? '#f59e0b'
     : '#f43f5e';
 
@@ -240,10 +240,10 @@ export function ProfitPlannerModal({ open, onClose, assets, totalValue }: Profit
           -webkit-appearance: none;
           width: 18px; height: 18px;
           border-radius: 50%;
-          background: #00FF9F;
+          background: #34D399;
           cursor: pointer;
           border: 2px solid #0A0A0A;
-          box-shadow: 0 0 8px rgba(0,255,159,0.5);
+          box-shadow: 0 0 8px rgba(52,211,153,0.5);
           margin-top: -7px;
         }
         .profit-planner-slider::-moz-range-track {
@@ -254,10 +254,10 @@ export function ProfitPlannerModal({ open, onClose, assets, totalValue }: Profit
         .profit-planner-slider::-moz-range-thumb {
           width: 18px; height: 18px;
           border-radius: 50%;
-          background: #00FF9F;
+          background: #34D399;
           cursor: pointer;
           border: 2px solid #0A0A0A;
-          box-shadow: 0 0 8px rgba(0,255,159,0.5);
+          box-shadow: 0 0 8px rgba(52,211,153,0.5);
         }
         @media (max-width: 639px) {
           .pp-coin-row { flex-direction: column !important; align-items: flex-start !important; }
@@ -292,30 +292,30 @@ export function ProfitPlannerModal({ open, onClose, assets, totalValue }: Profit
           className="pp-modal-inner"
           style={{
             background: 'var(--bg-surface)',
-            border: '1px solid rgba(0,255,159,0.15)',
+            border: '1px solid rgba(52,211,153,0.15)',
             borderRadius: 20,
             width: '100%', maxWidth: 780,
             maxHeight: '92vh',
             overflowY: 'auto',
-            boxShadow: '0 0 80px rgba(0,255,159,0.08)',
+            boxShadow: '0 0 80px rgba(52,211,153,0.08)',
           }}
         >
           {/* -- Header -- */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '20px 24px 16px',
-            borderBottom: '1px solid rgba(0,255,159,0.1)',
+            borderBottom: '1px solid rgba(52,211,153,0.1)',
             position: 'sticky', top: 0, zIndex: 10,
             background: 'var(--bg-surface)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{
                 width: 36, height: 36, borderRadius: 10,
-                background: 'linear-gradient(135deg, rgba(0,255,159,0.18) 0%, rgba(99,70,255,0.10) 100%)',
-                border: '1.5px solid rgba(0,255,159,0.30)',
+                background: 'linear-gradient(135deg, rgba(52,211,153,0.18) 0%, rgba(99,70,255,0.10) 100%)',
+                border: '1.5px solid rgba(52,211,153,0.30)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <TrendingUp size={18} color="#00FF9F" />
+                <TrendingUp size={18} color="#34D399" />
               </div>
               <div>
                 <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--fg)', letterSpacing: '-0.01em' }}>Profit Planner</div>
@@ -349,7 +349,7 @@ export function ProfitPlannerModal({ open, onClose, assets, totalValue }: Profit
                     style={{
                       padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700,
                       cursor: 'pointer', border: 'none', transition: 'all .15s',
-                      background: mode === m ? '#00FF9F' : 'transparent',
+                      background: mode === m ? '#34D399' : 'transparent',
                       color: mode === m ? '#000' : 'var(--fg-muted)',
                     }}
                   >{label}</button>
@@ -379,9 +379,9 @@ export function ProfitPlannerModal({ open, onClose, assets, totalValue }: Profit
                       style={{
                         padding: '8px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700,
                         cursor: 'pointer', border: '1px solid',
-                        borderColor: horizon === h ? '#00FF9F' : 'var(--border)',
-                        background: horizon === h ? 'rgba(0,255,159,0.1)' : 'var(--bg-elevated)',
-                        color: horizon === h ? '#00FF9F' : 'var(--fg-muted)',
+                        borderColor: horizon === h ? '#34D399' : 'var(--border)',
+                        background: horizon === h ? 'rgba(52,211,153,0.1)' : 'var(--bg-elevated)',
+                        color: horizon === h ? '#34D399' : 'var(--fg-muted)',
                         transition: 'all .15s',
                       }}
                     >{HORIZON_LABELS[h]}</button>
@@ -398,9 +398,9 @@ export function ProfitPlannerModal({ open, onClose, assets, totalValue }: Profit
                     style={{
                       padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700,
                       cursor: 'pointer', border: '1px solid',
-                      borderColor: preset === p ? '#00FF9F' : 'var(--border)',
-                      background: preset === p ? 'rgba(0,255,159,0.12)' : 'var(--bg-elevated)',
-                      color: preset === p ? '#00FF9F' : 'var(--fg-muted)',
+                      borderColor: preset === p ? '#34D399' : 'var(--border)',
+                      background: preset === p ? 'rgba(52,211,153,0.12)' : 'var(--bg-elevated)',
+                      color: preset === p ? '#34D399' : 'var(--fg-muted)',
                       transition: 'all .15s',
                     }}
                   >{PRESET_LABELS[p]}</button>
@@ -467,14 +467,14 @@ export function ProfitPlannerModal({ open, onClose, assets, totalValue }: Profit
                               setGrowthMap(prev => ({ ...prev, [coin.symbol]: Number(e.target.value) }));
                             }}
                           />
-                          <span style={{ fontSize: 12, fontWeight: 700, color: '#00FF9F', minWidth: 48, textAlign: 'right', fontFamily: 'JetBrains Mono, monospace' }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#34D399', minWidth: 48, textAlign: 'right', fontFamily: 'JetBrains Mono, monospace' }}>
                             +{growthPct}%
                           </span>
                         </div>
                         <div style={{ display: 'flex', gap: 12, fontSize: 11, color: 'var(--fg-subtle)', flexWrap: 'wrap' }}>
                           <span>{'-> '}<span style={{ color: 'var(--fg-muted)', fontFamily: 'JetBrains Mono, monospace' }}>{fmtD(coin.projectedValue)}</span></span>
                           {sellAmt > 0 && (
-                            <span style={{ color: '#00FF9F', fontWeight: 700, fontFamily: 'JetBrains Mono, monospace' }}>
+                            <span style={{ color: '#34D399', fontWeight: 700, fontFamily: 'JetBrains Mono, monospace' }}>
                               sell {fmtD(sellAmt)}
                             </span>
                           )}
@@ -505,7 +505,7 @@ export function ProfitPlannerModal({ open, onClose, assets, totalValue }: Profit
                   <div style={{ color: 'var(--fg-subtle)', fontSize: 18 }}>{'->'}</div>
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: 10, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.8px' }}>Projected</div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: '#00FF9F', fontFamily: 'JetBrains Mono, monospace' }}>{fmtD(calc.projectedTotal)}</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: '#34D399', fontFamily: 'JetBrains Mono, monospace' }}>{fmtD(calc.projectedTotal)}</div>
                   </div>
                   {calc.targetPortfolio > 0 && (
                     <>
@@ -516,7 +516,7 @@ export function ProfitPlannerModal({ open, onClose, assets, totalValue }: Profit
                       </div>
                       <div style={{ marginLeft: 'auto' }}>
                         {calc.targetMet ? (
-                          <span style={{ background: 'rgba(0,255,159,0.12)', border: '1px solid rgba(0,255,159,0.3)', color: '#00FF9F', borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 700 }}>
+                          <span style={{ background: 'rgba(52,211,153,0.12)', border: '1px solid rgba(52,211,153,0.3)', color: '#34D399', borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 700 }}>
                             ✓ Met
                           </span>
                         ) : (
@@ -544,13 +544,13 @@ export function ProfitPlannerModal({ open, onClose, assets, totalValue }: Profit
                       <YAxis hide />
                       <RechartsTooltip
                         contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
-                        formatter={(value) => fmtD(Number(value ?? 0))}
+                        formatter={(value) => fmtD(Array.isArray(value) ? Number(value[0] ?? 0) : Number(value ?? 0))}
                       />
                       <Bar dataKey="Current" radius={[4, 4, 0, 0]}>
                         {calc.coinCalcs.map((_, i) => <Cell key={i} fill="#627EEA" />)}
                       </Bar>
                       <Bar dataKey="Projected" radius={[4, 4, 0, 0]}>
-                        {calc.coinCalcs.map((_, i) => <Cell key={i} fill="#00FF9F" />)}
+                        {calc.coinCalcs.map((_, i) => <Cell key={i} fill="#34D399" />)}
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
@@ -597,7 +597,7 @@ export function ProfitPlannerModal({ open, onClose, assets, totalValue }: Profit
                   {/* Sell recommendation */}
                   {calc.profitNeeded > 0 && Object.keys(calc.sellMap).length > 0 && (
                     <div style={{ fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.5 }}>
-                      <span style={{ color: '#00FF9F', fontWeight: 700 }}>Sell recommendation:</span>{' '}
+                      <span style={{ color: '#34D399', fontWeight: 700 }}>Sell recommendation:</span>{' '}
                       To reach your target, sell:{' '}
                       {Object.entries(calc.sellMap)
                         .filter(([, v]) => (v as number) > 0)
@@ -634,7 +634,7 @@ export function ProfitPlannerModal({ open, onClose, assets, totalValue }: Profit
                   {calc.targetPortfolio > 0 && (
                     <div style={{ fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.5 }}>
                       {calc.targetMet ? (
-                        <span style={{ color: '#00FF9F' }}>✓ Your projected growth covers the target profit</span>
+                        <span style={{ color: '#34D399' }}>✓ Your projected growth covers the target profit</span>
                       ) : (
                         <span style={{ color: '#f43f5e' }}>
                           ✗ You're {fmtD(calc.targetPortfolio - calc.projectedTotal)} short - consider higher growth estimates or a lower target
@@ -690,7 +690,7 @@ export function ProfitPlannerModal({ open, onClose, assets, totalValue }: Profit
                                   type="checkbox"
                                   checked={selected}
                                   onChange={() => handleCheckboxToggle('protect', coin.symbol)}
-                                  style={{ accentColor: '#00FF9F', width: 16, height: 16 }}
+                                  style={{ accentColor: '#34D399', width: 16, height: 16 }}
                                 />
                                 <span style={{ fontSize: 13, color: 'var(--fg)' }}>{coin.symbol}</span>
                                 <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>{fmtD(coin.value)}</span>
@@ -711,7 +711,7 @@ export function ProfitPlannerModal({ open, onClose, assets, totalValue }: Profit
                                 if (guideStep < GUIDE_QUESTIONS.length - 1) setGuideStep(s => s + 1);
                                 else setGuideStep(GUIDE_QUESTIONS.length);
                               }}
-                              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, background: '#00FF9F', border: 'none', color: '#000', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, background: 'var(--accent)', border: 'none', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
                             >
                               Next <ChevronRight size={13} />
                             </button>
@@ -728,9 +728,9 @@ export function ProfitPlannerModal({ open, onClose, assets, totalValue }: Profit
                                 style={{
                                   padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600,
                                   cursor: 'pointer', border: '1px solid',
-                                  borderColor: guideAnswers[GUIDE_QUESTIONS[guideStep].key] === opt ? '#00FF9F' : 'var(--border)',
-                                  background: guideAnswers[GUIDE_QUESTIONS[guideStep].key] === opt ? 'rgba(0,255,159,0.12)' : 'var(--bg-elevated)',
-                                  color: guideAnswers[GUIDE_QUESTIONS[guideStep].key] === opt ? '#00FF9F' : 'var(--fg-muted)',
+                                  borderColor: guideAnswers[GUIDE_QUESTIONS[guideStep].key] === opt ? '#34D399' : 'var(--border)',
+                                  background: guideAnswers[GUIDE_QUESTIONS[guideStep].key] === opt ? 'rgba(52,211,153,0.12)' : 'var(--bg-elevated)',
+                                  color: guideAnswers[GUIDE_QUESTIONS[guideStep].key] === opt ? '#34D399' : 'var(--fg-muted)',
                                   transition: 'all .15s',
                                 }}
                               >{opt}</button>
@@ -753,38 +753,38 @@ export function ProfitPlannerModal({ open, onClose, assets, totalValue }: Profit
                       const plan = buildExitPlan();
                       return (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: '#00FF9F', marginBottom: 4 }}>📋 Your Exit Plan</div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#34D399', marginBottom: 4 }}>📋 Your Exit Plan</div>
                           <div style={{ fontSize: 13, color: 'var(--fg-muted)', lineHeight: 1.7 }}>
                             Based on your answers:
                           </div>
                           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
                             <li style={{ fontSize: 12, color: 'var(--fg-muted)', display: 'flex', gap: 8 }}>
-                              <span style={{ color: '#00FF9F' }}>•</span>
+                              <span style={{ color: '#34D399' }}>•</span>
                               <span><strong style={{ color: 'var(--fg)' }}>Risk:</strong> {plan.risk} {'->'} {plan.riskRec}</span>
                             </li>
                             {plan.protected_.length > 0 && (
                               <li style={{ fontSize: 12, color: 'var(--fg-muted)', display: 'flex', gap: 8 }}>
-                                <span style={{ color: '#00FF9F' }}>•</span>
+                                <span style={{ color: '#34D399' }}>•</span>
                                 <span><strong style={{ color: 'var(--fg)' }}>Protected coins:</strong> {plan.protected_.join(', ')}</span>
                               </li>
                             )}
                             {plan.sellable.length > 0 && (
                               <li style={{ fontSize: 12, color: 'var(--fg-muted)', display: 'flex', gap: 8 }}>
-                                <span style={{ color: '#00FF9F' }}>•</span>
+                                <span style={{ color: '#34D399' }}>•</span>
                                 <span><strong style={{ color: 'var(--fg)' }}>Sell from:</strong> {plan.sellable.join(', ')}</span>
                               </li>
                             )}
                             <li style={{ fontSize: 12, color: 'var(--fg-muted)', display: 'flex', gap: 8 }}>
-                              <span style={{ color: '#00FF9F' }}>•</span>
+                              <span style={{ color: '#34D399' }}>•</span>
                               <span><strong style={{ color: 'var(--fg)' }}>Target exit in</strong> {plan.h} {'->'} {plan.timeAdvice}</span>
                             </li>
                             <li style={{ fontSize: 12, color: 'var(--fg-muted)', display: 'flex', gap: 8 }}>
-                              <span style={{ color: '#00FF9F' }}>•</span>
+                              <span style={{ color: '#34D399' }}>•</span>
                               <span><strong style={{ color: 'var(--fg)' }}>Profits destination:</strong> {plan.profitsAdvice}</span>
                             </li>
                             {plan.keepStaking === 'Yes' && (
                               <li style={{ fontSize: 12, color: 'var(--fg-muted)', display: 'flex', gap: 8 }}>
-                                <span style={{ color: '#00FF9F' }}>•</span>
+                                <span style={{ color: '#34D399' }}>•</span>
                                 <span>HEX staking positions will be kept intact.</span>
                               </li>
                             )}

@@ -260,7 +260,7 @@ function StakingLadder({ stakes }: { stakes: HexStake[] }) {
             label={{ value: 'Days Remaining', position: 'insideBottom', offset: -10, fill: 'var(--fg-subtle)', fontSize: 13 }} />
           <YAxis tick={{ fill: 'var(--fg-subtle)', fontSize: 13 }} axisLine={false} tickLine={false} scale="log" domain={['auto', 'auto']} allowDataOverflow={false} />
           <RechartsTooltip content={<CustomTip />} />
-          <Bar dataKey="totalShares" fill="#7B8FFF" radius={[3, 3, 0, 0]} />
+          <Bar dataKey="totalShares" fill="var(--accent)" radius={[3, 3, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -270,7 +270,6 @@ function StakingLadder({ stakes }: { stakes: HexStake[] }) {
 // -- StakingPie -----------------------------------------------------------------
 // Donut chart showing HEX stake distribution grouped by wallet (from pulsechain-dashboard)
 function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: number }) {
-  const [activeIndex, setActiveIndex] = React.useState(0);
   if (!stakes || stakes.length === 0) return null;
 
   const byWallet: Record<string, { label: string; tShares: number; stakedHex: number; yieldHex: number; totalHex: number; totalUsd: number; count: number }> = {};
@@ -331,8 +330,7 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
       <ResponsiveContainer width="100%" height={240} minWidth={1} minHeight={1}>
         <PieChart>
           <Pie data={chartData} cx="50%" cy="50%" innerRadius={60} outerRadius={85} dataKey="tShares"
-            {...{ activeIndex } as {}} activeShape={renderActiveShape}
-            onMouseEnter={(_, i) => setActiveIndex(i)}>
+            activeShape={renderActiveShape}>
             {chartData.map((_, i) => <Cell key={i} fill={getColor(i)} />)}
           </Pie>
           <RechartsTooltip formatter={(val: any, _: any, entry: any) => [`${fmtK(Number(val))} T-Shares  -  $${fmtK(entry.payload.totalUsd)}`, entry.payload.label]} />
@@ -1305,7 +1303,10 @@ export default function App() {
               const fetchBlockscoutPages = async (endpoint: string): Promise<any[]> => {
                 const results: any[] = [];
                 let nextParams: Record<string, string> | null = {};
-                while (nextParams !== null) {
+                let pageCount = 0;
+                const MAX_PAGES = 50;
+                while (nextParams !== null && pageCount < MAX_PAGES) {
+                  pageCount++;
                   const hasExistingQuery = endpoint.includes('?');
                   const paramStr: string = Object.keys(nextParams).length
                     ? (hasExistingQuery ? '&' : '?') + new URLSearchParams(nextParams).toString()
@@ -1315,8 +1316,9 @@ export default function App() {
                   const data: any = await res.json();
                   if (data.items && Array.isArray(data.items)) {
                     results.push(...data.items);
-                    nextParams = (data.next_page_params as Record<string, string> | null) ?? null;
-                    if (!data.next_page_params || data.items.length === 0) break;
+                    const np = data.next_page_params as Record<string, string> | null | undefined;
+                    if (!np || Object.keys(np).length === 0 || data.items.length === 0) break;
+                    nextParams = np;
                   } else {
                     break;
                   }
@@ -3233,7 +3235,7 @@ export default function App() {
   const coreLiveTokens = useMemo(() => ([
     { id: 'PLS',  symbol: 'PLS',  name: 'PulseChain',    priceKey: 'pulsechain',                                                    changeKey: 'pulsechain:native', accent: 'linear-gradient(90deg,#7B8FFF,#60A5FA)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png' },
     { id: 'PLSX', symbol: 'PLSX', name: 'PulseX',        priceKey: 'pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab',            accent: 'linear-gradient(90deg,#ff00bf,#7b00ff)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x95B303987A60C71504D99Aa1b13B4DA07b0790ab.png' },
-    { id: 'INC',  symbol: 'INC',  name: 'Incentive',     priceKey: 'pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d',            accent: 'linear-gradient(90deg,#39ff14,#7B8FFF)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png' },
+    { id: 'INC',  symbol: 'INC',  name: 'Incentive',     priceKey: 'pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d',            accent: 'linear-gradient(90deg,#2DD4BF,#7B8FFF)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png' },
     { id: 'HEX',  symbol: 'HEX',  name: 'pHEX',          priceKey: 'pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39',            accent: 'linear-gradient(90deg,#ff6b35,#f7931a)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39.png' },
     { id: 'PRVX', symbol: 'PRVX', name: 'PrivacyX',      priceKey: 'pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11',            accent: 'linear-gradient(90deg,#6c3ce1,#b044ff)',                                              logo: 'https://cdn.dexscreener.com/cms/images/ODHYYN7yppDHnd6u?width=64&height=64&fit=crop&quality=95&format=auto' },
     { id: 'eHEX', symbol: 'eHEX', name: 'Ethereum HEX',  priceKey: 'ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39',              accent: 'linear-gradient(90deg,#ff0080,#ff6b35,#ffeb3b,#7B8FFF,#60A5FA,#7b00ff)',             logo: 'https://cdn.dexscreener.com/cms/images/a46bd12940d8501c2aacdd10ad4780e818bdedaba1ec8eb46b52e4d8313d4a93?width=64&height=64&fit=crop&quality=95&format=auto' },

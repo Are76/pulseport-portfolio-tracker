@@ -67,7 +67,6 @@ function stakeAccruedYieldHex(st: HexStake): number {
 // -- StakingPie sub-component --------------------------------------------------
 
 function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: number }) {
-  const [activeIndex, setActiveIndex] = useState(0);
   if (!stakes || stakes.length === 0) return null;
 
   const byWallet: Record<string, { label: string; tShares: number; stakedHex: number; yieldHex: number; totalHex: number; totalUsd: number; count: number }> = {};
@@ -128,8 +127,7 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
       <ResponsiveContainer width="100%" height={240} minWidth={0} minHeight={1}>
         <PieChart>
           <Pie data={chartData} cx="50%" cy="50%" innerRadius={60} outerRadius={85} dataKey="tShares"
-            {...{ activeIndex } as {}} activeShape={renderActiveShape}
-            onMouseEnter={(_, index) => setActiveIndex(index)}>
+            activeShape={renderActiveShape}>
             {chartData.map((_, i) => <Cell key={i} fill={getColor(i)} />)}
           </Pie>
           <RechartsTooltip
