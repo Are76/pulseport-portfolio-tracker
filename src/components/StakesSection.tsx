@@ -600,7 +600,7 @@ export function StakesSection({
                   const stakeLength = stake.stakedDays ?? 0;
                   const lockedDay = stake.lockedDay ?? 0;
                   const endDay = lockedDay + stakeLength;
-                  const rateSource = avgPayoutPulse || avgPayoutEth ? 'on-chain avg' : 'est.';
+                  const rateSource = (stake.chain === 'pulsechain' ? avgPayoutPulse : avgPayoutEth) != null ? 'on-chain avg' : 'est.';
                   const detailStats: { label: string; val: string; sub?: string; color?: string }[] = [
                     { label: 'Principal', val: `${fmtHexExact(stakedHex)} ${tokenLabel}`, sub: fmtUsdExact(principalValueUsd) },
                     { label: 'Active Yield', val: `+${fmtHexExact(accruedHex)} ${tokenLabel}`, sub: fmtUsdExact(activeYieldUsd), color: 'var(--positive)' },

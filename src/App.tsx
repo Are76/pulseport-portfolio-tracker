@@ -884,9 +884,9 @@ export default function App() {
         );
         const dsPairs: any[] = await dsRes.json();
         if (Array.isArray(dsPairs) && dsPairs.length > 0) {
-          // Pick the pair with the most liquidity (most reliable price)
+          // Restrict to Uniswap on Ethereum; pick highest-liquidity pair for price reliability
           const best = dsPairs
-            .filter(p => p.priceUsd && Number(p.priceUsd) > 0)
+            .filter(p => p.priceUsd && Number(p.priceUsd) > 0 && p.dexId === 'uniswap')
             .sort((a, b) => (b.liquidity?.usd ?? 0) - (a.liquidity?.usd ?? 0))[0];
           if (best) {
             const dsPrice   = Number(best.priceUsd);
@@ -2765,7 +2765,7 @@ export default function App() {
       chainPnlUsd,
       chainPnlPercent
     };
-  }, [currentAssets, currentStakes, currentTransactions, prices, wallets]);
+  }, [currentAssets, currentStakes, currentTransactions, prices, wallets, hexDailyData]);
 
   const pieData = Object.entries(summary.chainDistribution).map(([name, value]) => ({
     name: name.charAt(0).toUpperCase() + name.slice(1),
@@ -4524,7 +4524,7 @@ export default function App() {
                   const pHexLiquid = currentAssets.filter(a => a.chain === 'pulsechain' && (a as any).address?.toLowerCase() === HEX_ADDR_LC).reduce((s, a) => s + a.balance, 0);
                   // Staked = principal + accrued yield (using real daily rates, never stale constants)
                   let pHexPrincipal = 0, pHexYield = 0;
-                  currentStakes.filter(s => s.chain === 'pulsechain').forEach(st => {
+                  currentStakes.filter(s => s.chain === 'pulsechain' && (s.daysRemaining ?? 0) > 0).forEach(st => {
                     const principal  = st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8;
                     const tSharesVal = st.tShares    ?? Number(st.stakeShares  ?? 0n) / 1e12;
                     const lockedDay  = st.lockedDay ?? 0;
@@ -4540,7 +4540,7 @@ export default function App() {
                   const eHexLiquidPls = currentAssets.filter(a => a.chain === 'pulsechain' && a.symbol === 'eHEX').reduce((s, a) => s + a.balance, 0);
                   const eHexLiquid = eHexLiquidEth + eHexLiquidPls;
                   let eHexPrincipal = 0, eHexYield = 0;
-                  currentStakes.filter(s => s.chain === 'ethereum').forEach(st => {
+                  currentStakes.filter(s => s.chain === 'ethereum' && (s.daysRemaining ?? 0) > 0).forEach(st => {
                     const principal  = st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8;
                     const tSharesVal = st.tShares    ?? Number(st.stakeShares  ?? 0n) / 1e12;
                     const lockedDay  = st.lockedDay ?? 0;
