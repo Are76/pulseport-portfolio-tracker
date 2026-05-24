@@ -143,14 +143,14 @@ export function HoldingsTable({
 
   const columns = [
     { label: 'Token', field: null, align: 'left', hideMobile: false },
-    { label: 'Price', field: null, align: 'right', hideMobile: true },
+    { label: 'Price', field: null, align: 'right', hideMobile: false },
     { label: priceChangePeriod.toUpperCase(), field: 'change' as const, align: 'right', hideMobile: false },
     { label: 'Amount', field: null, align: 'right', hideMobile: true },
     { label: 'USD Value', field: 'value' as const, align: 'right', hideMobile: false },
     { label: 'PLS Value', field: null, align: 'right', hideMobile: true },
     { label: 'League', field: null, align: 'right', hideMobile: true },
     { label: '% Portfolio', field: null, align: 'right', hideMobile: true },
-    { label: '', field: null, align: 'right', hideMobile: true },
+    { label: '', field: null, align: 'right', hideMobile: false },
   ];
 
   return (
@@ -245,16 +245,16 @@ export function HoldingsTable({
                             <button
                               type="button"
                               onClick={e => { e.stopPropagation(); onSelectAsset(asset); }}
-                              style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)', textDecoration: 'none', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', ...(isMobileLayout ? { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%', display: 'block' } : {}) }}
+                              style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)', textDecoration: 'none', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', whiteSpace: 'nowrap' }}
                             >
-                              {asset.name || asset.symbol}
+                              {isMobileLayout ? asset.symbol : (asset.name || asset.symbol)}
                             </button>
                           ) : explUrl ? (
-                            <a href={explUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)', textDecoration: 'none', ...(isMobileLayout ? { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%', display: 'block' } : {}) }}>
-                              {asset.name || asset.symbol}
+                            <a href={explUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                              {isMobileLayout ? asset.symbol : (asset.name || asset.symbol)}
                             </a>
                           ) : (
-                            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)', ...(isMobileLayout ? { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%', display: 'block' } : {}) }}>{asset.name || asset.symbol}</span>
+                            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)', whiteSpace: 'nowrap' }}>{isMobileLayout ? asset.symbol : (asset.name || asset.symbol)}</span>
                           )}
                           {addr && addr !== 'native' && !isMobileLayout && (
                             <button onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(addr); }} title={`Copy contract address: ${addr}`} style={{ padding: '1px 3px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', lineHeight: 1 }}>
@@ -262,16 +262,18 @@ export function HoldingsTable({
                             </button>
                           )}
                         </div>
+                        {!isMobileLayout && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3 }}>
                           <div style={{ width: 5, height: 5, borderRadius: '50%', background: chainColors[asset.chain] || '#555', flexShrink: 0 }} />
                           <span style={{ fontSize: 12, color: 'var(--fg-muted)', textTransform: 'lowercase' }}>{asset.symbol} · {asset.chain}</span>
                         </div>
+                        )}
                       </div>
                     </div>
                   </td>
-                  <td className="hide-mobile" style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                  <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace' }}>{fmtPrice(asset.priceUsd)}</div>
-                    <div style={{ fontSize: 12, color: '#f739ff', marginTop: 2 }}>{fmtCompact(asset.pricePls)} PLS</div>
+                    {!isMobileLayout && <div style={{ fontSize: 12, color: '#f739ff', marginTop: 2 }}>{fmtCompact(asset.pricePls)} PLS</div>}
                   </td>
                   <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap', fontSize: 13, fontWeight: 700, color: pct >= 0 ? 'var(--accent)' : '#ef4444' }}>
                     {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%
@@ -302,9 +304,9 @@ export function HoldingsTable({
                       <div style={{ height: '100%', width: `${Math.min(share, 100)}%`, background: 'var(--accent)', borderRadius: 1 }} />
                     </div>
                   </td>
-                  <td className="hide-mobile" style={{ padding: '12px 12px', textAlign: 'right' }}>
+                  <td style={{ padding: '12px 8px', textAlign: 'right' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2 }}>
-                      {showActions && (
+                      {showActions && !isMobileLayout && (
                         <button onClick={e => { e.stopPropagation(); onOpenPnl(asset); }} title="View P&L" style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#777' }}>
                           <Calculator size={13} />
                         </button>
@@ -314,9 +316,11 @@ export function HoldingsTable({
                           <Trash2 size={13} />
                         </button>
                       )}
-                      <span style={{ color: isExpanded ? 'var(--accent)' : 'var(--fg-subtle)', padding: 4, display: 'inline-flex' }}>
-                        {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                      </span>
+                      {!isMobileLayout && (
+                        <span style={{ color: isExpanded ? 'var(--accent)' : 'var(--fg-subtle)', padding: 4, display: 'inline-flex' }}>
+                          {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                        </span>
+                      )}
                     </div>
                   </td>
                 </tr>
