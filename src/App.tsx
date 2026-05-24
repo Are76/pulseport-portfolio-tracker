@@ -299,7 +299,7 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
     ? [...large, { label: 'Others', tShares: small.reduce((a, b) => a + b.tShares, 0), totalUsd: small.reduce((a, b) => a + b.totalUsd, 0), count: small.reduce((a, b) => a + b.count, 0) }]
     : large;
 
-  const GRADIENT = ['#7B8FFF', '#627EEA', '#f739ff', '#fb923c', '#3b82f6', '#a855f7'];
+  const GRADIENT = ['#38BDF8', '#627EEA', '#f739ff', '#fb923c', '#3b82f6', '#a855f7'];
   const getColor = (i: number) => GRADIENT[i % GRADIENT.length];
 
   const fmtK = (n: number) => n >= 1e9 ? (n / 1e9).toFixed(1) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : n.toFixed(0);
@@ -363,7 +363,7 @@ interface WalletSelectorProps {
   walletLabels?: Record<string, string>;
 }
 
-const WALLET_DOT_COLORS = ['#7B8FFF','#f739ff','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
+const WALLET_DOT_COLORS = ['#38BDF8','#f739ff','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
 
 function WalletSelector({ wallets, activeWallet, onSelect, onAdd, onRemove, walletLabels = {} }: WalletSelectorProps) {
   if (wallets.length === 0) {
@@ -3229,12 +3229,12 @@ export default function App() {
   };
 
   const coreLiveTokens = useMemo(() => ([
-    { id: 'PLS',  symbol: 'PLS',  name: 'PulseChain',    priceKey: 'pulsechain',                                                    changeKey: 'pulsechain:native', accent: 'linear-gradient(90deg,#7B8FFF,#60A5FA)', tokenAddr: '0xa1077a294dde1b09bb078844df40758a5d0f9a27', logo: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png' },
+    { id: 'PLS',  symbol: 'PLS',  name: 'PulseChain',    priceKey: 'pulsechain',                                                    changeKey: 'pulsechain:native', accent: 'linear-gradient(90deg,#38BDF8,#60A5FA)', tokenAddr: '0xa1077a294dde1b09bb078844df40758a5d0f9a27', logo: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png' },
     { id: 'PLSX', symbol: 'PLSX', name: 'PulseX',        priceKey: 'pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab',            accent: 'linear-gradient(90deg,#ff00bf,#7b00ff)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x95B303987A60C71504D99Aa1b13B4DA07b0790ab.png' },
-    { id: 'INC',  symbol: 'INC',  name: 'Incentive',     priceKey: 'pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d',            accent: 'linear-gradient(90deg,#2DD4BF,#7B8FFF)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png' },
+    { id: 'INC',  symbol: 'INC',  name: 'Incentive',     priceKey: 'pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d',            accent: 'linear-gradient(90deg,#2DD4BF,#38BDF8)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png' },
     { id: 'HEX',  symbol: 'HEX',  name: 'pHEX',          priceKey: 'pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39',            accent: 'linear-gradient(90deg,#ff6b35,#f7931a)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39.png' },
     { id: 'PRVX', symbol: 'PRVX', name: 'PrivacyX',      priceKey: 'pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11',            accent: 'linear-gradient(90deg,#6c3ce1,#b044ff)',                                              logo: 'https://cdn.dexscreener.com/cms/images/ODHYYN7yppDHnd6u?width=64&height=64&fit=crop&quality=95&format=auto' },
-    { id: 'eHEX', symbol: 'eHEX', name: 'Ethereum HEX',  priceKey: 'ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39',              accent: 'linear-gradient(90deg,#ff0080,#ff6b35,#ffeb3b,#7B8FFF,#60A5FA,#7b00ff)',             logo: 'https://cdn.dexscreener.com/cms/images/a46bd12940d8501c2aacdd10ad4780e818bdedaba1ec8eb46b52e4d8313d4a93?width=64&height=64&fit=crop&quality=95&format=auto' },
+    { id: 'eHEX', symbol: 'eHEX', name: 'Ethereum HEX',  priceKey: 'ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39',              accent: 'linear-gradient(90deg,#ff0080,#ff6b35,#ffeb3b,#38BDF8,#60A5FA,#7b00ff)',             logo: 'https://cdn.dexscreener.com/cms/images/a46bd12940d8501c2aacdd10ad4780e818bdedaba1ec8eb46b52e4d8313d4a93?width=64&height=64&fit=crop&quality=95&format=auto' },
   ]), []);
 
   useEffect(() => {
@@ -3317,7 +3317,7 @@ export default function App() {
       .sort((a, b) => b.value - a.value)
       .forEach(asset => {
         const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()] || (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()] || getTokenLogoUrl(asset);
-        const chainColor = CHAIN_COLORS[asset.chain] || '#7B8FFF';
+        const chainColor = CHAIN_COLORS[asset.chain] || '#38BDF8';
         const address = (asset as any).address?.toLowerCase?.();
         const dexUrl = address
           ? `https://dexscreener.com/${asset.chain}/${address}`
@@ -3330,7 +3330,7 @@ export default function App() {
           change24h: getFrontMarketChange(tokenMarketData[asset.id], null, asset),
           marketCap: tokenMarketData[asset.id]?.marketCap ?? tokenMarketData[asset.id]?.fdv ?? null,
           volume24h: tokenMarketData[asset.id]?.volume24h ?? null,
-          accent: `linear-gradient(90deg, ${chainColor}, var(--accent-glow, rgba(123,143,255,0.7)))`,
+          accent: `linear-gradient(90deg, ${chainColor}, var(--accent-glow, rgba(56,189,248,0.7)))`,
           logo,
           dexUrl,
         });
@@ -4128,7 +4128,7 @@ export default function App() {
                   <div className={theme === 'dark' ? 'hero-bg-dark' : 'hero-bg-light'} style={{ border: '1px solid rgba(0,255,159,0.12)', borderRadius: 20, padding: '40px 32px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 0%, rgba(0,255,159,.10) 0%, transparent 55%), radial-gradient(ellipse at 80% 80%, rgba(99,70,255,.06) 0%, transparent 50%)', pointerEvents: 'none' }} />
                     <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(0,255,159,0.1)', border: '1px solid rgba(0,255,159,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 0 24px rgba(0,255,159,0.12)' }}>
-                      <WalletIcon size={24} color="#7B8FFF" />
+                      <WalletIcon size={24} color="#38BDF8" />
                     </div>
                     <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--fg)', marginBottom: 8, letterSpacing: '-0.02em' }}>Welcome to PulsePort</div>
                     <div style={{ fontSize: 14, color: 'var(--fg-muted)', marginBottom: 32, maxWidth: 400, margin: '0 auto 32px' }}>
@@ -4946,7 +4946,7 @@ export default function App() {
                               const next = Number(e.target.value);
                               setAllocationDraftPercentages(prev => ({ ...prev, [row.name]: next }));
                             }}
-                            style={{ accentColor: ['#7B8FFF','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'][i % 7] }}
+                            style={{ accentColor: ['#38BDF8','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'][i % 7] }}
                           />
                           <input
                             type="number"
