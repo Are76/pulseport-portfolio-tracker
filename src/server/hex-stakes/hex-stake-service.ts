@@ -24,11 +24,38 @@ const HEX_STAKE_ABI = [
     ],
   },
   { type: 'function', name: 'currentDay', stateMutability: 'view', inputs: [], outputs: [{ name: 'day', type: 'uint256' }] },
+  {
+    type: 'function', name: 'dailyDataRange', stateMutability: 'view',
+    inputs: [{ name: 'beginDay', type: 'uint256' }, { name: 'endDay', type: 'uint256' }],
+    outputs: [{ name: 'list', type: 'tuple[]', components: [
+      { name: 'dayPayoutTotal', type: 'uint72' },
+      { name: 'dayStakeSharesTotal', type: 'uint72' },
+      { name: 'dayUnclaimedSatoshisTotal', type: 'uint56' },
+    ] }],
+  },
 ] as const;
 
-const MIGRATION_WARNING = 'Native PulseChain HEX active stake reads are implemented. Yield, pricing, PnL, ended stake discovery, HSI, and HTT are not implemented yet.';
+const MIGRATION_WARNING = 'Native PulseChain HEX active stake reads are implemented. Pricing, PnL, ended stake discovery, HSI, and HTT are not implemented yet.';
 
 type HexStakeListEntry = readonly [number | bigint, bigint, bigint, number | bigint, number | bigint, number | bigint, boolean];
+type HexDailyDataEntry = readonly [bigint, bigint, bigint];
+
+
+function calculateYieldHearts(stakeShares: bigint, dayData: HexDailyDataEntry[]): bigint {
+  return dayData.reduce((acc, [dayPayoutTotal, dayStakeSharesTotal]) => {
+    if (dayStakeSharesTotal <= 0n) return acc;
+    return acc + (stakeShares * dayPayoutTotal) / dayStakeSharesTotal;
+  }, 0n);
+}
+
+
+type HexDailyDataObject = { dayPayoutTotal: bigint; dayStakeSharesTotal: bigint; dayUnclaimedSatoshisTotal: bigint };
+
+function normalizeDailyDataEntry(entry: HexDailyDataEntry | HexDailyDataObject): HexDailyDataEntry {
+  if (Array.isArray(entry)) return [BigInt(entry[0]), BigInt(entry[1]), BigInt(entry[2])];
+  const obj = entry as HexDailyDataObject;
+  return [obj.dayPayoutTotal, obj.dayStakeSharesTotal, obj.dayUnclaimedSatoshisTotal];
+}
 
 function classifyStakeStatus(lockedDay: number, stakedDays: number, currentDay: number): HexStakePositionDto['stakeStatus'] {
   if (lockedDay > currentDay) return 'pending';
@@ -91,20 +118,78 @@ export async function getHexStakeDashboard(walletAddress: string, chainId = PULS
       ? `Partial native stake read: ${failedStakeIndexes.length}/${stakeCount} stakeLists indexes failed.`
       : null;
 
+    const yieldEligible = successfulStakes.filter(({ stake }) => {
+      const lockedDay = Number(stake[3]);
+      return lockedDay <= currentDay;
+    });
+    const earliestLockedDay = yieldEligible.length > 0 ? Math.min(...yieldEligible.map((x) => Number(x.stake[3]))) : null;
+    const latestYieldDay = currentDay > 0 ? currentDay - 1 : 0;
+
+    let dailyDataByDay = new Map<number, HexDailyDataEntry>();
+    let dailyDataWarning: string | null = null;
+
+    if (earliestLockedDay !== null && earliestLockedDay <= latestYieldDay) {
+      try {
+        const dailyData = await client.readContract({
+          address: HEX_CONTRACT_ADDRESS,
+          abi: HEX_STAKE_ABI,
+          functionName: 'dailyDataRange',
+          args: [BigInt(earliestLockedDay), BigInt(latestYieldDay + 1)],
+        }) as readonly (HexDailyDataEntry | HexDailyDataObject)[];
+
+        dailyDataByDay = new Map(dailyData.map((entry, idx) => [earliestLockedDay + idx, normalizeDailyDataEntry(entry)]));
+
+
+        const expectedDays = latestYieldDay - earliestLockedDay + 1;
+        if (dailyData.length < expectedDays) {
+          dailyDataWarning = `dailyDataRange returned incomplete data (${dailyData.length}/${expectedDays} days).`;
+        }
+      } catch {
+        dailyDataWarning = 'dailyDataRange call failed; yield cannot be fully determined.';
+      }
+    }
+
+    let totalYieldHeartsRaw = 0n;
     const positions: HexStakePositionDto[] = successfulStakes.map(({ stake }) => {
       const [stakeId, stakedHearts, stakeShares, lockedDayRaw, stakedDaysRaw] = stake;
       const lockedDay = Number(lockedDayRaw);
       const stakedDays = Number(stakedDaysRaw);
+      const stakeStatus = classifyStakeStatus(lockedDay, stakedDays, currentDay);
+      let yieldHearts = 0n;
       const warnings = [
-        'Yield calculation is not implemented for native HEX stakes yet.',
         'Pricing, valuation, and PnL are not implemented for HEX stakes yet.',
         'Ended stake discovery is not implemented yet.',
       ];
+      const provenanceNotes = [
+        'chainId=369',
+        'methods=stakeCount,stakeLists,currentDay,dailyDataRange',
+        `dailyDataRange.startDay=${earliestLockedDay ?? 'na'}`,
+        `dailyDataRange.endDay=${earliestLockedDay !== null ? latestYieldDay : 'na'}`,
+      ];
+      if (stakeStatus === 'pending') {
+        warnings.push('Pending stake has no realized yield yet; yieldHex remains 0.');
+        provenanceNotes.push('yield.pending=no-realized-yield');
+      } else {
+        const maturityDay = lockedDay + stakedDays - 1;
+        const endDay = Math.min(maturityDay, latestYieldDay);
+        const days: HexDailyDataEntry[] = [];
+        for (let day = lockedDay; day <= endDay; day += 1) {
+          const entry = dailyDataByDay.get(day);
+          if (!entry) {
+            warnings.push(`dailyData missing for day ${day}; yield may be incomplete.`);
+            continue;
+          }
+          days.push(entry);
+        }
+        yieldHearts = calculateYieldHearts(BigInt(stakeShares), days);
+      }
+      totalYieldHeartsRaw += yieldHearts;
+      if (dailyDataWarning) warnings.push(dailyDataWarning);
       if (partialWarning) warnings.push(partialWarning);
       return {
         stakeId: stakeId.toString(),
         stakeSource: 'native',
-        stakeStatus: classifyStakeStatus(lockedDay, stakedDays, currentDay),
+        stakeStatus,
         chainId,
         assetId: HEX_ASSET_ID,
         contractAddress: HEX_CONTRACT_ADDRESS,
@@ -114,7 +199,7 @@ export async function getHexStakeDashboard(walletAddress: string, chainId = PULS
         principalHex: formatUnits(stakedHearts, 8),
         stakeShares: stakeShares.toString(),
         tShares: formatUnits(stakeShares, 12),
-        yieldHex: null,
+        yieldHex: formatUnits(yieldHearts, 8),
         bpdYield: null,
         bpdYieldStatus: 'unknown',
         pricing: { status: 'unavailable', priceUsd: null, source: null, observedAt: null },
@@ -124,7 +209,7 @@ export async function getHexStakeDashboard(walletAddress: string, chainId = PULS
         provenance: {
           source: 'pulseport.hex-stakes.native-contract-reads-v1',
           observedAt: asOf,
-          notes: ['chainId=369', 'methods=stakeCount,stakeLists,currentDay', `stakeIndex=${successfulStakes.length > 0 ? 'partial-or-full' : 'none'}`],
+          notes: provenanceNotes,
         },
       };
     });
@@ -133,7 +218,7 @@ export async function getHexStakeDashboard(walletAddress: string, chainId = PULS
     const totalTSharesRaw = successfulStakes.reduce((acc, x) => acc + BigInt(x.stake[2]), 0n);
 
     const rootWarnings = [MIGRATION_WARNING, ...(partialWarning ? [partialWarning] : [])];
-    const rootNotes = ['source=HEX contract reads', 'methods=stakeCount,stakeLists,currentDay', `chainId=${chainId}`, `asOf=${asOf}`];
+    const rootNotes = ['source=HEX contract reads', 'methods=stakeCount,stakeLists,currentDay,dailyDataRange', `chainId=${chainId}`, `asOf=${asOf}`];
     if (partialWarning) rootNotes.push(`failedStakeIndexes=${failedStakeIndexes.join(',')}`);
 
     return {
@@ -145,7 +230,7 @@ export async function getHexStakeDashboard(walletAddress: string, chainId = PULS
         endedStakeCount: 0,
         unsupportedStakeCount: 0,
         totalPrincipalHex: formatUnits(totalPrincipalRaw, 8),
-        totalYieldHex: '0',
+        totalYieldHex: formatUnits(totalYieldHeartsRaw, 8),
         totalTShares: formatUnits(totalTSharesRaw, 12),
         valuationStatus: 'unavailable',
         pnlStatus: 'unavailable',
