@@ -14,6 +14,10 @@ export interface StakesSectionProps {
   hexUsdPrice: number;
   phexUsdPrice: number;
   ehexUsdPrice: number;
+  /** Real on-chain daily yield rate for pHEX (HEX/T-Share/day). Falls back to hardcoded constant when undefined. */
+  avgPayoutPulse?: number;
+  /** Real on-chain daily yield rate for eHEX (HEX/T-Share/day). Falls back to hardcoded constant when undefined. */
+  avgPayoutEth?: number;
   liquidPHex?: number;
   liquidEHex?: number;
   walletAddresses?: string[];
@@ -50,15 +54,15 @@ function shortenAddr(addr: string): string {
   return addr.slice(0, 6) + '...' + addr.slice(-4);
 }
 
-function stakeMaturityHex(st: HexStake): number {
+function stakeMaturityHex(st: HexStake, ratePulse: number, rateEth: number): number {
   const tS = st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12;
-  const rate = st.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
+  const rate = st.chain === 'pulsechain' ? ratePulse : rateEth;
   return (st.stakedHex ?? 0) + tS * (st.stakedDays ?? 0) * rate;
 }
 
-function stakeAccruedYieldHex(st: HexStake): number {
+function stakeAccruedYieldHex(st: HexStake, ratePulse: number, rateEth: number): number {
   const tS = st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12;
-  const rate = st.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
+  const rate = st.chain === 'pulsechain' ? ratePulse : rateEth;
   const daysLeft = Math.max(0, st.daysRemaining ?? 0);
   const daysStakedSoFar = Math.max(0, (st.stakedDays ?? 0) - daysLeft);
   return tS * daysStakedSoFar * rate;
@@ -209,10 +213,15 @@ export function StakesSection({
   hexUsdPrice,
   phexUsdPrice,
   ehexUsdPrice,
+  avgPayoutPulse,
+  avgPayoutEth,
   liquidPHex = 0,
   liquidEHex = 0,
   walletLabels = {},
 }: StakesSectionProps) {
+  // Effective yield rates: use real on-chain data when available, fall back to constants
+  const ratePulse = avgPayoutPulse ?? PHEX_YIELD_PER_TSHARE;
+  const rateEth   = avgPayoutEth   ?? EHEX_YIELD_PER_TSHARE;
   const [stakeFilter, setStakeFilter] = useState<StakeFilter>('all');
   const [expandedStakeIds, setExpandedStakeIds] = useState<Set<string>>(() => new Set());
 
@@ -232,17 +241,14 @@ export function StakesSection({
 
   const activeStakes = stakes.filter(s => (s.daysRemaining ?? 0) > 0);
 
-  // Daily yield = sum of (tShares x chain-specific rate) across all active stakes.
-  // This is independent of days remaining - it's what accrues every single day.
   const dailyYieldHex = activeStakes.reduce((sum, s) => {
     const tS = s.tShares ?? Number(s.stakeShares ?? 0n) / 1e12;
-    const rate = s.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
+    const rate = s.chain === 'pulsechain' ? ratePulse : rateEth;
     return sum + tS * rate;
   }, 0);
-  // USD yield uses per-chain prices - pHEX and eHEX trade at different prices
   const dailyYieldUsd = activeStakes.reduce((sum, s) => {
     const tS = s.tShares ?? Number(s.stakeShares ?? 0n) / 1e12;
-    const rate = s.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
+    const rate = s.chain === 'pulsechain' ? ratePulse : rateEth;
     const price = s.chain === 'pulsechain' ? phexUsdPrice : ehexUsdPrice;
     return sum + tS * rate * price;
   }, 0);
@@ -258,7 +264,7 @@ export function StakesSection({
   const totalHexStaked = activeStakes.reduce((s, st) => s + (st.stakedHex ?? 0), 0);
   const totalCurrentValueUsd = activeStakes.reduce((s, st) => s + (st.estimatedValueUsd ?? 0), 0);
   const totalMaturityValueUsd = activeStakes.reduce((s, st) => s + (st.totalValueUsd ?? st.estimatedValueUsd ?? 0), 0);
-  const totalMaturityHex = activeStakes.reduce((s, st) => s + stakeMaturityHex(st), 0);
+  const totalMaturityHex = activeStakes.reduce((s, st) => s + stakeMaturityHex(st, ratePulse, rateEth), 0);
   const totalTShares = activeStakes.reduce((s, st) => s + (st.tShares ?? 0), 0);
 
   const chainPerformance = ([
@@ -269,9 +275,9 @@ export function StakesSection({
     const matured = chainStakes.filter(s => (s.daysRemaining ?? 0) <= 0);
     const stakedHex = active.reduce((sum, st) => sum + (st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8), 0);
     const tShares = active.reduce((sum, st) => sum + (st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12), 0);
-    const rate = chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
+    const rate = chain === 'pulsechain' ? ratePulse : rateEth;
     const dailyHex = active.reduce((sum, st) => sum + (st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12) * rate, 0);
-    const yieldToDateHex = active.reduce((sum, st) => sum + stakeAccruedYieldHex(st), 0);
+    const yieldToDateHex = active.reduce((sum, st) => sum + stakeAccruedYieldHex(st, ratePulse, rateEth), 0);
     const totalActiveHex = liquidHex + stakedHex + yieldToDateHex;
 
     return {
@@ -580,7 +586,7 @@ export function StakesSection({
                   const tShares       = stake.tShares ?? Number(stake.stakeShares ?? 0n) / 1e12;
                   const daysLeft      = stake.daysRemaining ?? 0;
                   const daysStakedSoFar = Math.max(0, (stake.stakedDays ?? 0) - daysLeft);
-                  const yieldRate     = stake.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
+                  const yieldRate     = stake.chain === 'pulsechain' ? ratePulse : rateEth;
                   const accruedHex    = tShares * daysStakedSoFar * yieldRate;
                   const yieldHex      = tShares * (stake.stakedDays ?? 0) * yieldRate;   // full yield at maturity
                   const currentValueUsd  = (stakedHex + accruedHex) * hexPrice;    // principal + accrued
@@ -594,10 +600,11 @@ export function StakesSection({
                   const stakeLength = stake.stakedDays ?? 0;
                   const lockedDay = stake.lockedDay ?? 0;
                   const endDay = lockedDay + stakeLength;
-                  const detailStats = [
+                  const rateSource = avgPayoutPulse || avgPayoutEth ? 'on-chain avg' : 'est.';
+                  const detailStats: { label: string; val: string; sub?: string; color?: string }[] = [
                     { label: 'Principal', val: `${fmtHexExact(stakedHex)} ${tokenLabel}`, sub: fmtUsdExact(principalValueUsd) },
                     { label: 'Active Yield', val: `+${fmtHexExact(accruedHex)} ${tokenLabel}`, sub: fmtUsdExact(activeYieldUsd), color: 'var(--positive)' },
-                    { label: 'Daily Yield', val: `+${fmtHexExact(dailyYield)} ${tokenLabel}`, sub: `${yieldRate.toFixed(2)} HEX/T-Share/day`, color: 'var(--positive)' },
+                    { label: 'Daily Yield', val: `+${fmtHexExact(dailyYield)} ${tokenLabel}`, sub: `${yieldRate.toFixed(4)} HEX/T-Share/day (${rateSource})`, color: 'var(--positive)' },
                     { label: 'Current Value', val: fmtUsdExact(currentValueUsd), sub: `${fmtHexExact(stakedHex + accruedHex)} ${tokenLabel}` },
                     { label: 'Maturity', val: fmtUsdExact(maturityValueUsd), sub: `${fmtHexExact(maturityHex)} ${tokenLabel}`, color: 'var(--positive)' },
                     { label: 'T-Shares', val: tShares.toLocaleString('en-US', { maximumFractionDigits: 6 }), sub: 'Stake weight' },
@@ -609,6 +616,24 @@ export function StakesSection({
                     },
                     { label: 'Progress', val: `${stake.progress}%`, sub: `${daysStakedSoFar.toLocaleString()} / ${stakeLength.toLocaleString()} days` },
                   ];
+                  if (stake.unrealizedPnlUsd != null) {
+                    const pnlColor = stake.unrealizedPnlUsd >= 0 ? 'var(--positive)' : '#ef4444';
+                    const pnlSign  = stake.unrealizedPnlUsd >= 0 ? '+' : '';
+                    detailStats.push({
+                      label: 'Unrealized P&L',
+                      val: `${pnlSign}${fmtUsdExact(stake.unrealizedPnlUsd)}`,
+                      sub: `Cost basis ${fmtUsdExact(stake.costBasisUsd ?? 0)} (first observed)`,
+                      color: pnlColor,
+                    });
+                  }
+                  if (stake.penaltyPct != null) {
+                    detailStats.push({
+                      label: 'Late Penalty',
+                      val: `~${stake.penaltyPct.toFixed(1)}%`,
+                      sub: 'Est. loss if ended now (overdue)',
+                      color: '#ef4444',
+                    });
+                  }
                   const walletLabel = stake.walletLabel
                     ?? (stake.walletAddress ? (walletLabels[stake.walletAddress] ?? shortenAddr(stake.walletAddress)) : '-');
                   const isExpanded = expandedStakeIds.has(stake.id);
@@ -731,7 +756,7 @@ export function StakesSection({
                   <td className="col-hide-mobile" style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: 'var(--positive)', fontFamily: "'JetBrains Mono', monospace" }}>
                     +{fmtHex(filteredStakes.reduce((s, st) => {
                       const t = st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12;
-                      const r = st.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
+                      const r = st.chain === 'pulsechain' ? ratePulse : rateEth;
                       return s + t * (st.stakedDays ?? 0) * r;
                     }, 0))}
                   </td>
@@ -739,14 +764,14 @@ export function StakesSection({
                     {fmtUsd(filteredStakes.reduce((s, st) => {
                       const principal = st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8;
                       const t = st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12;
-                      const r = st.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
+                      const r = st.chain === 'pulsechain' ? ratePulse : rateEth;
                       const accrued = t * Math.max(0, (st.stakedDays ?? 0) - (st.daysRemaining ?? 0)) * r;
                       const hp = st.chain === 'pulsechain' ? phexUsdPrice : ehexUsdPrice;
                       return s + (principal + accrued) * hp;
                     }, 0))}
                   </td>
                   <td className="col-hide-mobile" style={{ padding: '10px 14px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: 'var(--positive)', fontFamily: "'JetBrains Mono', monospace" }}>
-                    {fmtHex(filteredStakes.reduce((s, st) => s + stakeMaturityHex(st), 0))} HEX
+                    {fmtHex(filteredStakes.reduce((s, st) => s + stakeMaturityHex(st, ratePulse, rateEth), 0))} HEX
                   </td>
                 </tr>
               </tfoot>
