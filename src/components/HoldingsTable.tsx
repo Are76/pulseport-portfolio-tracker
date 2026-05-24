@@ -128,6 +128,7 @@ export function HoldingsTable({
   const tableTotalUsd = footerValueUsd ?? assets.reduce((sum, asset) => sum + asset.valueUsd, 0);
   const tableTotalPls = plsUsdPrice > 0 ? tableTotalUsd / plsUsdPrice : 0;
   const portfolioBase = shareBaseUsd ?? totalValueUsd;
+  const isMobileLayout = typeof window !== 'undefined' && window.innerWidth <= 639;
 
   const columns = [
     { label: 'Token', field: null, align: 'left', hideMobile: false },
@@ -312,7 +313,7 @@ export function HoldingsTable({
                 </tr>
                 {isExpanded && (
                   <tr style={{ borderBottom: '1px solid var(--border)', borderLeft: `3px solid ${chainColors[asset.chain] || '#333'}`, background: 'var(--bg-elevated)' }}>
-                    <td colSpan={9} style={{ padding: '0 12px 14px', maxWidth: 0 }}>
+                    <td colSpan={isMobileLayout ? columns.filter(c => !c.hideMobile).length : columns.length} style={{ padding: '0 12px 14px', maxWidth: 0 }}>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, paddingTop: 12 }}>
                         <DetailCard title="Price">
                           <DetailRow label="USD" value={fmtPrice(asset.priceUsd)} />
