@@ -322,8 +322,8 @@ export function HoldingsTable({
                 </tr>
                 {isExpanded && (
                   <tr style={{ borderBottom: '1px solid var(--border)', borderLeft: `3px solid ${chainColors[asset.chain] || '#333'}`, background: 'var(--bg-elevated)' }}>
-                    <td colSpan={isMobileLayout ? columns.filter(c => !c.hideMobile).length : columns.length} style={{ padding: '0 12px 14px', maxWidth: 0 }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: isMobileLayout ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, paddingTop: 12 }}>
+                    <td colSpan={isMobileLayout ? columns.filter(c => !c.hideMobile).length : columns.length} style={{ padding: '0 12px 14px', ...(isMobileLayout ? { overflow: 'hidden' } : { maxWidth: 0 }) }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: isMobileLayout ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, paddingTop: 12, ...(isMobileLayout ? { width: '100%' } : {}) }}>
                         <DetailCard title="Price">
                           <DetailRow label="USD" value={fmtPrice(asset.priceUsd)} />
                           <DetailRow label="PLS" value={`${fmtCompact(asset.pricePls)} PLS`} accent />
@@ -410,7 +410,7 @@ export function HoldingsTable({
 /** Bordered card with a small-caps title used inside expanded row panels. */
 function DetailCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px' }}>
+    <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px', minWidth: 0 }}>
       <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>{title}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>{children}</div>
     </div>
