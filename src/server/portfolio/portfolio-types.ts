@@ -29,11 +29,23 @@ export type PortfolioDashboardDto = {
   summary: PortfolioDashboardSummaryDto;
 };
 
-export type PortfolioDashboardResponse = {
-  ok: boolean;
-  data: PortfolioDashboardDto | null;
-  error: {
-    code: string;
-    message: string;
-  } | null;
+export type PortfolioDashboardErrorDto = {
+  code: string;
+  message: string;
 };
+
+export type PortfolioDashboardSuccessResponse = {
+  ok: true;
+  data: PortfolioDashboardDto;
+  error: null;
+};
+
+export type PortfolioDashboardFailureResponse = {
+  ok: false;
+  data: null;
+  error: PortfolioDashboardErrorDto;
+};
+
+export type PortfolioDashboardResponse =
+  | PortfolioDashboardSuccessResponse
+  | PortfolioDashboardFailureResponse;

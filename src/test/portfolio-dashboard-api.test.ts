@@ -50,8 +50,13 @@ describe('GET /api/portfolio/dashboard', () => {
 
     const { statusCode, payload } = recorder.getResult();
     expect(statusCode).toBe(200);
+    expect(payload).not.toBeNull();
     expect(payload?.ok).toBe(true);
-    expect(payload?.data?.schemaVersion).toBe('v1');
+    if (!payload || !payload.ok) {
+      throw new Error('Expected success response');
+    }
+    expect(payload.data.schemaVersion).toBe('v1');
+    expect(payload.error).toBeNull();
   });
 
   it('returns stable error response for missing walletAddress', async () => {
@@ -68,6 +73,12 @@ describe('GET /api/portfolio/dashboard', () => {
         message: 'walletAddress query parameter is required.',
       },
     });
+    expect(payload?.ok).toBe(false);
+    if (!payload || payload.ok) {
+      throw new Error('Expected failure response');
+    }
+    expect(payload.data).toBeNull();
+    expect(payload.error).not.toBeNull();
   });
 
 
@@ -141,8 +152,14 @@ describe('GET /api/portfolio/dashboard', () => {
     );
 
     const { payload } = recorder.getResult();
-    expect(payload?.data?.status).toBe('partial');
-    expect(payload?.data?.warnings).toEqual(['test warning']);
-    expect(payload?.data?.summary.warnings).toEqual(['test warning']);
+    expect(payload).not.toBeNull();
+    expect(payload?.ok).toBe(true);
+    if (!payload || !payload.ok) {
+      throw new Error('Expected success response');
+    }
+    expect(payload.data.status).toBe('partial');
+    expect(payload.data.warnings).toEqual(['test warning']);
+    expect(payload.data.summary.warnings).toEqual(['test warning']);
+    expect(payload.error).toBeNull();
   });
 });
