@@ -3896,8 +3896,8 @@ textarea:focus-visible,
 }
 .days-left-healthy {
   color: var(--positive-text);
-  background: rgba(123,143,255,0.08);
-  border-color: rgba(123,143,255,0.22);
+  background: rgba(52,211,153,0.10);
+  border-color: rgba(52,211,153,0.25);
 }
 [data-theme="light"] .days-left-expiring {
   background: rgba(239,68,68,0.09);
@@ -3909,8 +3909,8 @@ textarea:focus-visible,
   border-color: rgba(249,115,22,0.25);
 }
 [data-theme="light"] .days-left-healthy {
-  background: rgba(79,70,229,0.07);
-  border-color: rgba(79,70,229,0.22);
+  background: rgba(5,150,105,0.08);
+  border-color: rgba(5,150,105,0.22);
 }
 
 /* -- LIGHT MODE: LP card fixes ---------------------------------------- */
