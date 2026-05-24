@@ -4718,7 +4718,7 @@ export default function App() {
                     return sum + (stakedHex + tShares * daysStaked * rate) * hexPrice;
                   }, 0);
                   const selectedTotalUsd = selectedLiquidUsd + selectedStakingUsd;
-                  const chainAssets = walletChainFilter === 'all' ? currentAssets : currentAssets.filter(a => a.chain === walletChainFilter);
+                  const chainAssets = walletChainFilter === 'all' ? visibleWalletAssets : visibleWalletAssets.filter(a => a.chain === walletChainFilter);
                   const chainDisplayAssets = normalizeHoldingAssets(chainAssets);
                   const hiddenChainAssets = walletChainFilter === 'all' ? hiddenAssetRows : hiddenAssetRows.filter(a => a.chain === walletChainFilter);
                   return (<>
