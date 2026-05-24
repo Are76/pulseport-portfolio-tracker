@@ -2222,14 +2222,9 @@ textarea:focus-visible,
   }
 
   .front-search-shell {
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr) auto;
     border-radius: 8px;
-    padding-right: 12px;
-  }
-
-  .front-search-shell button {
-    grid-column: 1 / -1;
-    width: 100%;
+    padding-right: 8px;
   }
 
   .front-time-tabs {
@@ -7378,9 +7373,12 @@ body,
 .transaction-page-head {
   padding: 18px 20px;
   border-radius: 8px;
-  background:
-    radial-gradient(circle at 86% 16%, rgba(247,57,255,.08), transparent 30%),
-    linear-gradient(145deg, rgba(11,13,19,.98), rgba(8,10,16,.96));
+  background: var(--bg-surface);
+}
+
+[data-theme="light"] .transaction-page-head {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
 }
 
 .my-investment-page {

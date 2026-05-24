@@ -473,7 +473,7 @@ function SwapDetail({ tx, coinAsset, counterAsset, coinLogo, getLogoUrl, display
         {swapStats.map(({ label, val, sub, color }) => (
           <div key={label} style={{ background: 'var(--bg-elevated)', borderRadius: 8, padding: '9px 10px' }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 3 }}>{label}</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: color ?? 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{val}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: color ?? 'var(--fg)', overflowWrap: 'anywhere' }}>{val}</div>
             <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 1 }}>{sub}</div>
           </div>
         ))}
@@ -647,7 +647,7 @@ function TransferDetail({ tx, isDeposit, coinAsset, displayAddr, isOwn, explorer
         {stats.map(({ label, val, sub, color }) => (
           <div key={label} style={{ background: 'var(--bg-elevated)', borderRadius: 8, padding: '9px 10px' }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 3 }}>{label}</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: color ?? 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{val}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: color ?? 'var(--fg)', overflowWrap: 'anywhere' }}>{val}</div>
             <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 1 }}>{sub}</div>
           </div>
         ))}
