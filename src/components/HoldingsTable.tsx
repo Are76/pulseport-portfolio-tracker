@@ -234,7 +234,7 @@ export function HoldingsTable({
                   onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
                   onMouseOut={e => (e.currentTarget.style.background = isExpanded ? 'var(--bg-elevated)' : 'transparent')}
                 >
-                  <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', ...(isMobileLayout ? { maxWidth: 0, overflow: 'hidden' } : {}) }}>
+                  <td style={{ padding: '12px 16px', ...(isMobileLayout ? {} : { whiteSpace: 'nowrap' }) }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: isMobileLayout ? 8 : 12 }}>
                       <div style={{ width: isMobileLayout ? 36 : 42, height: isMobileLayout ? 36 : 42, borderRadius: '50%', background: 'var(--bg-elevated)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 800, color: 'var(--fg)', flexShrink: 0, overflow: 'hidden' }}>
                         {logo ? <img src={logo} alt={asset.symbol} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} /> : asset.symbol[0]}

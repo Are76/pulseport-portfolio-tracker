@@ -6188,12 +6188,6 @@ textarea:focus-visible,
     padding-left: 8px !important;
     padding-right: 8px !important;
   }
-  /* Fixed layout so the table never exceeds viewport width.
-     Token column gets maxWidth:0 in JS which lets it absorb leftover space. */
-  .holdings-unified-table {
-    table-layout: fixed;
-    width: 100%;
-  }
   /* Prevent the table wrapper from being horizontally draggable on mobile */
   .data-table-scroll {
     overflow-x: hidden;
