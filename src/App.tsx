@@ -260,7 +260,7 @@ function StakingLadder({ stakes }: { stakes: HexStake[] }) {
             label={{ value: 'Days Remaining', position: 'insideBottom', offset: -10, fill: 'var(--fg-subtle)', fontSize: 13 }} />
           <YAxis tick={{ fill: 'var(--fg-subtle)', fontSize: 13 }} axisLine={false} tickLine={false} scale="log" domain={['auto', 'auto']} allowDataOverflow={false} />
           <RechartsTooltip content={<CustomTip />} />
-          <Bar dataKey="totalShares" fill="#00FF9F" radius={[3, 3, 0, 0]} />
+          <Bar dataKey="totalShares" fill="#7B8FFF" radius={[3, 3, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -301,7 +301,7 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
     ? [...large, { label: 'Others', tShares: small.reduce((a, b) => a + b.tShares, 0), totalUsd: small.reduce((a, b) => a + b.totalUsd, 0), count: small.reduce((a, b) => a + b.count, 0) }]
     : large;
 
-  const GRADIENT = ['#00FF9F', '#627EEA', '#f739ff', '#fb923c', '#3b82f6', '#a855f7'];
+  const GRADIENT = ['#7B8FFF', '#627EEA', '#f739ff', '#fb923c', '#3b82f6', '#a855f7'];
   const getColor = (i: number) => GRADIENT[i % GRADIENT.length];
 
   const fmtK = (n: number) => n >= 1e9 ? (n / 1e9).toFixed(1) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : n.toFixed(0);
@@ -331,7 +331,7 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
       <ResponsiveContainer width="100%" height={240} minWidth={1} minHeight={1}>
         <PieChart>
           <Pie data={chartData} cx="50%" cy="50%" innerRadius={60} outerRadius={85} dataKey="tShares"
-            activeIndex={activeIndex} activeShape={renderActiveShape}
+            {...{ activeIndex } as {}} activeShape={renderActiveShape}
             onMouseEnter={(_, i) => setActiveIndex(i)}>
             {chartData.map((_, i) => <Cell key={i} fill={getColor(i)} />)}
           </Pie>
@@ -366,7 +366,7 @@ interface WalletSelectorProps {
   walletLabels?: Record<string, string>;
 }
 
-const WALLET_DOT_COLORS = ['#00FF9F','#f739ff','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
+const WALLET_DOT_COLORS = ['#7B8FFF','#f739ff','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
 
 function WalletSelector({ wallets, activeWallet, onSelect, onAdd, onRemove, walletLabels = {} }: WalletSelectorProps) {
   if (wallets.length === 0) {
@@ -708,15 +708,15 @@ export default function App() {
     header: 'var(--bg-header)',
     hoverBg: 'var(--bg-elevated)',
     expandedBg: 'var(--bg-elevated)',
-    green: theme === 'dark' ? '#00FF9F' : '#059669',
-    red: theme === 'dark' ? '#f43f5e' : '#dc2626',
-    purple: '#8b5cf6',
+    green: theme === 'dark' ? '#34D399' : '#059669',
+    red: theme === 'dark' ? '#F87171' : '#DC2626',
+    purple: '#818CF8',
     orange: '#f97316',
     blue: 'var(--chain-eth)',
     pink: 'var(--chain-pulse)',
     gradientHero: theme === 'dark'
-      ? 'linear-gradient(135deg, #0b1a12 0%, #08100e 40%, #080d16 100%)'
-      : 'linear-gradient(135deg, #eef8f4 0%, #f5f5f5 40%, #eef0fa 100%)',
+      ? 'linear-gradient(135deg, #07101E 0%, #0C1A2E 40%, #0A1628 100%)'
+      : 'linear-gradient(135deg, #EEF2FF 0%, #F0F4FF 40%, #E4EAF8 100%)',
   }), [theme]);
 
   useEffect(() => {
@@ -1307,14 +1307,15 @@ export default function App() {
                 let nextParams: Record<string, string> | null = {};
                 while (nextParams !== null) {
                   const hasExistingQuery = endpoint.includes('?');
-                  const paramStr = Object.keys(nextParams).length
+                  const paramStr: string = Object.keys(nextParams).length
                     ? (hasExistingQuery ? '&' : '?') + new URLSearchParams(nextParams).toString()
                     : '';
-                  const res = await fetch(`${bsBase}${endpoint}${paramStr}`);
-                  const data = await res.json();
+                  const res: Response = await fetch(`${bsBase}${endpoint}${paramStr}`);
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const data: any = await res.json();
                   if (data.items && Array.isArray(data.items)) {
                     results.push(...data.items);
-                    nextParams = data.next_page_params || null;
+                    nextParams = (data.next_page_params as Record<string, string> | null) ?? null;
                     if (!data.next_page_params || data.items.length === 0) break;
                   } else {
                     break;
@@ -2595,8 +2596,9 @@ export default function App() {
       || prices['pulsechain:0x02dcdd04e3f455d838cd1249292c58f3b79e3c3c']?.usd
       || 0;
     // Helper: derive a consistent USD value for a tx (handles stale-zero valueUsd for ETH)
-    const txUsdValue = (tx: { asset: string; valueUsd: number; amount: number }) => {
-      if (tx.valueUsd > 0) return tx.valueUsd;
+    const txUsdValue = (tx: { asset: string; valueUsd?: number; amount: number }) => {
+      const usd = tx.valueUsd ?? 0;
+      if (usd > 0) return usd;
       if (tx.asset.toUpperCase() === 'ETH') return tx.amount * ethPriceFallback;
       return tx.amount; // stablecoins: amount is approximately USD
     };
@@ -3229,12 +3231,12 @@ export default function App() {
   };
 
   const coreLiveTokens = useMemo(() => ([
-    { id: 'PLS',  symbol: 'PLS',  name: 'PulseChain',    priceKey: 'pulsechain',                                                    changeKey: 'pulsechain:native', accent: 'linear-gradient(90deg,#00ff9f,#00cfff)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png' },
+    { id: 'PLS',  symbol: 'PLS',  name: 'PulseChain',    priceKey: 'pulsechain',                                                    changeKey: 'pulsechain:native', accent: 'linear-gradient(90deg,#7B8FFF,#60A5FA)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png' },
     { id: 'PLSX', symbol: 'PLSX', name: 'PulseX',        priceKey: 'pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab',            accent: 'linear-gradient(90deg,#ff00bf,#7b00ff)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x95B303987A60C71504D99Aa1b13B4DA07b0790ab.png' },
-    { id: 'INC',  symbol: 'INC',  name: 'Incentive',     priceKey: 'pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d',            accent: 'linear-gradient(90deg,#39ff14,#00ff9f)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png' },
+    { id: 'INC',  symbol: 'INC',  name: 'Incentive',     priceKey: 'pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d',            accent: 'linear-gradient(90deg,#39ff14,#7B8FFF)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png' },
     { id: 'HEX',  symbol: 'HEX',  name: 'pHEX',          priceKey: 'pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39',            accent: 'linear-gradient(90deg,#ff6b35,#f7931a)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39.png' },
     { id: 'PRVX', symbol: 'PRVX', name: 'PrivacyX',      priceKey: 'pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11',            accent: 'linear-gradient(90deg,#6c3ce1,#b044ff)',                                              logo: 'https://cdn.dexscreener.com/cms/images/ODHYYN7yppDHnd6u?width=64&height=64&fit=crop&quality=95&format=auto' },
-    { id: 'eHEX', symbol: 'eHEX', name: 'Ethereum HEX',  priceKey: 'ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39',              accent: 'linear-gradient(90deg,#ff0080,#ff6b35,#ffeb3b,#00ff9f,#00cfff,#7b00ff)',             logo: 'https://cdn.dexscreener.com/cms/images/a46bd12940d8501c2aacdd10ad4780e818bdedaba1ec8eb46b52e4d8313d4a93?width=64&height=64&fit=crop&quality=95&format=auto' },
+    { id: 'eHEX', symbol: 'eHEX', name: 'Ethereum HEX',  priceKey: 'ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39',              accent: 'linear-gradient(90deg,#ff0080,#ff6b35,#ffeb3b,#7B8FFF,#60A5FA,#7b00ff)',             logo: 'https://cdn.dexscreener.com/cms/images/a46bd12940d8501c2aacdd10ad4780e818bdedaba1ec8eb46b52e4d8313d4a93?width=64&height=64&fit=crop&quality=95&format=auto' },
   ]), []);
 
   useEffect(() => {
@@ -3310,7 +3312,7 @@ export default function App() {
       .sort((a, b) => b.value - a.value)
       .forEach(asset => {
         const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()] || (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()] || getTokenLogoUrl(asset);
-        const chainColor = CHAIN_COLORS[asset.chain] || '#00FF9F';
+        const chainColor = CHAIN_COLORS[asset.chain] || '#7B8FFF';
         add({
           id: `${asset.chain}:${asset.symbol}`,
           symbol: asset.symbol,
@@ -4125,7 +4127,7 @@ export default function App() {
                   <div className={theme === 'dark' ? 'hero-bg-dark' : 'hero-bg-light'} style={{ border: '1px solid rgba(0,255,159,0.12)', borderRadius: 20, padding: '40px 32px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 0%, rgba(0,255,159,.10) 0%, transparent 55%), radial-gradient(ellipse at 80% 80%, rgba(99,70,255,.06) 0%, transparent 50%)', pointerEvents: 'none' }} />
                     <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(0,255,159,0.1)', border: '1px solid rgba(0,255,159,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 0 24px rgba(0,255,159,0.12)' }}>
-                      <WalletIcon size={24} color="#00FF9F" />
+                      <WalletIcon size={24} color="#7B8FFF" />
                     </div>
                     <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--fg)', marginBottom: 8, letterSpacing: '-0.02em' }}>Welcome to PulsePort</div>
                     <div style={{ fontSize: 14, color: 'var(--fg-muted)', marginBottom: 32, maxWidth: 400, margin: '0 auto 32px' }}>
@@ -4277,13 +4279,6 @@ export default function App() {
                              v >= 1e6 ? `$${(v/1e6).toFixed(2)}M` :
                              v >= 1e3 ? `$${(v/1e3).toFixed(2)}K` :
                              `$${v.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
-                           const fmtMarket = (v?: number | null) =>
-                             v == null ? '-' :
-                             v >= 1e12 ? `$${(v/1e12).toFixed(2)}T` :
-                             v >= 1e9 ? `$${(v/1e9).toFixed(2)}B` :
-                             v >= 1e6 ? `$${(v/1e6).toFixed(2)}M` :
-                             v >= 1e3 ? `$${(v/1e3).toFixed(1)}K` :
-                             `$${v.toFixed(0)}`;
                            return (
                              <div className="hero-holdings-wrap">
                                <div className="hero-holdings-panel overview-section-card">
@@ -4965,7 +4960,7 @@ export default function App() {
                               const next = Number(e.target.value);
                               setAllocationDraftPercentages(prev => ({ ...prev, [row.name]: next }));
                             }}
-                            style={{ accentColor: ['#00FF9F','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'][i % 7] }}
+                            style={{ accentColor: ['#7B8FFF','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'][i % 7] }}
                           />
                           <input
                             type="number"

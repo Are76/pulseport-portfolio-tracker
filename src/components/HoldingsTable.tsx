@@ -198,8 +198,8 @@ export function HoldingsTable({
             const addr = asset.address;
             const addrLower = addr?.toLowerCase?.() ?? '';
             const logo = staticLogos[addrLower] || asset.logoUrl || tokenLogos[addrLower] || getTokenLogoUrl(asset);
-            const explUrl = explorerUrl(asset.chain, addr);
-            const dsUrl = dexScreenerUrl(asset.chain, addr);
+            const explUrl = explorerUrl(asset.chain, addr ?? '');
+            const dsUrl = dexScreenerUrl(asset.chain, addr ?? '');
             const isExpanded = expandedIds.has(asset.id);
             const pct = pctForPeriod(asset, priceChangePeriod);
             const share = ((asset.valueUsd / (portfolioBase || 1)) * 100);
