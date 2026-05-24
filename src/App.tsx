@@ -65,7 +65,6 @@ import { TokenPnLCard } from './components/TokenPnLCard';
 import { PnLModal } from './components/PnLModal';
 import { ProfitPlannerModal } from './components/ProfitPlannerModal';
 import { StakesSection } from './components/StakesSection';
-import { MarketWatchModal } from './components/MarketWatchModal';
 import { TokenProductPage } from './components/TokenProductPage';
 import { TransactionList } from './components/TransactionList';
 import { HoldingsTable } from './components/HoldingsTable';
@@ -627,8 +626,6 @@ export default function App() {
   const [selectedProductAsset, setSelectedProductAsset] = useState<Asset | null>(null);
   const [productPageLoading, setProductPageLoading] = useState(false);
   const [productReturnTab, setProductReturnTab] = useState<ActiveTab>('home');
-  const [showMarketWatch, setShowMarketWatch] = useState(false);
-  const [marketWatchInitialSearch, setMarketWatchInitialSearch] = useState('');
   const [homeSearch, setHomeSearch] = useState('');
   const [expandedWalletAssetIds, setExpandedWalletAssetIds] = useState<Set<string>>(new Set());
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -3230,6 +3227,7 @@ export default function App() {
     volume24h?: number | null;
     accent?: string;
     logo?: string;
+    dexUrl: string;
   };
 
   const coreLiveTokens = useMemo(() => ([
@@ -3280,11 +3278,15 @@ export default function App() {
     return coreLiveTokens.map(token => {
       const md = prices[token.priceKey] || prices[token.changeKey ?? ''];
       const tokenAddress = token.priceKey.includes(':') ? token.priceKey.split(':')[1]?.toLowerCase() : '';
+      const chain = token.priceKey.includes(':') ? token.priceKey.split(':')[0] : 'pulsechain';
       const heldAsset = currentAssets.find(asset =>
         (tokenAddress && (asset as any).address?.toLowerCase?.() === tokenAddress) ||
         asset.symbol.toUpperCase() === token.symbol.toUpperCase()
       );
       const liveMarketData = tokenMarketData[`live:${token.id}`] || (heldAsset ? tokenMarketData[heldAsset.id] : null);
+      const dexUrl = tokenAddress
+        ? `https://dexscreener.com/${chain}/${tokenAddress}`
+        : `https://dexscreener.com/search?q=${encodeURIComponent(token.symbol)}`;
       return {
         id: token.id,
         symbol: token.symbol,
@@ -3295,6 +3297,7 @@ export default function App() {
         volume24h: liveMarketData?.volume24h ?? null,
         accent: token.accent,
         logo: token.logo,
+        dexUrl,
       };
     });
   }, [coreLiveTokens, currentAssets, prices, tokenMarketData, frontMarketPeriod]);
@@ -3315,6 +3318,10 @@ export default function App() {
       .forEach(asset => {
         const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()] || (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()] || getTokenLogoUrl(asset);
         const chainColor = CHAIN_COLORS[asset.chain] || '#7B8FFF';
+        const address = (asset as any).address?.toLowerCase?.();
+        const dexUrl = address
+          ? `https://dexscreener.com/${asset.chain}/${address}`
+          : `https://dexscreener.com/search?q=${encodeURIComponent(asset.symbol)}`;
         add({
           id: `${asset.chain}:${asset.symbol}`,
           symbol: asset.symbol,
@@ -3323,8 +3330,9 @@ export default function App() {
           change24h: getFrontMarketChange(tokenMarketData[asset.id], null, asset),
           marketCap: tokenMarketData[asset.id]?.marketCap ?? tokenMarketData[asset.id]?.fdv ?? null,
           volume24h: tokenMarketData[asset.id]?.volume24h ?? null,
-          accent: `linear-gradient(90deg, ${chainColor}, rgba(0,255,159,0.85))`,
+          accent: `linear-gradient(90deg, ${chainColor}, var(--accent-glow, rgba(123,143,255,0.7)))`,
           logo,
+          dexUrl,
         });
       });
 
@@ -3438,11 +3446,6 @@ export default function App() {
     },
   ], []);
 
-  const openMarketWatch = (initialSearch = '') => {
-    setMarketWatchInitialSearch(initialSearch);
-    setShowMarketWatch(true);
-  };
-
   const openProductPage = (asset: Asset, origin: ActiveTab = activeTab) => {
     const nextOrigin = origin === 'product' ? productReturnTab : origin;
     setSelectedProductAsset(asset);
@@ -3461,11 +3464,8 @@ export default function App() {
       window.open(`https://scan.pulsechain.com/tx/${q}`, '_blank', 'noopener,noreferrer');
       return;
     }
-    if (/^0x[a-fA-F0-9]{40}$/.test(q)) {
-      window.open(`https://scan.pulsechain.com/address/${q}`, '_blank', 'noopener,noreferrer');
-      return;
-    }
-    openMarketWatch(q);
+    // Contract address or wallet → search DexScreener (shows token pairs if CA, wallet if address)
+    window.open(`https://dexscreener.com/search?q=${encodeURIComponent(q)}`, '_blank', 'noopener,noreferrer');
   };
 
   const navItems = [
@@ -3858,8 +3858,8 @@ export default function App() {
                       <input
                         value={homeSearch}
                         onChange={(e) => setHomeSearch(e.target.value)}
-                        aria-label="Search by coin, block, or transaction"
-                        placeholder="Search coin, block, or transaction..."
+                        aria-label="Search token, block, tx hash, or contract address"
+                        placeholder="Symbol, contract address, block, or tx..."
                       />
                       <button type="submit">Search</button>
                     </form>
@@ -3885,17 +3885,19 @@ export default function App() {
                         <span>Live prices</span>
                         <strong>PulseChain market</strong>
                       </div>
-                      <button type="button" onClick={() => openMarketWatch('')}>
-                        Open market watch <Activity size={14} />
-                      </button>
+                      <a href="https://dexscreener.com/pulsechain" target="_blank" rel="noopener noreferrer" className="front-price-board-head-link">
+                        DexScreener <ExternalLink size={13} />
+                      </a>
                     </div>
 
                     <div className="front-price-grid">
                       {frontPageGridTokens.map((token, i) => (
-                        <button
+                        <a
                           key={`${token.id}-${i}`}
                           className="front-price-box"
-                          onClick={() => openMarketWatch(token.symbol)}
+                          href={token.dexUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           style={{ animationDelay: `${i * 38}ms` }}
                         >
                           <span className="front-price-accent" style={{ background: token.accent }} />
@@ -3918,14 +3920,11 @@ export default function App() {
                             <span>Vol {fmtMarket(token.volume24h)}</span>
                             <span>MCap {fmtMarket(token.marketCap)}</span>
                           </span>
-                        </button>
+                        </a>
                       ))}
                     </div>
 
                     <div className="front-market-actions">
-                      <button className="btn-ghost front-secondary-action" onClick={() => openMarketWatch('')}>
-                        Market watch <Activity size={14} />
-                      </button>
                       <button onClick={fetchPortfolio} className="front-refresh-btn">
                         <RefreshCcw size={13} className={isLoading ? 'animate-spin' : ''} />
                         Refresh
@@ -3937,7 +3936,7 @@ export default function App() {
                 <section className="front-section front-section-tight">
                   <div className="front-section-head">
                     <span>Market pulse</span>
-                    <h2>Read the chain before you open a wallet.</h2>
+                    <h2>Chain stats at a glance.</h2>
                   </div>
                   <div className="front-stat-strip">
                     {frontPageMarketStats.map(stat => (
@@ -3953,16 +3952,16 @@ export default function App() {
                 <section className="front-section front-section-tight">
                   <div className="front-section-head">
                     <span>Workspace access</span>
-                    <h2>Jump into every part of Pulseport from home.</h2>
+                    <h2>Quick navigation.</h2>
                   </div>
                   <div className="front-info-grid">
                     {[
-                      { eyebrow: 'Portfolio', title: 'Overview', detail: 'Allocation, summary, and top holdings.', icon: LayoutDashboard, action: () => setActiveTab('overview') },
-                      { eyebrow: 'Wallets', title: 'Wallet detail', detail: 'Per-wallet holdings, balances, and bridge context.', icon: WalletIcon, action: () => setActiveTab('wallets') },
-                      { eyebrow: 'HEX', title: 'HEX stakes', detail: 'Track pHEX and eHEX stake performance.', icon: Lock, action: () => setActiveTab('stakes') },
-                      { eyebrow: 'Transactions', title: 'History', detail: 'Review swaps, transfers, and filters.', icon: History, action: () => setActiveTab('history') },
-                      { eyebrow: 'DeFi', title: 'Liquidity & farms', detail: 'See LP and farm positions in one place.', icon: Droplets, action: () => setActiveTab('defi') },
-                      { eyebrow: 'Bridges', title: 'Bridge dashboard', detail: 'Open bridge routes and token references.', icon: ArrowLeftRight, action: () => setActiveTab('bridge') },
+                      { eyebrow: 'Portfolio', title: 'Overview', detail: 'Allocation and top holdings.', icon: LayoutDashboard, action: () => setActiveTab('overview') },
+                      { eyebrow: 'Wallets', title: 'Wallets', detail: 'Holdings and balances by wallet.', icon: WalletIcon, action: () => setActiveTab('wallets') },
+                      { eyebrow: 'HEX', title: 'HEX stakes', detail: 'pHEX and eHEX stake tracker.', icon: Lock, action: () => setActiveTab('stakes') },
+                      { eyebrow: 'Transactions', title: 'History', detail: 'Swaps, transfers, and filters.', icon: History, action: () => setActiveTab('history') },
+                      { eyebrow: 'DeFi', title: 'Liquidity & farms', detail: 'LP and farm positions.', icon: Droplets, action: () => setActiveTab('defi') },
+                      { eyebrow: 'Bridges', title: 'Bridges', detail: 'Bridge routes and references.', icon: ArrowLeftRight, action: () => setActiveTab('bridge') },
                     ].map(({ eyebrow, title, detail, icon: Icon, action }) => (
                       <button key={title} className="front-info-card" onClick={action}>
                         <span className="front-info-icon">
@@ -3984,14 +3983,14 @@ export default function App() {
                 <section className="front-section front-section-tight">
                   <div className="front-section-head">
                     <span>Explorer shortcuts</span>
-                    <h2>Keep the external tools on the homepage.</h2>
+                    <h2>External tools.</h2>
                   </div>
                   <div className="front-info-grid">
                     {[
-                      { eyebrow: 'PulseChain', title: 'PulseScan', detail: 'Inspect PulseChain wallets, tokens, and contracts.', icon: Shield, href: 'https://scan.pulsechain.com' },
-                      { eyebrow: 'Ethereum', title: 'Etherscan', detail: 'Open Ethereum token and wallet explorer views.', icon: ExternalLink, href: 'https://etherscan.io' },
-                      { eyebrow: 'Base', title: 'Base explorer', detail: 'Jump straight into Base activity and balances.', icon: Layers, href: 'https://base.blockscout.com' },
-                      { eyebrow: 'Market', title: 'DexScreener', detail: 'Monitor live PulseChain token pair activity.', icon: Activity, href: 'https://dexscreener.com/pulsechain' },
+                      { eyebrow: 'PulseChain', title: 'PulseScan', detail: 'Wallets, tokens, and contracts.', icon: Shield, href: 'https://scan.pulsechain.com' },
+                      { eyebrow: 'Ethereum', title: 'Etherscan', detail: 'Ethereum token and wallet explorer.', icon: ExternalLink, href: 'https://etherscan.io' },
+                      { eyebrow: 'Base', title: 'Base explorer', detail: 'Base activity and balances.', icon: Layers, href: 'https://base.blockscout.com' },
+                      { eyebrow: 'Market', title: 'DexScreener', detail: 'Live token pair activity.', icon: Activity, href: 'https://dexscreener.com/pulsechain' },
                     ].map(({ eyebrow, title, detail, icon: Icon, href }) => (
                       <a key={title} className="front-info-card" href={href} target="_blank" rel="noopener noreferrer">
                         <span className="front-info-icon">
@@ -4057,7 +4056,7 @@ export default function App() {
                   <div className="front-intel-panel">
                     <div className="front-section-head">
                       <span>Portfolio intel</span>
-                      <h2>Holdings, stakes, liquidity, and bridge moves stay connected.</h2>
+                      <h2>Your on-chain activity, unified.</h2>
                     </div>
                     <div className="front-chain-stack">
                       {frontPageChainRows.map(row => {
@@ -4232,32 +4231,17 @@ export default function App() {
                              ))}
                            </div>
                          </div>
-                         {/* Profit Planner + Market Watch buttons */}
+                         {/* Profit Planner button */}
                          <div style={{ marginTop: 14, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                           <button
-                             onClick={() => openMarketWatch('')}
-                             style={{
-                               display: 'inline-flex', alignItems: 'center', gap: 8,
-                               padding: '10px 20px', borderRadius: 12,
-                               background: 'rgba(99,70,255,0.12)',
-                               border: '1px solid rgba(99,70,255,0.26)',
-                               color: '#c4b5fd', fontSize: 13, fontWeight: 700,
-                               cursor: 'pointer', transition: 'all .15s',
-                             }}
-                           >
-                             <Activity size={15} />
-                             Market Watch
-                           </button>
                            <button
                              onClick={() => setProfitPlannerOpen(true)}
                              style={{
                                display: 'inline-flex', alignItems: 'center', gap: 8,
                                padding: '10px 20px', borderRadius: 12,
-                               background: 'linear-gradient(135deg, rgba(0,255,159,0.15) 0%, rgba(99,70,255,0.10) 100%)',
-                               border: '1px solid rgba(0,255,159,0.30)',
+                               background: 'var(--accent-dim)',
+                               border: '1px solid var(--accent-border)',
                                color: 'var(--accent)', fontSize: 13, fontWeight: 700,
                                cursor: 'pointer', transition: 'all .15s',
-                               boxShadow: '0 0 20px rgba(0,255,159,0.08)',
                              }}
                            >
                              <TrendingUp size={15} />
@@ -6869,15 +6853,6 @@ export default function App() {
           </div>
         )}
       </AnimatePresence>
-
-      {/* -- Market Watch Modal -- */}
-      {showMarketWatch && (
-        <MarketWatchModal
-          theme={theme}
-          initialSearch={marketWatchInitialSearch}
-          onClose={() => setShowMarketWatch(false)}
-        />
-      )}
 
       {/* -- Profit Planner Modal -- */}
       {profitPlannerOpen && (
