@@ -55,6 +55,7 @@ describe('hex stake service native contract reads', () => {
     expect(dto.positions[1].yieldHex).toBe('0');
     expect(dto.positions[2].yieldHex).toBe('20');
     expect(dto.positions[0].warnings.some((w) => w.includes('Pending stake has no realized yield'))).toBe(true);
+    expect(dto.positions[0].provenance.notes?.some((n) => n.includes('yield.pending=no-realized-yield'))).toBe(true);
     expect(dto.positions[0].pricing.status).toBe('unavailable');
     expect(dto.positions[0].valuation.status).toBe('unavailable');
     expect(dto.positions[0].pnl.status).toBe('unavailable');
@@ -157,6 +158,22 @@ describe('hex stake service native contract reads', () => {
     const dto = await getHexStakeDashboard(testWalletAddress, 369);
     expect(dto.positions[0].yieldHex).not.toBe('0');
     expect(dto.positions[0].yieldHex?.includes('e')).toBe(false);
+  });
+
+
+  it('warns when dailyDataRange response is incomplete and does not fabricate missing-day yield', async () => {
+    mockReadContract.mockReset();
+    mockReadContract
+      .mockResolvedValueOnce(1n)
+      .mockResolvedValueOnce(100n)
+      .mockResolvedValueOnce([1n, 100000000n, 1000000000000n, 90n, 10n, 0n, false])
+      .mockResolvedValueOnce(Array.from({ length: 5 }, () => [100000000n, 1000000000000n, 0n]));
+
+    const dto = await getHexStakeDashboard(testWalletAddress, 369);
+    expect(dto.positions[0].warnings.some((w) => w.includes('dailyDataRange returned incomplete data'))).toBe(true);
+    expect(dto.positions[0].warnings.some((w) => w.includes('dailyData missing for day'))).toBe(true);
+    expect(dto.positions[0].yieldHex).toBe('5');
+    expect(dto.summary.totalYieldHex).toBe('5');
   });
 
 });

@@ -160,8 +160,15 @@ export async function getHexStakeDashboard(walletAddress: string, chainId = PULS
         'Pricing, valuation, and PnL are not implemented for HEX stakes yet.',
         'Ended stake discovery is not implemented yet.',
       ];
+      const provenanceNotes = [
+        'chainId=369',
+        'methods=stakeCount,stakeLists,currentDay,dailyDataRange',
+        `dailyDataRange.startDay=${earliestLockedDay ?? 'na'}`,
+        `dailyDataRange.endDay=${earliestLockedDay !== null ? latestYieldDay : 'na'}`,
+      ];
       if (stakeStatus === 'pending') {
         warnings.push('Pending stake has no realized yield yet; yieldHex remains 0.');
+        provenanceNotes.push('yield.pending=no-realized-yield');
       } else if (lockedDay > currentDay) {
         warnings.push('Current day is before lockedDay; yield cannot be determined.');
       } else {
@@ -203,12 +210,7 @@ export async function getHexStakeDashboard(walletAddress: string, chainId = PULS
         provenance: {
           source: 'pulseport.hex-stakes.native-contract-reads-v1',
           observedAt: asOf,
-          notes: [
-            'chainId=369',
-            'methods=stakeCount,stakeLists,currentDay,dailyDataRange',
-            `dailyDataRange.startDay=${earliestLockedDay ?? 'na'}`,
-            `dailyDataRange.endDay=${earliestLockedDay !== null ? latestYieldDay : 'na'}`,
-          ],
+          notes: provenanceNotes,
         },
       };
     });
