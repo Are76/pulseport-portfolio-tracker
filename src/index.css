@@ -3773,9 +3773,9 @@ textarea:focus-visible,
 
 /* -- TICKER % PILL LIGHT MODE ------------------------------------------- */
 [data-theme="light"] .ticker-pct-pos {
-  background: rgba(59,91,219,0.10);
-  color: #3B5BDB;
-  border-color: rgba(59,91,219,0.22);
+  background: rgba(5,150,105,0.10);
+  color: var(--positive);
+  border-color: rgba(5,150,105,0.22);
 }
 [data-theme="light"] .ticker-pct-neg {
   background: rgba(220,38,38,0.10);
@@ -3799,9 +3799,9 @@ textarea:focus-visible,
   font-size: 11px;
   font-weight: 700;
   font-family: 'JetBrains Mono', monospace;
-  background: var(--accent-dim);
+  background: rgba(0,192,118,0.10);
   color: var(--positive);
-  border: 1px solid var(--accent-border);
+  border: 1px solid rgba(0,192,118,0.22);
   letter-spacing: 0.01em;
 }
 .ticker-pct-neg {
