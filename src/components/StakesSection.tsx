@@ -128,7 +128,7 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
       <ResponsiveContainer width="100%" height={240} minWidth={0} minHeight={1}>
         <PieChart>
           <Pie data={chartData} cx="50%" cy="50%" innerRadius={60} outerRadius={85} dataKey="tShares"
-            activeIndex={activeIndex} activeShape={renderActiveShape}
+            {...{ activeIndex } as {}} activeShape={renderActiveShape}
             onMouseEnter={(_, index) => setActiveIndex(index)}>
             {chartData.map((_, i) => <Cell key={i} fill={getColor(i)} />)}
           </Pie>

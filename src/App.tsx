@@ -331,7 +331,7 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
       <ResponsiveContainer width="100%" height={240} minWidth={1} minHeight={1}>
         <PieChart>
           <Pie data={chartData} cx="50%" cy="50%" innerRadius={60} outerRadius={85} dataKey="tShares"
-            activeIndex={activeIndex} activeShape={renderActiveShape}
+            {...{ activeIndex } as {}} activeShape={renderActiveShape}
             onMouseEnter={(_, i) => setActiveIndex(i)}>
             {chartData.map((_, i) => <Cell key={i} fill={getColor(i)} />)}
           </Pie>
@@ -1307,14 +1307,15 @@ export default function App() {
                 let nextParams: Record<string, string> | null = {};
                 while (nextParams !== null) {
                   const hasExistingQuery = endpoint.includes('?');
-                  const paramStr = Object.keys(nextParams).length
+                  const paramStr: string = Object.keys(nextParams).length
                     ? (hasExistingQuery ? '&' : '?') + new URLSearchParams(nextParams).toString()
                     : '';
-                  const res = await fetch(`${bsBase}${endpoint}${paramStr}`);
-                  const data = await res.json();
+                  const res: Response = await fetch(`${bsBase}${endpoint}${paramStr}`);
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const data: any = await res.json();
                   if (data.items && Array.isArray(data.items)) {
                     results.push(...data.items);
-                    nextParams = data.next_page_params || null;
+                    nextParams = (data.next_page_params as Record<string, string> | null) ?? null;
                     if (!data.next_page_params || data.items.length === 0) break;
                   } else {
                     break;
@@ -2595,8 +2596,9 @@ export default function App() {
       || prices['pulsechain:0x02dcdd04e3f455d838cd1249292c58f3b79e3c3c']?.usd
       || 0;
     // Helper: derive a consistent USD value for a tx (handles stale-zero valueUsd for ETH)
-    const txUsdValue = (tx: { asset: string; valueUsd: number; amount: number }) => {
-      if (tx.valueUsd > 0) return tx.valueUsd;
+    const txUsdValue = (tx: { asset: string; valueUsd?: number; amount: number }) => {
+      const usd = tx.valueUsd ?? 0;
+      if (usd > 0) return usd;
       if (tx.asset.toUpperCase() === 'ETH') return tx.amount * ethPriceFallback;
       return tx.amount; // stablecoins: amount is approximately USD
     };
@@ -4277,13 +4279,6 @@ export default function App() {
                              v >= 1e6 ? `$${(v/1e6).toFixed(2)}M` :
                              v >= 1e3 ? `$${(v/1e3).toFixed(2)}K` :
                              `$${v.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
-                           const fmtMarket = (v?: number | null) =>
-                             v == null ? '-' :
-                             v >= 1e12 ? `$${(v/1e12).toFixed(2)}T` :
-                             v >= 1e9 ? `$${(v/1e9).toFixed(2)}B` :
-                             v >= 1e6 ? `$${(v/1e6).toFixed(2)}M` :
-                             v >= 1e3 ? `$${(v/1e3).toFixed(1)}K` :
-                             `$${v.toFixed(0)}`;
                            return (
                              <div className="hero-holdings-wrap">
                                <div className="hero-holdings-panel overview-section-card">
