@@ -884,9 +884,10 @@ export default function App() {
         );
         const dsPairs: any[] = await dsRes.json();
         if (Array.isArray(dsPairs) && dsPairs.length > 0) {
-          // Restrict to Uniswap on Ethereum; pick highest-liquidity pair for price reliability
+          // Restrict to Uniswap on Ethereum (any version: v2/v3).
+          // DexScreener dexId can be 'uniswap', 'uniswap-v2', 'uniswap-v3' etc.
           const best = dsPairs
-            .filter(p => p.priceUsd && Number(p.priceUsd) > 0 && p.dexId === 'uniswap')
+            .filter(p => p.priceUsd && Number(p.priceUsd) > 0 && (p.dexId as string)?.toLowerCase().includes('uniswap'))
             .sort((a, b) => (b.liquidity?.usd ?? 0) - (a.liquidity?.usd ?? 0))[0];
           if (best) {
             const dsPrice   = Number(best.priceUsd);

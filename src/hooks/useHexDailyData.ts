@@ -18,9 +18,6 @@ const PULSECHAIN_RPC_FALLBACK = 'https://rpc.pulsechain.com';
 const ETHEREUM_RPC_PRIMARY    = 'https://cloudflare-eth.com';
 const ETHEREUM_RPC_FALLBACK   = 'https://eth.llamarpc.com';
 
-/** How many recent days of daily data to fetch (enough for a rolling average). */
-const FETCH_DAYS = 30;
-
 /** Cache TTL in milliseconds - re-fetch once per hour. */
 const CACHE_TTL_MS = 60 * 60 * 1000;
 
@@ -177,10 +174,10 @@ function decodeDailyData(raw: string, beginDay: number): HexDayData[] {
 
 // --- Cache helpers ------------------------------------------------------------
 
-interface CachedData {
-  ts: number;
-  days: HexDayData[];
-}
+// Serialisable subset — totalStaked (bigint) is intentionally dropped;
+// it is not used in any yield calculation.
+interface CachedEntry { day: number; payoutPerTShare: number }
+interface CachedData  { ts: number; days: CachedEntry[] }
 
 function tryLoadCache(key: string): HexDayData[] | null {
   try {
@@ -188,7 +185,7 @@ function tryLoadCache(key: string): HexDayData[] | null {
     if (!raw) return null;
     const parsed: CachedData = JSON.parse(raw);
     if (Date.now() - parsed.ts > CACHE_TTL_MS) return null;
-    return parsed.days;
+    return parsed.days.map(d => ({ day: d.day, payoutPerTShare: d.payoutPerTShare, totalStaked: 0n }));
   } catch {
     return null;
   }
@@ -196,10 +193,10 @@ function tryLoadCache(key: string): HexDayData[] | null {
 
 function saveCache(key: string, days: HexDayData[]): void {
   try {
-    const data: CachedData = { ts: Date.now(), days };
-    localStorage.setItem(key, JSON.stringify(data));
+    const entries: CachedEntry[] = days.map(d => ({ day: d.day, payoutPerTShare: d.payoutPerTShare }));
+    localStorage.setItem(key, JSON.stringify({ ts: Date.now(), days: entries }));
   } catch {
-    // localStorage may be unavailable
+    // localStorage may be unavailable or quota exceeded
   }
 }
 
@@ -219,7 +216,9 @@ async function fetchChainDailyData(
 
   if (currentDay <= 0) return [];
 
-  const beginDay = Math.max(1, currentDay - FETCH_DAYS);
+  // Fetch full HEX history from day 1 so computeStakeYield has exact per-day
+  // data for every elapsed stake day, not just the most recent window.
+  const beginDay = 1;
   const endDay   = currentDay; // exclusive in the HEX contract
 
   // Step 2: fetch daily data range
