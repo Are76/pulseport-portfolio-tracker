@@ -45,8 +45,39 @@ export interface HexDailyDataResult {
   avgPayoutPulse: number;
   /** Average payout per T-Share over the fetched window (Ethereum). */
   avgPayoutEth: number;
+  /** day -> payoutPerTShare map for exact per-day yield lookups (PulseChain). */
+  dailyMapPulse: Map<number, number>;
+  /** day -> payoutPerTShare map for exact per-day yield lookups (Ethereum). */
+  dailyMapEth: Map<number, number>;
   loading: boolean;
   error: string | null;
+}
+
+/**
+ * Compute stake yield in HEX using real on-chain daily payout data when available,
+ * falling back to a rolling-average rate for days outside the fetched window.
+ *
+ * @param tShares     T-Shares for the stake (stakeShares / 1e12)
+ * @param lockedDay   HEX day the stake was locked
+ * @param days        Number of days to compute yield for
+ * @param dailyMap    day -> payoutPerTShare (HEX) from on-chain data
+ * @param fallback    Fallback rate (HEX/T-Share/day) for days not in the map
+ * @returns           Total yield in HEX
+ */
+export function computeStakeYield(
+  tShares: number,
+  lockedDay: number,
+  days: number,
+  dailyMap: Map<number, number>,
+  fallback: number,
+): number {
+  if (days <= 0 || tShares <= 0) return 0;
+  let total = 0;
+  for (let d = 0; d < days; d++) {
+    const rate = dailyMap.get(lockedDay + d) ?? fallback;
+    total += tShares * rate;
+  }
+  return total;
 }
 
 // --- RPC helpers -------------------------------------------------------------
@@ -254,7 +285,7 @@ export function useHexDailyData(): HexDailyDataResult {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Compute rolling averages
+  // Compute rolling averages and day-keyed lookup maps
   const avgPayoutPulse = pulsechain.length > 0
     ? pulsechain.reduce((s, d) => s + d.payoutPerTShare, 0) / pulsechain.length
     : 0;
@@ -262,5 +293,8 @@ export function useHexDailyData(): HexDailyDataResult {
     ? ethereum.reduce((s, d) => s + d.payoutPerTShare, 0) / ethereum.length
     : 0;
 
-  return { pulsechain, ethereum, avgPayoutPulse, avgPayoutEth, loading, error };
+  const dailyMapPulse = new Map<number, number>(pulsechain.map(d => [d.day, d.payoutPerTShare]));
+  const dailyMapEth   = new Map<number, number>(ethereum.map(d => [d.day, d.payoutPerTShare]));
+
+  return { pulsechain, ethereum, avgPayoutPulse, avgPayoutEth, dailyMapPulse, dailyMapEth, loading, error };
 }

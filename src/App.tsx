@@ -58,7 +58,8 @@ import BridgeDashboardPage from './components/BridgeDashboardPage';
 import { format } from 'date-fns';
 import { createPublicClient, http, fallback, formatUnits, getAddress } from 'viem';
 import { cn } from './lib/utils';
-import { CHAINS, HEX_ABI, TOKENS, PULSEX_LP_PAIRS, PHEX_YIELD_PER_TSHARE, EHEX_YIELD_PER_TSHARE, PHEX_YIELD_BI_NUM, PHEX_YIELD_BI_DEN, EHEX_YIELD_BI_NUM, EHEX_YIELD_BI_DEN, FALLBACK_DESCRIPTIONS } from './constants';
+import { CHAINS, HEX_ABI, TOKENS, PULSEX_LP_PAIRS, PHEX_YIELD_PER_TSHARE, EHEX_YIELD_PER_TSHARE, FALLBACK_DESCRIPTIONS } from './constants';
+import { useHexDailyData, computeStakeYield } from './hooks/useHexDailyData';
 import type { Asset, Wallet, Chain, HexStake, LpPosition, FarmPosition, HistoryPoint, Transaction } from './types';
 import { LiquidityOverviewStrip, LiquiditySection } from './components/LiquiditySection';
 import { TokenPnLCard } from './components/TokenPnLCard';
@@ -633,6 +634,12 @@ export default function App() {
     return (saved === 'light') ? 'light' : 'dark';
   });
 
+  // Real on-chain HEX daily payout data; used to replace hardcoded yield constants.
+  const hexDailyData = useHexDailyData();
+  // Ref so fetchPortfolio (async) always reads the latest values without stale closures.
+  const hexDailyDataRef = useRef(hexDailyData);
+  hexDailyDataRef.current = hexDailyData;
+
   useEffect(() => {
     localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, activeTab === 'product' ? productReturnTab : activeTab);
   }, [activeTab, productReturnTab]);
@@ -867,7 +874,37 @@ export default function App() {
         }
       }
 
-      // 1b. Fetch PulseChain prices from on-chain LP reserves (authoritative source per skill doc)
+      // 1b-eHEX. DexScreener eHEX price (Uniswap on Ethereum) — more responsive than CoinGecko.
+      // CoinGecko 'hex' price can lag during volatile periods; DexScreener reflects live DEX trades.
+      try {
+        const EHEX_ADDR = '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39';
+        const dsRes = await fetch(
+          `https://api.dexscreener.com/tokens/v1/ethereum/${EHEX_ADDR}`,
+          { signal: AbortSignal.timeout(8_000) },
+        );
+        const dsPairs: any[] = await dsRes.json();
+        if (Array.isArray(dsPairs) && dsPairs.length > 0) {
+          // Restrict to Uniswap on Ethereum; pick highest-liquidity pair for price reliability
+          const best = dsPairs
+            .filter(p => p.priceUsd && Number(p.priceUsd) > 0 && p.dexId === 'uniswap')
+            .sort((a, b) => (b.liquidity?.usd ?? 0) - (a.liquidity?.usd ?? 0))[0];
+          if (best) {
+            const dsPrice   = Number(best.priceUsd);
+            const ds24hChg  = best.priceChange?.h24 ?? null;
+            const ds1hChg   = best.priceChange?.h1  ?? null;
+            fetchedPrices['hex'] = {
+              ...(fetchedPrices['hex'] ?? {}),
+              usd: dsPrice,
+              ...(ds24hChg != null ? { usd_24h_change: ds24hChg } : {}),
+              ...(ds1hChg  != null ? { usd_1h_change:  ds1hChg  } : {}),
+            };
+          }
+        }
+      } catch {
+        // DexScreener unavailable — CoinGecko value (if any) stays in fetchedPrices['hex']
+      }
+
+      // 1c. Fetch PulseChain prices from on-chain LP reserves (authoritative source per skill doc)
       // Uses getReserves() on PulseX V2 LP pairs - more reliable than subgraph which can lag/rate-limit
       try {
         const GET_RESERVES = '0x0902f1ac';
@@ -1843,29 +1880,58 @@ export default function App() {
                   const daysStakedN  = Math.max(0, currentDayN - lockedDayN);
                   const daysRemaining = Math.max(0, (lockedDayN + stakedDaysN) - currentDayN);
 
-                  // Yield rate: chain-specific HEX per T-Share per day.
-                  // BigInt formula: hearts = shares * days * BI_NUM / BI_DEN
-                  //   pHEX: 1e12 * 1 * 158 / 1_000_000 = 1.58e8 hearts = 1.58 HEX
-                  //   eHEX: 1e12 * 1 * 170 / 1_000_000 = 1.70e8 hearts = 1.70 HEX
-                  const yieldBiNum = chainKey === 'pulsechain' ? PHEX_YIELD_BI_NUM : EHEX_YIELD_BI_NUM;
-                  const yieldBiDen = chainKey === 'pulsechain' ? PHEX_YIELD_BI_DEN : EHEX_YIELD_BI_DEN;
-                  const interestHearts  = (sharesBI * BigInt(daysStakedN) * yieldBiNum) / yieldBiDen;
-                  const fullYieldHearts = (sharesBI * BigInt(stakedDaysN) * yieldBiNum) / yieldBiDen;
-
                   const tShares    = Number(sharesBI) / 1e12;
                   const stakedHex  = Number(heartsBI) / 1e8;
-                  const stakeHexYield = Number(fullYieldHearts) / 1e8;
+
+                  // Yield: use real on-chain daily payout data; fall back to hardcoded
+                  // rate constant when the daily map doesn't cover this stake's days yet.
+                  const { dailyMapPulse, dailyMapEth, avgPayoutPulse, avgPayoutEth } = hexDailyDataRef.current;
+                  const chainDailyMap = chainKey === 'pulsechain' ? dailyMapPulse : dailyMapEth;
+                  const fallbackRate  = chainKey === 'pulsechain'
+                    ? (avgPayoutPulse || PHEX_YIELD_PER_TSHARE)
+                    : (avgPayoutEth   || EHEX_YIELD_PER_TSHARE);
+
+                  const accruedHex     = computeStakeYield(tShares, lockedDayN, daysStakedN, chainDailyMap, fallbackRate);
+                  const stakeHexYield  = computeStakeYield(tShares, lockedDayN, stakedDaysN, chainDailyMap, fallbackRate);
+                  const interestHearts = BigInt(Math.round(accruedHex    * 1e8));
+                  const fullYieldHearts = BigInt(Math.round(stakeHexYield * 1e8));
 
                   const hexPriceChainKey = `${chainKey}:${hexAddr.toLowerCase()}`;
                   const hexChainFallback = chainKey === 'pulsechain' ? fetchedPrices['pulsechain:hex']?.usd : fetchedPrices['hex']?.usd;
                   const hexPrice   = fetchedPrices[hexPriceChainKey]?.usd || hexChainFallback || 0;
 
                   const valueUsd       = stakedHex * hexPrice;
-                  const totalValueUsd  = (Number(heartsBI + fullYieldHearts) / 1e8) * hexPrice;
+                  const totalValueUsd  = (stakedHex + stakeHexYield) * hexPrice;
+
+                  // Late-end penalty: HEX grants a 14-day grace period after the end day.
+                  // After that, a fraction of the stake is forfeited; grows until ~100%.
+                  const daysOverdue = Math.max(0, currentDayN - (lockedDayN + stakedDaysN));
+                  const penaltyPct = daysOverdue > 14
+                    ? ((daysOverdue - 14) / (daysOverdue - 14 + 2 * stakedDaysN)) * 100
+                    : undefined;
+
+                  // Cost basis: record principal value (in USD) the first time we see the stake.
+                  // Stored per-stake so it survives refreshes. Never overwritten after initial set.
+                  const stakeIdN = Number(stakeId);
+                  const cbKey = `hex_cb_${chainKey}_${stakeIdN}`;
+                  let costBasisUsd: number | undefined;
+                  let unrealizedPnlUsd: number | undefined;
+                  try {
+                    const stored = localStorage.getItem(cbKey);
+                    if (stored !== null) {
+                      costBasisUsd = Number(stored);
+                    } else if (hexPrice > 0) {
+                      costBasisUsd = stakedHex * hexPrice;
+                      localStorage.setItem(cbKey, String(costBasisUsd));
+                    }
+                    if (costBasisUsd != null && hexPrice > 0) {
+                      unrealizedPnlUsd = (stakedHex + accruedHex) * hexPrice - costBasisUsd;
+                    }
+                  } catch { /* localStorage may be unavailable */ }
 
                   allStakes.push({
-                    id: `${chainKey}-${address}-${stakeId}`,
-                    stakeId:           Number(stakeId),
+                    id: `${chainKey}-${address}-${stakeIdN}`,
+                    stakeId:           stakeIdN,
                     stakedHearts:      heartsBI,
                     stakeShares:       sharesBI,
                     lockedDay:         lockedDayN,
@@ -1883,6 +1949,9 @@ export default function App() {
                     tShares,
                     stakedHex,
                     stakeHexYield,
+                    costBasisUsd,
+                    unrealizedPnlUsd,
+                    penaltyPct,
                   });
                 });
               }
@@ -2508,6 +2577,7 @@ export default function App() {
     // Add HEX staking value so the grand total reflects everything the user owns.
     // Recalculate accrued yield from tShares * daysStaked * chain-specific rate so
     // stale cached interestHearts never corrupt the total.
+    const { avgPayoutPulse, avgPayoutEth, dailyMapPulse, dailyMapEth } = hexDailyData;
     const stakingValueUsd = currentStakes.reduce((acc, s) => {
       if ((s.daysRemaining ?? 0) <= 0) return acc; // exclude ended stakes
       const hexPriceKey = `${s.chain}:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39`;
@@ -2515,9 +2585,11 @@ export default function App() {
       const hexPrice = prices[hexPriceKey]?.usd || chainHexFallback || 0;
       const stakedHex  = Number(s.stakedHearts ?? 0n) / 1e8;
       const tShares    = Number(s.stakeShares  ?? 0n) / 1e12;
+      const lockedDay  = s.lockedDay ?? 0;
       const daysStaked = Math.max(0, (s.stakedDays ?? 0) - (s.daysRemaining ?? 0));
-      const rate = s.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
-      const interestHex = tShares * daysStaked * rate;
+      const chainMap  = s.chain === 'pulsechain' ? dailyMapPulse : dailyMapEth;
+      const fallback  = s.chain === 'pulsechain' ? (avgPayoutPulse || PHEX_YIELD_PER_TSHARE) : (avgPayoutEth || EHEX_YIELD_PER_TSHARE);
+      const interestHex = computeStakeYield(tShares, lockedDay, daysStaked, chainMap, fallback);
       return acc + (stakedHex + interestHex) * hexPrice;
     }, 0);
 
@@ -2693,7 +2765,7 @@ export default function App() {
       chainPnlUsd,
       chainPnlPercent
     };
-  }, [currentAssets, currentStakes, currentTransactions, prices, wallets]);
+  }, [currentAssets, currentStakes, currentTransactions, prices, wallets, hexDailyData]);
 
   const pieData = Object.entries(summary.chainDistribution).map(([name, value]) => ({
     name: name.charAt(0).toUpperCase() + name.slice(1),
@@ -2715,17 +2787,16 @@ export default function App() {
     let totalValueUsd = 0;
     let totalInterestHex = 0;
 
+    const { avgPayoutPulse: dAvgPulse, avgPayoutEth: dAvgEth, dailyMapPulse: dMapPulse, dailyMapEth: dMapEth } = hexDailyData;
     activeStakes.forEach(s => {
       const stakedHex  = Number(s.stakedHearts ?? 0n) / 1e8;
       const tShares    = Number(s.stakeShares  ?? 0n) / 1e12;
-      // Recalculate accrued yield from first principles using chain-specific rate
-      // so stale cached interestHearts never corrupt the totals.
+      const lockedDay  = s.lockedDay ?? 0;
       const daysStaked  = Math.max(0, (s.stakedDays ?? 0) - (s.daysRemaining ?? 0));
-      const rate = s.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
-      const interestHex = tShares * daysStaked * rate;
+      const chainMap   = s.chain === 'pulsechain' ? dMapPulse : dMapEth;
+      const fallback   = s.chain === 'pulsechain' ? (dAvgPulse || PHEX_YIELD_PER_TSHARE) : (dAvgEth || EHEX_YIELD_PER_TSHARE);
+      const interestHex = computeStakeYield(tShares, lockedDay, daysStaked, chainMap, fallback);
 
-      // Use chain-specific HEX price; fall back to 0 (not 0.004) so we show
-      // $0 instead of a wrong value while prices are still loading.
       const hexPriceKey = `${s.chain}:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39`;
       const chainHexFallback = s.chain === 'pulsechain' ? prices['pulsechain:hex']?.usd : prices['hex']?.usd;
       const hexPrice = prices[hexPriceKey]?.usd || chainHexFallback || 0;
@@ -2737,11 +2808,10 @@ export default function App() {
     });
 
     const phexPrice = prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0;
-    // Daily payout uses chain-specific rates; sum pHEX and eHEX T-Share contributions separately
     const estimatedDailyPayoutHex = activeStakes.reduce((sum, s) => {
       const tS = Number(s.stakeShares ?? 0n) / 1e12;
-      const rate = s.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
-      return sum + tS * rate;
+      const fallback = s.chain === 'pulsechain' ? (dAvgPulse || PHEX_YIELD_PER_TSHARE) : (dAvgEth || EHEX_YIELD_PER_TSHARE);
+      return sum + tS * fallback;
     }, 0);
     const estimatedDailyPayoutUsd = estimatedDailyPayoutHex * phexPrice;
 
@@ -2754,7 +2824,7 @@ export default function App() {
       estimatedDailyPayoutHex,
       estimatedDailyPayoutUsd
     };
-  }, [wallets.length, realStakes, prices]);
+  }, [wallets.length, realStakes, prices, hexDailyData]);
 
   const assetAllocation = useMemo(() => {
     // Aggregate by symbol across chains (e.g. ETH on Ethereum + ETH on Base)
@@ -4452,13 +4522,15 @@ export default function App() {
                   const HEX_ADDR_LC = '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39';
                   // pHEX liquid: native HEX on PulseChain (symbol HEX, same address as eHEX contract but on PLS chain)
                   const pHexLiquid = currentAssets.filter(a => a.chain === 'pulsechain' && (a as any).address?.toLowerCase() === HEX_ADDR_LC).reduce((s, a) => s + a.balance, 0);
-                  // Staked = principal + accrued yield (recalculated at chain-specific rate, never from stale cache)
+                  // Staked = principal + accrued yield (using real daily rates, never stale constants)
                   let pHexPrincipal = 0, pHexYield = 0;
                   currentStakes.filter(s => s.chain === 'pulsechain').forEach(st => {
                     const principal  = st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8;
                     const tSharesVal = st.tShares    ?? Number(st.stakeShares  ?? 0n) / 1e12;
+                    const lockedDay  = st.lockedDay ?? 0;
                     const daysStaked = Math.max(0, (st.stakedDays ?? 0) - (st.daysRemaining ?? 0));
-                    const interest   = tSharesVal * daysStaked * PHEX_YIELD_PER_TSHARE;
+                    const fb = hexDailyData.avgPayoutPulse || PHEX_YIELD_PER_TSHARE;
+                    const interest = computeStakeYield(tSharesVal, lockedDay, daysStaked, hexDailyData.dailyMapPulse, fb);
                     pHexPrincipal += principal;
                     pHexYield     += interest;
                   });
@@ -4471,8 +4543,10 @@ export default function App() {
                   currentStakes.filter(s => s.chain === 'ethereum').forEach(st => {
                     const principal  = st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8;
                     const tSharesVal = st.tShares    ?? Number(st.stakeShares  ?? 0n) / 1e12;
+                    const lockedDay  = st.lockedDay ?? 0;
                     const daysStaked = Math.max(0, (st.stakedDays ?? 0) - (st.daysRemaining ?? 0));
-                    const interest   = tSharesVal * daysStaked * EHEX_YIELD_PER_TSHARE;
+                    const fb = hexDailyData.avgPayoutEth || EHEX_YIELD_PER_TSHARE;
+                    const interest = computeStakeYield(tSharesVal, lockedDay, daysStaked, hexDailyData.dailyMapEth, fb);
                     eHexPrincipal += principal;
                     eHexYield     += interest;
                   });
@@ -4713,9 +4787,12 @@ export default function App() {
                     const hexPrice = prices[hexPriceKey]?.usd || chainHexFallback || 0;
                     const stakedHex = st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8;
                     const tShares = st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12;
+                    const lockedDay = st.lockedDay ?? 0;
                     const daysStaked = Math.max(0, (st.stakedDays ?? 0) - (st.daysRemaining ?? 0));
-                    const rate = st.chain === 'pulsechain' ? PHEX_YIELD_PER_TSHARE : EHEX_YIELD_PER_TSHARE;
-                    return sum + (stakedHex + tShares * daysStaked * rate) * hexPrice;
+                    const chainMap = st.chain === 'pulsechain' ? hexDailyData.dailyMapPulse : hexDailyData.dailyMapEth;
+                    const fb = st.chain === 'pulsechain' ? (hexDailyData.avgPayoutPulse || PHEX_YIELD_PER_TSHARE) : (hexDailyData.avgPayoutEth || EHEX_YIELD_PER_TSHARE);
+                    const interestHex = computeStakeYield(tShares, lockedDay, daysStaked, chainMap, fb);
+                    return sum + (stakedHex + interestHex) * hexPrice;
                   }, 0);
                   const selectedTotalUsd = selectedLiquidUsd + selectedStakingUsd;
                   const chainAssets = walletChainFilter === 'all' ? visibleWalletAssets : visibleWalletAssets.filter(a => a.chain === walletChainFilter);
@@ -5584,6 +5661,8 @@ export default function App() {
                         hexUsdPrice={prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0}
                         phexUsdPrice={prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0}
                         ehexUsdPrice={prices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['hex']?.usd || 0}
+                        avgPayoutPulse={hexDailyData.avgPayoutPulse || undefined}
+                        avgPayoutEth={hexDailyData.avgPayoutEth || undefined}
                         liquidPHex={pHexLiquid}
                         liquidEHex={eHexLiquid}
                         walletAddresses={wallets.map(w => w.address)}

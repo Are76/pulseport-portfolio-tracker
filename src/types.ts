@@ -46,6 +46,9 @@ export interface HexStake {
   tShares?: number;
   stakedHex?: number;
   stakeHexYield?: number;
+  costBasisUsd?: number;
+  unrealizedPnlUsd?: number;
+  penaltyPct?: number;
 }
 
 export interface LpPosition {
