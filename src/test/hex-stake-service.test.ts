@@ -145,6 +145,7 @@ describe('hex stake service native contract reads', () => {
     const dto = await getHexStakeDashboard(testWalletAddress, 369);
     expect(dto.positions[0].yieldHex).toBe('0');
     expect(dto.positions[0].warnings.some((w) => w.includes('dailyDataRange call failed'))).toBe(true);
+    expect(dto.positions[0].warnings.filter((w) => w.includes('dailyData missing for day')).length).toBe(0);
   });
 
   it('preserves bigint precision for yield math', async () => {
@@ -191,6 +192,48 @@ describe('hex stake service native contract reads', () => {
     expect(dto.summary.totalYieldHex).toBe('2');
   });
 
+  it('bounds dailyDataRange end day to latest actually-required stake day', async () => {
+    mockReadContract.mockReset();
+    mockReadContract
+      .mockResolvedValueOnce(2n)
+      .mockResolvedValueOnce(500n)
+      .mockResolvedValueOnce([1n, 100000000n, 1000000000000n, 100n, 2n, 0n, false])
+      .mockResolvedValueOnce([2n, 100000000n, 1000000000000n, 120n, 1n, 0n, false])
+      .mockResolvedValueOnce(Array.from({ length: 21 }, () => [100000000n, 1000000000000n, 0n]));
+
+    await getHexStakeDashboard(testWalletAddress, 369);
+    const dailyDataRangeCall = mockReadContract.mock.calls.find((call) => call[0]?.functionName === 'dailyDataRange');
+    expect(dailyDataRangeCall?.[0]?.args).toEqual([100n, 121n]);
+  });
+
+  it('overdue short-term stake does not expand dailyDataRange to latestYieldDay', async () => {
+    mockReadContract.mockReset();
+    mockReadContract
+      .mockResolvedValueOnce(1n)
+      .mockResolvedValueOnce(1000n)
+      .mockResolvedValueOnce([1n, 100000000n, 1000000000000n, 10n, 3n, 0n, false])
+      .mockResolvedValueOnce(Array.from({ length: 3 }, () => [100000000n, 1000000000000n, 0n]));
+
+    await getHexStakeDashboard(testWalletAddress, 369);
+    const dailyDataRangeCall = mockReadContract.mock.calls.find((call) => call[0]?.functionName === 'dailyDataRange');
+    expect(dailyDataRangeCall?.[0]?.args).toEqual([10n, 13n]);
+  });
+
+  it('global dailyDataRange failure produces bounded warning output for long stakes', async () => {
+    mockReadContract.mockReset();
+    mockReadContract
+      .mockResolvedValueOnce(1n)
+      .mockResolvedValueOnce(4000n)
+      .mockResolvedValueOnce([1n, 100000000n, 1000000000000n, 1n, 3000n, 0n, false])
+      .mockRejectedValueOnce(new Error('dailyDataRange failed'));
+
+    const dto = await getHexStakeDashboard(testWalletAddress, 369);
+    const positionWarnings = dto.positions[0].warnings;
+    expect(positionWarnings.filter((w) => w.includes('dailyDataRange call failed')).length).toBe(1);
+    expect(positionWarnings.filter((w) => w.includes('dailyData missing for day')).length).toBe(0);
+    expect(positionWarnings.length).toBeLessThan(10);
+  });
+
   it('lockedDay equals currentDay yields zero and no false missing-data warning', async () => {
     mockReadContract.mockReset();
     mockReadContract
@@ -219,4 +262,3 @@ describe('hex stake service native contract reads', () => {
   });
 
 });
-
