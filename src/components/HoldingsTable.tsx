@@ -299,16 +299,14 @@ export function HoldingsTable({
                   <td style={{ padding: '12px 12px', textAlign: 'right' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2 }}>
                       {showActions && !isMobileLayout && (
-                        <>
-                          <button onClick={e => { e.stopPropagation(); onOpenPnl(asset); }} title="View P&L" style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#777' }}>
-                            <Calculator size={13} />
-                          </button>
-                          {onHide && (
-                            <button onClick={e => { e.stopPropagation(); onHide(asset.id); }} title="Hide" style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)' }}>
-                              <Trash2 size={13} />
-                            </button>
-                          )}
-                        </>
+                        <button onClick={e => { e.stopPropagation(); onOpenPnl(asset); }} title="View P&L" style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#777' }}>
+                          <Calculator size={13} />
+                        </button>
+                      )}
+                      {showActions && onHide && (
+                        <button onClick={e => { e.stopPropagation(); onHide(asset.id); }} title="Hide" style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)' }}>
+                          <Trash2 size={13} />
+                        </button>
                       )}
                       <span style={{ color: isExpanded ? 'var(--accent)' : 'var(--fg-subtle)', padding: 4, display: 'inline-flex' }}>
                         {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
