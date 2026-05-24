@@ -4822,12 +4822,12 @@ export default function App() {
                       <small>
                         Open filters, hidden coins, manual coins, and spam scan controls.
                       </small>
-                    </div>
-                    <div className="coin-visibility-stats">
-                      <span>{hiddenTokens.length} hidden</span>
-                      <span>{customCoins.length} manual</span>
-                      <span>{hideDust ? 'Dust hidden' : 'Dust visible'}</span>
-                      <span>{hideSpam ? 'Spam hidden' : 'Spam visible'}</span>
+                      <div className="coin-visibility-stats">
+                        <span>{hiddenTokens.length} hidden</span>
+                        <span>{customCoins.length} manual</span>
+                        <span>{hideDust ? 'Dust hidden' : 'Dust visible'}</span>
+                        <span>{hideSpam ? 'Spam hidden' : 'Spam visible'}</span>
+                      </div>
                     </div>
                     <ChevronDown size={16} className="coin-visibility-chevron" />
                   </button>
@@ -6352,11 +6352,11 @@ export default function App() {
                       <span>Coin visibility</span>
                       <strong>Manage hidden coins under assets.</strong>
                       <small>Open the hidden list, restore assets, and control dust or spam filters.</small>
-                    </div>
-                    <div className="coin-visibility-stats">
-                      <span>{hiddenTokens.length} hidden</span>
-                      <span>{hideDust ? 'Dust hidden' : 'Dust visible'}</span>
-                      <span>{hideSpam ? 'Spam hidden' : 'Spam visible'}</span>
+                      <div className="coin-visibility-stats">
+                        <span>{hiddenTokens.length} hidden</span>
+                        <span>{hideDust ? 'Dust hidden' : 'Dust visible'}</span>
+                        <span>{hideSpam ? 'Spam hidden' : 'Spam visible'}</span>
+                      </div>
                     </div>
                     <ChevronDown size={16} className="coin-visibility-chevron" />
                   </button>
