@@ -15,7 +15,7 @@ vi.mock('viem', () => ({
   }),
 }));
 
-import { getHexStakeDashboard, HexStakeServiceError } from '../server/hex-stakes/hex-stake-service';
+import { getHexStakeDashboard } from '../server/hex-stakes/hex-stake-service';
 
 describe('hex stake service native contract reads', () => {
   const walletAddress = '0x0000000000000000000000000000000000000001';
@@ -51,9 +51,66 @@ describe('hex stake service native contract reads', () => {
     expect(dto.positions[0].pricing.status).toBe('unavailable');
     expect(dto.positions[0].valuation.status).toBe('unavailable');
     expect(dto.positions[0].pnl.status).toBe('unavailable');
-    expect(dto.summary.activeStakeCount).toBe(3);
+    expect(dto.summary.activeStakeCount).toBe(1);
     expect(dto.summary.totalPrincipalHex).toBe('13.73456789');
     expect(dto.summary.totalTShares).toBe('6.5');
+  });
+
+  it('returns partial success when one stakeLists index fails', async () => {
+    mockReadContract.mockReset();
+    mockReadContract
+      .mockResolvedValueOnce(3n)
+      .mockResolvedValueOnce(100n)
+      .mockResolvedValueOnce([1n, 100000000n, 1000000000000n, 100n, 10n, 0n, false])
+      .mockRejectedValueOnce(new Error('stake idx 1 failed'))
+      .mockResolvedValueOnce([3n, 300000000n, 3000000000000n, 80n, 10n, 0n, false]);
+
+    const dto = await getHexStakeDashboard(walletAddress, 369);
+    expect(dto.positions).toHaveLength(2);
+    expect(dto.status).toBe('available');
+    expect(dto.warnings.some((w) => w.includes('Partial native stake read'))).toBe(true);
+    expect(dto.provenance.notes?.some((n) => n.includes('failedStakeIndexes='))).toBe(true);
+  });
+
+  it('fails with backend_unavailable when all stakeLists reads fail', async () => {
+    mockReadContract.mockReset();
+    mockReadContract
+      .mockResolvedValueOnce(2n)
+      .mockResolvedValueOnce(100n)
+      .mockRejectedValueOnce(new Error('idx0'))
+      .mockRejectedValueOnce(new Error('idx1'));
+
+    await expect(getHexStakeDashboard(walletAddress, 369)).rejects.toMatchObject({
+      code: 'backend_unavailable',
+      message: 'HEX stakes backend is currently unavailable.',
+    });
+  });
+
+  it('uses bounded/conservative stakeLists read batching', async () => {
+    mockReadContract.mockReset();
+    let inFlight = 0;
+    let maxInFlight = 0;
+
+    mockReadContract.mockImplementation(({ functionName, args }: { functionName: string; args?: unknown[] }) => {
+      if (functionName === 'stakeCount') return Promise.resolve(25n);
+      if (functionName === 'currentDay') return Promise.resolve(100n);
+      if (functionName === 'stakeLists') {
+        const idx = Number(args?.[1] as bigint);
+        inFlight += 1;
+        maxInFlight = Math.max(maxInFlight, inFlight);
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            inFlight -= 1;
+            resolve([BigInt(idx + 1), 100000000n, 1000000000000n, 100n, 1n, 0n, false]);
+          }, 1);
+        });
+      }
+      return Promise.reject(new Error('unexpected call'));
+    });
+
+    const dto = await getHexStakeDashboard(walletAddress, 369);
+    expect(dto.positions).toHaveLength(25);
+    expect(maxInFlight).toBeLessThanOrEqual(10);
   });
 
   it('maps contract read failure to backend_unavailable', async () => {

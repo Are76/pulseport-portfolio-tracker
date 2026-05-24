@@ -6,23 +6,13 @@ import type { HexStakeDashboardDto, HexStakePositionDto } from './hex-stake-type
 const PULSECHAIN_ID = 369;
 const HEX_CONTRACT_ADDRESS = '0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39';
 const HEX_ASSET_ID = 'erc20:369:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39';
+const STAKE_LISTS_BATCH_SIZE = 10;
 
 const HEX_STAKE_ABI = [
+  { type: 'function', name: 'stakeCount', stateMutability: 'view', inputs: [{ name: 'stakerAddr', type: 'address' }], outputs: [{ name: 'count', type: 'uint256' }] },
   {
-    type: 'function',
-    name: 'stakeCount',
-    stateMutability: 'view',
-    inputs: [{ name: 'stakerAddr', type: 'address' }],
-    outputs: [{ name: 'count', type: 'uint256' }],
-  },
-  {
-    type: 'function',
-    name: 'stakeLists',
-    stateMutability: 'view',
-    inputs: [
-      { name: 'stakerAddr', type: 'address' },
-      { name: 'stakeIndex', type: 'uint256' },
-    ],
+    type: 'function', name: 'stakeLists', stateMutability: 'view',
+    inputs: [{ name: 'stakerAddr', type: 'address' }, { name: 'stakeIndex', type: 'uint256' }],
     outputs: [
       { name: 'stakeId', type: 'uint40' },
       { name: 'stakedHearts', type: 'uint72' },
@@ -33,16 +23,12 @@ const HEX_STAKE_ABI = [
       { name: 'isAutoStake', type: 'bool' },
     ],
   },
-  {
-    type: 'function',
-    name: 'currentDay',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ name: 'day', type: 'uint256' }],
-  },
+  { type: 'function', name: 'currentDay', stateMutability: 'view', inputs: [], outputs: [{ name: 'day', type: 'uint256' }] },
 ] as const;
 
 const MIGRATION_WARNING = 'Native PulseChain HEX active stake reads are implemented. Yield, pricing, PnL, ended stake discovery, HSI, and HTT are not implemented yet.';
+
+type HexStakeListEntry = readonly [number | bigint, bigint, bigint, number | bigint, number | bigint, number | bigint, boolean];
 
 function classifyStakeStatus(lockedDay: number, stakedDays: number, currentDay: number): HexStakePositionDto['stakeStatus'] {
   if (lockedDay > currentDay) return 'pending';
@@ -50,8 +36,11 @@ function classifyStakeStatus(lockedDay: number, stakedDays: number, currentDay: 
   return 'overdue';
 }
 
-export class HexStakeServiceError extends Error { public readonly cause: unknown;
-  constructor(public readonly code: 'invalid_wallet' | 'unsupported_chain' | 'backend_unavailable', message: string, options?: { cause?: unknown }) { super(message); this.name = 'HexStakeServiceError'; this.cause = options?.cause; }
+export class HexStakeServiceError extends Error {
+  public readonly cause: unknown;
+  constructor(public readonly code: 'invalid_wallet' | 'unsupported_chain' | 'backend_unavailable', message: string, options?: { cause?: unknown }) {
+    super(message); this.name = 'HexStakeServiceError'; this.cause = options?.cause;
+  }
 }
 
 export async function getHexStakeDashboard(walletAddress: string, chainId = PULSECHAIN_ID): Promise<HexStakeDashboardDto> {
@@ -71,19 +60,47 @@ export async function getHexStakeDashboard(walletAddress: string, chainId = PULS
     const stakeCount = Number(stakeCountRaw);
     const currentDay = Number(currentDayRaw);
 
-    const stakes = await Promise.all(
-      Array.from({ length: stakeCount }, (_, idx) => client.readContract({
-        address: HEX_CONTRACT_ADDRESS,
-        abi: HEX_STAKE_ABI,
-        functionName: 'stakeLists',
-        args: [walletAddress, BigInt(idx)],
-      })),
-    );
+    const successfulStakes: { index: number; stake: HexStakeListEntry }[] = [];
+    const failedStakeIndexes: number[] = [];
 
-    const positions: HexStakePositionDto[] = stakes.map((stake) => {
+    for (let start = 0; start < stakeCount; start += STAKE_LISTS_BATCH_SIZE) {
+      const end = Math.min(start + STAKE_LISTS_BATCH_SIZE, stakeCount);
+      const batch = Array.from({ length: end - start }, (_, offset) => start + offset);
+
+      const settled = await Promise.allSettled(
+        batch.map((idx) => client.readContract({
+          address: HEX_CONTRACT_ADDRESS,
+          abi: HEX_STAKE_ABI,
+          functionName: 'stakeLists',
+          args: [walletAddress, BigInt(idx)],
+        })),
+      );
+
+      settled.forEach((result, pos) => {
+        const idx = batch[pos];
+        if (result.status === 'fulfilled') successfulStakes.push({ index: idx, stake: result.value as HexStakeListEntry });
+        else failedStakeIndexes.push(idx);
+      });
+    }
+
+    if (stakeCount > 0 && successfulStakes.length === 0) {
+      throw new HexStakeServiceError('backend_unavailable', 'HEX stakes backend is currently unavailable.');
+    }
+
+    const partialWarning = failedStakeIndexes.length > 0
+      ? `Partial native stake read: ${failedStakeIndexes.length}/${stakeCount} stakeLists indexes failed.`
+      : null;
+
+    const positions: HexStakePositionDto[] = successfulStakes.map(({ stake }) => {
       const [stakeId, stakedHearts, stakeShares, lockedDayRaw, stakedDaysRaw] = stake;
       const lockedDay = Number(lockedDayRaw);
       const stakedDays = Number(stakedDaysRaw);
+      const warnings = [
+        'Yield calculation is not implemented for native HEX stakes yet.',
+        'Pricing, valuation, and PnL are not implemented for HEX stakes yet.',
+        'Ended stake discovery is not implemented yet.',
+      ];
+      if (partialWarning) warnings.push(partialWarning);
       return {
         stakeId: stakeId.toString(),
         stakeSource: 'native',
@@ -103,28 +120,28 @@ export async function getHexStakeDashboard(walletAddress: string, chainId = PULS
         pricing: { status: 'unavailable', priceUsd: null, source: null, observedAt: null },
         valuation: { status: 'unavailable', valueUsd: null },
         pnl: { status: 'unavailable', realizedUsd: null, unrealizedUsd: null },
-        warnings: [
-          'Yield calculation is not implemented for native HEX stakes yet.',
-          'Pricing, valuation, and PnL are not implemented for HEX stakes yet.',
-          'Ended stake discovery is not implemented yet.',
-        ],
+        warnings,
         provenance: {
           source: 'pulseport.hex-stakes.native-contract-reads-v1',
           observedAt: asOf,
-          notes: ['chainId=369', 'methods=stakeCount,stakeLists,currentDay'],
+          notes: ['chainId=369', 'methods=stakeCount,stakeLists,currentDay', `stakeIndex=${successfulStakes.length > 0 ? 'partial-or-full' : 'none'}`],
         },
       };
     });
 
-    const totalPrincipalRaw = stakes.reduce((acc, stake) => acc + stake[1], 0n);
-    const totalTSharesRaw = stakes.reduce((acc, stake) => acc + stake[2], 0n);
+    const totalPrincipalRaw = successfulStakes.reduce((acc, x) => acc + BigInt(x.stake[1]), 0n);
+    const totalTSharesRaw = successfulStakes.reduce((acc, x) => acc + BigInt(x.stake[2]), 0n);
+
+    const rootWarnings = [MIGRATION_WARNING, ...(partialWarning ? [partialWarning] : [])];
+    const rootNotes = ['source=HEX contract reads', 'methods=stakeCount,stakeLists,currentDay', `chainId=${chainId}`, `asOf=${asOf}`];
+    if (partialWarning) rootNotes.push(`failedStakeIndexes=${failedStakeIndexes.join(',')}`);
 
     return {
       schemaVersion: 'v1', walletAddress: normalizedWalletAddress, chainId, asOf,
       status: positions.length === 0 ? 'partial' : 'available',
       positions,
       summary: {
-        activeStakeCount: positions.length,
+        activeStakeCount: positions.filter((p) => p.stakeStatus === 'active').length,
         endedStakeCount: 0,
         unsupportedStakeCount: 0,
         totalPrincipalHex: formatUnits(totalPrincipalRaw, 8),
@@ -132,13 +149,14 @@ export async function getHexStakeDashboard(walletAddress: string, chainId = PULS
         totalTShares: formatUnits(totalTSharesRaw, 12),
         valuationStatus: 'unavailable',
         pnlStatus: 'unavailable',
-        warnings: [MIGRATION_WARNING],
+        warnings: rootWarnings,
       },
-      tShareMetrics: { status: 'unknown', shareRate: null, tSharePriceHex: null, tSharePriceUsd: null, activeTShares: formatUnits(totalTSharesRaw, 12), averagePaidUsdPerTShare: null, warnings: ['tShare metrics requiring dailyData are not implemented yet.'] },
-      warnings: [MIGRATION_WARNING],
-      provenance: { source: 'pulseport.hex-stakes.native-contract-reads-v1', observedAt: asOf, notes: ['source=HEX contract reads', 'methods=stakeCount,stakeLists,currentDay', `chainId=${chainId}`, `asOf=${asOf}`] },
+      tShareMetrics: { status: 'unknown', shareRate: null, tSharePriceHex: null, tSharePriceUsd: null, activeTShares: formatUnits(totalTSharesRaw, 12), averagePaidUsdPerTShare: null, warnings: ['tShare metrics requiring dailyData are not implemented yet.', ...(partialWarning ? [partialWarning] : [])] },
+      warnings: rootWarnings,
+      provenance: { source: 'pulseport.hex-stakes.native-contract-reads-v1', observedAt: asOf, notes: rootNotes },
     };
   } catch (error) {
+    if (error instanceof HexStakeServiceError) throw error;
     throw new HexStakeServiceError('backend_unavailable', 'HEX stakes backend is currently unavailable.', { cause: error });
   }
 }
