@@ -65,7 +65,6 @@ import { TokenPnLCard } from './components/TokenPnLCard';
 import { PnLModal } from './components/PnLModal';
 import { ProfitPlannerModal } from './components/ProfitPlannerModal';
 import { StakesSection } from './components/StakesSection';
-import { MarketWatchModal } from './components/MarketWatchModal';
 import { TokenProductPage } from './components/TokenProductPage';
 import { TransactionList } from './components/TransactionList';
 import { HoldingsTable } from './components/HoldingsTable';
@@ -260,7 +259,7 @@ function StakingLadder({ stakes }: { stakes: HexStake[] }) {
             label={{ value: 'Days Remaining', position: 'insideBottom', offset: -10, fill: 'var(--fg-subtle)', fontSize: 13 }} />
           <YAxis tick={{ fill: 'var(--fg-subtle)', fontSize: 13 }} axisLine={false} tickLine={false} scale="log" domain={['auto', 'auto']} allowDataOverflow={false} />
           <RechartsTooltip content={<CustomTip />} />
-          <Bar dataKey="totalShares" fill="#00FF9F" radius={[3, 3, 0, 0]} />
+          <Bar dataKey="totalShares" fill="var(--accent)" radius={[3, 3, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -270,7 +269,6 @@ function StakingLadder({ stakes }: { stakes: HexStake[] }) {
 // -- StakingPie -----------------------------------------------------------------
 // Donut chart showing HEX stake distribution grouped by wallet (from pulsechain-dashboard)
 function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: number }) {
-  const [activeIndex, setActiveIndex] = React.useState(0);
   if (!stakes || stakes.length === 0) return null;
 
   const byWallet: Record<string, { label: string; tShares: number; stakedHex: number; yieldHex: number; totalHex: number; totalUsd: number; count: number }> = {};
@@ -301,7 +299,7 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
     ? [...large, { label: 'Others', tShares: small.reduce((a, b) => a + b.tShares, 0), totalUsd: small.reduce((a, b) => a + b.totalUsd, 0), count: small.reduce((a, b) => a + b.count, 0) }]
     : large;
 
-  const GRADIENT = ['#00FF9F', '#627EEA', '#f739ff', '#fb923c', '#3b82f6', '#a855f7'];
+  const GRADIENT = ['#7B8FFF', '#627EEA', '#f739ff', '#fb923c', '#3b82f6', '#a855f7'];
   const getColor = (i: number) => GRADIENT[i % GRADIENT.length];
 
   const fmtK = (n: number) => n >= 1e9 ? (n / 1e9).toFixed(1) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : n.toFixed(0);
@@ -331,8 +329,7 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
       <ResponsiveContainer width="100%" height={240} minWidth={1} minHeight={1}>
         <PieChart>
           <Pie data={chartData} cx="50%" cy="50%" innerRadius={60} outerRadius={85} dataKey="tShares"
-            {...{ activeIndex } as {}} activeShape={renderActiveShape}
-            onMouseEnter={(_, i) => setActiveIndex(i)}>
+            activeShape={renderActiveShape}>
             {chartData.map((_, i) => <Cell key={i} fill={getColor(i)} />)}
           </Pie>
           <RechartsTooltip formatter={(val: any, _: any, entry: any) => [`${fmtK(Number(val))} T-Shares  -  $${fmtK(entry.payload.totalUsd)}`, entry.payload.label]} />
@@ -366,7 +363,7 @@ interface WalletSelectorProps {
   walletLabels?: Record<string, string>;
 }
 
-const WALLET_DOT_COLORS = ['#00FF9F','#f739ff','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
+const WALLET_DOT_COLORS = ['#7B8FFF','#f739ff','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
 
 function WalletSelector({ wallets, activeWallet, onSelect, onAdd, onRemove, walletLabels = {} }: WalletSelectorProps) {
   if (wallets.length === 0) {
@@ -629,8 +626,6 @@ export default function App() {
   const [selectedProductAsset, setSelectedProductAsset] = useState<Asset | null>(null);
   const [productPageLoading, setProductPageLoading] = useState(false);
   const [productReturnTab, setProductReturnTab] = useState<ActiveTab>('home');
-  const [showMarketWatch, setShowMarketWatch] = useState(false);
-  const [marketWatchInitialSearch, setMarketWatchInitialSearch] = useState('');
   const [homeSearch, setHomeSearch] = useState('');
   const [expandedWalletAssetIds, setExpandedWalletAssetIds] = useState<Set<string>>(new Set());
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -708,15 +703,15 @@ export default function App() {
     header: 'var(--bg-header)',
     hoverBg: 'var(--bg-elevated)',
     expandedBg: 'var(--bg-elevated)',
-    green: theme === 'dark' ? '#00FF9F' : '#059669',
-    red: theme === 'dark' ? '#f43f5e' : '#dc2626',
-    purple: '#8b5cf6',
+    green: theme === 'dark' ? '#34D399' : '#059669',
+    red: theme === 'dark' ? '#F87171' : '#DC2626',
+    purple: '#818CF8',
     orange: '#f97316',
     blue: 'var(--chain-eth)',
     pink: 'var(--chain-pulse)',
     gradientHero: theme === 'dark'
-      ? 'linear-gradient(135deg, #0b1a12 0%, #08100e 40%, #080d16 100%)'
-      : 'linear-gradient(135deg, #eef8f4 0%, #f5f5f5 40%, #eef0fa 100%)',
+      ? 'linear-gradient(135deg, #07101E 0%, #0C1A2E 40%, #0A1628 100%)'
+      : 'linear-gradient(135deg, #EEF2FF 0%, #F0F4FF 40%, #E4EAF8 100%)',
   }), [theme]);
 
   useEffect(() => {
@@ -1315,8 +1310,10 @@ export default function App() {
                   const data: any = await res.json();
                   if (data.items && Array.isArray(data.items)) {
                     results.push(...data.items);
-                    nextParams = (data.next_page_params as Record<string, string> | null) ?? null;
-                    if (!data.next_page_params || data.items.length === 0) break;
+                    const np = data.next_page_params as Record<string, string> | null | undefined;
+                    // null, undefined, or empty {} all signal last page
+                    if (!np || Object.keys(np).length === 0 || data.items.length === 0) break;
+                    nextParams = np;
                   } else {
                     break;
                   }
@@ -3228,15 +3225,16 @@ export default function App() {
     volume24h?: number | null;
     accent?: string;
     logo?: string;
+    dexUrl: string;
   };
 
   const coreLiveTokens = useMemo(() => ([
-    { id: 'PLS',  symbol: 'PLS',  name: 'PulseChain',    priceKey: 'pulsechain',                                                    changeKey: 'pulsechain:native', accent: 'linear-gradient(90deg,#00ff9f,#00cfff)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png' },
+    { id: 'PLS',  symbol: 'PLS',  name: 'PulseChain',    priceKey: 'pulsechain',                                                    changeKey: 'pulsechain:native', accent: 'linear-gradient(90deg,#7B8FFF,#60A5FA)', tokenAddr: '0xa1077a294dde1b09bb078844df40758a5d0f9a27', logo: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png' },
     { id: 'PLSX', symbol: 'PLSX', name: 'PulseX',        priceKey: 'pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab',            accent: 'linear-gradient(90deg,#ff00bf,#7b00ff)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x95B303987A60C71504D99Aa1b13B4DA07b0790ab.png' },
-    { id: 'INC',  symbol: 'INC',  name: 'Incentive',     priceKey: 'pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d',            accent: 'linear-gradient(90deg,#39ff14,#00ff9f)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png' },
+    { id: 'INC',  symbol: 'INC',  name: 'Incentive',     priceKey: 'pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d',            accent: 'linear-gradient(90deg,#2DD4BF,#7B8FFF)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png' },
     { id: 'HEX',  symbol: 'HEX',  name: 'pHEX',          priceKey: 'pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39',            accent: 'linear-gradient(90deg,#ff6b35,#f7931a)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39.png' },
     { id: 'PRVX', symbol: 'PRVX', name: 'PrivacyX',      priceKey: 'pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11',            accent: 'linear-gradient(90deg,#6c3ce1,#b044ff)',                                              logo: 'https://cdn.dexscreener.com/cms/images/ODHYYN7yppDHnd6u?width=64&height=64&fit=crop&quality=95&format=auto' },
-    { id: 'eHEX', symbol: 'eHEX', name: 'Ethereum HEX',  priceKey: 'ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39',              accent: 'linear-gradient(90deg,#ff0080,#ff6b35,#ffeb3b,#00ff9f,#00cfff,#7b00ff)',             logo: 'https://cdn.dexscreener.com/cms/images/a46bd12940d8501c2aacdd10ad4780e818bdedaba1ec8eb46b52e4d8313d4a93?width=64&height=64&fit=crop&quality=95&format=auto' },
+    { id: 'eHEX', symbol: 'eHEX', name: 'Ethereum HEX',  priceKey: 'ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39',              accent: 'linear-gradient(90deg,#ff0080,#ff6b35,#ffeb3b,#7B8FFF,#60A5FA,#7b00ff)',             logo: 'https://cdn.dexscreener.com/cms/images/a46bd12940d8501c2aacdd10ad4780e818bdedaba1ec8eb46b52e4d8313d4a93?width=64&height=64&fit=crop&quality=95&format=auto' },
   ]), []);
 
   useEffect(() => {
@@ -3277,12 +3275,18 @@ export default function App() {
   const topHoldingCards = useMemo<PortfolioPriceCard[]>(() => {
     return coreLiveTokens.map(token => {
       const md = prices[token.priceKey] || prices[token.changeKey ?? ''];
-      const tokenAddress = token.priceKey.includes(':') ? token.priceKey.split(':')[1]?.toLowerCase() : '';
+      const tokenAddress = token.priceKey.includes(':')
+        ? token.priceKey.split(':')[1]?.toLowerCase()
+        : (token as any).tokenAddr?.toLowerCase() ?? '';
+      const chain = token.priceKey.includes(':') ? token.priceKey.split(':')[0] : 'pulsechain';
       const heldAsset = currentAssets.find(asset =>
         (tokenAddress && (asset as any).address?.toLowerCase?.() === tokenAddress) ||
         asset.symbol.toUpperCase() === token.symbol.toUpperCase()
       );
       const liveMarketData = tokenMarketData[`live:${token.id}`] || (heldAsset ? tokenMarketData[heldAsset.id] : null);
+      const dexUrl = tokenAddress
+        ? `https://dexscreener.com/${chain}/${tokenAddress}`
+        : `https://dexscreener.com/search?q=${encodeURIComponent(token.symbol)}`;
       return {
         id: token.id,
         symbol: token.symbol,
@@ -3293,6 +3297,7 @@ export default function App() {
         volume24h: liveMarketData?.volume24h ?? null,
         accent: token.accent,
         logo: token.logo,
+        dexUrl,
       };
     });
   }, [coreLiveTokens, currentAssets, prices, tokenMarketData, frontMarketPeriod]);
@@ -3312,7 +3317,11 @@ export default function App() {
       .sort((a, b) => b.value - a.value)
       .forEach(asset => {
         const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()] || (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()] || getTokenLogoUrl(asset);
-        const chainColor = CHAIN_COLORS[asset.chain] || '#00FF9F';
+        const chainColor = CHAIN_COLORS[asset.chain] || '#7B8FFF';
+        const address = (asset as any).address?.toLowerCase?.();
+        const dexUrl = address
+          ? `https://dexscreener.com/${asset.chain}/${address}`
+          : `https://dexscreener.com/search?q=${encodeURIComponent(asset.symbol)}`;
         add({
           id: `${asset.chain}:${asset.symbol}`,
           symbol: asset.symbol,
@@ -3321,8 +3330,9 @@ export default function App() {
           change24h: getFrontMarketChange(tokenMarketData[asset.id], null, asset),
           marketCap: tokenMarketData[asset.id]?.marketCap ?? tokenMarketData[asset.id]?.fdv ?? null,
           volume24h: tokenMarketData[asset.id]?.volume24h ?? null,
-          accent: `linear-gradient(90deg, ${chainColor}, rgba(0,255,159,0.85))`,
+          accent: `linear-gradient(90deg, ${chainColor}, var(--accent-glow, rgba(123,143,255,0.7)))`,
           logo,
+          dexUrl,
         });
       });
 
@@ -3436,11 +3446,6 @@ export default function App() {
     },
   ], []);
 
-  const openMarketWatch = (initialSearch = '') => {
-    setMarketWatchInitialSearch(initialSearch);
-    setShowMarketWatch(true);
-  };
-
   const openProductPage = (asset: Asset, origin: ActiveTab = activeTab) => {
     const nextOrigin = origin === 'product' ? productReturnTab : origin;
     setSelectedProductAsset(asset);
@@ -3459,11 +3464,8 @@ export default function App() {
       window.open(`https://scan.pulsechain.com/tx/${q}`, '_blank', 'noopener,noreferrer');
       return;
     }
-    if (/^0x[a-fA-F0-9]{40}$/.test(q)) {
-      window.open(`https://scan.pulsechain.com/address/${q}`, '_blank', 'noopener,noreferrer');
-      return;
-    }
-    openMarketWatch(q);
+    // Contract address or wallet → search DexScreener (shows token pairs if CA, wallet if address)
+    window.open(`https://dexscreener.com/search?q=${encodeURIComponent(q)}`, '_blank', 'noopener,noreferrer');
   };
 
   const navItems = [
@@ -3856,8 +3858,8 @@ export default function App() {
                       <input
                         value={homeSearch}
                         onChange={(e) => setHomeSearch(e.target.value)}
-                        aria-label="Search by coin, block, or transaction"
-                        placeholder="Search coin, block, or transaction..."
+                        aria-label="Search token, block, tx hash, or contract address"
+                        placeholder="Symbol, contract address, block, or tx..."
                       />
                       <button type="submit">Search</button>
                     </form>
@@ -3883,17 +3885,19 @@ export default function App() {
                         <span>Live prices</span>
                         <strong>PulseChain market</strong>
                       </div>
-                      <button type="button" onClick={() => openMarketWatch('')}>
-                        Open market watch <Activity size={14} />
-                      </button>
+                      <a href="https://dexscreener.com/pulsechain" target="_blank" rel="noopener noreferrer" className="front-price-board-head-link">
+                        DexScreener <ExternalLink size={13} />
+                      </a>
                     </div>
 
                     <div className="front-price-grid">
                       {frontPageGridTokens.map((token, i) => (
-                        <button
+                        <a
                           key={`${token.id}-${i}`}
                           className="front-price-box"
-                          onClick={() => openMarketWatch(token.symbol)}
+                          href={token.dexUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           style={{ animationDelay: `${i * 38}ms` }}
                         >
                           <span className="front-price-accent" style={{ background: token.accent }} />
@@ -3916,14 +3920,11 @@ export default function App() {
                             <span>Vol {fmtMarket(token.volume24h)}</span>
                             <span>MCap {fmtMarket(token.marketCap)}</span>
                           </span>
-                        </button>
+                        </a>
                       ))}
                     </div>
 
                     <div className="front-market-actions">
-                      <button className="btn-ghost front-secondary-action" onClick={() => openMarketWatch('')}>
-                        Market watch <Activity size={14} />
-                      </button>
                       <button onClick={fetchPortfolio} className="front-refresh-btn">
                         <RefreshCcw size={13} className={isLoading ? 'animate-spin' : ''} />
                         Refresh
@@ -3935,7 +3936,7 @@ export default function App() {
                 <section className="front-section front-section-tight">
                   <div className="front-section-head">
                     <span>Market pulse</span>
-                    <h2>Read the chain before you open a wallet.</h2>
+                    <h2>Chain stats at a glance.</h2>
                   </div>
                   <div className="front-stat-strip">
                     {frontPageMarketStats.map(stat => (
@@ -3951,16 +3952,16 @@ export default function App() {
                 <section className="front-section front-section-tight">
                   <div className="front-section-head">
                     <span>Workspace access</span>
-                    <h2>Jump into every part of Pulseport from home.</h2>
+                    <h2>Quick navigation.</h2>
                   </div>
                   <div className="front-info-grid">
                     {[
-                      { eyebrow: 'Portfolio', title: 'Overview', detail: 'Allocation, summary, and top holdings.', icon: LayoutDashboard, action: () => setActiveTab('overview') },
-                      { eyebrow: 'Wallets', title: 'Wallet detail', detail: 'Per-wallet holdings, balances, and bridge context.', icon: WalletIcon, action: () => setActiveTab('wallets') },
-                      { eyebrow: 'HEX', title: 'HEX stakes', detail: 'Track pHEX and eHEX stake performance.', icon: Lock, action: () => setActiveTab('stakes') },
-                      { eyebrow: 'Transactions', title: 'History', detail: 'Review swaps, transfers, and filters.', icon: History, action: () => setActiveTab('history') },
-                      { eyebrow: 'DeFi', title: 'Liquidity & farms', detail: 'See LP and farm positions in one place.', icon: Droplets, action: () => setActiveTab('defi') },
-                      { eyebrow: 'Bridges', title: 'Bridge dashboard', detail: 'Open bridge routes and token references.', icon: ArrowLeftRight, action: () => setActiveTab('bridge') },
+                      { eyebrow: 'Portfolio', title: 'Overview', detail: 'Allocation and top holdings.', icon: LayoutDashboard, action: () => setActiveTab('overview') },
+                      { eyebrow: 'Wallets', title: 'Wallets', detail: 'Holdings and balances by wallet.', icon: WalletIcon, action: () => setActiveTab('wallets') },
+                      { eyebrow: 'HEX', title: 'HEX stakes', detail: 'pHEX and eHEX stake tracker.', icon: Lock, action: () => setActiveTab('stakes') },
+                      { eyebrow: 'Transactions', title: 'History', detail: 'Swaps, transfers, and filters.', icon: History, action: () => setActiveTab('history') },
+                      { eyebrow: 'DeFi', title: 'Liquidity & farms', detail: 'LP and farm positions.', icon: Droplets, action: () => setActiveTab('defi') },
+                      { eyebrow: 'Bridges', title: 'Bridges', detail: 'Bridge routes and references.', icon: ArrowLeftRight, action: () => setActiveTab('bridge') },
                     ].map(({ eyebrow, title, detail, icon: Icon, action }) => (
                       <button key={title} className="front-info-card" onClick={action}>
                         <span className="front-info-icon">
@@ -3982,14 +3983,14 @@ export default function App() {
                 <section className="front-section front-section-tight">
                   <div className="front-section-head">
                     <span>Explorer shortcuts</span>
-                    <h2>Keep the external tools on the homepage.</h2>
+                    <h2>External tools.</h2>
                   </div>
                   <div className="front-info-grid">
                     {[
-                      { eyebrow: 'PulseChain', title: 'PulseScan', detail: 'Inspect PulseChain wallets, tokens, and contracts.', icon: Shield, href: 'https://scan.pulsechain.com' },
-                      { eyebrow: 'Ethereum', title: 'Etherscan', detail: 'Open Ethereum token and wallet explorer views.', icon: ExternalLink, href: 'https://etherscan.io' },
-                      { eyebrow: 'Base', title: 'Base explorer', detail: 'Jump straight into Base activity and balances.', icon: Layers, href: 'https://base.blockscout.com' },
-                      { eyebrow: 'Market', title: 'DexScreener', detail: 'Monitor live PulseChain token pair activity.', icon: Activity, href: 'https://dexscreener.com/pulsechain' },
+                      { eyebrow: 'PulseChain', title: 'PulseScan', detail: 'Wallets, tokens, and contracts.', icon: Shield, href: 'https://scan.pulsechain.com' },
+                      { eyebrow: 'Ethereum', title: 'Etherscan', detail: 'Ethereum token and wallet explorer.', icon: ExternalLink, href: 'https://etherscan.io' },
+                      { eyebrow: 'Base', title: 'Base explorer', detail: 'Base activity and balances.', icon: Layers, href: 'https://base.blockscout.com' },
+                      { eyebrow: 'Market', title: 'DexScreener', detail: 'Live token pair activity.', icon: Activity, href: 'https://dexscreener.com/pulsechain' },
                     ].map(({ eyebrow, title, detail, icon: Icon, href }) => (
                       <a key={title} className="front-info-card" href={href} target="_blank" rel="noopener noreferrer">
                         <span className="front-info-icon">
@@ -4055,7 +4056,7 @@ export default function App() {
                   <div className="front-intel-panel">
                     <div className="front-section-head">
                       <span>Portfolio intel</span>
-                      <h2>Holdings, stakes, liquidity, and bridge moves stay connected.</h2>
+                      <h2>Your on-chain activity, unified.</h2>
                     </div>
                     <div className="front-chain-stack">
                       {frontPageChainRows.map(row => {
@@ -4127,7 +4128,7 @@ export default function App() {
                   <div className={theme === 'dark' ? 'hero-bg-dark' : 'hero-bg-light'} style={{ border: '1px solid rgba(0,255,159,0.12)', borderRadius: 20, padding: '40px 32px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 0%, rgba(0,255,159,.10) 0%, transparent 55%), radial-gradient(ellipse at 80% 80%, rgba(99,70,255,.06) 0%, transparent 50%)', pointerEvents: 'none' }} />
                     <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(0,255,159,0.1)', border: '1px solid rgba(0,255,159,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 0 24px rgba(0,255,159,0.12)' }}>
-                      <WalletIcon size={24} color="#00FF9F" />
+                      <WalletIcon size={24} color="#7B8FFF" />
                     </div>
                     <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--fg)', marginBottom: 8, letterSpacing: '-0.02em' }}>Welcome to PulsePort</div>
                     <div style={{ fontSize: 14, color: 'var(--fg-muted)', marginBottom: 32, maxWidth: 400, margin: '0 auto 32px' }}>
@@ -4230,32 +4231,17 @@ export default function App() {
                              ))}
                            </div>
                          </div>
-                         {/* Profit Planner + Market Watch buttons */}
+                         {/* Profit Planner button */}
                          <div style={{ marginTop: 14, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                           <button
-                             onClick={() => openMarketWatch('')}
-                             style={{
-                               display: 'inline-flex', alignItems: 'center', gap: 8,
-                               padding: '10px 20px', borderRadius: 12,
-                               background: 'rgba(99,70,255,0.12)',
-                               border: '1px solid rgba(99,70,255,0.26)',
-                               color: '#c4b5fd', fontSize: 13, fontWeight: 700,
-                               cursor: 'pointer', transition: 'all .15s',
-                             }}
-                           >
-                             <Activity size={15} />
-                             Market Watch
-                           </button>
                            <button
                              onClick={() => setProfitPlannerOpen(true)}
                              style={{
                                display: 'inline-flex', alignItems: 'center', gap: 8,
                                padding: '10px 20px', borderRadius: 12,
-                               background: 'linear-gradient(135deg, rgba(0,255,159,0.15) 0%, rgba(99,70,255,0.10) 100%)',
-                               border: '1px solid rgba(0,255,159,0.30)',
+                               background: 'var(--accent-dim)',
+                               border: '1px solid var(--accent-border)',
                                color: 'var(--accent)', fontSize: 13, fontWeight: 700,
                                cursor: 'pointer', transition: 'all .15s',
-                               boxShadow: '0 0 20px rgba(0,255,159,0.08)',
                              }}
                            >
                              <TrendingUp size={15} />
@@ -4960,7 +4946,7 @@ export default function App() {
                               const next = Number(e.target.value);
                               setAllocationDraftPercentages(prev => ({ ...prev, [row.name]: next }));
                             }}
-                            style={{ accentColor: ['#00FF9F','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'][i % 7] }}
+                            style={{ accentColor: ['#7B8FFF','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'][i % 7] }}
                           />
                           <input
                             type="number"
@@ -6867,15 +6853,6 @@ export default function App() {
           </div>
         )}
       </AnimatePresence>
-
-      {/* -- Market Watch Modal -- */}
-      {showMarketWatch && (
-        <MarketWatchModal
-          theme={theme}
-          initialSearch={marketWatchInitialSearch}
-          onClose={() => setShowMarketWatch(false)}
-        />
-      )}
 
       {/* -- Profit Planner Modal -- */}
       {profitPlannerOpen && (
