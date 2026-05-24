@@ -19,6 +19,19 @@ function asSingleValue(value: string | string[] | undefined): string | undefined
   return value;
 }
 
+function parseChainId(chainIdInput: string | undefined): number | null {
+  if (chainIdInput === undefined) {
+    return CHAIN_ID_DEFAULT;
+  }
+
+  if (!/^[1-9]\d*$/.test(chainIdInput)) {
+    return null;
+  }
+
+  const parsed = Number(chainIdInput);
+  return Number.isSafeInteger(parsed) ? parsed : null;
+}
+
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   res.setHeader('Cache-Control', 'no-store');
 
@@ -35,7 +48,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
 
   const walletAddress = asSingleValue(req.query?.walletAddress);
   const chainIdInput = asSingleValue(req.query?.chainId);
-  const chainId = chainIdInput ? Number.parseInt(chainIdInput, 10) : CHAIN_ID_DEFAULT;
+  const chainId = parseChainId(chainIdInput);
 
   if (!walletAddress) {
     return res.status(400).json({
@@ -48,7 +61,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     });
   }
 
-  if (!Number.isInteger(chainId)) {
+  if (chainId === null) {
     return res.status(400).json({
       ok: false,
       data: null,

@@ -4,11 +4,16 @@ import { CHAINS } from '../../constants';
 import type { PortfolioDashboardDto } from './portfolio-types';
 
 export class PortfolioServiceError extends Error {
+  public readonly cause: unknown;
+
   constructor(
     public readonly code: 'invalid_wallet' | 'unsupported_chain' | 'backend_unavailable',
     message: string,
+    options?: { cause?: unknown },
   ) {
     super(message);
+    this.name = 'PortfolioServiceError';
+    this.cause = options?.cause;
   }
 }
 
@@ -59,7 +64,7 @@ export async function getPortfolioDashboard(
         warnings: ['Pricing and valuation are not yet migrated to backend in schema v1.'],
       },
     };
-  } catch {
-    throw new PortfolioServiceError('backend_unavailable', 'Portfolio backend is currently unavailable.');
+  } catch (error) {
+    throw new PortfolioServiceError('backend_unavailable', 'Portfolio backend is currently unavailable.', { cause: error });
   }
 }
