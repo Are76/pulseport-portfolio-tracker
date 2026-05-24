@@ -120,32 +120,48 @@ export async function getHexStakeDashboard(walletAddress: string, chainId = PULS
 
     const yieldEligible = successfulStakes.filter(({ stake }) => {
       const lockedDay = Number(stake[3]);
-      return lockedDay <= currentDay;
+      const stakedDays = Number(stake[4]);
+      const status = classifyStakeStatus(lockedDay, stakedDays, currentDay);
+      return lockedDay <= currentDay && status !== 'pending';
     });
     const earliestLockedDay = yieldEligible.length > 0 ? Math.min(...yieldEligible.map((x) => Number(x.stake[3]))) : null;
     const latestYieldDay = currentDay > 0 ? currentDay - 1 : 0;
+    const latestRequiredStakeDay = yieldEligible.length > 0
+      ? Math.max(...yieldEligible.map(({ stake }) => {
+        const lockedDay = Number(stake[3]);
+        const stakedDays = Number(stake[4]);
+        const maturityDay = lockedDay + stakedDays - 1;
+        return Math.min(maturityDay, latestYieldDay);
+      }))
+      : null;
 
     let dailyDataByDay = new Map<number, HexDailyDataEntry>();
     let dailyDataWarning: string | null = null;
+    let dailyDataRangeFailed = false;
 
-    if (earliestLockedDay !== null && earliestLockedDay <= latestYieldDay) {
+    if (
+      earliestLockedDay !== null
+      && latestRequiredStakeDay !== null
+      && earliestLockedDay <= latestRequiredStakeDay
+    ) {
       try {
         const dailyData = await client.readContract({
           address: HEX_CONTRACT_ADDRESS,
           abi: HEX_STAKE_ABI,
           functionName: 'dailyDataRange',
-          args: [BigInt(earliestLockedDay), BigInt(latestYieldDay + 1)],
+          args: [BigInt(earliestLockedDay), BigInt(latestRequiredStakeDay + 1)],
         }) as readonly (HexDailyDataEntry | HexDailyDataObject)[];
 
         dailyDataByDay = new Map(dailyData.map((entry, idx) => [earliestLockedDay + idx, normalizeDailyDataEntry(entry)]));
 
 
-        const expectedDays = latestYieldDay - earliestLockedDay + 1;
+        const expectedDays = latestRequiredStakeDay - earliestLockedDay + 1;
         if (dailyData.length < expectedDays) {
           dailyDataWarning = `dailyDataRange returned incomplete data (${dailyData.length}/${expectedDays} days).`;
         }
       } catch {
         dailyDataWarning = 'dailyDataRange call failed; yield cannot be fully determined.';
+        dailyDataRangeFailed = true;
       }
     }
 
@@ -164,7 +180,7 @@ export async function getHexStakeDashboard(walletAddress: string, chainId = PULS
         'chainId=369',
         'methods=stakeCount,stakeLists,currentDay,dailyDataRange',
         `dailyDataRange.startDay=${earliestLockedDay ?? 'na'}`,
-        `dailyDataRange.endDay=${earliestLockedDay !== null ? latestYieldDay : 'na'}`,
+        `dailyDataRange.endDay=${latestRequiredStakeDay ?? 'na'}`,
       ];
       if (stakeStatus === 'pending') {
         warnings.push('Pending stake has no realized yield yet; yieldHex remains 0.');
@@ -176,7 +192,7 @@ export async function getHexStakeDashboard(walletAddress: string, chainId = PULS
         for (let day = lockedDay; day <= endDay; day += 1) {
           const entry = dailyDataByDay.get(day);
           if (!entry) {
-            warnings.push(`dailyData missing for day ${day}; yield may be incomplete.`);
+            if (!dailyDataRangeFailed) warnings.push(`dailyData missing for day ${day}; yield may be incomplete.`);
             continue;
           }
           days.push(entry);
