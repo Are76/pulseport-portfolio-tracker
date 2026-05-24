@@ -299,7 +299,7 @@ function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: 
     ? [...large, { label: 'Others', tShares: small.reduce((a, b) => a + b.tShares, 0), totalUsd: small.reduce((a, b) => a + b.totalUsd, 0), count: small.reduce((a, b) => a + b.count, 0) }]
     : large;
 
-  const GRADIENT = ['#7B8FFF', '#627EEA', '#f739ff', '#fb923c', '#3b82f6', '#a855f7'];
+  const GRADIENT = ['#2DD4BF', '#627EEA', '#f739ff', '#fb923c', '#3b82f6', '#a855f7'];
   const getColor = (i: number) => GRADIENT[i % GRADIENT.length];
 
   const fmtK = (n: number) => n >= 1e9 ? (n / 1e9).toFixed(1) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : n.toFixed(0);
@@ -363,7 +363,7 @@ interface WalletSelectorProps {
   walletLabels?: Record<string, string>;
 }
 
-const WALLET_DOT_COLORS = ['#7B8FFF','#f739ff','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
+const WALLET_DOT_COLORS = ['#2DD4BF','#f739ff','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
 
 function WalletSelector({ wallets, activeWallet, onSelect, onAdd, onRemove, walletLabels = {} }: WalletSelectorProps) {
   if (wallets.length === 0) {
@@ -710,8 +710,8 @@ export default function App() {
     blue: 'var(--chain-eth)',
     pink: 'var(--chain-pulse)',
     gradientHero: theme === 'dark'
-      ? 'linear-gradient(135deg, #07101E 0%, #0C1A2E 40%, #0A1628 100%)'
-      : 'linear-gradient(135deg, #EEF2FF 0%, #F0F4FF 40%, #E4EAF8 100%)',
+      ? 'linear-gradient(135deg, #0F172A 0%, #1E293B 40%, #0F172A 100%)'
+      : 'linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 40%, #E2E8F0 100%)',
   }), [theme]);
 
   useEffect(() => {
@@ -3229,12 +3229,12 @@ export default function App() {
   };
 
   const coreLiveTokens = useMemo(() => ([
-    { id: 'PLS',  symbol: 'PLS',  name: 'PulseChain',    priceKey: 'pulsechain',                                                    changeKey: 'pulsechain:native', accent: 'linear-gradient(90deg,#7B8FFF,#60A5FA)', tokenAddr: '0xa1077a294dde1b09bb078844df40758a5d0f9a27', logo: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png' },
+    { id: 'PLS',  symbol: 'PLS',  name: 'PulseChain',    priceKey: 'pulsechain',                                                    changeKey: 'pulsechain:native', accent: 'linear-gradient(90deg,#2DD4BF,#60A5FA)', tokenAddr: '0xa1077a294dde1b09bb078844df40758a5d0f9a27', logo: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png' },
     { id: 'PLSX', symbol: 'PLSX', name: 'PulseX',        priceKey: 'pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab',            accent: 'linear-gradient(90deg,#ff00bf,#7b00ff)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x95B303987A60C71504D99Aa1b13B4DA07b0790ab.png' },
-    { id: 'INC',  symbol: 'INC',  name: 'Incentive',     priceKey: 'pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d',            accent: 'linear-gradient(90deg,#2DD4BF,#7B8FFF)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png' },
+    { id: 'INC',  symbol: 'INC',  name: 'Incentive',     priceKey: 'pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d',            accent: 'linear-gradient(90deg,#2DD4BF,#2DD4BF)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png' },
     { id: 'HEX',  symbol: 'HEX',  name: 'pHEX',          priceKey: 'pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39',            accent: 'linear-gradient(90deg,#ff6b35,#f7931a)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39.png' },
     { id: 'PRVX', symbol: 'PRVX', name: 'PrivacyX',      priceKey: 'pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11',            accent: 'linear-gradient(90deg,#6c3ce1,#b044ff)',                                              logo: 'https://cdn.dexscreener.com/cms/images/ODHYYN7yppDHnd6u?width=64&height=64&fit=crop&quality=95&format=auto' },
-    { id: 'eHEX', symbol: 'eHEX', name: 'Ethereum HEX',  priceKey: 'ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39',              accent: 'linear-gradient(90deg,#ff0080,#ff6b35,#ffeb3b,#7B8FFF,#60A5FA,#7b00ff)',             logo: 'https://cdn.dexscreener.com/cms/images/a46bd12940d8501c2aacdd10ad4780e818bdedaba1ec8eb46b52e4d8313d4a93?width=64&height=64&fit=crop&quality=95&format=auto' },
+    { id: 'eHEX', symbol: 'eHEX', name: 'Ethereum HEX',  priceKey: 'ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39',              accent: 'linear-gradient(90deg,#ff0080,#ff6b35,#ffeb3b,#2DD4BF,#60A5FA,#7b00ff)',             logo: 'https://cdn.dexscreener.com/cms/images/a46bd12940d8501c2aacdd10ad4780e818bdedaba1ec8eb46b52e4d8313d4a93?width=64&height=64&fit=crop&quality=95&format=auto' },
   ]), []);
 
   useEffect(() => {
@@ -3317,7 +3317,7 @@ export default function App() {
       .sort((a, b) => b.value - a.value)
       .forEach(asset => {
         const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()] || (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()] || getTokenLogoUrl(asset);
-        const chainColor = CHAIN_COLORS[asset.chain] || '#7B8FFF';
+        const chainColor = CHAIN_COLORS[asset.chain] || '#2DD4BF';
         const address = (asset as any).address?.toLowerCase?.();
         const dexUrl = address
           ? `https://dexscreener.com/${asset.chain}/${address}`
@@ -3330,7 +3330,7 @@ export default function App() {
           change24h: getFrontMarketChange(tokenMarketData[asset.id], null, asset),
           marketCap: tokenMarketData[asset.id]?.marketCap ?? tokenMarketData[asset.id]?.fdv ?? null,
           volume24h: tokenMarketData[asset.id]?.volume24h ?? null,
-          accent: `linear-gradient(90deg, ${chainColor}, var(--accent-glow, rgba(123,143,255,0.7)))`,
+          accent: `linear-gradient(90deg, ${chainColor}, var(--accent-glow, rgba(45,212,191,0.7)))`,
           logo,
           dexUrl,
         });
@@ -3472,7 +3472,7 @@ export default function App() {
     { id: 'home', label: 'Dashboard', icon: Activity },
     { id: 'overview', label: 'Portfolio', icon: LayoutDashboard },
     { id: 'stakes', label: 'HEX Stakes', icon: Lock },
-    { id: 'assets', label: 'Wallets & Bridges', icon: Coins },
+    { id: 'assets', label: 'Wallets', icon: Coins },
     { id: 'history', label: 'Transactions', icon: History },
     { id: 'bridge', label: 'Bridges', icon: ArrowLeftRight },
     { id: 'defi', label: 'DeFi', icon: Droplets },
@@ -3791,7 +3791,7 @@ export default function App() {
           </nav>
         </header>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar pb-16 md:pb-0">
+        <div className="flex-1 overflow-y-auto custom-scrollbar pb-24 md:pb-0">
           <div style={{ maxWidth: 1400, margin: '0 auto' }} className="space-y-5 px-3 py-4 sm:px-5 sm:py-6">
 
           <AnimatePresence mode="wait">
@@ -4125,10 +4125,10 @@ export default function App() {
 
                 {/* -- ONBOARDING -- */}
                 {wallets.length === 0 && (
-                  <div className={theme === 'dark' ? 'hero-bg-dark' : 'hero-bg-light'} style={{ border: '1px solid rgba(0,255,159,0.12)', borderRadius: 20, padding: '40px 32px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 0%, rgba(0,255,159,.10) 0%, transparent 55%), radial-gradient(ellipse at 80% 80%, rgba(99,70,255,.06) 0%, transparent 50%)', pointerEvents: 'none' }} />
-                    <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(0,255,159,0.1)', border: '1px solid rgba(0,255,159,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 0 24px rgba(0,255,159,0.12)' }}>
-                      <WalletIcon size={24} color="#7B8FFF" />
+                  <div className={theme === 'dark' ? 'hero-bg-dark' : 'hero-bg-light'} style={{ border: '1px solid rgba(45,212,191,0.12)', borderRadius: 20, padding: '40px 32px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 0%, rgba(45,212,191,.10) 0%, transparent 55%), radial-gradient(ellipse at 80% 80%, rgba(99,70,255,.06) 0%, transparent 50%)', pointerEvents: 'none' }} />
+                    <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(45,212,191,0.1)', border: '1px solid rgba(45,212,191,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 0 24px rgba(45,212,191,0.12)' }}>
+                      <WalletIcon size={24} color="#2DD4BF" />
                     </div>
                     <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--fg)', marginBottom: 8, letterSpacing: '-0.02em' }}>Welcome to PulsePort</div>
                     <div style={{ fontSize: 14, color: 'var(--fg-muted)', marginBottom: 32, maxWidth: 400, margin: '0 auto 32px' }}>
@@ -4160,13 +4160,13 @@ export default function App() {
                    return (
                      <>
                      <div className={`hero-card overview-hero-card ${theme === 'dark' ? 'hero-bg-dark' : 'hero-bg-light'}`} style={{
-                       border: `1px solid rgba(0,255,159,0.12)`, borderRadius: 20, padding: '28px 28px', position: 'relative', overflow: 'hidden',
-                       boxShadow: '0 0 0 1px rgba(0,255,159,0.04), 0 8px 40px rgba(0,0,0,0.5)'
+                       border: `1px solid rgba(45,212,191,0.12)`, borderRadius: 20, padding: '28px 28px', position: 'relative', overflow: 'hidden',
+                       boxShadow: '0 0 0 1px rgba(45,212,191,0.04), 0 8px 40px rgba(0,0,0,0.5)'
                      }}>
                        {/* Top edge glow */}
-                       <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: '1px', background: 'linear-gradient(90deg, transparent, rgba(0,255,159,0.4), transparent)', pointerEvents: 'none' }} />
+                       <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: '1px', background: 'linear-gradient(90deg, transparent, rgba(45,212,191,0.4), transparent)', pointerEvents: 'none' }} />
                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none',
-                         background: 'radial-gradient(ellipse at 5% 60%, rgba(0,255,159,.07) 0%, transparent 45%), radial-gradient(ellipse at 92% 50%, rgba(99,102,241,.05) 0%, transparent 45%)' }} />
+                         background: 'radial-gradient(ellipse at 5% 60%, rgba(45,212,191,.07) 0%, transparent 45%), radial-gradient(ellipse at 92% 50%, rgba(99,102,241,.05) 0%, transparent 45%)' }} />
                        <div className="hero-grid" style={{ position: 'relative' }}>
                           <div className="hero-grid-top">
                          {/* Left: Portfolio Value + Stats */}
@@ -4214,7 +4214,7 @@ export default function App() {
                                { label: 'Total Invested', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `$${Math.abs(summary.netInvestment).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '-', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? 'ETH + stablecoin inflows' : 'No ETH/stable inflows found', color: t.text,
                                  icon: <TrendingUp size={14} color={t.textMuted} />, iconBg: t.cardHigh, link: true },
                                { label: 'Total P&L', val: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}$${Math.abs(summary.unifiedPnl).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '-', sub: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? `${summary.unifiedPnl >= 0 ? '+' : ''}${((summary.unifiedPnl / summary.netInvestment) * 100).toFixed(1)}% vs invested` : 'P&L % needs ETH/stable history', color: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? t.green : t.red) : t.text,
-                                 icon: <ArrowUpRight size={14} color={summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? t.green : t.red) : t.textMuted} />, iconBg: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? 'rgba(0,255,159,0.1)' : 'rgba(244,63,94,0.1)') : t.cardHigh, link: false },
+                                 icon: <ArrowUpRight size={14} color={summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? t.green : t.red) : t.textMuted} />, iconBg: summary.netInvestment > MIN_INVESTMENT_THRESHOLD ? (summary.unifiedPnl >= 0 ? 'rgba(45,212,191,0.1)' : 'rgba(244,63,94,0.1)') : t.cardHigh, link: false },
                              ].map(({ label, val, sub, color, icon, iconBg, link }) => (
                                <div key={label} className="stat-card" onClick={link ? () => setActiveTab('history') : undefined}
                                  style={link ? { cursor: 'pointer' } : undefined}>
@@ -4629,7 +4629,7 @@ export default function App() {
                                   style={{ padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none', transition: 'all .12s',
                                     background: perfPeriod === p ? 'var(--accent)' : 'var(--bg-elevated)',
                                     color: perfPeriod === p ? (theme === 'dark' ? '#000' : '#fff') : 'var(--fg-muted)',
-                                    boxShadow: perfPeriod === p ? '0 0 10px rgba(0,255,159,0.25)' : 'none' }}>
+                                    boxShadow: perfPeriod === p ? '0 0 10px rgba(45,212,191,0.25)' : 'none' }}>
                                   {periodLabel[p]}
                                 </button>
                               ))}
@@ -4946,7 +4946,7 @@ export default function App() {
                               const next = Number(e.target.value);
                               setAllocationDraftPercentages(prev => ({ ...prev, [row.name]: next }));
                             }}
-                            style={{ accentColor: ['#7B8FFF','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'][i % 7] }}
+                            style={{ accentColor: ['#2DD4BF','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'][i % 7] }}
                           />
                           <input
                             type="number"
@@ -6218,7 +6218,7 @@ export default function App() {
                                                {totalProceedsUsd > 0 && <span style={{ color: 'var(--fg-subtle)', marginLeft: 4 }}>(${totalProceedsUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })})</span>}
                                              </div>
                                              {(totalCostUsd > 0 || totalProceedsUsd > 0) && (
-                                               <div style={{ background: realizedPnlTok >= 0 ? 'rgba(0,255,159,.1)' : 'rgba(244,63,94,.1)', border: `1px solid ${realizedPnlTok >= 0 ? 'rgba(0,255,159,.25)' : 'rgba(244,63,94,.25)'}`, borderRadius: 8, padding: '6px 12px', fontSize: 12 }}>
+                                               <div style={{ background: realizedPnlTok >= 0 ? 'rgba(45,212,191,.1)' : 'rgba(244,63,94,.1)', border: `1px solid ${realizedPnlTok >= 0 ? 'rgba(45,212,191,.25)' : 'rgba(244,63,94,.25)'}`, borderRadius: 8, padding: '6px 12px', fontSize: 12 }}>
                                                  <span style={{ color: 'var(--fg-subtle)' }}>Realized P&amp;L </span>
                                                  <span style={{ fontWeight: 800, color: realizedPnlTok >= 0 ? t.green : t.red }}>{realizedPnlTok >= 0 ? '+' : ''}${realizedPnlTok.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                                                </div>

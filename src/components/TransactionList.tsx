@@ -76,9 +76,9 @@ function fmtPnl(n: number): string {
 
 function txVisual(type: Transaction['type']) {
   switch (type) {
-    case 'deposit':  return { Icon: ArrowDownLeft, bg: 'rgba(0,255,159,.10)', color: 'var(--accent)',  label: 'Received' } as const;
-    case 'withdraw': return { Icon: ArrowUpRight,  bg: 'rgba(239,68,68,.10)',  color: '#ef4444',        label: 'Sent'     } as const;
-    case 'swap':     return { Icon: RefreshCcw,    bg: 'rgba(139,92,246,.10)', color: '#8b5cf6',        label: 'Swap'     } as const;
+    case 'deposit':  return { Icon: ArrowDownLeft, bg: 'rgba(52,211,153,0.10)',  color: 'var(--positive-text)', label: 'Received' } as const;
+    case 'withdraw': return { Icon: ArrowUpRight,  bg: 'rgba(248,113,113,0.10)', color: 'var(--negative-text)', label: 'Sent'     } as const;
+    case 'swap':     return { Icon: RefreshCcw,    bg: 'var(--accent-dim)',       color: 'var(--accent)',        label: 'Swap'     } as const;
   }
 }
 
@@ -318,7 +318,7 @@ export function TransactionList({
                   {(!compact || isSwap || isSwapLegOnly) && (
                   <div
                     className="tx-card__amount"
-                    style={{ color: isDeposit ? 'var(--accent)' : (isSwap || isSwapLegOnly) ? 'var(--fg)' : '#ef4444' }}
+                    style={{ color: isDeposit ? 'var(--positive-text)' : (isSwap || isSwapLegOnly) ? 'var(--fg)' : 'var(--negative-text)' }}
                   >
                     {isDeposit ? '+' : isWithdraw ? '-' : ''}
                     {isSwap && tx.counterAsset
@@ -436,53 +436,50 @@ function SwapDetail({ tx, coinAsset, counterAsset, coinLogo, getLogoUrl, display
     ? (tx.amount * nowPriceReceived) - tx.valueUsd
     : null;
 
+  /* Stat cells — same pattern as TransferDetail */
+  const swapStats: Array<{ label: string; val: string; sub: string; color?: string }> = [
+    {
+      label: 'Value',
+      val: tx.valueUsd != null ? `$${tx.valueUsd.toLocaleString('en-US', { maximumFractionDigits: 2 })}` : '-',
+      sub: 'At time of swap',
+    },
+    ...(dollarPnl !== null ? [{
+      label: 'Position P/L',
+      val: fmtPnl(dollarPnl),
+      sub: 'At current prices',
+      color: dollarPnl >= 0 ? 'var(--positive-text)' : 'var(--negative-text)',
+    }] : []),
+    {
+      label: 'Chain',
+      val: tx.chain === 'pulsechain' ? 'PulseChain' : tx.chain === 'ethereum' ? 'Ethereum' : 'Base',
+      sub: `${displayAddr(tx.from)} → ${displayAddr(tx.to)}`,
+    },
+    {
+      label: 'Date',
+      val: format(tx.timestamp, 'MMM d, yyyy'),
+      sub: format(tx.timestamp, 'HH:mm:ss'),
+    },
+    ...(tx.fee != null && tx.fee > 0 ? [{
+      label: 'Fee',
+      val: `${tx.fee.toLocaleString('en-US', { maximumFractionDigits: 6 })} ${tx.chain === 'ethereum' ? 'ETH' : 'PLS'}`,
+      sub: 'Network fee',
+    }] : []),
+  ];
+
   return (
     <div style={{ paddingTop: 10, borderTop: '1px solid var(--border)' }}>
-      {/* Context line */}
-      <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 10, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-        <span>
-          Swap from{' '}
-          <strong style={{ color: isOwn(tx.from) ? 'var(--accent)' : 'var(--fg)' }}>{displayAddr(tx.from)}</strong>
-          {' '}to{' '}
-          <strong style={{ color: isOwn(tx.to) ? 'var(--accent)' : 'var(--fg)' }}>{displayAddr(tx.to)}</strong>
-        </span>
-        {tx.fee != null && tx.fee > 0 && (
-          <span style={{ color: 'var(--fg-subtle)', fontSize: 11 }}>
-            &#x26FD; {tx.fee.toLocaleString('en-US', { maximumFractionDigits: 4 })} {tx.chain === 'ethereum' ? 'ETH' : 'PLS'}
-          </span>
-        )}
-        <span style={{ marginLeft: 'auto', color: 'var(--fg-subtle)', fontSize: 11 }}>
-          {format(tx.timestamp, 'MMM d, yyyy HH:mm')}
-        </span>
+      {/* Stat grid — same style as TransferDetail */}
+      <div className="tx-transfer-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8, marginBottom: 10 }}>
+        {swapStats.map(({ label, val, sub, color }) => (
+          <div key={label} style={{ background: 'var(--bg-elevated)', borderRadius: 8, padding: '9px 10px' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 3 }}>{label}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: color ?? 'var(--fg)', overflowWrap: 'anywhere' }}>{val}</div>
+            <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 1 }}>{sub}</div>
+          </div>
+        ))}
       </div>
 
-      {/* P&L card */}
-      {dollarPnl !== null && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-          <div
-            className="tx-pnl-card"
-            style={{
-              background: dollarPnl >= 0 ? 'rgba(0,255,159,0.06)' : 'rgba(244,63,94,0.06)',
-              border: `1px solid ${dollarPnl >= 0 ? 'rgba(0,255,159,0.18)' : 'rgba(244,63,94,0.18)'}`,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              {dollarPnl >= 0
-                ? <TrendingUp size={11} style={{ color: 'var(--accent)' }} />
-                : <TrendingDown size={11} style={{ color: '#ef4444' }} />}
-              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px' }}>
-                Position P/L
-              </span>
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 800, color: dollarPnl >= 0 ? 'var(--accent)' : '#ef4444', fontFamily: 'JetBrains Mono, monospace' }}>
-              {fmtPnl(dollarPnl)}
-            </div>
-            <div style={{ fontSize: 10, color: 'var(--fg-subtle)' }}>At current prices</div>
-          </div>
-        </div>
-      )}
-
-      {/* Received leg */}
+      {/* Token legs */}
       <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.55px', marginBottom: 5 }}>
         Got
       </div>
@@ -491,14 +488,13 @@ function SwapDetail({ tx, coinAsset, counterAsset, coinLogo, getLogoUrl, display
         symbol={tx.asset}
         amount={tx.amount}
         sign="+"
-        color="var(--accent)"
+        color="var(--positive-text)"
         thenPrice={thenPriceReceived}
         nowPrice={nowPriceReceived}
         explorerUrl={`${explorerBase}/tx/${tx.hash}`}
         onFilter={onFilterByAsset ? () => onFilterByAsset(tx.asset) : undefined}
       />
 
-      {/* Spent leg */}
       {tx.counterAsset != null && tx.counterAmount != null && (
         <div style={{ marginTop: 6 }}>
           <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.55px', marginBottom: 5 }}>
@@ -509,7 +505,7 @@ function SwapDetail({ tx, coinAsset, counterAsset, coinLogo, getLogoUrl, display
             symbol={tx.counterAsset}
             amount={tx.counterAmount}
             sign="-"
-            color="#ef4444"
+            color="var(--negative-text)"
             thenPrice={thenPriceSpent}
             nowPrice={nowPriceSpent}
             explorerUrl={`${explorerBase}/tx/${tx.hash}`}
@@ -556,7 +552,7 @@ function TokenLeg({ logo, symbol, amount, sign, color, thenPrice, nowPrice, expl
             {nowPrice > 0 && (
               <>
                 {' '}&middot; Now:{' '}
-                <span style={{ color: nowPrice >= thenPrice ? 'var(--accent)' : '#ef4444' }}>{fmtPrice(nowPrice)}</span>
+                <span style={{ color: nowPrice >= thenPrice ? 'var(--positive-text)' : 'var(--negative-text)' }}>{fmtPrice(nowPrice)}</span>
               </>
             )}
           </div>
@@ -611,7 +607,7 @@ function TransferDetail({ tx, isDeposit, coinAsset, displayAddr, isOwn, explorer
       val: currentValue != null ? `$${currentValue.toLocaleString('en-US', { maximumFractionDigits: 2 })}` : '-',
       sub: 'If held to now',
       color: currentValue != null && tx.valueUsd != null
-        ? currentValue >= tx.valueUsd ? 'var(--accent)' : '#ef4444'
+        ? currentValue >= tx.valueUsd ? 'var(--positive-text)' : 'var(--negative-text)'
         : undefined,
     },
     ...(pnl !== null ? [{
@@ -620,7 +616,7 @@ function TransferDetail({ tx, isDeposit, coinAsset, displayAddr, isOwn, explorer
       sub: tx.valueUsd
         ? `${(((currentValue! / tx.valueUsd) - 1) * 100).toFixed(1)}% change`
         : '',
-      color: pnl >= 0 ? 'var(--accent)' : '#ef4444',
+      color: pnl >= 0 ? 'var(--positive-text)' : 'var(--negative-text)',
     }] : []),
     {
       label: 'Chain',
@@ -647,12 +643,12 @@ function TransferDetail({ tx, isDeposit, coinAsset, displayAddr, isOwn, explorer
       </div>
 
       {/* Stats grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
+      <div className="tx-transfer-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
         {stats.map(({ label, val, sub, color }) => (
-          <div key={label} style={{ background: 'var(--bg-elevated)', borderRadius: 8, padding: '10px 12px' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>{label}</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: color ?? 'var(--fg)' }}>{val}</div>
-            <div style={{ fontSize: 12, color: 'var(--fg-subtle)', marginTop: 1 }}>{sub}</div>
+          <div key={label} style={{ background: 'var(--bg-elevated)', borderRadius: 8, padding: '9px 10px' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 3 }}>{label}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: color ?? 'var(--fg)', overflowWrap: 'anywhere' }}>{val}</div>
+            <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 1 }}>{sub}</div>
           </div>
         ))}
       </div>
