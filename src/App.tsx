@@ -3229,7 +3229,7 @@ export default function App() {
   };
 
   const coreLiveTokens = useMemo(() => ([
-    { id: 'PLS',  symbol: 'PLS',  name: 'PulseChain',    priceKey: 'pulsechain',                                                    changeKey: 'pulsechain:native', accent: 'linear-gradient(90deg,#7B8FFF,#60A5FA)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png' },
+    { id: 'PLS',  symbol: 'PLS',  name: 'PulseChain',    priceKey: 'pulsechain',                                                    changeKey: 'pulsechain:native', accent: 'linear-gradient(90deg,#7B8FFF,#60A5FA)', tokenAddr: '0xa1077a294dde1b09bb078844df40758a5d0f9a27', logo: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png' },
     { id: 'PLSX', symbol: 'PLSX', name: 'PulseX',        priceKey: 'pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab',            accent: 'linear-gradient(90deg,#ff00bf,#7b00ff)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x95B303987A60C71504D99Aa1b13B4DA07b0790ab.png' },
     { id: 'INC',  symbol: 'INC',  name: 'Incentive',     priceKey: 'pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d',            accent: 'linear-gradient(90deg,#2DD4BF,#7B8FFF)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png' },
     { id: 'HEX',  symbol: 'HEX',  name: 'pHEX',          priceKey: 'pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39',            accent: 'linear-gradient(90deg,#ff6b35,#f7931a)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39.png' },
@@ -3275,7 +3275,9 @@ export default function App() {
   const topHoldingCards = useMemo<PortfolioPriceCard[]>(() => {
     return coreLiveTokens.map(token => {
       const md = prices[token.priceKey] || prices[token.changeKey ?? ''];
-      const tokenAddress = token.priceKey.includes(':') ? token.priceKey.split(':')[1]?.toLowerCase() : '';
+      const tokenAddress = token.priceKey.includes(':')
+        ? token.priceKey.split(':')[1]?.toLowerCase()
+        : (token as any).tokenAddr?.toLowerCase() ?? '';
       const chain = token.priceKey.includes(':') ? token.priceKey.split(':')[0] : 'pulsechain';
       const heldAsset = currentAssets.find(asset =>
         (tokenAddress && (asset as any).address?.toLowerCase?.() === tokenAddress) ||
