@@ -182,8 +182,8 @@ export function HoldingsTable({
                   </div>
                 </div>
               </td>
-              {Array.from({ length: 8 }, (_, j) => (
-                <td key={j} style={{ padding: '13px 16px', textAlign: 'right' }}>
+              {columns.slice(1).map(({ hideMobile }, j) => (
+                <td key={j} className={hideMobile ? 'hide-mobile' : undefined} style={{ padding: '13px 16px', textAlign: 'right' }}>
                   <div className="skeleton" style={{ height: 13, width: 60, marginLeft: 'auto' }} />
                 </td>
               ))}
