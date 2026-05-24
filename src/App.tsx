@@ -731,7 +731,7 @@ export default function App() {
       setBackendHexStakeLoading(true);
       setBackendHexStakeError(null);
       try {
-        const response = await fetchHexStakeDashboard({ walletAddress: backendWalletAddress, chainId: 369 });
+        const response = await fetchHexStakeDashboard({ walletAddress: backendWalletAddress, chainId: 369, signal: controller.signal });
         if (!isActive || controller.signal.aborted) return;
         setBackendHexStakeResponse(response);
       } catch (error) {

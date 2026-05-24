@@ -29,6 +29,22 @@ describe('BackendHexStakeTransitionPanel', () => {
     );
 
     expect(screen.getByText(/loading backend hex stakes dashboard/i)).toBeInTheDocument();
+    expect(screen.queryByText(/unknown error/i)).not.toBeInTheDocument();
+  });
+
+
+  it('shows neutral idle state when wallet exists and response has not completed', () => {
+    render(
+      <BackendHexStakeTransitionPanel
+        backendWalletAddress={walletAddress}
+        backendHexStakeLoading={false}
+        backendHexStakeError={null}
+        backendHexStakeResponse={null}
+      />,
+    );
+
+    expect(screen.getByText(/backend hex stakes request has not completed yet\./i)).toBeInTheDocument();
+    expect(screen.queryByText(/unknown error/i)).not.toBeInTheDocument();
   });
 
   it('shows backend error state', () => {
@@ -86,6 +102,38 @@ describe('BackendHexStakeTransitionPanel', () => {
     expect(screen.getByText(/valuation unavailable/i)).toBeInTheDocument();
     expect(screen.getByText(/yield not implemented/i)).toBeInTheDocument();
     expect(screen.getByText(/ended stakes not implemented/i)).toBeInTheDocument();
+  });
+
+
+  it('shows no-native message when only non-native positions are returned', () => {
+    render(
+      <BackendHexStakeTransitionPanel
+        backendWalletAddress={walletAddress}
+        backendHexStakeLoading={false}
+        backendHexStakeError={null}
+        backendHexStakeResponse={{
+          ok: true,
+          error: null,
+          data: {
+            schemaVersion: 'v1',
+            walletAddress,
+            chainId: 369,
+            asOf: '2026-05-24T00:00:00Z',
+            status: 'available',
+            warnings: [],
+            positions: [
+              { stakeId: '10', stakeSource: 'hsi', stakeStatus: 'unsupported', chainId: 369, assetId: 'erc20:369:hex', contractAddress: '0xhex', lockedDay: null, stakedDays: null, unlockedDay: null, principalHex: null, stakeShares: null, tShares: null, yieldHex: null, bpdYield: null, bpdYieldStatus: 'unknown', pricing: { status: 'unavailable', priceUsd: null, source: null, observedAt: null }, valuation: { status: 'unavailable', valueUsd: null }, pnl: { status: 'unavailable', realizedUsd: null, unrealizedUsd: null }, warnings: [], provenance: { source: 'test', observedAt: '2026-05-24T00:00:00Z' } },
+            ],
+            summary: { activeStakeCount: 0, endedStakeCount: 0, unsupportedStakeCount: 1, totalPrincipalHex: '0', totalYieldHex: '0', totalTShares: '0', valuationStatus: 'unavailable', pnlStatus: 'unavailable', warnings: [] },
+            tShareMetrics: { status: 'unknown', shareRate: null, tSharePriceHex: null, tSharePriceUsd: null, activeTShares: '0', averagePaidUsdPerTShare: null, warnings: [] },
+            provenance: { source: 'test', observedAt: '2026-05-24T00:00:00Z' },
+          },
+        }}
+      />,
+    );
+
+    expect(screen.getByText(/no native hex stake positions returned\./i)).toBeInTheDocument();
+    expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
   });
 
   it('keeps failure isolated to transition panel content', () => {
