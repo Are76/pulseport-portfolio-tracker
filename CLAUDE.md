@@ -67,6 +67,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 **Every change goes through a PR. Never push directly to master.**
 
 - All work must be done on a feature branch, not on master.
+- **Always create the feature branch from the current tip of master.** Never branch from another feature branch. If you branch from a stale base, commits pushed after that base's PR merges will be orphaned and lost.
 - Every set of changes — no matter how small — must be submitted as a pull request to master.
 - Branch naming: `fix/<short-description>`, `feat/<short-description>`, `chore/<short-description>`.
 - Only push to master indirectly via a merged PR.
