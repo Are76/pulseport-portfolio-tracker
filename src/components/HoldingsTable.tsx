@@ -128,7 +128,12 @@ export function HoldingsTable({
   const tableTotalUsd = footerValueUsd ?? assets.reduce((sum, asset) => sum + asset.valueUsd, 0);
   const tableTotalPls = plsUsdPrice > 0 ? tableTotalUsd / plsUsdPrice : 0;
   const portfolioBase = shareBaseUsd ?? totalValueUsd;
-  const isMobileLayout = typeof window !== 'undefined' && window.innerWidth <= 639;
+  const [isMobileLayout, setIsMobileLayout] = React.useState(() => typeof window !== 'undefined' && window.innerWidth <= 639);
+  React.useEffect(() => {
+    const handler = () => setIsMobileLayout(window.innerWidth <= 639);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
 
   const columns = [
     { label: 'Token', field: null, align: 'left', hideMobile: false },
