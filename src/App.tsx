@@ -74,6 +74,7 @@ import { normalizeTransactions } from './utils/normalizeTransactions';
 import { scheduleLocalStorageWrite, resolveBlockscoutBase, resolveEtherscanCompatBase } from './utils/localStorageDebounce';
 import { buildPulsechainInsights } from './utils/pulsechainInsights';
 import { BRAND_ASSETS } from './branding/brand-assets';
+import { fetchPortfolioDashboard } from './lib/api/portfolio-client';
 
 const ERC20_ABI = [
   {
@@ -634,6 +635,10 @@ export default function App() {
     return (saved === 'light') ? 'light' : 'dark';
   });
 
+  const [backendDashboardResponse, setBackendDashboardResponse] = useState<Awaited<ReturnType<typeof fetchPortfolioDashboard>> | null>(null);
+  const [backendDashboardLoading, setBackendDashboardLoading] = useState(false);
+  const [backendDashboardError, setBackendDashboardError] = useState<string | null>(null);
+
   // Real on-chain HEX daily payout data; used to replace hardcoded yield constants.
   const hexDailyData = useHexDailyData();
   // Ref so fetchPortfolio (async) always reads the latest values without stale closures.
@@ -666,6 +671,50 @@ export default function App() {
     setTxYearFilter('all');
     setTxCoinCategory('all');
   }, [activeTab]);
+
+  const backendWalletAddress = useMemo(() => {
+    const activeWalletExists = activeWallet
+      ? wallets.some((wallet) => wallet.address.toLowerCase() === activeWallet.toLowerCase())
+      : false;
+
+    if (activeWallet && activeWalletExists) return activeWallet;
+    return wallets[0]?.address ?? null;
+  }, [activeWallet, wallets]);
+
+  useEffect(() => {
+    if (!backendWalletAddress) {
+      setBackendDashboardResponse(null);
+      setBackendDashboardError(null);
+      setBackendDashboardLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    let isActive = true;
+
+    const loadBackendDashboard = async () => {
+      setBackendDashboardLoading(true);
+      setBackendDashboardError(null);
+      try {
+        const response = await fetchPortfolioDashboard({ walletAddress: backendWalletAddress, chainId: 369 });
+        if (!isActive || controller.signal.aborted) return;
+        setBackendDashboardResponse(response);
+      } catch (error) {
+        if (!isActive || controller.signal.aborted) return;
+        setBackendDashboardError(error instanceof Error ? error.message : 'Failed to load backend dashboard DTO');
+        setBackendDashboardResponse(null);
+      } finally {
+        if (isActive && !controller.signal.aborted) setBackendDashboardLoading(false);
+      }
+    };
+
+    loadBackendDashboard();
+
+    return () => {
+      isActive = false;
+      controller.abort();
+    };
+  }, [backendWalletAddress]);
 
   // Apply theme to document
   useEffect(() => {
@@ -3901,6 +3950,27 @@ export default function App() {
                           <strong>{insight.value}</strong>
                         </div>
                       ))}
+                    </div>
+                    <div style={{ marginTop: 10, fontSize: 12, color: 'var(--fg-muted)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', background: 'var(--bg-surface)' }}>
+                      <strong style={{ display: 'block', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 6 }}>Backend DTO (transition)</strong>
+                      {backendWalletAddress ? (
+                        backendDashboardLoading ? (
+                          <div>Loading backend dashboard…</div>
+                        ) : backendDashboardError ? (
+                          <div>Backend status unavailable: {backendDashboardError}</div>
+                        ) : backendDashboardResponse?.ok ? (
+                          <div style={{ display: 'grid', gap: 4 }}>
+                            <div>schemaVersion: {backendDashboardResponse.data.schemaVersion}</div>
+                            <div>status: {backendDashboardResponse.data.status}</div>
+                            <div>warnings: {backendDashboardResponse.data.warnings.length ? backendDashboardResponse.data.warnings.join(' • ') : 'none'}</div>
+                            <div>PLS balance: {backendDashboardResponse.data.balances.find((b) => b.assetId === 'native-pls')?.quantity ?? 'n/a'}</div>
+                          </div>
+                        ) : (
+                          <div>Backend status unavailable: {backendDashboardResponse?.error?.message ?? 'unknown error'}</div>
+                        )
+                      ) : (
+                        <div>Add a wallet to query backend DTO.</div>
+                      )}
                     </div>
                     <div className="front-actions">
                       <button className="btn-primary front-primary-action" onClick={() => wallets.length > 0 ? setActiveTab('overview') : setIsAddingWallet(true)}>
