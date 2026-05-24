@@ -6188,6 +6188,10 @@ textarea:focus-visible,
     padding-left: 8px !important;
     padding-right: 8px !important;
   }
+  /* Prevent the table wrapper from being horizontally draggable on mobile */
+  .data-table-scroll {
+    overflow-x: hidden;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
