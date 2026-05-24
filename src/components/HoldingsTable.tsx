@@ -137,7 +137,7 @@ export function HoldingsTable({
 
   const columns = [
     { label: 'Token', field: null, align: 'left', hideMobile: false },
-    { label: 'Price', field: null, align: 'right', hideMobile: false },
+    { label: 'Price', field: null, align: 'right', hideMobile: true },
     { label: priceChangePeriod.toUpperCase(), field: 'change' as const, align: 'right', hideMobile: false },
     { label: 'Amount', field: null, align: 'right', hideMobile: true },
     { label: 'USD Value', field: 'value' as const, align: 'right', hideMobile: false },
@@ -263,7 +263,7 @@ export function HoldingsTable({
                       </div>
                     </div>
                   </td>
-                  <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                  <td className="hide-mobile" style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace' }}>{fmtPrice(asset.priceUsd)}</div>
                     <div style={{ fontSize: 12, color: '#f739ff', marginTop: 2 }}>{fmtCompact(asset.pricePls)} PLS</div>
                   </td>
