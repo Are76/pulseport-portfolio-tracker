@@ -75,8 +75,10 @@ import { scheduleLocalStorageWrite, resolveBlockscoutBase, resolveEtherscanCompa
 import { buildPulsechainInsights } from './utils/pulsechainInsights';
 import { BRAND_ASSETS } from './branding/brand-assets';
 import { fetchPortfolioDashboard } from './lib/api/portfolio-client';
+import { fetchHexStakeDashboard } from './lib/api/hex-stake-client';
 import { resolveBackendWalletAddress } from './lib/backend-dashboard-transition';
 import { BackendDashboardTransitionPanel } from './components/BackendDashboardTransitionPanel';
+import { BackendHexStakeTransitionPanel } from './components/BackendHexStakeTransitionPanel';
 
 const ERC20_ABI = [
   {
@@ -640,6 +642,9 @@ export default function App() {
   const [backendDashboardResponse, setBackendDashboardResponse] = useState<Awaited<ReturnType<typeof fetchPortfolioDashboard>> | null>(null);
   const [backendDashboardLoading, setBackendDashboardLoading] = useState(false);
   const [backendDashboardError, setBackendDashboardError] = useState<string | null>(null);
+  const [backendHexStakeResponse, setBackendHexStakeResponse] = useState<Awaited<ReturnType<typeof fetchHexStakeDashboard>> | null>(null);
+  const [backendHexStakeLoading, setBackendHexStakeLoading] = useState(false);
+  const [backendHexStakeError, setBackendHexStakeError] = useState<string | null>(null);
 
   // Real on-chain HEX daily payout data; used to replace hardcoded yield constants.
   const hexDailyData = useHexDailyData();
@@ -704,6 +709,41 @@ export default function App() {
     };
 
     loadBackendDashboard();
+
+    return () => {
+      isActive = false;
+      controller.abort();
+    };
+  }, [backendWalletAddress]);
+
+  useEffect(() => {
+    if (!backendWalletAddress) {
+      setBackendHexStakeResponse(null);
+      setBackendHexStakeError(null);
+      setBackendHexStakeLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    let isActive = true;
+
+    const loadBackendHexStakes = async () => {
+      setBackendHexStakeLoading(true);
+      setBackendHexStakeError(null);
+      try {
+        const response = await fetchHexStakeDashboard({ walletAddress: backendWalletAddress, chainId: 369, signal: controller.signal });
+        if (!isActive || controller.signal.aborted) return;
+        setBackendHexStakeResponse(response);
+      } catch (error) {
+        if (!isActive || controller.signal.aborted) return;
+        setBackendHexStakeError(error instanceof Error ? error.message : 'Failed to load backend HEX stakes DTO');
+        setBackendHexStakeResponse(null);
+      } finally {
+        if (isActive && !controller.signal.aborted) setBackendHexStakeLoading(false);
+      }
+    };
+
+    loadBackendHexStakes();
 
     return () => {
       isActive = false;
@@ -3951,6 +3991,12 @@ export default function App() {
                       backendDashboardLoading={backendDashboardLoading}
                       backendDashboardError={backendDashboardError}
                       backendDashboardResponse={backendDashboardResponse}
+                    />
+                    <BackendHexStakeTransitionPanel
+                      backendWalletAddress={backendWalletAddress}
+                      backendHexStakeLoading={backendHexStakeLoading}
+                      backendHexStakeError={backendHexStakeError}
+                      backendHexStakeResponse={backendHexStakeResponse}
                     />
                     <div className="front-actions">
                       <button className="btn-primary front-primary-action" onClick={() => wallets.length > 0 ? setActiveTab('overview') : setIsAddingWallet(true)}>
