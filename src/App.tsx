@@ -1300,10 +1300,7 @@ export default function App() {
               const fetchBlockscoutPages = async (endpoint: string): Promise<any[]> => {
                 const results: any[] = [];
                 let nextParams: Record<string, string> | null = {};
-                let pageCount = 0;
-                const MAX_PAGES = 50;
-                while (nextParams !== null && pageCount < MAX_PAGES) {
-                  pageCount++;
+                while (nextParams !== null) {
                   const hasExistingQuery = endpoint.includes('?');
                   const paramStr: string = Object.keys(nextParams).length
                     ? (hasExistingQuery ? '&' : '?') + new URLSearchParams(nextParams).toString()
@@ -1314,6 +1311,7 @@ export default function App() {
                   if (data.items && Array.isArray(data.items)) {
                     results.push(...data.items);
                     const np = data.next_page_params as Record<string, string> | null | undefined;
+                    // null, undefined, or empty {} all signal last page
                     if (!np || Object.keys(np).length === 0 || data.items.length === 0) break;
                     nextParams = np;
                   } else {
