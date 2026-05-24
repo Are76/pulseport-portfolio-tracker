@@ -128,17 +128,18 @@ export function HoldingsTable({
   const tableTotalUsd = footerValueUsd ?? assets.reduce((sum, asset) => sum + asset.valueUsd, 0);
   const tableTotalPls = plsUsdPrice > 0 ? tableTotalUsd / plsUsdPrice : 0;
   const portfolioBase = shareBaseUsd ?? totalValueUsd;
+  const isMobileLayout = typeof window !== 'undefined' && window.innerWidth <= 639;
 
   const columns = [
-    { label: 'Token', field: null, align: 'left' },
-    { label: 'Price', field: null, align: 'right' },
-    { label: priceChangePeriod.toUpperCase(), field: 'change' as const, align: 'right' },
-    { label: 'Amount', field: null, align: 'right' },
-    { label: 'USD Value', field: 'value' as const, align: 'right' },
-    { label: 'PLS Value', field: null, align: 'right' },
-    { label: 'League', field: null, align: 'right' },
-    { label: '% Portfolio', field: null, align: 'right' },
-    { label: '', field: null, align: 'right' },
+    { label: 'Token', field: null, align: 'left', hideMobile: false },
+    { label: 'Price', field: null, align: 'right', hideMobile: false },
+    { label: priceChangePeriod.toUpperCase(), field: 'change' as const, align: 'right', hideMobile: false },
+    { label: 'Amount', field: null, align: 'right', hideMobile: true },
+    { label: 'USD Value', field: 'value' as const, align: 'right', hideMobile: false },
+    { label: 'PLS Value', field: null, align: 'right', hideMobile: true },
+    { label: 'League', field: null, align: 'right', hideMobile: true },
+    { label: '% Portfolio', field: null, align: 'right', hideMobile: true },
+    { label: '', field: null, align: 'right', hideMobile: false },
   ];
 
   return (
@@ -146,9 +147,10 @@ export function HoldingsTable({
       <table className="data-table holdings-unified-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr style={{ borderBottom: '1px solid var(--border)' }}>
-            {columns.map(({ label, field, align }, i) => (
+            {columns.map(({ label, field, align, hideMobile }, i) => (
               <th
                 key={`${label}-${i}`}
+                className={hideMobile ? 'hide-mobile' : undefined}
                 onClick={field ? () => onSort(field) : undefined}
                 style={{
                   padding: '11px 16px',
@@ -181,8 +183,8 @@ export function HoldingsTable({
                   </div>
                 </div>
               </td>
-              {Array.from({ length: 8 }, (_, j) => (
-                <td key={j} style={{ padding: '13px 16px', textAlign: 'right' }}>
+              {columns.slice(1).map(({ hideMobile }, j) => (
+                <td key={j} className={hideMobile ? 'hide-mobile' : undefined} style={{ padding: '13px 16px', textAlign: 'right' }}>
                   <div className="skeleton" style={{ height: 13, width: 60, marginLeft: 'auto' }} />
                 </td>
               ))}
@@ -263,18 +265,18 @@ export function HoldingsTable({
                   <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap', fontSize: 13, fontWeight: 700, color: pct >= 0 ? 'var(--accent)' : '#ef4444' }}>
                     {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%
                   </td>
-                  <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                  <td className="hide-mobile" style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>{fmtAmount(asset.balance)}</div>
                     <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 2 }}>{asset.symbol}</div>
                   </td>
                   <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap', fontSize: 14, fontWeight: 800, color: 'var(--fg)' }}>
                     {fmtUsd(asset.valueUsd)}
                   </td>
-                  <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                  <td className="hide-mobile" style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <div style={{ fontSize: 13, fontWeight: 800, color: '#f739ff' }}>{fmtCompact(asset.valuePls)}</div>
                     <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 2 }}>PLS</div>
                   </td>
-                  <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                  <td className="hide-mobile" style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                     {asset.leagueLabel !== '-' ? (
                       <span title={asset.leagueSource || 'OpenPulseChain league'} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 6, border: '1px solid var(--accent-border)', background: 'var(--accent-dim)', color: 'var(--accent)', padding: '3px 7px', fontSize: 11, fontWeight: 800 }}>
                         {asset.leagueRank ? `#${asset.leagueRank}` : asset.leagueLabel}
@@ -283,7 +285,7 @@ export function HoldingsTable({
                       <span style={{ color: 'var(--fg-subtle)' }}>-</span>
                     )}
                   </td>
-                  <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap', minWidth: 90 }}>
+                  <td className="hide-mobile" style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap', minWidth: 90 }}>
                     <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 3 }}>{share.toFixed(1)}%</div>
                     <div style={{ height: 2, background: 'var(--border)', borderRadius: 1 }}>
                       <div style={{ height: '100%', width: `${Math.min(share, 100)}%`, background: 'var(--accent)', borderRadius: 1 }} />
@@ -311,8 +313,8 @@ export function HoldingsTable({
                 </tr>
                 {isExpanded && (
                   <tr style={{ borderBottom: '1px solid var(--border)', borderLeft: `3px solid ${chainColors[asset.chain] || '#333'}`, background: 'var(--bg-elevated)' }}>
-                    <td colSpan={9} style={{ padding: '0 16px 14px' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, paddingTop: 12 }}>
+                    <td colSpan={isMobileLayout ? columns.filter(c => !c.hideMobile).length : columns.length} style={{ padding: '0 12px 14px', maxWidth: 0 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, paddingTop: 12 }}>
                         <DetailCard title="Price">
                           <DetailRow label="USD" value={fmtPrice(asset.priceUsd)} />
                           <DetailRow label="PLS" value={`${fmtCompact(asset.pricePls)} PLS`} accent />
