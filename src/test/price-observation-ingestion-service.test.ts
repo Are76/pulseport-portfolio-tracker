@@ -125,6 +125,52 @@ describe('price observation ingestion service', () => {
     expect(secondResult.warnings.some(warning => warning.includes('Repository persistence failure'))).toBe(true);
   });
 
+
+  it('returns failed result when normalization throws and does not persist', () => {
+    const repository = createInMemoryPriceObservationRepository();
+    const service = createPriceObservationIngestionService(repository);
+
+    const malformedRuntimeInput = Object.create(null) as UpstreamPriceObservationInput;
+    Object.assign(malformedRuntimeInput, makeInput());
+    Object.defineProperty(malformedRuntimeInput, 'provider', { get: () => { throw new Error('provider getter exploded'); } });
+    const result = service.ingestPriceObservation(malformedRuntimeInput);
+
+    expect(result.status).toBe('failed');
+    expect(result.persistedObservationId).toBeNull();
+    expect(result.error).toBe('provider getter exploded');
+    expect(result.warnings.some(warning => warning.includes('Normalization failure'))).toBe(true);
+    expect(result.provenance.provider).toBe('');
+    expect(result.provenance.providerObservationId).toBe('remote-1');
+
+    const persisted = repository.getObservationsForAsset(makeInput().assetId, makeInput().chainId);
+    expect(persisted).toHaveLength(0);
+  });
+
+  it('continues batch ingestion after normalization throw and persists later successes', () => {
+    const repository = createInMemoryPriceObservationRepository();
+    const service = createPriceObservationIngestionService(repository);
+
+    const malformedRuntimeInput = Object.create(null) as UpstreamPriceObservationInput;
+    Object.assign(malformedRuntimeInput, makeInput({ providerObservationId: 'broken' }));
+    Object.defineProperty(malformedRuntimeInput, 'provider', { get: () => { throw new Error('provider getter exploded'); } });
+    const validAfterFailure = makeInput({ providerObservationId: 'remote-after', observedAt: '2026-05-25T00:00:30.000Z' });
+
+    const results = service.ingestPriceObservations([malformedRuntimeInput, validAfterFailure]);
+
+    expect(results).toHaveLength(2);
+    expect(results[0].status).toBe('failed');
+    expect(results[0].error).toBe('provider getter exploded');
+    expect(results[0].warnings.some(warning => warning.includes('Normalization failure'))).toBe(true);
+    expect(results[0].provenance.providerObservationId).toBe('broken');
+
+    expect(results[1].status).toBe('success');
+    expect(results[1].persistedObservationId).toMatch(/^obs:/);
+
+    const persisted = repository.getObservationsForAsset(validAfterFailure.assetId, validAfterFailure.chainId);
+    expect(persisted).toHaveLength(1);
+    expect(persisted[0].observationId).toBe(results[1].persistedObservationId);
+  });
+
   it('fails chain substitution attempts and never matches by symbol', () => {
     const repository = createInMemoryPriceObservationRepository();
     const service = createPriceObservationIngestionService(repository);

@@ -21,9 +21,51 @@ export type PriceObservationIngestionService = {
   ingestPriceObservations(inputs: UpstreamPriceObservationInput[]): PriceObservationIngestionResult[];
 };
 
+function safeReadString(valueFactory: () => unknown): string {
+  try {
+    const value = valueFactory();
+    return typeof value === 'string' ? value : '';
+  } catch {
+    return '';
+  }
+}
+
+function safeReadMetadata(valueFactory: () => unknown): Record<string, string> {
+  try {
+    const value = valueFactory();
+    if (!value || typeof value !== 'object') return {};
+
+    const metadata: Record<string, string> = {};
+    for (const [key, raw] of Object.entries(value)) {
+      if (typeof raw === 'string') metadata[key] = raw;
+    }
+    return metadata;
+  } catch {
+    return {};
+  }
+}
+
 export function createPriceObservationIngestionService(repository: PriceObservationRepository): PriceObservationIngestionService {
   const ingestPriceObservation = (input: UpstreamPriceObservationInput): PriceObservationIngestionResult => {
-    const normalized = normalizePriceObservation(input);
+    let normalized;
+
+    try {
+      normalized = normalizePriceObservation(input);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown normalization failure.';
+      return {
+        status: 'failed',
+        persistedObservationId: null,
+        warnings: [`Normalization failure: ${message}`],
+        provenance: {
+          provider: safeReadString(() => input.provider),
+          providerObservationId: safeReadString(() => input.providerObservationId),
+          providerAssetId: safeReadString(() => input.providerAssetId),
+          metadata: safeReadMetadata(() => input.metadata),
+        },
+        error: message,
+      };
+    }
 
     if (normalized.status === 'unavailable' || normalized.observation === null) {
       return {
