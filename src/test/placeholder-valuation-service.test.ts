@@ -35,7 +35,7 @@ function makeProvider(observations: PriceObservationDto[]): PriceObservationProv
       }
       return match;
     },
-    getBatchPriceObservations: async () => observations,
+    getBatchPriceObservations: async (assetIds: string[]) => observations.filter(item => assetIds.includes(item.assetId)),
   };
 }
 
@@ -61,7 +61,7 @@ describe('placeholder valuation service contracts', () => {
 
     expect(valuation.status).toBe('unavailable');
     expect(valuation.valueUsd).toBeNull();
-    expect(valuation.warnings).toContain('Observation reported available status but did not include a usable priceUsd.');
+    expect(valuation.warnings).toContain('Observation reported available status but valuation inputs were unusable.');
     expect(valuation.provenance.notes).toContain('Available-status observation was downgraded to unavailable because priceUsd was null or non-finite.');
     expect(summary.status).toBe('unavailable');
     expect(summary.valuedAssetCount).toBe(0);
@@ -76,7 +76,35 @@ describe('placeholder valuation service contracts', () => {
 
     expect(valuation.status).toBe('unavailable');
     expect(valuation.valueUsd).toBeNull();
-    expect(valuation.warnings).toContain('Observation reported available status but did not include a usable priceUsd.');
+    expect(valuation.warnings).toContain('Observation reported available status but valuation inputs were unusable.');
+  });
+
+
+
+  it('downgrades available observation with malformed quantity to unavailable and null value', async () => {
+    const service = new PlaceholderValuationService(
+      makeProvider([makeObservation({ status: 'available', priceUsd: 2 })]),
+    );
+
+    const [valuation] = await service.valueAssets([{ assetId: 'erc20:369:0xabc', quantity: 'NaN' }]);
+
+    expect(valuation.status).toBe('unavailable');
+    expect(valuation.valueUsd).toBeNull();
+    expect(valuation.warnings).toContain('Observation reported available status but valuation inputs were unusable.');
+    expect(valuation.provenance.notes.some(note => note.includes('quantity was malformed or non-finite'))).toBe(true);
+  });
+
+  it('keeps summary totalValueUsd finite when available status has unusable quantity', async () => {
+    const service = new PlaceholderValuationService(
+      makeProvider([makeObservation({ status: 'available', priceUsd: 2 })]),
+    );
+
+    const [valuation] = await service.valueAssets([{ assetId: 'erc20:369:0xabc', quantity: 'Infinity' }]);
+    const summary = summarizeValuations([valuation]);
+
+    expect(Number.isFinite(summary.totalValueUsd)).toBe(true);
+    expect(summary.totalValueUsd).toBe(0);
+    expect(summary.valuedAssetCount).toBe(0);
   });
 
   it('returns stale valuation status and null valueUsd', async () => {
@@ -179,6 +207,21 @@ describe('placeholder valuation service contracts', () => {
     if (success.ok) {
       expect(success.data.schemaVersion).toBe('v1');
     }
+  });
+
+
+
+  it('provider batch helper returns only observations for requested assetIds', async () => {
+    const requestedAssetId = 'erc20:369:0xrequested';
+    const service = new PlaceholderValuationService(
+      makeProvider([
+        makeObservation({ assetId: requestedAssetId, provenance: { provider: 'placeholder', providerAssetId: requestedAssetId, retrievalMethod: 'placeholder', notes: [] } }),
+        makeObservation({ assetId: 'erc20:369:0xother', provenance: { provider: 'placeholder', providerAssetId: 'erc20:369:0xother', retrievalMethod: 'placeholder', notes: [] } }),
+      ]),
+    );
+
+    const [valuation] = await service.valueAssets([{ assetId: requestedAssetId, quantity: '1' }]);
+    expect(valuation.assetId).toBe(requestedAssetId);
   });
 
   it('preserves chain-aware assetId identity end-to-end', async () => {

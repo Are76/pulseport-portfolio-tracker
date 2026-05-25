@@ -6,6 +6,15 @@ import type {
   ValuationStatus,
 } from './valuation-types';
 
+function parseUsableQuantity(quantity: string): number | null {
+  const parsed = Number(quantity);
+  if (!Number.isFinite(parsed)) {
+    return null;
+  }
+
+  return parsed;
+}
+
 function deriveValuationFromObservation(quantity: string, observation: PriceObservationDto): AssetValuationDto {
   const base = {
     assetId: observation.assetId,
@@ -21,26 +30,44 @@ function deriveValuationFromObservation(quantity: string, observation: PriceObse
 
   if (observation.status === 'available') {
     const hasUsablePrice = typeof observation.priceUsd === 'number' && Number.isFinite(observation.priceUsd);
-    if (hasUsablePrice) {
+    const parsedQuantity = parseUsableQuantity(quantity);
+
+    if (hasUsablePrice && parsedQuantity !== null) {
       const usablePriceUsd = observation.priceUsd as number;
-      return {
-        ...base,
-        status: 'available',
-        valueUsd: Number(quantity) * usablePriceUsd,
-        warnings,
-      };
+      const computedValueUsd = parsedQuantity * usablePriceUsd;
+      if (Number.isFinite(computedValueUsd)) {
+        return {
+          ...base,
+          status: 'available',
+          valueUsd: computedValueUsd,
+          warnings,
+        };
+      }
+    }
+
+    const downgradeReasons: string[] = [];
+    if (!hasUsablePrice) {
+      downgradeReasons.push('priceUsd was null or non-finite');
+    }
+    if (parsedQuantity === null) {
+      downgradeReasons.push('quantity was malformed or non-finite');
+    } else {
+      const usablePriceUsd = hasUsablePrice ? (observation.priceUsd as number) : null;
+      if (usablePriceUsd !== null && !Number.isFinite(parsedQuantity * usablePriceUsd)) {
+        downgradeReasons.push('computed valueUsd was non-finite');
+      }
     }
 
     return {
       ...base,
       status: 'unavailable',
       valueUsd: null,
-      warnings: [...warnings, 'Observation reported available status but did not include a usable priceUsd.'],
+      warnings: [...warnings, 'Observation reported available status but valuation inputs were unusable.'],
       provenance: {
         ...observation.provenance,
         notes: [
           ...observation.provenance.notes,
-          'Available-status observation was downgraded to unavailable because priceUsd was null or non-finite.',
+          `Available-status observation was downgraded to unavailable because ${downgradeReasons.join(' and ')}.`,
         ],
       },
     };
@@ -61,7 +88,9 @@ function deriveValuationFromObservation(quantity: string, observation: PriceObse
 }
 
 export function summarizeValuations(valuations: AssetValuationDto[]): PortfolioValuationSummaryDto {
-  const valued = valuations.filter(v => v.status === 'available');
+  const valued = valuations.filter((v): v is AssetValuationDto & { valueUsd: number; status: 'available' } => (
+    v.status === 'available' && typeof v.valueUsd === 'number' && Number.isFinite(v.valueUsd)
+  ));
   const stale = valuations.filter(v => v.status === 'stale');
   const unavailable = valuations.filter(v => v.status === 'unavailable');
   const lowConfidence = valuations.filter(v => v.status === 'low_confidence');
@@ -76,7 +105,7 @@ export function summarizeValuations(valuations: AssetValuationDto[]): PortfolioV
 
   return {
     status,
-    totalValueUsd: valued.reduce((sum, item) => sum + (item.valueUsd ?? 0), 0),
+    totalValueUsd: valued.reduce((sum, item) => sum + item.valueUsd, 0),
     valuedAssetCount: valued.length,
     staleAssetCount: stale.length,
     unavailableAssetCount: unavailable.length,
@@ -144,9 +173,16 @@ export class PlaceholderValuationService {
 
   async valueAssets(inputs: Array<{ assetId: string; quantity: string }>): Promise<AssetValuationDto[]> {
     const observations = await this.provider.getBatchPriceObservations(inputs.map(input => input.assetId));
+    const observationByAssetId = new Map<string, PriceObservationDto>();
+
+    for (const observation of observations) {
+      if (!observationByAssetId.has(observation.assetId)) {
+        observationByAssetId.set(observation.assetId, observation);
+      }
+    }
 
     return inputs.map((input) => {
-      const observation = observations.find(item => item.assetId === input.assetId);
+      const observation = observationByAssetId.get(input.assetId);
       if (!observation) {
         return deriveValuationFromObservation(input.quantity, createFallbackObservation(input.assetId));
       }
