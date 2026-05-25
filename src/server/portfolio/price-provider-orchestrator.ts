@@ -59,6 +59,29 @@ function compareStrings(a: string, b: string): number {
   return 0;
 }
 
+function compareNullableNumber(a: number | null | undefined, b: number | null | undefined): number {
+  if (a == null && b == null) return 0;
+  if (a == null) return -1;
+  if (b == null) return 1;
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
+}
+
+function canonicalPriceUsdAtomic(value: string | bigint | null | undefined): string {
+  if (typeof value === 'bigint') return value.toString();
+  if (typeof value !== 'string') return '';
+  try {
+    return BigInt(value).toString();
+  } catch {
+    return value;
+  }
+}
+
+function canonicalMetadata(metadata: Record<string, string> | null | undefined): string {
+  if (!metadata || typeof metadata !== 'object') return '';
+  return JSON.stringify(Object.keys(metadata).sort().map(key => [key, metadata[key] ?? '']));
+}
+
 function deterministicRequestSort(a: PriceProviderAssetRequest, b: PriceProviderAssetRequest): number {
   if (a.chainId !== b.chainId) return a.chainId - b.chainId;
   return compareStrings(a.assetId, b.assetId);
@@ -86,12 +109,26 @@ function cloneProviderMetadata(metadata: PriceProviderMetadata): PriceProviderMe
 }
 
 function deterministicObservationSort(a: UpstreamPriceObservationInput, b: UpstreamPriceObservationInput): number {
-  if (a.chainId !== b.chainId) return a.chainId - b.chainId;
-  const assetCompare = compareStrings(a.assetId, b.assetId);
-  if (assetCompare !== 0) return assetCompare;
-  const providerAssetCompare = compareStrings(a.providerAssetId, b.providerAssetId);
-  if (providerAssetCompare !== 0) return providerAssetCompare;
-  return compareStrings(a.providerObservationId, b.providerObservationId);
+  const comparisons = [
+    compareNullableNumber(a.chainId, b.chainId),
+    compareStrings(a.assetId ?? '', b.assetId ?? ''),
+    compareStrings(a.providerAssetId ?? '', b.providerAssetId ?? ''),
+    compareStrings(a.providerObservationId ?? '', b.providerObservationId ?? ''),
+    compareStrings(a.observedAt ?? '', b.observedAt ?? ''),
+    compareStrings(a.staleAfter ?? '', b.staleAfter ?? ''),
+    compareStrings(a.ingestedAt ?? '', b.ingestedAt ?? ''),
+    compareStrings(a.sourceKind ?? '', b.sourceKind ?? ''),
+    compareNullableNumber(a.sourcePriority, b.sourcePriority),
+    compareStrings(a.sourceFeed ?? '', b.sourceFeed ?? ''),
+    compareStrings(canonicalPriceUsdAtomic(a.priceUsdAtomic), canonicalPriceUsdAtomic(b.priceUsdAtomic)),
+    compareNullableNumber(a.confidenceBps, b.confidenceBps),
+    compareStrings(canonicalMetadata(a.metadata), canonicalMetadata(b.metadata)),
+  ];
+
+  for (const comparison of comparisons) {
+    if (comparison !== 0) return comparison;
+  }
+  return 0;
 }
 
 function deterministicUnsupportedAssetSort(a: PriceProviderUnsupportedAsset, b: PriceProviderUnsupportedAsset): number {
