@@ -65,6 +65,7 @@ describe('placeholder valuation service contracts', () => {
     const [valuation] = await service.valueAssets([{ assetId: 'erc20:369:0xmissing', quantity: '3' }]);
 
     expect(valuation.assetId).toBe('erc20:369:0xmissing');
+    expect(valuation.chainId).toBe(369);
     expect(valuation.status).toBe('unavailable');
     expect(valuation.valueUsd).toBeNull();
     expect(valuation.warnings).toContain('No observation returned for requested assetId.');
@@ -147,4 +148,70 @@ describe('placeholder valuation service contracts', () => {
     expect(valuation.observation.assetId).toBe(chainAwareId);
     expect(valuation.chainId).toBe(943);
   });
+
+  it('marks summary as partial when any stale valuation exists', () => {
+    const summary = summarizeValuations([
+      { assetId: 'a', chainId: 369, symbol: 'A', quantity: '1', status: 'available', valueUsd: 1, confidence: 1, warnings: [], observation: makeObservation({ assetId: 'a' }), provenance: makeObservation({ assetId: 'a' }).provenance },
+      { assetId: 'b', chainId: 369, symbol: 'B', quantity: '1', status: 'stale', valueUsd: null, confidence: 0.7, warnings: ['stale'], observation: makeObservation({ assetId: 'b', status: 'stale' }), provenance: makeObservation({ assetId: 'b' }).provenance },
+    ]);
+
+    expect(summary.status).toBe('partial');
+  });
+
+  it('marks summary as partial when any low_confidence valuation exists', () => {
+    const summary = summarizeValuations([
+      { assetId: 'a', chainId: 369, symbol: 'A', quantity: '1', status: 'available', valueUsd: 1, confidence: 1, warnings: [], observation: makeObservation({ assetId: 'a' }), provenance: makeObservation({ assetId: 'a' }).provenance },
+      { assetId: 'b', chainId: 369, symbol: 'B', quantity: '1', status: 'low_confidence', valueUsd: null, confidence: 0.2, warnings: ['low'], observation: makeObservation({ assetId: 'b', status: 'low_confidence' }), provenance: makeObservation({ assetId: 'b' }).provenance },
+    ]);
+
+    expect(summary.status).toBe('partial');
+  });
+
+  it('marks summary as unavailable when all valuations are unavailable', () => {
+    const summary = summarizeValuations([
+      { assetId: 'a', chainId: 369, symbol: 'A', quantity: '1', status: 'unavailable', valueUsd: null, confidence: null, warnings: ['u'], observation: makeObservation({ assetId: 'a', status: 'unavailable', priceUsd: null, confidence: null }), provenance: makeObservation({ assetId: 'a' }).provenance },
+      { assetId: 'b', chainId: 369, symbol: 'B', quantity: '1', status: 'unavailable', valueUsd: null, confidence: null, warnings: ['u'], observation: makeObservation({ assetId: 'b', status: 'unavailable', priceUsd: null, confidence: null }), provenance: makeObservation({ assetId: 'b' }).provenance },
+    ]);
+
+    expect(summary.status).toBe('unavailable');
+  });
+
+  it('keeps summary partial for mixed available and unavailable valuations', () => {
+    const summary = summarizeValuations([
+      { assetId: 'a', chainId: 369, symbol: 'A', quantity: '1', status: 'available', valueUsd: 1, confidence: 1, warnings: [], observation: makeObservation({ assetId: 'a' }), provenance: makeObservation({ assetId: 'a' }).provenance },
+      { assetId: 'b', chainId: 369, symbol: 'B', quantity: '1', status: 'unavailable', valueUsd: null, confidence: null, warnings: ['u'], observation: makeObservation({ assetId: 'b', status: 'unavailable', priceUsd: null, confidence: null }), provenance: makeObservation({ assetId: 'b' }).provenance },
+    ]);
+
+    expect(summary.status).toBe('partial');
+  });
+
+  it('missing observation for erc20:943 asset preserves chainId 943', async () => {
+    const service = new PlaceholderValuationService(makeProvider([]));
+    const [valuation] = await service.valueAssets([{ assetId: 'erc20:943:0xmissing', quantity: '3' }]);
+
+    expect(valuation.assetId).toBe('erc20:943:0xmissing');
+    expect(valuation.chainId).toBe(943);
+    expect(valuation.observation.chainId).toBe(943);
+  });
+
+  it('missing observation for native:369 asset preserves chainId 369', async () => {
+    const service = new PlaceholderValuationService(makeProvider([]));
+    const [valuation] = await service.valueAssets([{ assetId: 'native:369:pls', quantity: '3' }]);
+
+    expect(valuation.assetId).toBe('native:369:pls');
+    expect(valuation.chainId).toBe(369);
+    expect(valuation.observation.chainId).toBe(369);
+  });
+
+  it('malformed assetId fallback never silently claims 369 and emits parse warnings', async () => {
+    const service = new PlaceholderValuationService(makeProvider([]));
+    const [valuation] = await service.valueAssets([{ assetId: 'bad-asset-id', quantity: '3' }]);
+
+    expect(valuation.assetId).toBe('bad-asset-id');
+    expect(valuation.chainId).toBe(-1);
+    expect(valuation.observation.chainId).toBe(-1);
+    expect(valuation.warnings).toContain('Unable to parse chainId from assetId; using safe unavailable chainId fallback.');
+    expect(valuation.provenance.notes).toContain('chainId parse failed from assetId; safe unavailable fallback used instead of assuming 369.');
+  });
+
 });
