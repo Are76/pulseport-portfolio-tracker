@@ -89,6 +89,53 @@ function normalizeAndValidate(observation: PersistedPriceObservation): Persisted
   };
 }
 
+
+function metadataEqual(a: Record<string, string>, b: Record<string, string>): boolean {
+  const aKeys = Object.keys(a).sort();
+  const bKeys = Object.keys(b).sort();
+  if (aKeys.length != bKeys.length) return false;
+
+  for (let index = 0; index < aKeys.length; index += 1) {
+    const aKey = aKeys[index];
+    const bKey = bKeys[index];
+    if (aKey !== bKey) return false;
+    if (a[aKey] !== b[bKey]) return false;
+  }
+
+  return true;
+}
+
+function observationsStructurallyEqual(a: PersistedPriceObservation, b: PersistedPriceObservation): boolean {
+  return a.observationId === b.observationId
+    && a.assetId === b.assetId
+    && a.chainId === b.chainId
+    && a.source.provider === b.source.provider
+    && a.source.kind === b.source.kind
+    && a.source.priority === b.source.priority
+    && a.source.feed === b.source.feed
+    && a.observedAt === b.observedAt
+    && a.staleAfter === b.staleAfter
+    && a.priceUsdAtomic === b.priceUsdAtomic
+    && a.confidenceBps === b.confidenceBps
+    && a.ingestedAt === b.ingestedAt
+    && metadataEqual(a.metadata, b.metadata);
+}
+
+function saveNormalizedObservation(storedByObservationId: Map<string, PersistedPriceObservation>, normalized: PersistedPriceObservation): PersistedPriceObservation {
+  const existing = storedByObservationId.get(normalized.observationId);
+
+  if (existing) {
+    if (!observationsStructurallyEqual(existing, normalized)) {
+      throw new Error('observationId collision with different payload; repository refused silent overwrite.');
+    }
+
+    return { ...existing, source: { ...existing.source }, metadata: { ...existing.metadata } };
+  }
+
+  storedByObservationId.set(normalized.observationId, normalized);
+  return { ...normalized, source: { ...normalized.source }, metadata: { ...normalized.metadata } };
+}
+
 function compareForDeterministicOrdering(a: PersistedPriceObservation, b: PersistedPriceObservation): number {
   const observedAtA = parseStrictUtcIsoOrNull(a.observedAt) ?? Number.MIN_SAFE_INTEGER;
   const observedAtB = parseStrictUtcIsoOrNull(b.observedAt) ?? Number.MIN_SAFE_INTEGER;
@@ -106,27 +153,11 @@ export function createInMemoryPriceObservationRepository(seed: PersistedPriceObs
   const storedByObservationId = new Map<string, PersistedPriceObservation>();
 
   for (const observation of seed) {
-    const normalized = normalizeAndValidate(observation);
-    if (!storedByObservationId.has(normalized.observationId)) {
-      storedByObservationId.set(normalized.observationId, normalized);
-    }
+    saveNormalizedObservation(storedByObservationId, normalizeAndValidate(observation));
   }
 
   const savePriceObservation = (observation: PersistedPriceObservation): PersistedPriceObservation => {
-    const normalized = normalizeAndValidate(observation);
-    const existing = storedByObservationId.get(normalized.observationId);
-
-    if (existing) {
-      const existingSerialized = JSON.stringify(existing);
-      const incomingSerialized = JSON.stringify(normalized);
-      if (existingSerialized !== incomingSerialized) {
-        throw new Error('observationId collision with different payload; repository refused silent overwrite.');
-      }
-      return { ...existing, source: { ...existing.source }, metadata: { ...existing.metadata } };
-    }
-
-    storedByObservationId.set(normalized.observationId, normalized);
-    return { ...normalized, source: { ...normalized.source }, metadata: { ...normalized.metadata } };
+    return saveNormalizedObservation(storedByObservationId, normalizeAndValidate(observation));
   };
 
   const savePriceObservations = (observations: PersistedPriceObservation[]): PersistedPriceObservation[] => observations.map(savePriceObservation);

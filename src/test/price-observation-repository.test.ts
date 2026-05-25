@@ -31,6 +31,55 @@ describe('price observation repository', () => {
     expect(repo.getObservationsForAsset('erc20:369:0xabc', 369)).toHaveLength(1);
   });
 
+
+  it('accepts seed with duplicate structurally identical observations', () => {
+    const first = makeObservation({
+      observationId: 'seed-same',
+      metadata: { quoteAssetId: 'erc20:369:0xusd', venue: 'dex-a' },
+    });
+    const second = makeObservation({
+      observationId: 'seed-same',
+      metadata: { venue: 'dex-a', quoteAssetId: 'erc20:369:0xusd' },
+    });
+
+    const repo = createInMemoryPriceObservationRepository([first, second]);
+    expect(repo.getObservationsForAsset('erc20:369:0xabc', 369)).toHaveLength(1);
+  });
+
+  it('throws for seed with duplicate divergent observations', () => {
+    const first = makeObservation({ observationId: 'seed-drift', metadata: { quoteAssetId: 'erc20:369:0xusd' } });
+    const second = makeObservation({ observationId: 'seed-drift', metadata: { quoteAssetId: 'erc20:369:0xusdt' } });
+
+    expect(() => createInMemoryPriceObservationRepository([first, second])).toThrow(/silent overwrite/);
+  });
+
+  it('savePriceObservation accepts logically identical metadata with different key order', () => {
+    const repo = createInMemoryPriceObservationRepository();
+
+    repo.savePriceObservation(makeObservation({
+      observationId: 'metadata-order',
+      metadata: { quoteAssetId: 'erc20:369:0xusd', venue: 'dex-a' },
+    }));
+
+    expect(() => repo.savePriceObservation(makeObservation({
+      observationId: 'metadata-order',
+      metadata: { venue: 'dex-a', quoteAssetId: 'erc20:369:0xusd' },
+    }))).not.toThrow();
+  });
+
+  it('savePriceObservation rejects truly divergent metadata for same observationId', () => {
+    const repo = createInMemoryPriceObservationRepository();
+
+    repo.savePriceObservation(makeObservation({
+      observationId: 'metadata-divergent',
+      metadata: { quoteAssetId: 'erc20:369:0xusd', venue: 'dex-a' },
+    }));
+
+    expect(() => repo.savePriceObservation(makeObservation({
+      observationId: 'metadata-divergent',
+      metadata: { quoteAssetId: 'erc20:369:0xusd', venue: 'dex-b' },
+    }))).toThrow(/silent overwrite/);
+  });
   it('fails closed on malformed identity and bigint mapping', () => {
     const repo = createInMemoryPriceObservationRepository();
 
