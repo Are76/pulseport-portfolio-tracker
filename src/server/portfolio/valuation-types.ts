@@ -65,3 +65,24 @@ export type PortfolioValuationEnvelopeDto =
         message: string;
       };
     };
+
+
+export type ObservationSourceKind = 'rpc' | 'indexer' | 'manual';
+
+export type PersistedPriceObservationDto = {
+  observationId: string;
+  assetId: string;
+  chainId: number;
+  source: {
+    provider: string;
+    kind: ObservationSourceKind;
+    priority: number;
+    feed: string;
+  };
+  observedAt: string;
+  staleAfter: string;
+  priceUsdAtomic: string | null;
+  confidenceBps: number | null;
+  ingestedAt: string;
+  metadata: Record<string, string>;
+};
