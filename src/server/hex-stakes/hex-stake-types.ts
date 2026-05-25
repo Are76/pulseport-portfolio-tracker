@@ -18,6 +18,7 @@ export type HexStakePositionDto = {
   lockedDay: number | null;
   stakedDays: number | null;
   unlockedDay: number | null;
+  endedDaysAgo?: number | null;
   principalHex: string | null;
   stakeShares: string | null;
   tShares: string | null;
