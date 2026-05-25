@@ -83,23 +83,36 @@ function deterministicMetadata(metadata: Record<string, string>): Record<string,
 }
 
 function makeObservationId(input: {
-  provider: string;
   providerObservationId: string;
   assetId: string;
   chainId: number;
+  source: { provider: string; kind: ObservationSourceKind; priority: number; feed: string };
   observedAt: string;
+  staleAfter: string;
+  ingestedAt: string;
   priceUsdAtomic: string | null;
+  confidenceBps: number | null;
+  metadata: Record<string, string>;
 }): string {
-  const idPayload = [
-    `provider=${input.provider}`,
-    `providerObservationId=${input.providerObservationId}`,
-    `assetId=${input.assetId}`,
-    `chainId=${input.chainId}`,
-    `observedAt=${input.observedAt}`,
-    `priceUsdAtomic=${input.priceUsdAtomic ?? 'null'}`,
-  ].join('|');
+  const canonicalIdentityPayload = {
+    providerObservationId: input.providerObservationId,
+    assetId: input.assetId,
+    chainId: input.chainId,
+    source: {
+      provider: input.source.provider,
+      kind: input.source.kind,
+      priority: input.source.priority,
+      feed: input.source.feed,
+    },
+    observedAt: input.observedAt,
+    staleAfter: input.staleAfter,
+    ingestedAt: input.ingestedAt,
+    priceUsdAtomic: input.priceUsdAtomic,
+    confidenceBps: input.confidenceBps,
+    metadata: input.metadata,
+  };
 
-  return `obs:${createHash('sha256').update(idPayload).digest('hex')}`;
+  return `obs:${createHash('sha256').update(JSON.stringify(canonicalIdentityPayload)).digest('hex')}`;
 }
 
 export function normalizePriceObservation(input: UpstreamPriceObservationInput): NormalizedPriceObservation {
@@ -146,23 +159,29 @@ export function normalizePriceObservation(input: UpstreamPriceObservationInput):
     providerObservationId: input.providerObservationId,
   });
 
+  const source = {
+    provider: input.provider,
+    kind: input.sourceKind,
+    priority: input.sourcePriority,
+    feed: input.sourceFeed,
+  };
+
   const observation: PersistedPriceObservationDto = {
     observationId: makeObservationId({
-      provider: input.provider,
       providerObservationId: input.providerObservationId,
       assetId: input.assetId,
       chainId: input.chainId,
+      source,
       observedAt: input.observedAt,
+      staleAfter: input.staleAfter,
+      ingestedAt: input.ingestedAt,
       priceUsdAtomic: normalizedPrice,
+      confidenceBps: input.confidenceBps,
+      metadata,
     }),
     assetId: input.assetId,
     chainId: input.chainId,
-    source: {
-      provider: input.provider,
-      kind: input.sourceKind,
-      priority: input.sourcePriority,
-      feed: input.sourceFeed,
-    },
+    source,
     observedAt: input.observedAt,
     staleAfter: input.staleAfter,
     priceUsdAtomic: normalizedPrice,

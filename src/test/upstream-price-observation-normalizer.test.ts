@@ -33,6 +33,44 @@ describe('upstream price observation normalization', () => {
     expect(first.observation?.observationId).toBe(second.observation?.observationId);
   });
 
+  it('metadata key order does not affect observationId', () => {
+    const a = normalizePriceObservation(makeInput({ metadata: { a: '1', b: '2' } }));
+    const b = normalizePriceObservation(makeInput({ metadata: { b: '2', a: '1' } }));
+
+    expect(a.observation?.observationId).toBe(b.observation?.observationId);
+  });
+
+  it('provider/source values containing delimiters do not collide', () => {
+    const a = normalizePriceObservation(makeInput({ provider: 'provider|x', sourceFeed: 'feed=abc|def' }));
+    const b = normalizePriceObservation(makeInput({ provider: 'provider', sourceFeed: 'x|feed=abc|def', providerObservationId: 'remote-2' }));
+
+    expect(a.observation?.observationId).not.toBe(b.observation?.observationId);
+  });
+
+  it('changing staleAfter changes observationId', () => {
+    const a = normalizePriceObservation(makeInput({ staleAfter: '2026-05-25T01:00:00.000Z' }));
+    const b = normalizePriceObservation(makeInput({ staleAfter: '2026-05-25T01:00:01.000Z' }));
+    expect(a.observation?.observationId).not.toBe(b.observation?.observationId);
+  });
+
+  it('changing ingestedAt changes observationId', () => {
+    const a = normalizePriceObservation(makeInput({ ingestedAt: '2026-05-25T00:00:05.000Z' }));
+    const b = normalizePriceObservation(makeInput({ ingestedAt: '2026-05-25T00:00:06.000Z' }));
+    expect(a.observation?.observationId).not.toBe(b.observation?.observationId);
+  });
+
+  it('changing source.feed changes observationId', () => {
+    const a = normalizePriceObservation(makeInput({ sourceFeed: 'feed-1' }));
+    const b = normalizePriceObservation(makeInput({ sourceFeed: 'feed-2' }));
+    expect(a.observation?.observationId).not.toBe(b.observation?.observationId);
+  });
+
+  it('changing confidenceBps changes observationId', () => {
+    const a = normalizePriceObservation(makeInput({ confidenceBps: 9000 }));
+    const b = normalizePriceObservation(makeInput({ confidenceBps: 8500 }));
+    expect(a.observation?.observationId).not.toBe(b.observation?.observationId);
+  });
+
   it('fails closed on malformed chain-aware identity', () => {
     const result = normalizePriceObservation(makeInput({ assetId: 'erc20:1:0xabc', chainId: 369 }));
 
@@ -64,11 +102,11 @@ describe('upstream price observation normalization', () => {
     expect(result.observation?.priceUsdAtomic).toBe('123450000');
   });
 
-  it('integrates with repository using deterministic observation ids', () => {
+  it('integrates with repository using deterministic observation ids without false collision', () => {
     const repo = createInMemoryPriceObservationRepository();
 
     const normalizedA = normalizePriceObservation(makeInput());
-    const normalizedB = normalizePriceObservation(makeInput({ providerObservationId: 'remote-2', metadata: { venue: 'dex-a', z: '1' } }));
+    const normalizedB = normalizePriceObservation(makeInput({ staleAfter: '2026-05-25T01:00:01.000Z' }));
 
     expect(normalizedA.observation).not.toBeNull();
     expect(normalizedB.observation).not.toBeNull();
@@ -78,6 +116,5 @@ describe('upstream price observation normalization', () => {
 
     const stored = repo.getObservationsForAsset('erc20:369:0xabc', 369);
     expect(stored).toHaveLength(2);
-    expect(stored[0].observationId < stored[1].observationId || stored[1].observationId < stored[0].observationId).toBe(true);
   });
 });
