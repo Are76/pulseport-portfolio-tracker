@@ -69,6 +69,15 @@ function deterministicProviderSort(a: PriceProviderMetadata, b: PriceProviderMet
 }
 
 function snapshotProviderMetadata(metadata: PriceProviderMetadata): PriceProviderMetadata {
+  const snapshot: PriceProviderMetadata = {
+    id: metadata.id,
+    displayName: metadata.displayName,
+    source: metadata.source,
+  };
+  return Object.freeze(snapshot);
+}
+
+function cloneProviderMetadata(metadata: PriceProviderMetadata): PriceProviderMetadata {
   return {
     id: metadata.id,
     displayName: metadata.displayName,
@@ -146,7 +155,7 @@ export function createPriceProviderOrchestrator(
           const failure = `Provider execution failure: ${message}`;
           errors.push({ providerId: metadata.id, message: failure });
           providerExecutions.push({
-            provider: metadata,
+            provider: cloneProviderMetadata(metadata),
             status: 'failed',
             requestedAssets: cloneRequests(deterministicRequests),
             observationCount: 0,
@@ -180,7 +189,7 @@ export function createPriceProviderOrchestrator(
 
         const status: ProviderExecutionStatus = providerErrors.length > 0 ? 'failed' : providerWarnings.length > 0 ? 'partial' : 'success';
         providerExecutions.push({
-          provider: metadata,
+          provider: cloneProviderMetadata(metadata),
           status,
           requestedAssets: cloneRequests(deterministicRequests),
           observationCount: batch.observations.length,

@@ -139,10 +139,47 @@ describe('price provider orchestrator', () => {
 
     expect(forward.ingestionResults.map(item => item.provenance.providerObservationId)).toEqual(['obs-1', 'obs-2']);
     expect(reversed.ingestionResults.map(item => item.provenance.providerObservationId)).toEqual(['obs-1', 'obs-2']);
+    expect(forward.providerExecutions[0].unsupportedAssets).toEqual([
+      { assetId: 'erc20:369:0xccc', chainId: 369, reason: 'a-reason' },
+      { assetId: 'erc20:369:0xddd', chainId: 369, reason: 'z-reason' },
+    ]);
     expect(forward.unsupportedAssets).toEqual(reversed.unsupportedAssets);
   });
 
 
+  it('prevents external metadata mutation from affecting later executions', async () => {
+    const repository = createInMemoryPriceObservationRepository();
+    const ingestion = createPriceObservationIngestionService(repository);
+
+    const provider = {
+      metadata: { id: 'provider-stable', displayName: 'Stable Provider', source: 'fixture' },
+      async getPriceObservations() {
+        return {
+          observations: [],
+          unsupportedAssets: [{ assetId: 'erc20:369:0x999', chainId: 369, reason: 'unsupported' }],
+        };
+      },
+    } satisfies PriceProviderAdapter;
+
+    const orchestrator = createPriceProviderOrchestrator([provider], ingestion);
+    const first = await orchestrator.execute([{ assetId: 'erc20:369:0x999', chainId: 369 }]);
+
+    const mutableProvider = first.providerExecutions[0].provider as { id: string; displayName: string; source: string };
+    mutableProvider.id = 'provider-hijacked';
+    mutableProvider.displayName = 'Hijacked';
+    mutableProvider.source = 'hijacked-source';
+
+    const second = await orchestrator.execute([{ assetId: 'erc20:369:0x999', chainId: 369 }]);
+
+    expect(second.providerOrder).toEqual(['provider-stable']);
+    expect(second.providerExecutions[0].provider).toEqual({
+      id: 'provider-stable',
+      displayName: 'Stable Provider',
+      source: 'fixture',
+    });
+    expect(second.warnings[0].providerId).toBe('provider-stable');
+    expect(second.unsupportedAssets[0].providerId).toBe('provider-stable');
+  });
 
   it('uses metadata snapshots so provider self-mutation cannot alter attribution', async () => {
     const repository = createInMemoryPriceObservationRepository();
