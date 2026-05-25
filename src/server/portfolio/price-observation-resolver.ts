@@ -38,6 +38,11 @@ function parseChainIdFromAssetId(assetId: string): number | null {
 }
 
 function parseTimestampOrNull(value: string): number | null {
+  const strictUtcIsoPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/;
+  if (!strictUtcIsoPattern.test(value)) {
+    return null;
+  }
+
   const parsed = Date.parse(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
@@ -155,10 +160,10 @@ export function resolvePriceObservation(
   observations: PersistedPriceObservation[],
   asOf: string,
 ): ResolvedPriceObservation {
-  const asOfMs = Date.parse(asOf);
+  const asOfMs = parseTimestampOrNull(asOf);
   const inScope = observations.filter(obs => obs.assetId === assetId && obs.chainId === chainId);
 
-  if (!Number.isFinite(asOfMs)) {
+  if (asOfMs === null) {
     return {
       selected: null,
       status: 'unavailable',

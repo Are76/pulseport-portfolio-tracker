@@ -44,6 +44,30 @@ describe('price observation resolver', () => {
     expect(result.confidenceBps).toBe(4000);
   });
 
+  it('accepts strict UTC ISO timestamp with milliseconds', () => {
+    const result = resolvePriceObservation(
+      'erc20:369:0xabc',
+      369,
+      [makeObservation({ observationId: 'iso-ms', observedAt: '2026-05-25T00:00:00.123Z', staleAfter: '2026-05-25T02:00:00.123Z', ingestedAt: '2026-05-25T00:01:00.123Z' })],
+      '2026-05-25T00:30:00.123Z',
+    );
+
+    expect(result.status).toBe('available');
+    expect(result.selected?.observationId).toBe('iso-ms');
+  });
+
+  it('accepts strict UTC ISO timestamp without milliseconds', () => {
+    const result = resolvePriceObservation(
+      'erc20:369:0xabc',
+      369,
+      [makeObservation({ observationId: 'iso-no-ms', observedAt: '2026-05-25T00:00:00Z', staleAfter: '2026-05-25T02:00:00Z', ingestedAt: '2026-05-25T00:01:00Z' })],
+      '2026-05-25T00:30:00Z',
+    );
+
+    expect(result.status).toBe('available');
+    expect(result.selected?.observationId).toBe('iso-no-ms');
+  });
+
   it('never substitutes chain identity across mismatched observations', () => {
     const mismatched = makeObservation({ observationId: 'bad-chain', assetId: 'erc20:943:0xabc', chainId: 369 });
     const result = resolvePriceObservation('erc20:943:0xabc', 369, [mismatched], '2026-05-25T00:30:00.000Z');
@@ -58,6 +82,31 @@ describe('price observation resolver', () => {
 
     expect(result.status).toBe('unavailable');
     expect(result.selected?.observationId).toBe('bad');
+  });
+
+  it('fails closed when asOf uses non-ISO timestamp', () => {
+    const result = resolvePriceObservation(
+      'erc20:369:0xabc',
+      369,
+      [makeObservation({ observationId: 'candidate' })],
+      '05/25/2026 00:30:00 UTC',
+    );
+
+    expect(result.status).toBe('unavailable');
+    expect(result.selected).toBeNull();
+    expect(result.warnings).toContain('asOf timestamp is malformed.');
+  });
+
+  it('rejects non-ISO timestamps for observation fields and degrades safely', () => {
+    const result = resolvePriceObservation(
+      'erc20:369:0xabc',
+      369,
+      [makeObservation({ observationId: 'bad-ts', observedAt: '2026/05/25 00:00:00', staleAfter: 'Mon, 25 May 2026 01:00:00 GMT', ingestedAt: '2026-05-25 00:01:00Z' })],
+      '2026-05-25T00:30:00.000Z',
+    );
+
+    expect(result.status).toBe('unavailable');
+    expect(result.warnings).toContain('Malformed timestamps detected.');
   });
 
   it('rejects unknown assetId prefixes as malformed chain-aware identity', () => {
