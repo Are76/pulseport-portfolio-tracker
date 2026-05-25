@@ -124,7 +124,7 @@ export async function getHexStakeDashboard(walletAddress: string, chainId = PULS
       const stakedDays = Number(stake[4]);
       const unlockedDay = Number(stake[5]);
       const status = classifyStakeStatus(lockedDay, stakedDays, currentDay, unlockedDay);
-      return lockedDay <= currentDay && status !== 'pending' && status !== 'ended';
+      return lockedDay <= currentDay && status !== 'pending';
     });
     const earliestLockedDay = yieldEligible.length > 0 ? Math.min(...yieldEligible.map((x) => Number(x.stake[3]))) : null;
     const latestYieldDay = currentDay > 0 ? currentDay - 1 : 0;
@@ -132,8 +132,11 @@ export async function getHexStakeDashboard(walletAddress: string, chainId = PULS
       ? Math.max(...yieldEligible.map(({ stake }) => {
         const lockedDay = Number(stake[3]);
         const stakedDays = Number(stake[4]);
+        const unlockedDay = Number(stake[5]);
+        const status = classifyStakeStatus(lockedDay, stakedDays, currentDay, unlockedDay);
         const maturityDay = lockedDay + stakedDays - 1;
-        return Math.min(maturityDay, latestYieldDay);
+        const endedCutoffDay = status === 'ended' ? unlockedDay - 1 : latestYieldDay;
+        return Math.min(maturityDay, latestYieldDay, endedCutoffDay);
       }))
       : null;
 
@@ -188,14 +191,16 @@ export async function getHexStakeDashboard(walletAddress: string, chainId = PULS
       if (stakeStatus === 'pending') {
         warnings.push('Pending stake has no realized yield yet; yieldHex remains 0.');
         provenanceNotes.push('yield.pending=no-realized-yield');
-      } else if (stakeStatus === 'ended') {
-        warnings.push('Ended stake yield is capped at unlockedDay.');
-        provenanceNotes.push('yield.ended=stopped-at-unlockedDay');
-        provenanceNotes.push(`lifecycle.ended.unlockedDay=${unlockedDay}`);
-        if (endedDaysAgo !== null) provenanceNotes.push(`lifecycle.ended.daysAgo=${endedDaysAgo}`);
       } else {
+        if (stakeStatus === 'ended') {
+          warnings.push('Ended stake yield is capped at unlockedDay.');
+          provenanceNotes.push('yield.ended=stopped-at-unlockedDay');
+          provenanceNotes.push(`lifecycle.ended.unlockedDay=${unlockedDay}`);
+          if (endedDaysAgo !== null) provenanceNotes.push(`lifecycle.ended.daysAgo=${endedDaysAgo}`);
+        }
         const maturityDay = lockedDay + stakedDays - 1;
-        const endDay = Math.min(maturityDay, latestYieldDay);
+        const endedCutoffDay = stakeStatus === 'ended' ? unlockedDay - 1 : latestYieldDay;
+        const endDay = Math.min(maturityDay, latestYieldDay, endedCutoffDay);
         const days: HexDailyDataEntry[] = [];
         for (let day = lockedDay; day <= endDay; day += 1) {
           const entry = dailyDataByDay.get(day);

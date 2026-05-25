@@ -273,10 +273,23 @@ describe('hex stake service native contract reads', () => {
     expect(dto.positions[0].stakeStatus).toBe('ended');
     expect(dto.positions[0].unlockedDay).toBe(100);
     expect(dto.positions[0].endedDaysAgo).toBe(10);
-    expect(dto.positions[0].yieldHex).toBe('0');
+    expect(dto.positions[0].yieldHex).toBe('10');
     expect(dto.positions[0].warnings.some((w) => w.includes('capped at unlockedDay'))).toBe(true);
     expect(dto.summary.endedStakeCount).toBe(1);
     expect(dto.summary.activeStakeCount).toBe(0);
+  });
+
+  it('ended stake dailyDataRange window is bounded by unlockedDay', async () => {
+    mockReadContract.mockReset();
+    mockReadContract
+      .mockResolvedValueOnce(1n)
+      .mockResolvedValueOnce(500n)
+      .mockResolvedValueOnce([1n, 100000000n, 1000000000000n, 100n, 500n, 121n, false])
+      .mockResolvedValueOnce(Array.from({ length: 21 }, () => [100000000n, 1000000000000n, 0n]));
+
+    await getHexStakeDashboard(testWalletAddress, 369);
+    const dailyDataRangeCall = mockReadContract.mock.calls.find((call) => call[0]?.functionName === 'dailyDataRange');
+    expect(dailyDataRangeCall?.[0]?.args).toEqual([100n, 121n]);
   });
 
 });
