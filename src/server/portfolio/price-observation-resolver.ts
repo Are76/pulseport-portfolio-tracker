@@ -24,21 +24,33 @@ type Candidate = {
 };
 
 function parseChainIdFromAssetId(assetId: string): number | null {
-  const [_, chainSegment] = assetId.split(':');
-  if (!chainSegment || !/^\d+$/.test(chainSegment)) return null;
+  const segments = assetId.split(':');
+  if (segments.length !== 3) return null;
+
+  const [prefix, chainSegment, suffix] = segments;
+  if (!chainSegment || !/^\d+$/.test(chainSegment) || !suffix) return null;
+
+  const knownPrefix = prefix === 'erc20' || prefix === 'native';
+  if (!knownPrefix) return null;
+
   const parsed = Number(chainSegment);
   return Number.isSafeInteger(parsed) ? parsed : null;
+}
+
+function parseTimestampOrNull(value: string): number | null {
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function evaluateCandidate(observation: PersistedPriceObservation, asOfMs: number): Candidate {
   const warnings: string[] = [];
   let malformed = false;
 
-  const parsedObservedAt = Date.parse(observation.observedAt);
-  const parsedStaleAfter = Date.parse(observation.staleAfter);
-  const parsedIngestedAt = Date.parse(observation.ingestedAt);
+  const parsedObservedAt = parseTimestampOrNull(observation.observedAt);
+  const parsedStaleAfter = parseTimestampOrNull(observation.staleAfter);
+  const parsedIngestedAt = parseTimestampOrNull(observation.ingestedAt);
 
-  if (!Number.isFinite(parsedObservedAt) || !Number.isFinite(parsedStaleAfter) || !Number.isFinite(parsedIngestedAt)) {
+  if (parsedObservedAt === null || parsedStaleAfter === null || parsedIngestedAt === null) {
     malformed = true;
     warnings.push('Malformed timestamps detected.');
   }
@@ -55,7 +67,12 @@ function evaluateCandidate(observation: PersistedPriceObservation, asOfMs: numbe
     warnings.push('priceUsdAtomic must be a non-negative bigint string.');
   }
 
-  const stale = Number.isFinite(parsedStaleAfter) ? parsedStaleAfter <= asOfMs : true;
+  const stale = parsedStaleAfter !== null ? parsedStaleAfter <= asOfMs : true;
+
+  if (!Number.isSafeInteger(observation.source.priority) || observation.source.priority < 0) {
+    malformed = true;
+    warnings.push('source.priority must be a safe non-negative integer.');
+  }
 
   let status: PriceObservationStatus = 'available';
   if (malformed) {
@@ -107,9 +124,11 @@ function compareCandidates(a: Candidate, b: Candidate): number {
     return bConfidence - aConfidence;
   }
 
-  const aObservedAt = Date.parse(a.observation.observedAt);
-  const bObservedAt = Date.parse(b.observation.observedAt);
+  const aObservedAt = parseTimestampOrNull(a.observation.observedAt);
+  const bObservedAt = parseTimestampOrNull(b.observation.observedAt);
   if (aObservedAt !== bObservedAt) {
+    if (aObservedAt === null) return 1;
+    if (bObservedAt === null) return -1;
     return bObservedAt - aObservedAt;
   }
 

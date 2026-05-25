@@ -60,6 +60,30 @@ describe('price observation resolver', () => {
     expect(result.selected?.observationId).toBe('bad');
   });
 
+  it('rejects unknown assetId prefixes as malformed chain-aware identity', () => {
+    const malformedPrefix = makeObservation({ observationId: 'bad-prefix', assetId: 'garbage:369:anything' });
+    const result = resolvePriceObservation('garbage:369:anything', 369, [malformedPrefix], '2026-05-25T00:30:00.000Z');
+
+    expect(result.status).toBe('unavailable');
+    expect(result.warnings.some(w => w.includes('assetId/chainId mismatch'))).toBe(true);
+  });
+
+  it('accepts native chain-aware asset identity', () => {
+    const native = makeObservation({ observationId: 'native-ok', assetId: 'native:369:pls' });
+    const result = resolvePriceObservation('native:369:pls', 369, [native], '2026-05-25T00:30:00.000Z');
+
+    expect(result.status).toBe('available');
+    expect(result.selected?.observationId).toBe('native-ok');
+  });
+
+  it('degrades malformed source priority to unavailable', () => {
+    const malformedPriority = makeObservation({ observationId: 'bad-priority', source: { provider: 'rpc-a', kind: 'rpc', priority: -1, feed: 'bad' } });
+    const result = resolvePriceObservation('erc20:369:0xabc', 369, [malformedPriority], '2026-05-25T00:30:00.000Z');
+
+    expect(result.status).toBe('unavailable');
+    expect(result.warnings).toContain('source.priority must be a safe non-negative integer.');
+  });
+
   it('uses deterministic precedence ordering', () => {
     const result = resolvePriceObservation(
       'erc20:369:0xabc',
@@ -73,5 +97,39 @@ describe('price observation resolver', () => {
 
     expect(result.selected?.observationId).toBe('older-higher-confidence');
     expect(result.provenance.evaluatedObservationIds).toEqual(['older-higher-confidence', 'newer-lower-confidence']);
+  });
+
+  it('status precedence is deterministic: available > low_confidence > stale > unavailable', () => {
+    const result = resolvePriceObservation(
+      'erc20:369:0xabc',
+      369,
+      [
+        makeObservation({ observationId: 'available', confidenceBps: 9000, staleAfter: '2026-05-25T02:00:00.000Z' }),
+        makeObservation({ observationId: 'low-conf', confidenceBps: 2000, staleAfter: '2026-05-25T02:00:00.000Z' }),
+        makeObservation({ observationId: 'stale', confidenceBps: 9000, staleAfter: '2026-05-24T02:00:00.000Z' }),
+        makeObservation({ observationId: 'unavailable', priceUsdAtomic: null }),
+      ],
+      '2026-05-25T00:30:00.000Z',
+    );
+
+    expect(result.status).toBe('available');
+    expect(result.selected?.observationId).toBe('available');
+    expect(result.provenance.reasoning[1]).toContain('deterministic status/source/confidence/time/id precedence');
+  });
+
+  it('falls back deterministically when observedAt timestamps are malformed', () => {
+    const result = resolvePriceObservation(
+      'erc20:369:0xabc',
+      369,
+      [
+        makeObservation({ observationId: 'obs-b', observedAt: 'not-a-date' }),
+        makeObservation({ observationId: 'obs-a', observedAt: 'still-not-a-date' }),
+      ],
+      '2026-05-25T00:30:00.000Z',
+    );
+
+    expect(result.status).toBe('unavailable');
+    expect(result.selected?.observationId).toBe('obs-a');
+    expect(result.provenance.evaluatedObservationIds).toEqual(['obs-a', 'obs-b']);
   });
 });
