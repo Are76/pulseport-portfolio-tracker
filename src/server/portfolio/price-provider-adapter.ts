@@ -53,6 +53,27 @@ function toKey(input: { assetId: string; chainId: number }): string {
   return `${input.assetId}::${input.chainId}`;
 }
 
+function normalizeFixtureMetadata(metadata: Record<string, string> | undefined): Record<string, string> {
+  if (!metadata) return {};
+
+  const reserved = new Set(['providerName', 'providerSource']);
+  const filtered: Record<string, string> = {};
+  for (const [key, value] of Object.entries(metadata)) {
+    if (!reserved.has(key)) {
+      filtered[key] = value;
+    }
+  }
+
+  return deterministicMetadata(filtered);
+}
+
+function snapshotFixtureRecord(record: FixtureProviderRecord): FixtureProviderRecord {
+  return {
+    ...record,
+    metadata: normalizeFixtureMetadata(record.metadata),
+  };
+}
+
 export function createDeterministicFixturePriceProvider(records: FixtureProviderRecord[]): PriceProviderAdapter {
   const metadata: PriceProviderMetadata = {
     id: 'fixture-deterministic',
@@ -62,7 +83,11 @@ export function createDeterministicFixturePriceProvider(records: FixtureProvider
 
   const byAsset = new Map<string, FixtureProviderRecord>();
   for (const record of records) {
-    byAsset.set(toKey({ assetId: record.assetId, chainId: record.chainId }), record);
+    const key = toKey({ assetId: record.assetId, chainId: record.chainId });
+    if (byAsset.has(key)) {
+      throw new Error(`Duplicate fixture record for assetId/chainId: ${record.assetId}/${record.chainId}`);
+    }
+    byAsset.set(key, snapshotFixtureRecord(record));
   }
 
   return {
@@ -97,9 +122,9 @@ export function createDeterministicFixturePriceProvider(records: FixtureProvider
           priceUsdAtomic: match.priceUsdAtomic,
           confidenceBps: match.confidenceBps,
           metadata: deterministicMetadata({
+            ...(match.metadata ?? {}),
             providerName: metadata.displayName,
             providerSource: metadata.source,
-            ...(match.metadata ?? {}),
           }),
         });
       }

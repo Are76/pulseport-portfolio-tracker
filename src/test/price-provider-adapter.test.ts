@@ -70,4 +70,53 @@ describe('price provider adapter contract', () => {
       },
     ]);
   });
+
+  it('does not allow fixture metadata to override reserved provider provenance fields', async () => {
+    const adapter = createDeterministicFixturePriceProvider([
+      {
+        ...fixtureRecord,
+        metadata: {
+          providerName: 'Spoofed Provider',
+          providerSource: 'spoofed-source',
+          region: 'us-east-1',
+        },
+      },
+    ]);
+
+    const result = await adapter.getPriceObservations([{ assetId: 'erc20:369:0xabc', chainId: 369 }]);
+    expect(result.observations).toHaveLength(1);
+    expect(result.observations[0].metadata.providerName).toBe('Deterministic Fixture Provider');
+    expect(result.observations[0].metadata.providerSource).toBe('test-fixture');
+    expect(result.observations[0].metadata.region).toBe('us-east-1');
+  });
+
+  it('throws when duplicate fixture records are provided for same assetId/chainId', () => {
+    expect(() => createDeterministicFixturePriceProvider([
+      fixtureRecord,
+      {
+        ...fixtureRecord,
+        providerObservationId: 'fixture-obs-2',
+      },
+    ])).toThrow('Duplicate fixture record for assetId/chainId');
+  });
+
+  it('snapshots fixture records so post-construction mutations do not alter outputs', async () => {
+    const mutableRecord = {
+      ...fixtureRecord,
+      metadata: { region: 'us-west-2' },
+    };
+    const adapter = createDeterministicFixturePriceProvider([mutableRecord]);
+
+    mutableRecord.providerObservationId = 'mutated-observation-id';
+    mutableRecord.providerAssetId = 'fixture:erc20:369:0xmutated';
+    mutableRecord.priceUsdAtomic = '999999999';
+    mutableRecord.metadata.region = 'mutated-region';
+
+    const result = await adapter.getPriceObservations([{ assetId: 'erc20:369:0xabc', chainId: 369 }]);
+    expect(result.observations).toHaveLength(1);
+    expect(result.observations[0].providerObservationId).toBe('fixture-obs-1');
+    expect(result.observations[0].providerAssetId).toBe('fixture:erc20:369:0xabc');
+    expect(result.observations[0].priceUsdAtomic).toBe('123450000');
+    expect(result.observations[0].metadata.region).toBe('us-west-2');
+  });
 });
