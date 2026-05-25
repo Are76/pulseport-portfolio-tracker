@@ -141,6 +141,20 @@ describe('placeholder valuation service contracts', () => {
     expect(summary.lowConfidenceAssetCount).toBe(1);
   });
 
+
+
+  it('returns available summary for empty valuation set with zero totals and no warnings', () => {
+    const summary = summarizeValuations([]);
+
+    expect(summary.status).toBe('available');
+    expect(summary.totalValueUsd).toBe(0);
+    expect(summary.valuedAssetCount).toBe(0);
+    expect(summary.staleAssetCount).toBe(0);
+    expect(summary.unavailableAssetCount).toBe(0);
+    expect(summary.lowConfidenceAssetCount).toBe(0);
+    expect(summary.warnings).toEqual([]);
+  });
+
   it('supports discriminated valuation envelope behavior', () => {
     const success: PortfolioValuationEnvelopeDto = {
       ok: true,

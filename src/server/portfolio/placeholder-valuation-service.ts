@@ -66,11 +66,13 @@ export function summarizeValuations(valuations: AssetValuationDto[]): PortfolioV
   const unavailable = valuations.filter(v => v.status === 'unavailable');
   const lowConfidence = valuations.filter(v => v.status === 'low_confidence');
 
-  const status = unavailable.length === valuations.length
-    ? 'unavailable'
-    : stale.length > 0 || lowConfidence.length > 0 || unavailable.length > 0
-      ? 'partial'
-      : 'available';
+  const status = valuations.length === 0
+    ? 'available'
+    : unavailable.length === valuations.length
+      ? 'unavailable'
+      : stale.length > 0 || lowConfidence.length > 0 || unavailable.length > 0
+        ? 'partial'
+        : 'available';
 
   return {
     status,
