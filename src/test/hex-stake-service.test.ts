@@ -21,6 +21,12 @@ const testWalletAddress = '0x0000000000000000000000000000000000000001';
 
 describe('hex stake service native contract reads', () => {
   const walletAddress = testWalletAddress;
+  const heartsPerHex = 100000000n;
+  const decimalHexToHearts = (value: string): bigint => {
+    const [whole, fracRaw = ''] = value.split('.');
+    const frac = (fracRaw + '00000000').slice(0, 8);
+    return BigInt(whole || '0') * heartsPerHex + BigInt(frac || '0');
+  };
 
   it('stakeCount=0 returns empty positions with partial status and warnings', async () => {
     mockReadContract.mockReset();
@@ -245,6 +251,67 @@ describe('hex stake service native contract reads', () => {
     const dto = await getHexStakeDashboard(testWalletAddress, 369);
     expect(dto.positions[0].yieldHex).toBe('0');
     expect(dto.positions[0].warnings.some((w) => w.includes('dailyData missing for day'))).toBe(false);
+  });
+
+
+  it('locks full native lifecycle yield/status/summary invariants in one deterministic fixture', async () => {
+    mockReadContract.mockReset();
+    const dayRows = Array.from({ length: 35 }, () => [100000000n, 1000000000000n, 0n]);
+
+    mockReadContract
+      .mockResolvedValueOnce(5n)
+      .mockResolvedValueOnce(105n)
+      .mockResolvedValueOnce([11n, 100000000n, 1000000000000n, 106n, 5n, 0n, false])
+      .mockResolvedValueOnce([12n, 100000000n, 1000000000000n, 100n, 10n, 0n, false])
+      .mockResolvedValueOnce([13n, 100000000n, 1000000000000n, 90n, 10n, 0n, false])
+      .mockResolvedValueOnce([14n, 100000000n, 1000000000000n, 80n, 20n, 95n, false])
+      .mockResolvedValueOnce([15n, 100000000n, 1000000000000n, 70n, 15n, 0n, true])
+      .mockResolvedValueOnce(dayRows);
+
+    const dto = await getHexStakeDashboard(testWalletAddress, 369);
+    expect(dto.positions).toHaveLength(5);
+
+    const pending = dto.positions.find((position) => position.stakeStatus === 'pending');
+    const active = dto.positions.find((position) => position.stakeStatus === 'active');
+    const overdue = dto.positions.find((position) => position.stakeStatus === 'overdue');
+    const ended = dto.positions.find((position) => position.stakeStatus === 'ended');
+
+    expect(pending).toBeDefined();
+    expect(active).toBeDefined();
+    expect(overdue).toBeDefined();
+    expect(ended).toBeDefined();
+
+    expect(pending!.stakeStatus).toBe('pending');
+    expect(pending!.yieldHex).toBe('0');
+    expect(pending!.warnings.some((w) => w.includes('Pending stake has no realized yield'))).toBe(true);
+    expect(pending!.provenance.notes?.some((n) => n.includes('yield.pending=no-realized-yield'))).toBe(true);
+
+    expect(active!.stakeStatus).toBe('active');
+    expect(active!.yieldHex).toBe('5');
+
+    expect(overdue!.stakeStatus).toBe('overdue');
+    expect(overdue!.yieldHex).toBe('10');
+
+    expect(ended!.stakeStatus).toBe('ended');
+    expect(ended!.unlockedDay).toBe(95);
+    expect(ended!.endedDaysAgo).toBe(10);
+    expect(ended!.yieldHex).toBe('15');
+
+    expect(dto.summary.activeStakeCount).toBe(1);
+    expect(dto.summary.endedStakeCount).toBe(1);
+    const summedYieldHearts = dto.positions.reduce((acc, position) => acc + decimalHexToHearts(position.yieldHex ?? '0'), 0n);
+    expect(decimalHexToHearts(dto.summary.totalYieldHex)).toBe(summedYieldHearts);
+    expect(dto.summary.valuationStatus).toBe('unavailable');
+    expect(dto.summary.pnlStatus).toBe('unavailable');
+
+    for (const position of dto.positions) {
+      expect(position.pricing.status).toBe('unavailable');
+      expect(position.valuation.status).toBe('unavailable');
+      expect(position.pnl.status).toBe('unavailable');
+    }
+
+    const dailyDataRangeCall = mockReadContract.mock.calls.find((call) => call[0]?.functionName === 'dailyDataRange');
+    expect(dailyDataRangeCall?.[0]?.args).toEqual([70n, 105n]);
   });
 
   it('active stake uses completed in-term days only', async () => {

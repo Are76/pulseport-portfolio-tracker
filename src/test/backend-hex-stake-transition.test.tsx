@@ -60,7 +60,7 @@ describe('BackendHexStakeTransitionPanel', () => {
     expect(screen.getByText(/backend hex stakes unavailable: Request failed/i)).toBeInTheDocument();
   });
 
-  it('renders success state and native position list including active/pending/overdue', () => {
+  it('renders success state and native position list including pending/active/overdue/ended lifecycle states', () => {
     render(
       <BackendHexStakeTransitionPanel
         backendWalletAddress={walletAddress}
@@ -80,8 +80,9 @@ describe('BackendHexStakeTransitionPanel', () => {
               { stakeId: '1', stakeSource: 'native', stakeStatus: 'active', chainId: 369, assetId: 'erc20:369:hex', contractAddress: '0xhex', lockedDay: 100, stakedDays: 555, unlockedDay: null, principalHex: '1000', stakeShares: '1000000000000', tShares: '1', yieldHex: null, bpdYield: null, bpdYieldStatus: 'unknown', pricing: { status: 'unavailable', priceUsd: null, source: null, observedAt: null }, valuation: { status: 'unavailable', valueUsd: null }, pnl: { status: 'unavailable', realizedUsd: null, unrealizedUsd: null }, warnings: [], provenance: { source: 'test', observedAt: '2026-05-24T00:00:00Z' } },
               { stakeId: '2', stakeSource: 'native', stakeStatus: 'pending', chainId: 369, assetId: 'erc20:369:hex', contractAddress: '0xhex', lockedDay: 200, stakedDays: 365, unlockedDay: null, principalHex: '2000', stakeShares: '2000000000000', tShares: '2', yieldHex: null, bpdYield: null, bpdYieldStatus: 'unknown', pricing: { status: 'unavailable', priceUsd: null, source: null, observedAt: null }, valuation: { status: 'unavailable', valueUsd: null }, pnl: { status: 'unavailable', realizedUsd: null, unrealizedUsd: null }, warnings: [], provenance: { source: 'test', observedAt: '2026-05-24T00:00:00Z' } },
               { stakeId: '3', stakeSource: 'native', stakeStatus: 'overdue', chainId: 369, assetId: 'erc20:369:hex', contractAddress: '0xhex', lockedDay: 1, stakedDays: 1, unlockedDay: null, principalHex: '3000', stakeShares: '3000000000000', tShares: '3', yieldHex: null, bpdYield: null, bpdYieldStatus: 'unknown', pricing: { status: 'unavailable', priceUsd: null, source: null, observedAt: null }, valuation: { status: 'unavailable', valueUsd: null }, pnl: { status: 'unavailable', realizedUsd: null, unrealizedUsd: null }, warnings: [], provenance: { source: 'test', observedAt: '2026-05-24T00:00:00Z' } },
+              { stakeId: '4', stakeSource: 'native', stakeStatus: 'ended', chainId: 369, assetId: 'erc20:369:hex', contractAddress: '0xhex', lockedDay: 80, stakedDays: 20, unlockedDay: 95, principalHex: '4000', stakeShares: '4000000000000', tShares: '4', yieldHex: null, bpdYield: null, bpdYieldStatus: 'unknown', pricing: { status: 'unavailable', priceUsd: null, source: null, observedAt: null }, valuation: { status: 'unavailable', valueUsd: null }, pnl: { status: 'unavailable', realizedUsd: null, unrealizedUsd: null }, warnings: [], provenance: { source: 'test', observedAt: '2026-05-24T00:00:00Z' } },
             ],
-            summary: { activeStakeCount: 1, endedStakeCount: 0, unsupportedStakeCount: 0, totalPrincipalHex: '6000', totalYieldHex: '0', totalTShares: '6', valuationStatus: 'unavailable', pnlStatus: 'unavailable', warnings: ['partial native read'] },
+            summary: { activeStakeCount: 1, endedStakeCount: 1, unsupportedStakeCount: 0, totalPrincipalHex: '10000', totalYieldHex: '0', totalTShares: '10', valuationStatus: 'unavailable', pnlStatus: 'unavailable', warnings: ['partial native read'] },
             tShareMetrics: { status: 'unknown', shareRate: null, tSharePriceHex: null, tSharePriceUsd: null, activeTShares: '6', averagePaidUsdPerTShare: null, warnings: [] },
             provenance: { source: 'test', observedAt: '2026-05-24T00:00:00Z' },
           },
@@ -93,11 +94,14 @@ describe('BackendHexStakeTransitionPanel', () => {
     expect(screen.getByText(/status: available/i)).toBeInTheDocument();
     expect(screen.getByText(/warnings: partial native read/i)).toBeInTheDocument();
     expect(screen.getByText(/activeStakeCount: 1/i)).toBeInTheDocument();
-    expect(screen.getByText(/totalPrincipalHex: 6000/i)).toBeInTheDocument();
-    expect(screen.getByText(/totalTShares: 6/i)).toBeInTheDocument();
+    expect(screen.getByText(/endedStakeCount: 1/i)).toBeInTheDocument();
+    expect(screen.getByText(/totalPrincipalHex: 10000/i)).toBeInTheDocument();
+    expect(screen.getByText(/totalTShares: 10/i)).toBeInTheDocument();
     expect(screen.getByText(/status=active/i)).toBeInTheDocument();
     expect(screen.getByText(/status=pending/i)).toBeInTheDocument();
     expect(screen.getByText(/status=overdue/i)).toBeInTheDocument();
+    expect(screen.getByText(/status=ended/i)).toBeInTheDocument();
+    expect(screen.getByText(/unlockedDay=95/i)).toBeInTheDocument();
     expect(screen.getByText(/pricing unavailable/i)).toBeInTheDocument();
     expect(screen.getByText(/valuation unavailable/i)).toBeInTheDocument();
     expect(screen.getByText(/yield not implemented/i)).toBeInTheDocument();
