@@ -84,9 +84,16 @@ function rawPriceUsdAtomic(value: string | bigint | null | undefined): string {
   return 'undefined:';
 }
 
+function canonicalMetadataValue(value: unknown): string {
+  if (typeof value === 'string') return `string:${value}`;
+  if (value === null) return 'null:';
+  if (value === undefined) return 'undefined:';
+  return `${typeof value}:${String(value)}`;
+}
+
 function canonicalMetadata(metadata: Record<string, string> | null | undefined): string {
   if (!metadata || typeof metadata !== 'object') return '';
-  return JSON.stringify(Object.keys(metadata).sort().map(key => [key, metadata[key] ?? '']));
+  return JSON.stringify(Object.keys(metadata).sort().map(key => [key, canonicalMetadataValue((metadata as Record<string, unknown>)[key])]));
 }
 
 function deterministicRequestSort(a: PriceProviderAssetRequest, b: PriceProviderAssetRequest): number {
