@@ -6,6 +6,7 @@ import type {
   PriceProviderObservationBatch,
   PriceProviderUnsupportedAsset,
 } from './price-provider-adapter';
+import type { UpstreamPriceObservationInput } from './upstream-price-observation-normalizer';
 
 export type ProviderExecutionStatus = 'success' | 'partial' | 'failed';
 
@@ -52,13 +53,35 @@ export type PriceProviderOrchestrator = {
   execute(requests: PriceProviderAssetRequest[]): Promise<PriceProviderOrchestrationResult>;
 };
 
+function compareStrings(a: string, b: string): number {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+
 function deterministicRequestSort(a: PriceProviderAssetRequest, b: PriceProviderAssetRequest): number {
   if (a.chainId !== b.chainId) return a.chainId - b.chainId;
-  return a.assetId.localeCompare(b.assetId);
+  return compareStrings(a.assetId, b.assetId);
 }
 
 function deterministicProviderSort(a: PriceProviderAdapter, b: PriceProviderAdapter): number {
-  return a.metadata.id.localeCompare(b.metadata.id);
+  return compareStrings(a.metadata.id, b.metadata.id);
+}
+
+function deterministicObservationSort(a: UpstreamPriceObservationInput, b: UpstreamPriceObservationInput): number {
+  if (a.chainId !== b.chainId) return a.chainId - b.chainId;
+  const assetCompare = compareStrings(a.assetId, b.assetId);
+  if (assetCompare !== 0) return assetCompare;
+  const providerAssetCompare = compareStrings(a.providerAssetId, b.providerAssetId);
+  if (providerAssetCompare !== 0) return providerAssetCompare;
+  return compareStrings(a.providerObservationId, b.providerObservationId);
+}
+
+function deterministicUnsupportedAssetSort(a: PriceProviderUnsupportedAsset, b: PriceProviderUnsupportedAsset): number {
+  if (a.chainId !== b.chainId) return a.chainId - b.chainId;
+  const assetCompare = compareStrings(a.assetId, b.assetId);
+  if (assetCompare !== 0) return assetCompare;
+  return compareStrings(a.reason, b.reason);
 }
 
 function summarizeIngestion(results: PriceObservationIngestionResult[]): ProviderObservationIngestionSummary {
@@ -75,10 +98,14 @@ function summarizeIngestion(results: PriceObservationIngestionResult[]): Provide
   return summary;
 }
 
-function cloneBatch(batch: PriceProviderObservationBatch): PriceProviderObservationBatch {
+function cloneRequests(requests: PriceProviderAssetRequest[]): PriceProviderAssetRequest[] {
+  return requests.map(request => ({ assetId: request.assetId, chainId: request.chainId }));
+}
+
+function normalizeBatch(batch: PriceProviderObservationBatch): PriceProviderObservationBatch {
   return {
-    observations: [...batch.observations],
-    unsupportedAssets: [...batch.unsupportedAssets],
+    observations: [...batch.observations].sort(deterministicObservationSort),
+    unsupportedAssets: [...batch.unsupportedAssets].sort(deterministicUnsupportedAssetSort),
   };
 }
 
@@ -90,7 +117,7 @@ export function createPriceProviderOrchestrator(
 
   return {
     async execute(requests: PriceProviderAssetRequest[]): Promise<PriceProviderOrchestrationResult> {
-      const deterministicRequests = [...requests].sort(deterministicRequestSort);
+      const deterministicRequests = cloneRequests(requests).sort(deterministicRequestSort);
       const providerExecutions: ProviderExecutionSummary[] = [];
       const allIngestionResults: PriceObservationIngestionResult[] = [];
       const unsupportedAssets: Array<PriceProviderUnsupportedAsset & { providerId: string }> = [];
@@ -101,7 +128,8 @@ export function createPriceProviderOrchestrator(
         let batch: PriceProviderObservationBatch;
 
         try {
-          batch = cloneBatch(await provider.getPriceObservations(deterministicRequests));
+          const providerRequests = cloneRequests(deterministicRequests);
+          batch = normalizeBatch(await provider.getPriceObservations(providerRequests));
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Unknown provider execution failure.';
           const failure = `Provider execution failure: ${message}`;
@@ -109,7 +137,7 @@ export function createPriceProviderOrchestrator(
           providerExecutions.push({
             provider: provider.metadata,
             status: 'failed',
-            requestedAssets: [...deterministicRequests],
+            requestedAssets: cloneRequests(deterministicRequests),
             observationCount: 0,
             unsupportedAssets: [],
             ingestion: { status: 'failed', total: 0, success: 0, degraded: 0, failed: 0 },
@@ -125,11 +153,12 @@ export function createPriceProviderOrchestrator(
         const ingestionSummary = summarizeIngestion(ingestionResults);
         const providerWarnings = ingestionResults.flatMap(result => result.warnings).map(message => `Ingestion warning: ${message}`);
         providerWarnings.push(...batch.unsupportedAssets.map(asset => `Unsupported asset ${asset.assetId} on chain ${asset.chainId}: ${asset.reason}`));
-        providerWarnings.sort((a, b) => a.localeCompare(b));
+        providerWarnings.sort(compareStrings);
 
         const providerErrors = ingestionResults
           .filter(result => result.error !== null)
-          .map(result => `Ingestion error: ${result.error as string}`);
+          .map(result => `Ingestion error: ${result.error as string}`)
+          .sort(compareStrings);
 
         warnings.push(...providerWarnings.map(message => ({ providerId: provider.metadata.id, message })));
         errors.push(...providerErrors.map(message => ({ providerId: provider.metadata.id, message })));
@@ -142,7 +171,7 @@ export function createPriceProviderOrchestrator(
         providerExecutions.push({
           provider: provider.metadata,
           status,
-          requestedAssets: [...deterministicRequests],
+          requestedAssets: cloneRequests(deterministicRequests),
           observationCount: batch.observations.length,
           unsupportedAssets: [...batch.unsupportedAssets],
           ingestion: ingestionSummary,
@@ -152,20 +181,27 @@ export function createPriceProviderOrchestrator(
       }
 
       unsupportedAssets.sort((a, b) => {
-        const providerCompare = a.providerId.localeCompare(b.providerId);
+        const providerCompare = compareStrings(a.providerId, b.providerId);
         if (providerCompare !== 0) return providerCompare;
-        if (a.chainId !== b.chainId) return a.chainId - b.chainId;
-        return a.assetId.localeCompare(b.assetId);
+        return deterministicUnsupportedAssetSort(a, b);
       });
 
       return {
         providerOrder: providersInOrder.map(provider => provider.metadata.id),
-        requestedAssets: deterministicRequests,
+        requestedAssets: cloneRequests(deterministicRequests),
         providerExecutions,
         ingestionResults: allIngestionResults,
         unsupportedAssets,
-        warnings: warnings.sort((a, b) => `${a.providerId}:${a.message}`.localeCompare(`${b.providerId}:${b.message}`)),
-        errors: errors.sort((a, b) => `${a.providerId}:${a.message}`.localeCompare(`${b.providerId}:${b.message}`)),
+        warnings: warnings.sort((a, b) => {
+          const providerCompare = compareStrings(a.providerId, b.providerId);
+          if (providerCompare !== 0) return providerCompare;
+          return compareStrings(a.message, b.message);
+        }),
+        errors: errors.sort((a, b) => {
+          const providerCompare = compareStrings(a.providerId, b.providerId);
+          if (providerCompare !== 0) return providerCompare;
+          return compareStrings(a.message, b.message);
+        }),
       };
     },
   };
