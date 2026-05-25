@@ -21,6 +21,12 @@ const testWalletAddress = '0x0000000000000000000000000000000000000001';
 
 describe('hex stake service native contract reads', () => {
   const walletAddress = testWalletAddress;
+  const heartsPerHex = 100000000n;
+  const decimalHexToHearts = (value: string): bigint => {
+    const [whole, fracRaw = ''] = value.split('.');
+    const frac = (fracRaw + '00000000').slice(0, 8);
+    return BigInt(whole || '0') * heartsPerHex + BigInt(frac || '0');
+  };
 
   it('stakeCount=0 returns empty positions with partial status and warnings', async () => {
     mockReadContract.mockReset();
@@ -293,8 +299,8 @@ describe('hex stake service native contract reads', () => {
 
     expect(dto.summary.activeStakeCount).toBe(1);
     expect(dto.summary.endedStakeCount).toBe(1);
-    const summedYield = dto.positions.reduce((acc, position) => acc + Number(position.yieldHex ?? '0'), 0);
-    expect(Number(dto.summary.totalYieldHex)).toBe(summedYield);
+    const summedYieldHearts = dto.positions.reduce((acc, position) => acc + decimalHexToHearts(position.yieldHex ?? '0'), 0n);
+    expect(decimalHexToHearts(dto.summary.totalYieldHex)).toBe(summedYieldHearts);
     expect(dto.summary.valuationStatus).toBe('unavailable');
     expect(dto.summary.pnlStatus).toBe('unavailable');
 

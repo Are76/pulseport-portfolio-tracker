@@ -94,6 +94,7 @@ describe('BackendHexStakeTransitionPanel', () => {
     expect(screen.getByText(/status: available/i)).toBeInTheDocument();
     expect(screen.getByText(/warnings: partial native read/i)).toBeInTheDocument();
     expect(screen.getByText(/activeStakeCount: 1/i)).toBeInTheDocument();
+    expect(screen.getByText(/endedStakeCount: 1/i)).toBeInTheDocument();
     expect(screen.getByText(/totalPrincipalHex: 10000/i)).toBeInTheDocument();
     expect(screen.getByText(/totalTShares: 10/i)).toBeInTheDocument();
     expect(screen.getByText(/status=active/i)).toBeInTheDocument();
