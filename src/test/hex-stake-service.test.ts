@@ -256,7 +256,7 @@ describe('hex stake service native contract reads', () => {
 
   it('locks full native lifecycle yield/status/summary invariants in one deterministic fixture', async () => {
     mockReadContract.mockReset();
-    const dayRows = Array.from({ length: 25 }, () => [100000000n, 1000000000000n, 0n]);
+    const dayRows = Array.from({ length: 35 }, () => [100000000n, 1000000000000n, 0n]);
 
     mockReadContract
       .mockResolvedValueOnce(5n)
@@ -287,15 +287,15 @@ describe('hex stake service native contract reads', () => {
     expect(pending!.provenance.notes?.some((n) => n.includes('yield.pending=no-realized-yield'))).toBe(true);
 
     expect(active!.stakeStatus).toBe('active');
-    expect(active!.yieldHex).toMatch(/^\d+/);
+    expect(active!.yieldHex).toBe('5');
 
     expect(overdue!.stakeStatus).toBe('overdue');
-    expect(overdue!.yieldHex).toMatch(/^\d+/);
+    expect(overdue!.yieldHex).toBe('10');
 
     expect(ended!.stakeStatus).toBe('ended');
     expect(ended!.unlockedDay).toBe(95);
     expect(ended!.endedDaysAgo).toBe(10);
-    expect(ended!.yieldHex).toMatch(/^\d+/);
+    expect(ended!.yieldHex).toBe('15');
 
     expect(dto.summary.activeStakeCount).toBe(1);
     expect(dto.summary.endedStakeCount).toBe(1);
