@@ -101,7 +101,7 @@ describe('BackendHexStakeTransitionPanel', () => {
     expect(screen.getByText(/pricing unavailable/i)).toBeInTheDocument();
     expect(screen.getByText(/valuation unavailable/i)).toBeInTheDocument();
     expect(screen.getByText(/yield not implemented/i)).toBeInTheDocument();
-    expect(screen.getByText(/ended stakes not implemented/i)).toBeInTheDocument();
+    expect(screen.getByText(/ended stakes included for native hex/i)).toBeInTheDocument();
   });
 
 

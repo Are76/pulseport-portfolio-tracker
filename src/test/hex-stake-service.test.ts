@@ -261,4 +261,22 @@ describe('hex stake service native contract reads', () => {
     expect(dto.summary.totalYieldHex).toBe('5');
   });
 
+  it('classifies unlocked native stake as ended and stops yield at unlockedDay', async () => {
+    mockReadContract.mockReset();
+    mockReadContract
+      .mockResolvedValueOnce(1n)
+      .mockResolvedValueOnce(110n)
+      .mockResolvedValueOnce([1n, 100000000n, 1000000000000n, 90n, 20n, 100n, false])
+      .mockResolvedValueOnce(Array.from({ length: 10 }, () => [100000000n, 1000000000000n, 0n]));
+
+    const dto = await getHexStakeDashboard(testWalletAddress, 369);
+    expect(dto.positions[0].stakeStatus).toBe('ended');
+    expect(dto.positions[0].unlockedDay).toBe(100);
+    expect(dto.positions[0].endedDaysAgo).toBe(10);
+    expect(dto.positions[0].yieldHex).toBe('0');
+    expect(dto.positions[0].warnings.some((w) => w.includes('capped at unlockedDay'))).toBe(true);
+    expect(dto.summary.endedStakeCount).toBe(1);
+    expect(dto.summary.activeStakeCount).toBe(0);
+  });
+
 });

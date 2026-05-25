@@ -33,18 +33,19 @@ export function BackendHexStakeTransitionPanel({
             <div>status: {backendHexStakeResponse.data.status}</div>
             <div>warnings: {backendHexStakeResponse.data.warnings.length ? backendHexStakeResponse.data.warnings.join(' • ') : 'none'}</div>
             <div>activeStakeCount: {backendHexStakeResponse.data.summary.activeStakeCount}</div>
+            <div>endedStakeCount: {backendHexStakeResponse.data.summary.endedStakeCount}</div>
             <div>totalPrincipalHex: {backendHexStakeResponse.data.summary.totalPrincipalHex}</div>
             <div>totalTShares: {backendHexStakeResponse.data.summary.totalTShares}</div>
             <div>pricing unavailable</div>
             <div>valuation unavailable</div>
             <div>yield not implemented</div>
-            <div>ended stakes not implemented</div>
+            <div>ended stakes included for native HEX</div>
             <div style={{ marginTop: 4, fontWeight: 600 }}>Native positions</div>
             {nativePositions.length > 0 ? (
               <ul style={{ margin: 0, paddingLeft: 18 }}>
                 {nativePositions.map((position) => (
                   <li key={position.stakeId}>
-                    status={position.stakeStatus}, principalHex={position.principalHex ?? 'n/a'}, tShares={position.tShares ?? 'n/a'}, lockedDay={position.lockedDay ?? 'n/a'}, stakedDays={position.stakedDays ?? 'n/a'}
+                    status={position.stakeStatus}, principalHex={position.principalHex ?? 'n/a'}, tShares={position.tShares ?? 'n/a'}, lockedDay={position.lockedDay ?? 'n/a'}, stakedDays={position.stakedDays ?? 'n/a'}, unlockedDay={position.unlockedDay ?? 'n/a'}
                   </li>
                 ))}
               </ul>
