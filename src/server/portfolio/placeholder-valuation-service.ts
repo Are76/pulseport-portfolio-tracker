@@ -71,8 +71,13 @@ function parseChainIdFromAssetId(assetId: string): number | null {
     return null;
   }
 
-  const parsed = Number.parseInt(parts[1] ?? '', 10);
-  if (!Number.isInteger(parsed) || parsed < 0) {
+  const chainIdSegment = parts[1] ?? '';
+  if (!/^\d+$/.test(chainIdSegment)) {
+    return null;
+  }
+
+  const parsed = Number(chainIdSegment);
+  if (!Number.isSafeInteger(parsed) || parsed < 0) {
     return null;
   }
 

@@ -203,6 +203,19 @@ describe('placeholder valuation service contracts', () => {
     expect(valuation.observation.chainId).toBe(369);
   });
 
+
+
+  it('malformed chainId segment like erc20:369abc does not preserve 369 and uses safe fallback warnings', async () => {
+    const service = new PlaceholderValuationService(makeProvider([]));
+    const [valuation] = await service.valueAssets([{ assetId: 'erc20:369abc:0xdeadbeef', quantity: '3' }]);
+
+    expect(valuation.assetId).toBe('erc20:369abc:0xdeadbeef');
+    expect(valuation.chainId).toBe(-1);
+    expect(valuation.observation.chainId).toBe(-1);
+    expect(valuation.warnings).toContain('Unable to parse chainId from assetId; using safe unavailable chainId fallback.');
+    expect(valuation.provenance.notes).toContain('chainId parse failed from assetId; safe unavailable fallback used instead of assuming 369.');
+  });
+
   it('malformed assetId fallback never silently claims 369 and emits parse warnings', async () => {
     const service = new PlaceholderValuationService(makeProvider([]));
     const [valuation] = await service.valueAssets([{ assetId: 'bad-asset-id', quantity: '3' }]);
