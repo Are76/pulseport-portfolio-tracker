@@ -142,6 +142,39 @@ describe('price provider orchestrator', () => {
     expect(forward.unsupportedAssets).toEqual(reversed.unsupportedAssets);
   });
 
+
+
+  it('uses metadata snapshots so provider self-mutation cannot alter attribution', async () => {
+    const repository = createInMemoryPriceObservationRepository();
+    const ingestion = createPriceObservationIngestionService(repository);
+
+    const mutatingMetadataProvider = {
+      metadata: { id: 'provider-original', displayName: 'Original', source: 'fixture' },
+      async getPriceObservations() {
+        const mutableMetadata = this.metadata as { id: string; displayName: string; source: string };
+        mutableMetadata.id = 'provider-mutated';
+        mutableMetadata.displayName = 'Mutated';
+        mutableMetadata.source = 'mutated-source';
+        return {
+          observations: [],
+          unsupportedAssets: [{ assetId: 'erc20:369:0xaaa', chainId: 369, reason: 'unsupported' }],
+        };
+      },
+    } satisfies PriceProviderAdapter;
+
+    const orchestrator = createPriceProviderOrchestrator([mutatingMetadataProvider], ingestion);
+    const result = await orchestrator.execute([{ assetId: 'erc20:369:0xaaa', chainId: 369 }]);
+
+    expect(result.providerOrder).toEqual(['provider-original']);
+    expect(result.providerExecutions[0].provider).toEqual({
+      id: 'provider-original',
+      displayName: 'Original',
+      source: 'fixture',
+    });
+    expect(result.warnings[0].providerId).toBe('provider-original');
+    expect(result.unsupportedAssets[0].providerId).toBe('provider-original');
+  });
+
   it('does not compute valuation logic and only handles upstream observations', async () => {
     const repository = createInMemoryPriceObservationRepository();
     const ingestion = createPriceObservationIngestionService(repository);
@@ -159,6 +192,7 @@ describe('price provider orchestrator', () => {
       expect(repository.getObservationsForAsset('erc20:369:0xabc', 369)).toHaveLength(1);
       expect((result as unknown as Record<string, unknown>).portfolioValueUsdAtomic).toBeUndefined();
       expect((result as unknown as Record<string, unknown>).valuations).toBeUndefined();
+      expect(valuationSpy).not.toHaveBeenCalled();
     } finally {
       valuationSpy.mockRestore();
     }

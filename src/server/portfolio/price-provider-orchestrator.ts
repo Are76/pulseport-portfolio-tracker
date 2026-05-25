@@ -64,8 +64,16 @@ function deterministicRequestSort(a: PriceProviderAssetRequest, b: PriceProvider
   return compareStrings(a.assetId, b.assetId);
 }
 
-function deterministicProviderSort(a: PriceProviderAdapter, b: PriceProviderAdapter): number {
-  return compareStrings(a.metadata.id, b.metadata.id);
+function deterministicProviderSort(a: PriceProviderMetadata, b: PriceProviderMetadata): number {
+  return compareStrings(a.id, b.id);
+}
+
+function snapshotProviderMetadata(metadata: PriceProviderMetadata): PriceProviderMetadata {
+  return {
+    id: metadata.id,
+    displayName: metadata.displayName,
+    source: metadata.source,
+  };
 }
 
 function deterministicObservationSort(a: UpstreamPriceObservationInput, b: UpstreamPriceObservationInput): number {
@@ -113,7 +121,9 @@ export function createPriceProviderOrchestrator(
   providers: PriceProviderAdapter[],
   ingestionService: PriceObservationIngestionService,
 ): PriceProviderOrchestrator {
-  const providersInOrder = [...providers].sort(deterministicProviderSort);
+  const providersInOrder = providers
+    .map(provider => ({ provider, metadata: snapshotProviderMetadata(provider.metadata) }))
+    .sort((a, b) => deterministicProviderSort(a.metadata, b.metadata));
 
   return {
     async execute(requests: PriceProviderAssetRequest[]): Promise<PriceProviderOrchestrationResult> {
@@ -124,7 +134,8 @@ export function createPriceProviderOrchestrator(
       const warnings: ProviderOrchestrationWarning[] = [];
       const errors: ProviderOrchestrationError[] = [];
 
-      for (const provider of providersInOrder) {
+      for (const providerEntry of providersInOrder) {
+        const { provider, metadata } = providerEntry;
         let batch: PriceProviderObservationBatch;
 
         try {
@@ -133,9 +144,9 @@ export function createPriceProviderOrchestrator(
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Unknown provider execution failure.';
           const failure = `Provider execution failure: ${message}`;
-          errors.push({ providerId: provider.metadata.id, message: failure });
+          errors.push({ providerId: metadata.id, message: failure });
           providerExecutions.push({
-            provider: provider.metadata,
+            provider: metadata,
             status: 'failed',
             requestedAssets: cloneRequests(deterministicRequests),
             observationCount: 0,
@@ -160,16 +171,16 @@ export function createPriceProviderOrchestrator(
           .map(result => `Ingestion error: ${result.error as string}`)
           .sort(compareStrings);
 
-        warnings.push(...providerWarnings.map(message => ({ providerId: provider.metadata.id, message })));
-        errors.push(...providerErrors.map(message => ({ providerId: provider.metadata.id, message })));
+        warnings.push(...providerWarnings.map(message => ({ providerId: metadata.id, message })));
+        errors.push(...providerErrors.map(message => ({ providerId: metadata.id, message })));
 
         for (const asset of batch.unsupportedAssets) {
-          unsupportedAssets.push({ ...asset, providerId: provider.metadata.id });
+          unsupportedAssets.push({ ...asset, providerId: metadata.id });
         }
 
         const status: ProviderExecutionStatus = providerErrors.length > 0 ? 'failed' : providerWarnings.length > 0 ? 'partial' : 'success';
         providerExecutions.push({
-          provider: provider.metadata,
+          provider: metadata,
           status,
           requestedAssets: cloneRequests(deterministicRequests),
           observationCount: batch.observations.length,
