@@ -45,4 +45,38 @@ describe('fetchPortfolioDashboard', () => {
       `/api/portfolio/dashboard?walletAddress=${encodeURIComponent(okResponse.data.walletAddress)}&chainId=${encodeURIComponent(String(chainId))}`,
     );
   });
+
+
+  it('does not compute valuation client-side and preserves backend valuation fields', async () => {
+    const responseWithValuation = {
+      ...okResponse,
+      data: {
+        ...okResponse.data,
+        balances: [
+          {
+            assetId: 'native:369:pls',
+            chainId: 369,
+            address: 'native',
+            symbol: 'PLS',
+            quantity: '10',
+            pricing: { status: 'unavailable', priceUsd: null },
+            valuation: { status: 'unavailable', valueUsd: null },
+            warnings: ['backend-owned valuation'],
+          },
+        ],
+      },
+    };
+
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+      json: async () => responseWithValuation,
+    } as Response);
+
+    const result = await fetchPortfolioDashboard({ walletAddress: okResponse.data.walletAddress });
+
+    if (!result.ok) {
+      throw new Error('Expected success response');
+    }
+    expect(result.data.balances[0]?.valuation.status).toBe('unavailable');
+    expect(result.data.balances[0]?.valuation.valueUsd).toBeNull();
+  });
 });
