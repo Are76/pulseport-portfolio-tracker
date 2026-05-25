@@ -56,7 +56,7 @@ describe('price observation ingestion service', () => {
     expect(persisted).toHaveLength(1);
   });
 
-  it('returns deterministic batch ordering matching input ordering', () => {
+  it('sorts batch by deterministic provider observation identity keys', () => {
     const repository = createInMemoryPriceObservationRepository();
     const service = createPriceObservationIngestionService(repository);
 
@@ -68,8 +68,38 @@ describe('price observation ingestion service', () => {
 
     const results = service.ingestPriceObservations(inputs);
 
-    expect(results.map(result => result.provenance.providerObservationId)).toEqual(['remote-b', 'remote-a', 'remote-c']);
+    expect(results.map(result => result.provenance.providerObservationId)).toEqual(['remote-a', 'remote-b', 'remote-c']);
     expect(results.every(result => result.status === 'success')).toBe(true);
+  });
+
+  it('sorts duplicate providerObservationId observations deterministically using payload tie-breakers', () => {
+    const repository = createInMemoryPriceObservationRepository();
+    const service = createPriceObservationIngestionService(repository);
+
+    const duplicateA = makeInput({ providerObservationId: 'dup', metadata: { b: '2', a: '1' }, confidenceBps: null, priceUsdAtomic: '00123' });
+    const duplicateB = makeInput({ providerObservationId: 'dup', metadata: { a: '1', b: '3' }, confidenceBps: 10, priceUsdAtomic: '123' });
+
+    const results = service.ingestPriceObservations([duplicateB, duplicateA]);
+
+    expect(results.map(r => r.provenance.metadata.b)).toEqual(['2', '3']);
+    expect(results.every(result => result.status === 'success')).toBe(true);
+  });
+
+  it('produces identical orchestration results when duplicate observations are reversed', () => {
+    const forwardRepository = createInMemoryPriceObservationRepository();
+    const reverseRepository = createInMemoryPriceObservationRepository();
+    const forwardService = createPriceObservationIngestionService(forwardRepository);
+    const reverseService = createPriceObservationIngestionService(reverseRepository);
+
+    const duplicateA = makeInput({ providerObservationId: 'dup-order', metadata: { zone: 'a' }, ingestedAt: '2026-05-25T00:00:01.000Z' });
+    const duplicateB = makeInput({ providerObservationId: 'dup-order', metadata: { zone: 'b' }, ingestedAt: '2026-05-25T00:00:02.000Z' });
+
+    const forward = forwardService.ingestPriceObservations([duplicateA, duplicateB]);
+    const reverse = reverseService.ingestPriceObservations([duplicateB, duplicateA]);
+
+    expect(forward).toEqual(reverse);
+    expect(forwardRepository.getObservationsForAsset(duplicateA.assetId, duplicateA.chainId))
+      .toEqual(reverseRepository.getObservationsForAsset(duplicateA.assetId, duplicateA.chainId));
   });
 
   it('fails closed for malformed critical fields and does not persist', () => {
