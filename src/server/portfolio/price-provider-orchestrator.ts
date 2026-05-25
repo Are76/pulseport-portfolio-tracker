@@ -77,6 +77,13 @@ function canonicalPriceUsdAtomic(value: string | bigint | null | undefined): str
   }
 }
 
+function rawPriceUsdAtomic(value: string | bigint | null | undefined): string {
+  if (typeof value === 'bigint') return `bigint:${value.toString()}`;
+  if (typeof value === 'string') return `string:${value}`;
+  if (value === null) return 'null:';
+  return 'undefined:';
+}
+
 function canonicalMetadata(metadata: Record<string, string> | null | undefined): string {
   if (!metadata || typeof metadata !== 'object') return '';
   return JSON.stringify(Object.keys(metadata).sort().map(key => [key, metadata[key] ?? '']));
@@ -112,6 +119,7 @@ function deterministicObservationSort(a: UpstreamPriceObservationInput, b: Upstr
   const comparisons = [
     compareNullableNumber(a.chainId, b.chainId),
     compareStrings(a.assetId ?? '', b.assetId ?? ''),
+    compareStrings(a.provider ?? '', b.provider ?? ''),
     compareStrings(a.providerAssetId ?? '', b.providerAssetId ?? ''),
     compareStrings(a.providerObservationId ?? '', b.providerObservationId ?? ''),
     compareStrings(a.observedAt ?? '', b.observedAt ?? ''),
@@ -121,6 +129,7 @@ function deterministicObservationSort(a: UpstreamPriceObservationInput, b: Upstr
     compareNullableNumber(a.sourcePriority, b.sourcePriority),
     compareStrings(a.sourceFeed ?? '', b.sourceFeed ?? ''),
     compareStrings(canonicalPriceUsdAtomic(a.priceUsdAtomic), canonicalPriceUsdAtomic(b.priceUsdAtomic)),
+    compareStrings(rawPriceUsdAtomic(a.priceUsdAtomic), rawPriceUsdAtomic(b.priceUsdAtomic)),
     compareNullableNumber(a.confidenceBps, b.confidenceBps),
     compareStrings(canonicalMetadata(a.metadata), canonicalMetadata(b.metadata)),
   ];
@@ -170,6 +179,12 @@ export function createPriceProviderOrchestrator(
   const providersInOrder = providers
     .map(provider => ({ provider, metadata: snapshotProviderMetadata(provider.metadata) }))
     .sort((a, b) => deterministicProviderSort(a.metadata, b.metadata));
+
+  for (let index = 1; index < providersInOrder.length; index += 1) {
+    if (providersInOrder[index - 1].metadata.id === providersInOrder[index].metadata.id) {
+      throw new Error(`Duplicate price provider id: ${providersInOrder[index].metadata.id}`);
+    }
+  }
 
   return {
     async execute(requests: PriceProviderAssetRequest[]): Promise<PriceProviderOrchestrationResult> {
