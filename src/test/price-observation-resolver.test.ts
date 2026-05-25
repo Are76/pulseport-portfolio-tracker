@@ -84,6 +84,36 @@ describe('price observation resolver', () => {
     expect(result.warnings).toContain('source.priority must be a safe non-negative integer.');
   });
 
+  it('valid priority wins over worse valid priority when statuses are equal', () => {
+    const result = resolvePriceObservation(
+      'erc20:369:0xabc',
+      369,
+      [
+        makeObservation({ observationId: 'priority-50', source: { provider: 'rpc-a', kind: 'rpc', priority: 50, feed: 'a' } }),
+        makeObservation({ observationId: 'priority-10', source: { provider: 'rpc-b', kind: 'rpc', priority: 10, feed: 'b' } }),
+      ],
+      '2026-05-25T00:30:00.000Z',
+    );
+
+    expect(result.status).toBe('available');
+    expect(result.selected?.observationId).toBe('priority-10');
+  });
+
+  it('invalid priority sorts after valid priority', () => {
+    const result = resolvePriceObservation(
+      'erc20:369:0xabc',
+      369,
+      [
+        makeObservation({ observationId: 'invalid-priority', source: { provider: 'rpc-a', kind: 'rpc', priority: Number.NaN, feed: 'a' } }),
+        makeObservation({ observationId: 'valid-priority', source: { provider: 'rpc-b', kind: 'rpc', priority: 25, feed: 'b' } }),
+      ],
+      '2026-05-25T00:30:00.000Z',
+    );
+
+    expect(result.status).toBe('available');
+    expect(result.selected?.observationId).toBe('valid-priority');
+  });
+
   it('uses deterministic precedence ordering', () => {
     const result = resolvePriceObservation(
       'erc20:369:0xabc',
@@ -131,5 +161,37 @@ describe('price observation resolver', () => {
     expect(result.status).toBe('unavailable');
     expect(result.selected?.observationId).toBe('obs-a');
     expect(result.provenance.evaluatedObservationIds).toEqual(['obs-a', 'obs-b']);
+  });
+
+  it('deterministically orders malformed priority candidates by observationId tie-break', () => {
+    const result = resolvePriceObservation(
+      'erc20:369:0xabc',
+      369,
+      [
+        makeObservation({ observationId: 'z-id', source: { provider: 'rpc-a', kind: 'rpc', priority: Number.POSITIVE_INFINITY, feed: 'a' } }),
+        makeObservation({ observationId: 'a-id', source: { provider: 'rpc-b', kind: 'rpc', priority: Number.NaN, feed: 'b' } }),
+      ],
+      '2026-05-25T00:30:00.000Z',
+    );
+
+    expect(result.status).toBe('unavailable');
+    expect(result.selected?.observationId).toBe('a-id');
+    expect(result.provenance.evaluatedObservationIds).toEqual(['a-id', 'z-id']);
+  });
+
+  it('observationId tie-break is deterministic when all other ranks are equal', () => {
+    const result = resolvePriceObservation(
+      'erc20:369:0xabc',
+      369,
+      [
+        makeObservation({ observationId: 'obs-z', source: { provider: 'rpc-a', kind: 'rpc', priority: 10, feed: 'a' }, confidenceBps: 8500, observedAt: '2026-05-25T00:00:00.000Z' }),
+        makeObservation({ observationId: 'obs-a', source: { provider: 'rpc-b', kind: 'rpc', priority: 10, feed: 'b' }, confidenceBps: 8500, observedAt: '2026-05-25T00:00:00.000Z' }),
+      ],
+      '2026-05-25T00:30:00.000Z',
+    );
+
+    expect(result.status).toBe('available');
+    expect(result.selected?.observationId).toBe('obs-a');
+    expect(result.provenance.evaluatedObservationIds).toEqual(['obs-a', 'obs-z']);
   });
 });

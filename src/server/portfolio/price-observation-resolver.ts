@@ -42,6 +42,14 @@ function parseTimestampOrNull(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function normalizePriorityForRanking(priority: number): number {
+  if (!Number.isSafeInteger(priority) || priority < 0) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  return priority;
+}
+
 function evaluateCandidate(observation: PersistedPriceObservation, asOfMs: number): Candidate {
   const warnings: string[] = [];
   let malformed = false;
@@ -114,8 +122,10 @@ function compareCandidates(a: Candidate, b: Candidate): number {
     return statusRank[a.status] - statusRank[b.status];
   }
 
-  if (a.observation.source.priority !== b.observation.source.priority) {
-    return a.observation.source.priority - b.observation.source.priority;
+  const aPriority = normalizePriorityForRanking(a.observation.source.priority);
+  const bPriority = normalizePriorityForRanking(b.observation.source.priority);
+  if (aPriority !== bPriority) {
+    return aPriority - bPriority;
   }
 
   const aConfidence = a.confidenceBps ?? -1;
@@ -132,7 +142,11 @@ function compareCandidates(a: Candidate, b: Candidate): number {
     return bObservedAt - aObservedAt;
   }
 
-  return a.observation.observationId.localeCompare(b.observation.observationId);
+  if (a.observation.observationId === b.observation.observationId) {
+    return 0;
+  }
+
+  return a.observation.observationId < b.observation.observationId ? -1 : 1;
 }
 
 export function resolvePriceObservation(
