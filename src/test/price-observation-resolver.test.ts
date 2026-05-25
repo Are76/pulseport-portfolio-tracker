@@ -68,6 +68,18 @@ describe('price observation resolver', () => {
     expect(result.selected?.observationId).toBe('iso-no-ms');
   });
 
+  it('accepts valid leap day timestamp', () => {
+    const result = resolvePriceObservation(
+      'erc20:369:0xabc',
+      369,
+      [makeObservation({ observationId: 'leap-valid', observedAt: '2024-02-29T00:00:00Z', staleAfter: '2026-05-25T02:00:00Z', ingestedAt: '2024-02-29T00:01:00Z' })],
+      '2026-05-25T00:30:00Z',
+    );
+
+    expect(result.status).toBe('available');
+    expect(result.selected?.observationId).toBe('leap-valid');
+  });
+
   it('never substitutes chain identity across mismatched observations', () => {
     const mismatched = makeObservation({ observationId: 'bad-chain', assetId: 'erc20:943:0xabc', chainId: 369 });
     const result = resolvePriceObservation('erc20:943:0xabc', 369, [mismatched], '2026-05-25T00:30:00.000Z');
@@ -97,12 +109,63 @@ describe('price observation resolver', () => {
     expect(result.warnings).toContain('asOf timestamp is malformed.');
   });
 
+  it('fails closed when asOf is calendar-invalid ISO timestamp', () => {
+    const result = resolvePriceObservation(
+      'erc20:369:0xabc',
+      369,
+      [makeObservation({ observationId: 'candidate' })],
+      '2026-02-31T00:00:00Z',
+    );
+
+    expect(result.status).toBe('unavailable');
+    expect(result.selected).toBeNull();
+    expect(result.warnings).toContain('asOf timestamp is malformed.');
+  });
+
   it('rejects non-ISO timestamps for observation fields and degrades safely', () => {
     const result = resolvePriceObservation(
       'erc20:369:0xabc',
       369,
       [makeObservation({ observationId: 'bad-ts', observedAt: '2026/05/25 00:00:00', staleAfter: 'Mon, 25 May 2026 01:00:00 GMT', ingestedAt: '2026-05-25 00:01:00Z' })],
       '2026-05-25T00:30:00.000Z',
+    );
+
+    expect(result.status).toBe('unavailable');
+    expect(result.warnings).toContain('Malformed timestamps detected.');
+  });
+
+  it('rejects calendar-invalid ISO timestamps in observation fields and degrades safely', () => {
+    const result = resolvePriceObservation(
+      'erc20:369:0xabc',
+      369,
+      [
+        makeObservation({
+          observationId: 'invalid-calendar-observation',
+          observedAt: '2026-02-31T00:00:00Z',
+          staleAfter: '2026-05-25T01:00:00Z',
+          ingestedAt: '2026-05-25T00:01:00Z',
+        }),
+      ],
+      '2026-05-25T00:30:00Z',
+    );
+
+    expect(result.status).toBe('unavailable');
+    expect(result.warnings).toContain('Malformed timestamps detected.');
+  });
+
+  it('rejects non-leap-year february 29 in observation fields', () => {
+    const result = resolvePriceObservation(
+      'erc20:369:0xabc',
+      369,
+      [
+        makeObservation({
+          observationId: 'non-leap-invalid',
+          observedAt: '2025-02-29T00:00:00Z',
+          staleAfter: '2026-05-25T01:00:00Z',
+          ingestedAt: '2026-05-25T00:01:00Z',
+        }),
+      ],
+      '2026-05-25T00:30:00Z',
     );
 
     expect(result.status).toBe('unavailable');

@@ -38,13 +38,41 @@ function parseChainIdFromAssetId(assetId: string): number | null {
 }
 
 function parseTimestampOrNull(value: string): number | null {
-  const strictUtcIsoPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/;
-  if (!strictUtcIsoPattern.test(value)) {
+  const strictUtcIsoPattern = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{3}))?Z$/;
+  const match = strictUtcIsoPattern.exec(value);
+  if (!match) {
     return null;
   }
 
+  const [, yearRaw, monthRaw, dayRaw, hourRaw, minuteRaw, secondRaw, millisecondRaw] = match;
+
   const parsed = Date.parse(value);
-  return Number.isFinite(parsed) ? parsed : null;
+  if (!Number.isFinite(parsed)) {
+    return null;
+  }
+
+  const date = new Date(parsed);
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+  const day = Number(dayRaw);
+  const hour = Number(hourRaw);
+  const minute = Number(minuteRaw);
+  const second = Number(secondRaw);
+  const millisecond = millisecondRaw === undefined ? 0 : Number(millisecondRaw);
+
+  if (
+    date.getUTCFullYear() !== year
+    || date.getUTCMonth() + 1 !== month
+    || date.getUTCDate() !== day
+    || date.getUTCHours() !== hour
+    || date.getUTCMinutes() !== minute
+    || date.getUTCSeconds() !== second
+    || date.getUTCMilliseconds() !== millisecond
+  ) {
+    return null;
+  }
+
+  return parsed;
 }
 
 function normalizePriorityForRanking(priority: number): number {
