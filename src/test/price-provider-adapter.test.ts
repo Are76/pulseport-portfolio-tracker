@@ -119,4 +119,36 @@ describe('price provider adapter contract', () => {
     expect(result.observations[0].priceUsdAtomic).toBe('123450000');
     expect(result.observations[0].metadata.region).toBe('us-west-2');
   });
+
+  it('exposes frozen metadata and keeps provenance stable across mutation attempts', async () => {
+    const adapter = createDeterministicFixturePriceProvider([fixtureRecord]);
+
+    expect(Object.isFrozen(adapter.metadata)).toBe(true);
+
+    const mutableMetadata = adapter.metadata as unknown as { id: string; displayName: string; source: string };
+    expect(() => {
+      mutableMetadata.id = 'spoofed-provider-id';
+      mutableMetadata.displayName = 'Spoofed Name';
+      mutableMetadata.source = 'spoofed-source';
+    }).toThrow();
+
+    const first = await adapter.getPriceObservations([{ assetId: 'erc20:369:0xabc', chainId: 369 }]);
+    const second = await adapter.getPriceObservations([{ assetId: 'erc20:369:0xabc', chainId: 369 }]);
+
+    expect(first.observations).toHaveLength(1);
+    expect(second.observations).toHaveLength(1);
+
+    expect(first.observations[0].provider).toBe('fixture-deterministic');
+    expect(first.observations[0].metadata.providerName).toBe('Deterministic Fixture Provider');
+    expect(first.observations[0].metadata.providerSource).toBe('test-fixture');
+
+    expect(second.observations[0].provider).toBe('fixture-deterministic');
+    expect(second.observations[0].metadata.providerName).toBe('Deterministic Fixture Provider');
+    expect(second.observations[0].metadata.providerSource).toBe('test-fixture');
+
+    expect(first).toEqual(second);
+    expect(adapter.metadata.id).toBe('fixture-deterministic');
+    expect(adapter.metadata.displayName).toBe('Deterministic Fixture Provider');
+    expect(adapter.metadata.source).toBe('test-fixture');
+  });
 });

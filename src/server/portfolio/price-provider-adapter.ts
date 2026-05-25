@@ -1,11 +1,11 @@
 import type { ObservationSourceKind } from './valuation-types';
 import type { UpstreamPriceObservationInput } from './upstream-price-observation-normalizer';
 
-export type PriceProviderMetadata = {
+export type PriceProviderMetadata = Readonly<{
   id: string;
   displayName: string;
   source: string;
-};
+}>;
 
 export type PriceProviderAssetRequest = {
   assetId: string;
@@ -75,11 +75,11 @@ function snapshotFixtureRecord(record: FixtureProviderRecord): FixtureProviderRe
 }
 
 export function createDeterministicFixturePriceProvider(records: FixtureProviderRecord[]): PriceProviderAdapter {
-  const metadata: PriceProviderMetadata = {
+  const metadataSnapshot: PriceProviderMetadata = Object.freeze({
     id: 'fixture-deterministic',
     displayName: 'Deterministic Fixture Provider',
     source: 'test-fixture',
-  };
+  });
 
   const byAsset = new Map<string, FixtureProviderRecord>();
   for (const record of records) {
@@ -91,7 +91,7 @@ export function createDeterministicFixturePriceProvider(records: FixtureProvider
   }
 
   return {
-    metadata,
+    metadata: metadataSnapshot,
     async getPriceObservations(requests: PriceProviderAssetRequest[]): Promise<PriceProviderObservationBatch> {
       const observations: UpstreamPriceObservationInput[] = [];
       const unsupportedAssets: PriceProviderUnsupportedAsset[] = [];
@@ -108,7 +108,7 @@ export function createDeterministicFixturePriceProvider(records: FixtureProvider
         }
 
         observations.push({
-          provider: metadata.id,
+          provider: metadataSnapshot.id,
           providerObservationId: match.providerObservationId,
           sourceKind: match.sourceKind,
           sourcePriority: match.sourcePriority,
@@ -123,8 +123,8 @@ export function createDeterministicFixturePriceProvider(records: FixtureProvider
           confidenceBps: match.confidenceBps,
           metadata: deterministicMetadata({
             ...(match.metadata ?? {}),
-            providerName: metadata.displayName,
-            providerSource: metadata.source,
+            providerName: metadataSnapshot.displayName,
+            providerSource: metadataSnapshot.source,
           }),
         });
       }
