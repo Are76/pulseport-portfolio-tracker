@@ -49,6 +49,36 @@ describe('placeholder valuation service contracts', () => {
     expect(valuation.confidence).toBe(0.99);
   });
 
+
+
+  it('downgrades available observation with null priceUsd to unavailable with explicit warning/provenance note', async () => {
+    const service = new PlaceholderValuationService(
+      makeProvider([makeObservation({ status: 'available', priceUsd: null })]),
+    );
+
+    const [valuation] = await service.valueAssets([{ assetId: 'erc20:369:0xabc', quantity: '3' }]);
+    const summary = summarizeValuations([valuation]);
+
+    expect(valuation.status).toBe('unavailable');
+    expect(valuation.valueUsd).toBeNull();
+    expect(valuation.warnings).toContain('Observation reported available status but did not include a usable priceUsd.');
+    expect(valuation.provenance.notes).toContain('Available-status observation was downgraded to unavailable because priceUsd was null or non-finite.');
+    expect(summary.status).toBe('unavailable');
+    expect(summary.valuedAssetCount).toBe(0);
+  });
+
+  it('downgrades available observation with non-finite priceUsd to unavailable', async () => {
+    const service = new PlaceholderValuationService(
+      makeProvider([makeObservation({ status: 'available', priceUsd: Number.NaN })]),
+    );
+
+    const [valuation] = await service.valueAssets([{ assetId: 'erc20:369:0xabc', quantity: '3' }]);
+
+    expect(valuation.status).toBe('unavailable');
+    expect(valuation.valueUsd).toBeNull();
+    expect(valuation.warnings).toContain('Observation reported available status but did not include a usable priceUsd.');
+  });
+
   it('returns stale valuation status and null valueUsd', async () => {
     const service = new PlaceholderValuationService(
       makeProvider([makeObservation({ status: 'stale', priceUsd: 2, warnings: ['Observation is stale.'] })]),

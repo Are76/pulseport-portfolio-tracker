@@ -17,17 +17,36 @@ function deriveValuationFromObservation(quantity: string, observation: PriceObse
     provenance: observation.provenance,
   };
 
-  if (observation.status === 'available' && observation.priceUsd !== null) {
+  const warnings = [...observation.warnings];
+
+  if (observation.status === 'available') {
+    const hasUsablePrice = typeof observation.priceUsd === 'number' && Number.isFinite(observation.priceUsd);
+    if (hasUsablePrice) {
+      const usablePriceUsd = observation.priceUsd as number;
+      return {
+        ...base,
+        status: 'available',
+        valueUsd: Number(quantity) * usablePriceUsd,
+        warnings,
+      };
+    }
+
     return {
       ...base,
-      status: 'available',
-      valueUsd: Number(quantity) * observation.priceUsd,
-      warnings: [...observation.warnings],
+      status: 'unavailable',
+      valueUsd: null,
+      warnings: [...warnings, 'Observation reported available status but did not include a usable priceUsd.'],
+      provenance: {
+        ...observation.provenance,
+        notes: [
+          ...observation.provenance.notes,
+          'Available-status observation was downgraded to unavailable because priceUsd was null or non-finite.',
+        ],
+      },
     };
   }
 
-  const statusMap: Record<PriceObservationDto['status'], ValuationStatus> = {
-    available: 'available',
+  const statusMap: Record<Exclude<PriceObservationDto['status'], 'available'>, ValuationStatus> = {
     stale: 'stale',
     unavailable: 'unavailable',
     low_confidence: 'low_confidence',
@@ -37,7 +56,7 @@ function deriveValuationFromObservation(quantity: string, observation: PriceObse
     ...base,
     status: statusMap[observation.status],
     valueUsd: null,
-    warnings: [...observation.warnings],
+    warnings,
   };
 }
 
