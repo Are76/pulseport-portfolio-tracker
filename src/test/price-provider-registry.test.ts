@@ -31,12 +31,23 @@ describe('price provider registry', () => {
     ])).toThrow('Duplicate price provider id: provider-same');
   });
 
+
+  it('treats undefined providerIds as no provider-id filter and explicit empty providerIds as empty selection', () => {
+    const registry = createPriceProviderRegistry([
+      { provider: createProvider('provider-a') },
+      { provider: createProvider('provider-b') },
+    ]);
+
+    expect(registry.listProviders({ providerIds: undefined }).map((provider) => provider.metadata.id)).toEqual(['provider-a', 'provider-b']);
+    expect(registry.listProviders({ providerIds: [] })).toEqual([]);
+  });
+
   it('fails closed for unknown selected provider ids', () => {
     const registry = createPriceProviderRegistry([{ provider: createProvider('provider-known') }]);
     expect(() => registry.listProviders({ providerIds: ['provider-missing'] })).toThrow('Unknown price provider id requested: provider-missing');
   });
 
-  it('supports explicit selection by provider id, source, and profile', () => {
+  it('supports combined provider id/source/profile filters and non-matching known ids without unknown-id errors', () => {
     const fixtureProvider = createDeterministicFixturePriceProvider([]);
     const registry = createPriceProviderRegistry([
       { provider: createProvider('provider-live', 'live') },
@@ -46,6 +57,9 @@ describe('price provider registry', () => {
     expect(registry.listProviders({ providerIds: ['provider-live'] }).map((provider) => provider.metadata.id)).toEqual(['provider-live']);
     expect(registry.listProviders({ source: 'test-fixture' }).map((provider) => provider.metadata.id)).toEqual(['fixture-deterministic']);
     expect(registry.listProviders({ profile: 'test-fixture' }).map((provider) => provider.metadata.id)).toEqual(['fixture-deterministic']);
+    expect(registry.listProviders({ providerIds: ['provider-live'], source: 'test-fixture' })).toEqual([]);
+    expect(registry.listProviders({ providerIds: ['provider-live'], profile: 'test-fixture' })).toEqual([]);
+    expect(registry.listProviders({ providerIds: ['fixture-deterministic'], source: 'test-fixture', profile: 'test-fixture' }).map((provider) => provider.metadata.id)).toEqual(['fixture-deterministic']);
   });
 
   it('returns providers without mutating provider metadata', async () => {

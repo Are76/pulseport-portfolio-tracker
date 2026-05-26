@@ -54,21 +54,23 @@ export function createPriceProviderRegistry(registrations: PriceProviderRegistra
 
   return {
     listProviders(selection?: PriceProviderSelection): PriceProviderAdapter[] {
-      const requestedProviderIds = selection?.providerIds?.length ? new Set(selection.providerIds) : null;
-      const selected = ordered.filter(({ provider, profile }) => {
-        if (requestedProviderIds && !requestedProviderIds.has(provider.metadata.id)) return false;
-        if (selection?.source && provider.metadata.source !== selection.source) return false;
-        if (selection?.profile && profile !== selection.profile) return false;
-        return true;
-      });
+      const providerIdFilter = selection?.providerIds === undefined ? null : new Set(selection.providerIds);
+      const registeredProviderIds = new Set(ordered.map((entry) => entry.provider.metadata.id));
 
-      if (requestedProviderIds) {
-        for (const providerId of requestedProviderIds) {
-          if (!selected.some((entry) => entry.provider.metadata.id === providerId)) {
+      if (providerIdFilter) {
+        for (const providerId of providerIdFilter) {
+          if (!registeredProviderIds.has(providerId)) {
             throw new Error(`Unknown price provider id requested: ${providerId}`);
           }
         }
       }
+
+      const selected = ordered.filter(({ provider, profile }) => {
+        if (providerIdFilter && !providerIdFilter.has(provider.metadata.id)) return false;
+        if (selection?.source && provider.metadata.source !== selection.source) return false;
+        if (selection?.profile && profile !== selection.profile) return false;
+        return true;
+      });
 
       return selected.map(({ provider }) => cloneProvider(provider));
     },
