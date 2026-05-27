@@ -190,11 +190,12 @@ export function createDexScreenerPriceProvider(options: DexScreenerPriceProvider
 
       const tasks = supportedRequests.map(async ({ request, contractAddress }) => {
         const providerAssetId = `token/${DEXSCREENER_PULSECHAIN_SLUG}/${contractAddress}`;
-        const ingestedAt = now().toISOString();
 
         let response: Response;
+        let ingestedAt: string;
         await acquireFetchSlot();
         try {
+          ingestedAt = now().toISOString();
           response = await fetchImpl(`https://api.dexscreener.com/latest/dex/tokens/${contractAddress}`);
         } catch {
           unsupportedAssets.push(unsupported(request.assetId, request.chainId, 'Malformed or unreachable upstream payload.'));

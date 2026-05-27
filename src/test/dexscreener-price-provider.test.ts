@@ -215,6 +215,57 @@ describe('DexScreenerPriceProvider', () => {
     expect(maxObserved).toBe(2);
   });
 
+
+  it('queued requests get observedAt and ingestedAt after acquiring a fetch slot', async () => {
+    const addressA = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const addressB = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    const deferredA = deferredResponse({ pairs: [buildPair(`0x${addressA}`, `0x${addressA}`)] });
+    const deferredB = deferredResponse({ pairs: [buildPair(`0x${addressB}`, `0x${addressB}`)] });
+
+    const nowSequence = [
+      new Date('2026-05-27T00:00:00.000Z'),
+      new Date('2026-05-27T00:00:10.000Z'),
+    ];
+    const nowMock = vi.fn(() => nowSequence.shift() ?? new Date('2026-05-27T00:01:00.000Z'));
+
+    const fetchMock = vi.fn((url: string) => {
+      if (url.endsWith(addressA)) return deferredA.promise;
+      return deferredB.promise;
+    });
+
+    const provider = createDexScreenerPriceProvider({
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      now: nowMock,
+      maxConcurrency: 1,
+    });
+
+    const promise = provider.getPriceObservations([
+      { assetId: `erc20:369:0x${addressA}`, chainId: 369 },
+      { assetId: `erc20:369:0x${addressB}`, chainId: 369 },
+    ]);
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(nowMock).toHaveBeenCalledTimes(1);
+
+    deferredA.resolve();
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(nowMock).toHaveBeenCalledTimes(2);
+
+    deferredB.resolve();
+    const result = await promise;
+
+    expect(result.observations.map((observation) => observation.assetId)).toEqual([
+      `erc20:369:0x${addressA}`,
+      `erc20:369:0x${addressB}`,
+    ]);
+    expect(result.observations[0].observedAt).toBe('2026-05-27T00:00:00.000Z');
+    expect(result.observations[0].ingestedAt).toBe('2026-05-27T00:00:00.000Z');
+    expect(result.observations[0].staleAfter).toBe('2026-05-27T00:05:00.000Z');
+    expect(result.observations[1].observedAt).toBe('2026-05-27T00:00:10.000Z');
+    expect(result.observations[1].ingestedAt).toBe('2026-05-27T00:00:10.000Z');
+    expect(result.observations[1].staleAfter).toBe('2026-05-27T00:05:10.000Z');
+  });
+
   it('fetch completion order does not affect deterministic observation order', async () => {
     const addressA = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
     const addressB = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
