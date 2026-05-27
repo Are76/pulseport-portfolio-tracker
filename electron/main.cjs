@@ -1,7 +1,7 @@
 const { app, BrowserWindow, shell } = require('electron');
 const path = require('path');
 
-const isDev = process.env.NODE_ENV === 'development';
+const isDev = !app.isPackaged;
 
 // Lock userData to a consistent path so localStorage survives app updates/moves
 app.setPath('userData', path.join(app.getPath('appData'), 'Pulseport'));
@@ -15,7 +15,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: !isDev,  // keep Chromium web security on in production
+      webSecurity: app.isPackaged ? true : false,  // never disable in packaged builds
       partition: 'persist:pulseport', // Named persistent session — survives restarts
     },
     title: 'Pulseport',
