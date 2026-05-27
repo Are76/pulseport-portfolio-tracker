@@ -579,9 +579,16 @@ export default function App() {
   const [timeSinceLastUpdate, setTimeSinceLastUpdate] = useState<number>(0);
   const [manualEntries, setManualEntries] = useState<Record<string, number>>(() => readStoredJSON<Record<string, number>>('pulseport_manual_entries', {}));
   const [prices, setPrices] = useState<Record<string, any>>(() => tryReadCache<Record<string, any>>('pulseport_cache_prices') ?? {});
-  const [etherscanApiKey, setEtherscanApiKey] = useState<string>(() => localStorage.getItem('pulseport_etherscan_key') || '');
+  const [etherscanApiKey, setEtherscanApiKey] = useState<string>('');
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
+
+  const openApiKeyModal = (event?: React.MouseEvent) => {
+    event?.preventDefault();
+    event?.stopPropagation();
+    setApiKeyInput(etherscanApiKey);
+    setIsApiKeyModalOpen(true);
+  };
   const [hideDust, setHideDust] = useState<boolean>(() => readStoredJSON<boolean>('pulseport_hide_dust', false));
   const [hiddenTokens, setHiddenTokens] = useState<string[]>(() => {
     return readStoredJSON<string[]>('pulseport_hidden_tokens', []);
@@ -3900,7 +3907,7 @@ export default function App() {
               </button>
 
               {/* API Key */}
-              <button onClick={() => { setApiKeyInput(etherscanApiKey); setIsApiKeyModalOpen(true); }}
+              <button onClick={openApiKeyModal}
                 title={etherscanApiKey ? 'API key set' : 'Set Etherscan API key'}
                 aria-label={etherscanApiKey ? 'API key set. Open API key settings' : 'Open API key settings'}
                 className="header-action-btn"
@@ -6031,7 +6038,7 @@ export default function App() {
                           ? <span>
                               No Ethereum/Base transactions loaded.{' '}
                               <button
-                                onClick={() => { setApiKeyInput(''); setIsApiKeyModalOpen(true); }}
+                                onClick={openApiKeyModal}
                                 style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontSize: 13, padding: 0 }}>
                                 Add an Etherscan API key
                               </button>
@@ -6388,13 +6395,12 @@ export default function App() {
       {/* API Key Modal */}
       <AnimatePresence>
         {isApiKeyModalOpen && (
-          <div className="api-key-backdrop fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-6">
+          <div className="api-key-backdrop fixed inset-0 z-[300] flex items-end sm:items-center justify-center sm:p-6" role="dialog" aria-modal="true" aria-label="Etherscan API key settings" onMouseDown={(e) => { if (e.target === e.currentTarget) setIsApiKeyModalOpen(false); }}>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setIsApiKeyModalOpen(false)}
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+              className="absolute inset-0 z-0 bg-black/80 backdrop-blur-sm" />
             <motion.div initial={{ opacity: 0, scale: 0.98, y: 24 }} animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.98, y: 24 }}
-              className="api-key-panel">
+              className="api-key-panel relative z-10" onMouseDown={(e) => e.stopPropagation()}>
               <div className="api-key-drag-handle" />
               <div className="api-key-head">
                 <div className="api-key-head-icon">
@@ -6412,7 +6418,7 @@ export default function App() {
                 </div>
                 <div>
                   <strong>Why is it here?</strong>
-                  <span>It improves ETH deposits, stablecoin inflows, transaction history, and invested/P&L calculations. Your key is saved only in this browser.</span>
+                  <span>It improves ETH deposits, stablecoin inflows, transaction history, and invested/P&L calculations. Your key is used only for this session and is not persisted.</span>
                 </div>
                 <div>
                   <strong>What still works without it?</strong>
@@ -6438,9 +6444,6 @@ export default function App() {
                 <button type="button" onClick={() => {
                   const ethKey = apiKeyInput.trim();
                   setEtherscanApiKey(ethKey);
-                  if (ethKey) localStorage.setItem('pulseport_etherscan_key', ethKey);
-                  else localStorage.removeItem('pulseport_etherscan_key');
-                  localStorage.removeItem('pulseport_basescan_key');
                   setIsApiKeyModalOpen(false);
                   setTimeout(fetchPortfolio, 100);
                 }}

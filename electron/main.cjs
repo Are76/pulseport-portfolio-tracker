@@ -15,7 +15,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: false,  // Allow cross-origin requests to blockchain APIs (safe for desktop app)
+      webSecurity: !isDev,  // keep Chromium web security on in production
       partition: 'persist:pulseport', // Named persistent session — survives restarts
     },
     title: 'Pulseport',
