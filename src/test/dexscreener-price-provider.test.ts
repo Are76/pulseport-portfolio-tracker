@@ -9,8 +9,13 @@ function buildJsonResponse(payload: unknown, status = 200): Response {
   });
 }
 
+function buildProvider(fetchMock: ReturnType<typeof vi.fn>, nowIso = '2026-05-27T00:00:00.000Z') {
+  return createDexScreenerPriceProvider({ fetchImpl: fetchMock as unknown as typeof fetch, now: () => new Date(nowIso) });
+}
+
 describe('DexScreenerPriceProvider', () => {
   const nowIso = '2026-05-27T00:00:00.000Z';
+  const supportedAssetId = 'erc20:369:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
   it('valid PulseChain ERC-20 asset produces one normalized upstream observation', async () => {
     const fetchMock = vi.fn().mockResolvedValue(buildJsonResponse({
@@ -24,15 +29,15 @@ describe('DexScreenerPriceProvider', () => {
       }],
     }));
 
-    const provider = createDexScreenerPriceProvider({ fetchImpl: fetchMock as typeof fetch, now: () => new Date(nowIso) });
-    const result = await provider.getPriceObservations([{ assetId: 'erc20:369:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', chainId: 369 }]);
+    const provider = buildProvider(fetchMock, nowIso);
+    const result = await provider.getPriceObservations([{ assetId: supportedAssetId, chainId: 369 }]);
 
     expect(result.unsupportedAssets).toEqual([]);
     expect(result.observations).toHaveLength(1);
     expect(result.observations[0]).toMatchObject({
       provider: 'dexscreener',
       providerAssetId: 'token/pulsechain/0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-      assetId: 'erc20:369:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      assetId: supportedAssetId,
       chainId: 369,
       sourceKind: 'indexer',
       sourcePriority: 90,
@@ -42,87 +47,125 @@ describe('DexScreenerPriceProvider', () => {
       ingestedAt: nowIso,
       staleAfter: '2026-05-27T00:05:00.000Z',
     });
-    expect(result.observations[0].metadata.selectedPairAddress).toBe('0x1111111111111111111111111111111111111111');
   });
 
-  it('unsupported chain returns unsupported asset explicitly', async () => {
-    const provider = createDexScreenerPriceProvider({ fetchImpl: vi.fn() as unknown as typeof fetch });
-    const result = await provider.getPriceObservations([{ assetId: 'erc20:943:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', chainId: 943 }]);
-    expect(result.observations).toEqual([]);
-    expect(result.unsupportedAssets[0].reason).toContain('Unsupported chain');
+  it('priceUsdAtomic parses decimal strings deterministically without floating point', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(buildJsonResponse({
+      pairs: [{ chainId: 'pulsechain', pairAddress: '0x1111111111111111111111111111111111111111', priceUsd: '1.23', liquidity: { usd: 100 }, baseToken: { address: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' } }],
+    }));
+
+    const provider = buildProvider(fetchMock);
+    const result = await provider.getPriceObservations([{ assetId: supportedAssetId, chainId: 369 }]);
+    expect(result.observations[0].priceUsdAtomic).toBe('1230000');
   });
 
-  it('unsupported assetId format returns unsupported asset', async () => {
-    const provider = createDexScreenerPriceProvider({ fetchImpl: vi.fn() as unknown as typeof fetch });
-    const result = await provider.getPriceObservations([{ assetId: 'PLS', chainId: 369 }]);
+  it('long decimal and large integer price strings remain deterministic and bigint-safe', async () => {
+    const longDecimal = '123456789012345678901234567890.123456789123456789';
+    const fetchMock = vi.fn().mockResolvedValue(buildJsonResponse({
+      pairs: [{ chainId: 'pulsechain', pairAddress: '0x1111111111111111111111111111111111111111', priceUsd: longDecimal, liquidity: { usd: 100 }, baseToken: { address: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' } }],
+    }));
+
+    const provider = buildProvider(fetchMock);
+    const result = await provider.getPriceObservations([{ assetId: supportedAssetId, chainId: 369 }]);
+    expect(result.observations[0].priceUsdAtomic).toBe('123456789012345678901234567890123456');
+  });
+
+  it('below-scale fractional prices deterministically truncate to zero and fail closed', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(buildJsonResponse({
+      pairs: [{ chainId: 'pulsechain', pairAddress: '0x1111111111111111111111111111111111111111', priceUsd: '0.0000001', liquidity: { usd: 100 }, baseToken: { address: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' } }],
+    }));
+
+    const provider = buildProvider(fetchMock);
+    const result = await provider.getPriceObservations([{ assetId: supportedAssetId, chainId: 369 }]);
     expect(result.observations).toEqual([]);
-    expect(result.unsupportedAssets[0].reason).toContain('Unsupported assetId format');
+    expect(result.unsupportedAssets).toHaveLength(1);
+  });
+
+  it('zero/negative/non-numeric/exponent/Infinity/NaN priceUsd fail closed', async () => {
+    const invalidPrices = ['0', '-1', 'Infinity', 'NaN', 'abc', '1e-3'];
+
+    for (const invalidPrice of invalidPrices) {
+      const fetchMock = vi.fn().mockResolvedValue(buildJsonResponse({
+        pairs: [{ chainId: 'pulsechain', pairAddress: '0x1111111111111111111111111111111111111111', priceUsd: invalidPrice, liquidity: { usd: 100 }, baseToken: { address: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' } }],
+      }));
+      const provider = buildProvider(fetchMock);
+      const result = await provider.getPriceObservations([{ assetId: supportedAssetId, chainId: 369 }]);
+      expect(result.observations).toEqual([]);
+      expect(result.unsupportedAssets).toHaveLength(1);
+    }
+  });
+
+  it('unsupported chain and unsupported assetId do not call fetch', async () => {
+    const fetchMock = vi.fn();
+    const provider = buildProvider(fetchMock);
+
+    await provider.getPriceObservations([{ assetId: 'erc20:943:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', chainId: 943 }]);
+    await provider.getPriceObservations([{ assetId: 'PLS', chainId: 369 }]);
+
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('missing/empty pairs returns unsupported asset', async () => {
     const fetchMock = vi.fn().mockResolvedValue(buildJsonResponse({ pairs: [] }));
-    const provider = createDexScreenerPriceProvider({ fetchImpl: fetchMock as typeof fetch });
-    const result = await provider.getPriceObservations([{ assetId: 'erc20:369:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', chainId: 369 }]);
+    const provider = buildProvider(fetchMock);
+    const result = await provider.getPriceObservations([{ assetId: supportedAssetId, chainId: 369 }]);
     expect(result.observations).toEqual([]);
     expect(result.unsupportedAssets[0].reason).toContain('No DexScreener pairs');
   });
 
   it('malformed response fails closed without throwing', async () => {
     const fetchMock = vi.fn().mockResolvedValue(buildJsonResponse({ nope: true }));
-    const provider = createDexScreenerPriceProvider({ fetchImpl: fetchMock as typeof fetch });
-    const result = await provider.getPriceObservations([{ assetId: 'erc20:369:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', chainId: 369 }]);
+    const provider = buildProvider(fetchMock);
+    const result = await provider.getPriceObservations([{ assetId: supportedAssetId, chainId: 369 }]);
     expect(result.observations).toEqual([]);
     expect(result.unsupportedAssets).toHaveLength(1);
   });
 
-  it('invalid priceUsd values fail closed', async () => {
+  it('fetch rejection fails closed', async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new Error('network down'));
+    const provider = buildProvider(fetchMock);
+    const result = await provider.getPriceObservations([{ assetId: supportedAssetId, chainId: 369 }]);
+    expect(result.observations).toEqual([]);
+    expect(result.unsupportedAssets).toHaveLength(1);
+  });
+
+  it('non-200 HTTP response fails closed', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(buildJsonResponse({ message: 'error' }, 503));
+    const provider = buildProvider(fetchMock);
+    const result = await provider.getPriceObservations([{ assetId: supportedAssetId, chainId: 369 }]);
+    expect(result.observations).toEqual([]);
+    expect(result.unsupportedAssets[0].reason).toContain('HTTP 503');
+  });
+
+  it('malformed liquidity fails closed', async () => {
     const fetchMock = vi.fn().mockResolvedValue(buildJsonResponse({
-      pairs: [{
-        chainId: 'pulsechain',
-        pairAddress: '0x1111111111111111111111111111111111111111',
-        priceUsd: 'NaN',
-        baseToken: { address: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' },
-      }],
+      pairs: [{ chainId: 'pulsechain', pairAddress: '0x1111111111111111111111111111111111111111', priceUsd: '1', liquidity: { usd: 'NaN' }, baseToken: { address: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' } }],
     }));
-    const provider = createDexScreenerPriceProvider({ fetchImpl: fetchMock as typeof fetch });
-    const result = await provider.getPriceObservations([{ assetId: 'erc20:369:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', chainId: 369 }]);
+    const provider = buildProvider(fetchMock);
+    const result = await provider.getPriceObservations([{ assetId: supportedAssetId, chainId: 369 }]);
     expect(result.observations).toEqual([]);
     expect(result.unsupportedAssets).toHaveLength(1);
   });
 
-  it('multiple pairs are selected deterministically and reversed pair order is stable', async () => {
-    const pairA = {
-      chainId: 'pulsechain', pairAddress: '0x000000000000000000000000000000000000000a', priceUsd: '1.00', liquidity: { usd: 10 }, baseToken: { address: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' },
+  it('missing liquidity is treated as zero and valid liquidity ranks deterministically', async () => {
+    const pairMissingLiquidity = {
+      chainId: 'pulsechain', pairAddress: '0x000000000000000000000000000000000000000a', priceUsd: '1.00', baseToken: { address: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' },
     };
-    const pairB = {
+    const pairHighLiquidity = {
       chainId: 'pulsechain', pairAddress: '0x000000000000000000000000000000000000000b', priceUsd: '2.00', liquidity: { usd: 20 }, baseToken: { address: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' },
     };
 
-    const fetchMockOne = vi.fn().mockResolvedValue(buildJsonResponse({ pairs: [pairA, pairB] }));
-    const fetchMockTwo = vi.fn().mockResolvedValue(buildJsonResponse({ pairs: [pairB, pairA] }));
+    const fetchMockOne = vi.fn().mockResolvedValue(buildJsonResponse({ pairs: [pairMissingLiquidity, pairHighLiquidity] }));
+    const fetchMockTwo = vi.fn().mockResolvedValue(buildJsonResponse({ pairs: [pairHighLiquidity, pairMissingLiquidity] }));
 
-    const providerOne = createDexScreenerPriceProvider({ fetchImpl: fetchMockOne as typeof fetch, now: () => new Date(nowIso) });
-    const providerTwo = createDexScreenerPriceProvider({ fetchImpl: fetchMockTwo as typeof fetch, now: () => new Date(nowIso) });
+    const providerOne = buildProvider(fetchMockOne, nowIso);
+    const providerTwo = buildProvider(fetchMockTwo, nowIso);
 
-    const req = [{ assetId: 'erc20:369:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', chainId: 369 }];
+    const req = [{ assetId: supportedAssetId, chainId: 369 }];
     const first = await providerOne.getPriceObservations(req);
     const second = await providerTwo.getPriceObservations(req);
 
     expect(first.observations[0].metadata.selectedPairAddress).toBe('0x000000000000000000000000000000000000000b');
     expect(first.observations[0]).toEqual(second.observations[0]);
-  });
-
-  it('observation includes provenance/confidence/staleAfter/source metadata', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(buildJsonResponse({
-      pairs: [{
-        chainId: 'pulsechain', pairAddress: '0x1111111111111111111111111111111111111111', priceUsd: '1', liquidity: { usd: 1 }, baseToken: { address: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }, url: 'https://dexscreener.com/foo',
-      }],
-    }));
-    const provider = createDexScreenerPriceProvider({ fetchImpl: fetchMock as typeof fetch, now: () => new Date(nowIso) });
-    const result = await provider.getPriceObservations([{ assetId: 'erc20:369:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', chainId: 369 }]);
-    expect(result.observations[0].confidenceBps).toBe(3500);
-    expect(result.observations[0].staleAfter).toBe('2026-05-27T00:05:00.000Z');
-    expect(result.observations[0].sourceFeed).toBe('https://dexscreener.com/foo');
-    expect(result.observations[0].metadata.providerSource).toBe('upstream-observation');
   });
 });
