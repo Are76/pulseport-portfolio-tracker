@@ -204,9 +204,7 @@ describe('DexScreenerPriceProvider', () => {
     expect(maxObserved).toBe(2);
 
     deferreds[1].resolve();
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
     expect(maxObserved).toBe(2);
 
     deferreds[0].resolve();
