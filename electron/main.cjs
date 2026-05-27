@@ -1,7 +1,7 @@
 const { app, BrowserWindow, shell } = require('electron');
 const path = require('path');
 
-const isDev = process.env.NODE_ENV === 'development';
+const isDev = !app.isPackaged;
 
 // Lock userData to a consistent path so localStorage survives app updates/moves
 app.setPath('userData', path.join(app.getPath('appData'), 'Pulseport'));
@@ -15,7 +15,14 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: false,  // Allow cross-origin requests to blockchain APIs (safe for desktop app)
+      // Electron desktop is currently a legacy/non-primary runtime for PulsePort.
+      // By product/security decision, keep Chromium webSecurity enabled in all modes.
+      // If desktop support is restored later, direct renderer API calls may hit CORS
+      // and must be moved behind a main-process/preload bridge (or trusted proxy).
+      // Do NOT disable webSecurity to bypass CORS.
+      // TODO(product): If/when Electron desktop support is revived, implement a secure
+      // main-process API bridge/proxy and migrate renderer network calls through it.
+      webSecurity: true,
       partition: 'persist:pulseport', // Named persistent session — survives restarts
     },
     title: 'Pulseport',

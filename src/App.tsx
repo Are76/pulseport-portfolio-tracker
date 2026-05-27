@@ -579,9 +579,16 @@ export default function App() {
   const [timeSinceLastUpdate, setTimeSinceLastUpdate] = useState<number>(0);
   const [manualEntries, setManualEntries] = useState<Record<string, number>>(() => readStoredJSON<Record<string, number>>('pulseport_manual_entries', {}));
   const [prices, setPrices] = useState<Record<string, any>>(() => tryReadCache<Record<string, any>>('pulseport_cache_prices') ?? {});
-  const [etherscanApiKey, setEtherscanApiKey] = useState<string>(() => localStorage.getItem('pulseport_etherscan_key') || '');
+  const [etherscanApiKey, setEtherscanApiKey] = useState<string>('');
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
+
+  const openApiKeyModal = (event?: React.MouseEvent) => {
+    event?.preventDefault();
+    event?.stopPropagation();
+    setApiKeyInput(etherscanApiKey);
+    setIsApiKeyModalOpen(true);
+  };
   const [hideDust, setHideDust] = useState<boolean>(() => readStoredJSON<boolean>('pulseport_hide_dust', false));
   const [hiddenTokens, setHiddenTokens] = useState<string[]>(() => {
     return readStoredJSON<string[]>('pulseport_hidden_tokens', []);
@@ -651,10 +658,21 @@ export default function App() {
   // Ref so fetchPortfolio (async) always reads the latest values without stale closures.
   const hexDailyDataRef = useRef(hexDailyData);
   hexDailyDataRef.current = hexDailyData;
+  const etherscanApiKeyRef = useRef(etherscanApiKey);
+  etherscanApiKeyRef.current = etherscanApiKey;
 
   useEffect(() => {
     localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, activeTab === 'product' ? productReturnTab : activeTab);
   }, [activeTab, productReturnTab]);
+
+  useEffect(() => {
+    try {
+      localStorage.removeItem('pulseport_etherscan_key');
+      localStorage.removeItem('pulseport_basescan_key');
+    } catch {
+      // localStorage may be unavailable in some contexts
+    }
+  }, []);
 
   useEffect(() => {
     if (activeTab === 'product' && !selectedProductAsset) {
@@ -917,7 +935,7 @@ export default function App() {
     localStorage.setItem('pulseport_history', JSON.stringify(history));
   }, [history]);
 
-  const fetchPortfolio = async () => {
+  const fetchPortfolio = async (apiKeyOverride?: string) => {
     if (isFetchingRef.current) return; // prevent concurrent fetches
     isFetchingRef.current = true;
     setIsLoading(true);
@@ -1550,7 +1568,7 @@ export default function App() {
             const pageSize = 10000;
             const sortDir = 'asc';
 
-            const apiKey = etherscanApiKey || import.meta.env.VITE_ETHERSCAN_API_KEY || '';
+            const apiKey = (apiKeyOverride ?? etherscanApiKeyRef.current) || import.meta.env.VITE_ETHERSCAN_API_KEY || '';
 
             const fetchAllTxPages = async (action: string): Promise<any[]> => {
               const results: any[] = [];
@@ -3900,7 +3918,7 @@ export default function App() {
               </button>
 
               {/* API Key */}
-              <button onClick={() => { setApiKeyInput(etherscanApiKey); setIsApiKeyModalOpen(true); }}
+              <button onClick={openApiKeyModal}
                 title={etherscanApiKey ? 'API key set' : 'Set Etherscan API key'}
                 aria-label={etherscanApiKey ? 'API key set. Open API key settings' : 'Open API key settings'}
                 className="header-action-btn"
@@ -3914,7 +3932,7 @@ export default function App() {
               </button>
 
               {/* Refresh */}
-              <button onClick={fetchPortfolio}
+              <button onClick={() => fetchPortfolio()}
                 className={`header-action-btn${isLoading ? ' btn-loading' : ''}`}
                 style={{ color: 'var(--fg)' }}>
                 <RefreshCcw size={12} className={isLoading ? 'animate-spin' : ''} />
@@ -4087,7 +4105,7 @@ export default function App() {
                     </div>
 
                     <div className="front-market-actions">
-                      <button onClick={fetchPortfolio} className="front-refresh-btn">
+                      <button onClick={() => fetchPortfolio()} className="front-refresh-btn">
                         <RefreshCcw size={13} className={isLoading ? 'animate-spin' : ''} />
                         Refresh
                       </button>
@@ -5015,7 +5033,7 @@ export default function App() {
                   {coinVisibilityMenuOpen && (
                     <div className="coin-visibility-dropdown-panel">
                       <div className="coin-visibility-actions">
-                        <button type="button" onClick={fetchPortfolio}>
+                        <button type="button" onClick={() => fetchPortfolio()}>
                           <RefreshCcw size={13} className={isLoading ? 'animate-spin' : ''} />
                           Refresh / detect
                         </button>
@@ -6031,7 +6049,7 @@ export default function App() {
                           ? <span>
                               No Ethereum/Base transactions loaded.{' '}
                               <button
-                                onClick={() => { setApiKeyInput(''); setIsApiKeyModalOpen(true); }}
+                                onClick={openApiKeyModal}
                                 style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontSize: 13, padding: 0 }}>
                                 Add an Etherscan API key
                               </button>
@@ -6388,13 +6406,12 @@ export default function App() {
       {/* API Key Modal */}
       <AnimatePresence>
         {isApiKeyModalOpen && (
-          <div className="api-key-backdrop fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-6">
+          <div className="api-key-backdrop fixed inset-0 z-[300] flex items-end sm:items-center justify-center sm:p-6" role="dialog" aria-modal="true" aria-label="Etherscan API key settings">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setIsApiKeyModalOpen(false)}
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+              className="absolute inset-0 z-0 bg-black/80 backdrop-blur-sm" onMouseDown={() => setIsApiKeyModalOpen(false)} />
             <motion.div initial={{ opacity: 0, scale: 0.98, y: 24 }} animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.98, y: 24 }}
-              className="api-key-panel">
+              className="api-key-panel relative z-10 w-full max-w-[560px] mx-2 sm:mx-0" onMouseDown={(e) => e.stopPropagation()} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 18, boxShadow: '0 24px 80px rgba(0,0,0,0.45)', padding: '18px 18px 16px', color: 'var(--fg-primary)' }}>
               <div className="api-key-drag-handle" />
               <div className="api-key-head">
                 <div className="api-key-head-icon">
@@ -6412,7 +6429,7 @@ export default function App() {
                 </div>
                 <div>
                   <strong>Why is it here?</strong>
-                  <span>It improves ETH deposits, stablecoin inflows, transaction history, and invested/P&L calculations. Your key is saved only in this browser.</span>
+                  <span>It improves ETH deposits, stablecoin inflows, transaction history, and invested/P&L calculations. Your key is used only for this session and is not persisted.</span>
                 </div>
                 <div>
                   <strong>What still works without it?</strong>
@@ -6422,29 +6439,26 @@ export default function App() {
               <a className="api-key-link" href="https://etherscan.io/myapikey" target="_blank" rel="noopener noreferrer">
                 Get a free key from Etherscan <ExternalLink size={12} />
               </a>
-              <label className="api-key-input-label">
+              <label className="api-key-input-label" style={{ display: 'flex', flexDirection: 'column', gap: 8, color: 'var(--fg-primary)', fontSize: 13, fontWeight: 600 }}>
                 Etherscan API key
-                <input type="text" placeholder="Paste your Etherscan API key..."
+                <input type="text" placeholder="Paste your Etherscan API key..." style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', background: 'var(--bg-surface)', color: 'var(--fg-primary)', outline: 'none' }}
                 value={apiKeyInput} onChange={e => setApiKeyInput(e.target.value)}
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
                 />
               </label>
-              <div className="api-key-actions">
-                <button type="button" onClick={() => setIsApiKeyModalOpen(false)}>
+              <div className="api-key-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 14 }}>
+                <button type="button" onClick={() => setIsApiKeyModalOpen(false)} style={{ border: '1px solid var(--border)', background: 'var(--bg-surface)', color: 'var(--fg-primary)', borderRadius: 10, padding: '9px 14px', fontWeight: 600, cursor: 'pointer' }}>
                   Cancel
                 </button>
                 <button type="button" onClick={() => {
                   const ethKey = apiKeyInput.trim();
                   setEtherscanApiKey(ethKey);
-                  if (ethKey) localStorage.setItem('pulseport_etherscan_key', ethKey);
-                  else localStorage.removeItem('pulseport_etherscan_key');
-                  localStorage.removeItem('pulseport_basescan_key');
                   setIsApiKeyModalOpen(false);
-                  setTimeout(fetchPortfolio, 100);
+                  setTimeout(() => fetchPortfolio(ethKey), 100);
                 }}
-                  className="api-key-save">
+                  className="api-key-save" style={{ border: '1px solid var(--accent-border)', background: 'var(--accent)', color: '#fff', borderRadius: 10, padding: '9px 14px', fontWeight: 700, cursor: 'pointer' }}>
                   Save &amp; Refresh
                 </button>
               </div>

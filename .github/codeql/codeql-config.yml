@@ -1,0 +1,13 @@
+name: pulseport-codeql-config
+
+# Keep analysis focused on application source and avoid generated/tooling-heavy areas
+# that create noise or extend scan times without improving security signal.
+paths:
+  - src
+  - electron
+paths-ignore:
+  - .agents
+  - dist
+  - release
+  - node_modules
+  - coverage
