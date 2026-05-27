@@ -15,6 +15,10 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      // Electron desktop is currently legacy/non-primary for PulsePort; keep Chromium
+      // web security enabled in all modes. If desktop support is restored, route
+      // cross-origin API access through a main-process/preload bridge (or proxy)
+      // instead of disabling webSecurity.
       webSecurity: true,
       partition: 'persist:pulseport', // Named persistent session — survives restarts
     },
