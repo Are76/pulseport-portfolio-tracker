@@ -4,18 +4,36 @@ A multi-chain portfolio dashboard with strong focus on **PulseChain** and PulseX
 
 **Live demo:** https://pulseportcodex.vercel.app/
 
+## Runtime Support
+
+PulsePort/CoinPulse is currently a **web-first application**.
+
+Supported runtime:
+- Web app (Vite + React deployment)
+
+Legacy / unsupported runtime for this phase:
+- Packaged Electron desktop distribution
+
+Electron runtime files remain in the repository as legacy infrastructure only.
+Electron desktop packaging scripts have been quarantined to avoid implying active support.
+
+If Electron desktop support returns later:
+- API access should move behind a secure preload/main-process bridge or trusted proxy.
+- Chromium `webSecurity` should remain enabled.
+- `webSecurity` must not be disabled to bypass CORS.
+
 ## Features
 
 - Wallet connection (MetaMask, WalletConnect, etc.)
 - Real-time token balances & portfolio overview
 - Intelligent spam/junk token filtering for PulseChain
 - Price tracking and basic PnL calculations
-- Responsive web + Electron desktop app
+- Responsive web dashboard
 
 ## Tech Stack
 
 - Vite + React + TypeScript
-- Electron
+- Electron (legacy/quarantined runtime)
 - viem for blockchain interactions
 - Tailwind CSS
 - Reusable PulseChain spam filter
