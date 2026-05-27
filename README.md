@@ -71,3 +71,23 @@ npm run build
 ---
 
 *Last updated: May 2026*
+
+
+## Repository Health Baseline (Post-Health Sequence)
+
+Baseline verification date: **2026-05-27 (UTC)**.
+
+Verified on branch from current `master` baseline after repo-health PR sequence:
+- #116 DexScreener hotfix
+- #117 repository health/security cleanup
+- #118 Electron desktop runtime quarantine
+
+Checks run:
+- `npm run test`
+- `npm run lint`
+- `npm run build`
+
+Runtime posture confirmed:
+- Web-first runtime remains the active supported path.
+- Electron remains legacy/quarantined and is not presented as an actively supported runtime.
+
