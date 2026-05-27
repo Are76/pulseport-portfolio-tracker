@@ -6400,7 +6400,7 @@ export default function App() {
               className="absolute inset-0 z-0 bg-black/80 backdrop-blur-sm" />
             <motion.div initial={{ opacity: 0, scale: 0.98, y: 24 }} animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.98, y: 24 }}
-              className="api-key-panel relative z-10" onMouseDown={(e) => e.stopPropagation()}>
+              className="api-key-panel relative z-10 w-full max-w-[560px] mx-2 sm:mx-0" onMouseDown={(e) => e.stopPropagation()} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 18, boxShadow: '0 24px 80px rgba(0,0,0,0.45)', padding: '18px 18px 16px', color: 'var(--fg-primary)' }}>
               <div className="api-key-drag-handle" />
               <div className="api-key-head">
                 <div className="api-key-head-icon">
@@ -6428,17 +6428,17 @@ export default function App() {
               <a className="api-key-link" href="https://etherscan.io/myapikey" target="_blank" rel="noopener noreferrer">
                 Get a free key from Etherscan <ExternalLink size={12} />
               </a>
-              <label className="api-key-input-label">
+              <label className="api-key-input-label" style={{ display: 'flex', flexDirection: 'column', gap: 8, color: 'var(--fg-primary)', fontSize: 13, fontWeight: 600 }}>
                 Etherscan API key
-                <input type="text" placeholder="Paste your Etherscan API key..."
+                <input type="text" placeholder="Paste your Etherscan API key..." style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', background: 'var(--bg-surface)', color: 'var(--fg-primary)', outline: 'none' }}
                 value={apiKeyInput} onChange={e => setApiKeyInput(e.target.value)}
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
                 />
               </label>
-              <div className="api-key-actions">
-                <button type="button" onClick={() => setIsApiKeyModalOpen(false)}>
+              <div className="api-key-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 14 }}>
+                <button type="button" onClick={() => setIsApiKeyModalOpen(false)} style={{ border: '1px solid var(--border)', background: 'var(--bg-surface)', color: 'var(--fg-primary)', borderRadius: 10, padding: '9px 14px', fontWeight: 600, cursor: 'pointer' }}>
                   Cancel
                 </button>
                 <button type="button" onClick={() => {
@@ -6447,7 +6447,7 @@ export default function App() {
                   setIsApiKeyModalOpen(false);
                   setTimeout(fetchPortfolio, 100);
                 }}
-                  className="api-key-save">
+                  className="api-key-save" style={{ border: '1px solid var(--accent-border)', background: 'var(--accent)', color: '#fff', borderRadius: 10, padding: '9px 14px', fontWeight: 700, cursor: 'pointer' }}>
                   Save &amp; Refresh
                 </button>
               </div>
