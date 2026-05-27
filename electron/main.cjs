@@ -15,7 +15,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: app.isPackaged ? true : false,  // never disable in packaged builds
+      webSecurity: true,
       partition: 'persist:pulseport', // Named persistent session — survives restarts
     },
     title: 'Pulseport',
