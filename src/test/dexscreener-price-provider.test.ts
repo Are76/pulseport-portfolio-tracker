@@ -9,8 +9,27 @@ function buildJsonResponse(payload: unknown, status = 200): Response {
   });
 }
 
-function buildProvider(fetchMock: ReturnType<typeof vi.fn>, nowIso = '2026-05-27T00:00:00.000Z') {
-  return createDexScreenerPriceProvider({ fetchImpl: fetchMock as unknown as typeof fetch, now: () => new Date(nowIso) });
+function buildPair(address: string, pairAddress: string, priceUsd = '1.00', liquidityUsd = 100) {
+  return {
+    chainId: 'pulsechain',
+    pairAddress,
+    url: `https://dexscreener.com/pulsechain/${pairAddress}`,
+    priceUsd,
+    liquidity: { usd: liquidityUsd },
+    baseToken: { address },
+  };
+}
+
+function deferredResponse(payload: unknown) {
+  let resolve!: (value: Response) => void;
+  const promise = new Promise<Response>((innerResolve) => {
+    resolve = innerResolve;
+  });
+  return { promise, resolve: () => resolve(buildJsonResponse(payload)) };
+}
+
+function buildProvider(fetchMock: ReturnType<typeof vi.fn>, nowIso = '2026-05-27T00:00:00.000Z', maxConcurrency?: number) {
+  return createDexScreenerPriceProvider({ fetchImpl: fetchMock as unknown as typeof fetch, now: () => new Date(nowIso), maxConcurrency });
 }
 
 describe('DexScreenerPriceProvider', () => {
@@ -19,14 +38,7 @@ describe('DexScreenerPriceProvider', () => {
 
   it('valid PulseChain ERC-20 asset produces one normalized upstream observation', async () => {
     const fetchMock = vi.fn().mockResolvedValue(buildJsonResponse({
-      pairs: [{
-        chainId: 'pulsechain',
-        pairAddress: '0x1111111111111111111111111111111111111111',
-        url: 'https://dexscreener.com/pulsechain/0x1111111111111111111111111111111111111111',
-        priceUsd: '0.1234',
-        liquidity: { usd: 111 },
-        baseToken: { address: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' },
-      }],
+      pairs: [buildPair('0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '0x1111111111111111111111111111111111111111', '0.1234', 111)],
     }));
 
     const provider = buildProvider(fetchMock, nowIso);
@@ -51,7 +63,7 @@ describe('DexScreenerPriceProvider', () => {
 
   it('priceUsdAtomic parses decimal strings deterministically without floating point', async () => {
     const fetchMock = vi.fn().mockResolvedValue(buildJsonResponse({
-      pairs: [{ chainId: 'pulsechain', pairAddress: '0x1111111111111111111111111111111111111111', priceUsd: '1.23', liquidity: { usd: 100 }, baseToken: { address: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' } }],
+      pairs: [buildPair('0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '0x1111111111111111111111111111111111111111', '1.23')],
     }));
 
     const provider = buildProvider(fetchMock);
@@ -62,7 +74,7 @@ describe('DexScreenerPriceProvider', () => {
   it('long decimal and large integer price strings remain deterministic and bigint-safe', async () => {
     const longDecimal = '123456789012345678901234567890.123456789123456789';
     const fetchMock = vi.fn().mockResolvedValue(buildJsonResponse({
-      pairs: [{ chainId: 'pulsechain', pairAddress: '0x1111111111111111111111111111111111111111', priceUsd: longDecimal, liquidity: { usd: 100 }, baseToken: { address: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' } }],
+      pairs: [buildPair('0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '0x1111111111111111111111111111111111111111', longDecimal)],
     }));
 
     const provider = buildProvider(fetchMock);
@@ -72,7 +84,7 @@ describe('DexScreenerPriceProvider', () => {
 
   it('below-scale fractional prices deterministically truncate to zero and fail closed', async () => {
     const fetchMock = vi.fn().mockResolvedValue(buildJsonResponse({
-      pairs: [{ chainId: 'pulsechain', pairAddress: '0x1111111111111111111111111111111111111111', priceUsd: '0.0000001', liquidity: { usd: 100 }, baseToken: { address: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' } }],
+      pairs: [buildPair('0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '0x1111111111111111111111111111111111111111', '0.0000001')],
     }));
 
     const provider = buildProvider(fetchMock);
@@ -86,7 +98,7 @@ describe('DexScreenerPriceProvider', () => {
 
     for (const invalidPrice of invalidPrices) {
       const fetchMock = vi.fn().mockResolvedValue(buildJsonResponse({
-        pairs: [{ chainId: 'pulsechain', pairAddress: '0x1111111111111111111111111111111111111111', priceUsd: invalidPrice, liquidity: { usd: 100 }, baseToken: { address: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' } }],
+        pairs: [buildPair('0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '0x1111111111111111111111111111111111111111', invalidPrice)],
       }));
       const provider = buildProvider(fetchMock);
       const result = await provider.getPriceObservations([{ assetId: supportedAssetId, chainId: 369 }]);
@@ -167,5 +179,111 @@ describe('DexScreenerPriceProvider', () => {
 
     expect(first.observations[0].metadata.selectedPairAddress).toBe('0x000000000000000000000000000000000000000b');
     expect(first.observations[0]).toEqual(second.observations[0]);
+  });
+
+  it('respects max concurrency while fetching eligible assets', async () => {
+    const addresses = ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'cccccccccccccccccccccccccccccccccccccccc'];
+    const inflight: string[] = [];
+    let maxObserved = 0;
+    const deferreds = addresses.map((address) => deferredResponse({ pairs: [buildPair(`0x${address}`, `0x${address}`)] }));
+    const fetchMock = vi.fn((url: string) => {
+      inflight.push(url);
+      maxObserved = Math.max(maxObserved, inflight.length);
+      const index = addresses.findIndex((address) => url.endsWith(address));
+      return deferreds[index].promise.finally(() => {
+        const pos = inflight.indexOf(url);
+        if (pos >= 0) inflight.splice(pos, 1);
+      });
+    });
+
+    const provider = buildProvider(fetchMock, nowIso, 2);
+    const promise = provider.getPriceObservations(addresses.map((address) => ({ assetId: `erc20:369:0x${address}`, chainId: 369 })));
+
+    await Promise.resolve();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(maxObserved).toBe(2);
+
+    deferreds[1].resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(maxObserved).toBe(2);
+
+    deferreds[0].resolve();
+    deferreds[2].resolve();
+    const result = await promise;
+
+    expect(result.observations).toHaveLength(3);
+    expect(maxObserved).toBe(2);
+  });
+
+  it('fetch completion order does not affect deterministic observation order', async () => {
+    const addressA = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const addressB = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    const deferredA = deferredResponse({ pairs: [buildPair(`0x${addressA}`, `0x${addressA}`)] });
+    const deferredB = deferredResponse({ pairs: [buildPair(`0x${addressB}`, `0x${addressB}`)] });
+    const fetchMock = vi.fn((url: string) => (url.endsWith(addressA) ? deferredA.promise : deferredB.promise));
+
+    const provider = buildProvider(fetchMock, nowIso, 2);
+    const promise = provider.getPriceObservations([
+      { assetId: `erc20:369:0x${addressB}`, chainId: 369 },
+      { assetId: `erc20:369:0x${addressA}`, chainId: 369 },
+    ]);
+
+    await Promise.resolve();
+    deferredB.resolve();
+    deferredA.resolve();
+
+    const result = await promise;
+    expect(result.observations.map((observation) => observation.assetId)).toEqual([
+      `erc20:369:0x${addressA}`,
+      `erc20:369:0x${addressB}`,
+    ]);
+  });
+
+  it('reversed input order produces the same normalized result ordering', async () => {
+    const addressA = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const addressB = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    const makeFetch = () => vi.fn((url: string) => {
+      const address = url.endsWith(addressA) ? addressA : addressB;
+      return Promise.resolve(buildJsonResponse({ pairs: [buildPair(`0x${address}`, `0x${address}`)] }));
+    });
+
+    const forward = await buildProvider(makeFetch(), nowIso, 2).getPriceObservations([
+      { assetId: `erc20:369:0x${addressA}`, chainId: 369 },
+      { assetId: `erc20:369:0x${addressB}`, chainId: 369 },
+    ]);
+    const reversed = await buildProvider(makeFetch(), nowIso, 2).getPriceObservations([
+      { assetId: `erc20:369:0x${addressB}`, chainId: 369 },
+      { assetId: `erc20:369:0x${addressA}`, chainId: 369 },
+    ]);
+
+    expect(reversed.observations).toEqual(forward.observations);
+    expect(reversed.unsupportedAssets).toEqual(forward.unsupportedAssets);
+  });
+
+  it('isolates fetch rejection and non-200 failures while other assets succeed', async () => {
+    const successAddress = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const rejectedAddress = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    const unavailableAddress = 'cccccccccccccccccccccccccccccccccccccccc';
+    const fetchMock = vi.fn((url: string) => {
+      if (url.endsWith(successAddress)) return Promise.resolve(buildJsonResponse({ pairs: [buildPair(`0x${successAddress}`, `0x${successAddress}`)] }));
+      if (url.endsWith(rejectedAddress)) return Promise.reject(new Error('network down'));
+      return Promise.resolve(buildJsonResponse({ message: 'bad gateway' }, 502));
+    });
+
+    const provider = buildProvider(fetchMock, nowIso, 3);
+    const result = await provider.getPriceObservations([
+      { assetId: `erc20:369:0x${rejectedAddress}`, chainId: 369 },
+      { assetId: `erc20:369:0x${successAddress}`, chainId: 369 },
+      { assetId: `erc20:369:0x${unavailableAddress}`, chainId: 369 },
+    ]);
+
+    expect(result.observations).toHaveLength(1);
+    expect(result.observations[0].assetId).toBe(`erc20:369:0x${successAddress}`);
+    expect(result.unsupportedAssets.map((asset) => asset.assetId)).toEqual([
+      `erc20:369:0x${rejectedAddress}`,
+      `erc20:369:0x${unavailableAddress}`,
+    ]);
   });
 });
