@@ -15,10 +15,11 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      // Electron desktop is currently legacy/non-primary for PulsePort; keep Chromium
-      // web security enabled in all modes. If desktop support is restored, route
-      // cross-origin API access through a main-process/preload bridge (or proxy)
-      // instead of disabling webSecurity.
+      // Electron desktop is currently a legacy/non-primary runtime for PulsePort.
+      // By product/security decision, keep Chromium webSecurity enabled in all modes.
+      // If desktop support is restored later, direct renderer API calls may hit CORS
+      // and must be moved behind a main-process/preload bridge (or trusted proxy).
+      // Do NOT disable webSecurity to bypass CORS.
       webSecurity: true,
       partition: 'persist:pulseport', // Named persistent session — survives restarts
     },
