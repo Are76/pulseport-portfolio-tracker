@@ -20,6 +20,8 @@ function createWindow() {
       // If desktop support is restored later, direct renderer API calls may hit CORS
       // and must be moved behind a main-process/preload bridge (or trusted proxy).
       // Do NOT disable webSecurity to bypass CORS.
+      // TODO(product): If/when Electron desktop support is revived, implement a secure
+      // main-process API bridge/proxy and migrate renderer network calls through it.
       webSecurity: true,
       partition: 'persist:pulseport', // Named persistent session — survives restarts
     },
