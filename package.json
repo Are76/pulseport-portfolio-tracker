@@ -13,13 +13,13 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "test": "vitest run",
-    "electron:dev": "NODE_ENV=development electron .",
-    "electron:build": "vite build && electron-builder --win --x64",
-    "electron:build:zip": "vite build && electron-builder --win zip --x64",
-    "electron:build:dir": "vite build && electron-builder --win --x64 --dir",
-    "electron:build:mac": "vite build && electron-builder --mac",
-    "electron:build:linux": "vite build && electron-builder --linux",
-    "electron:build:all": "vite build && electron-builder --win --mac --linux"
+    "legacy:electron:dev": "NODE_ENV=development electron .",
+    "legacy:electron:build": "vite build && electron-builder --win --x64",
+    "legacy:electron:build:zip": "vite build && electron-builder --win zip --x64",
+    "legacy:electron:build:dir": "vite build && electron-builder --win --x64 --dir",
+    "legacy:electron:build:mac": "vite build && electron-builder --mac",
+    "legacy:electron:build:linux": "vite build && electron-builder --linux",
+    "legacy:electron:build:all": "vite build && electron-builder --win --mac --linux"
   },
   "build": {
     "appId": "com.pulseport.app",
