@@ -12,6 +12,7 @@ const DECIMAL_PATTERN = /^\d+(?:\.\d+)?$/;
 export type DexScreenerPriceProviderOptions = {
   fetchImpl?: typeof fetch;
   now?: () => Date;
+  maxConcurrency?: number;
 };
 
 type DexScreenerPair = {
@@ -25,6 +26,14 @@ type DexScreenerPair = {
 
 function normalizeAddress(address: string): string {
   return address.toLowerCase();
+}
+
+
+const DEFAULT_MAX_CONCURRENCY = 4;
+
+function resolveMaxConcurrency(input: unknown): number {
+  if (typeof input !== 'number' || !Number.isInteger(input) || input <= 0) return DEFAULT_MAX_CONCURRENCY;
+  return input;
 }
 
 function unsupported(assetId: string, chainId: number, reason: string): PriceProviderUnsupportedAsset {
@@ -125,6 +134,7 @@ function selectBestPair(pairs: DexScreenerPair[], expectedBaseTokenAddress: stri
 export function createDexScreenerPriceProvider(options: DexScreenerPriceProviderOptions = {}): PriceProviderAdapter {
   const fetchImpl = options.fetchImpl ?? fetch;
   const now = options.now ?? (() => new Date());
+  const maxConcurrency = resolveMaxConcurrency(options.maxConcurrency);
 
   return {
     metadata: {
@@ -135,6 +145,8 @@ export function createDexScreenerPriceProvider(options: DexScreenerPriceProvider
     async getPriceObservations(requests: PriceProviderAssetRequest[]): Promise<PriceProviderObservationBatch> {
       const observations: PriceProviderObservationBatch['observations'] = [];
       const unsupportedAssets: PriceProviderUnsupportedAsset[] = [];
+
+      const supportedRequests: Array<{ request: PriceProviderAssetRequest; contractAddress: string }> = [];
 
       for (const request of requests) {
         const parsedAsset = parsePulsechainAssetId(request.assetId);
@@ -147,33 +159,74 @@ export function createDexScreenerPriceProvider(options: DexScreenerPriceProvider
           continue;
         }
 
-        const providerAssetId = `token/${DEXSCREENER_PULSECHAIN_SLUG}/${parsedAsset.contractAddress}`;
-        const ingestedAt = now().toISOString();
+        supportedRequests.push({ request, contractAddress: parsedAsset.contractAddress });
+      }
+
+      let activeFetches = 0;
+      const waiters: Array<() => void> = [];
+
+      const acquireFetchSlot = async (): Promise<void> => {
+        if (activeFetches < maxConcurrency) {
+          activeFetches += 1;
+          return;
+        }
+
+        await new Promise<void>((resolve) => {
+          waiters.push(() => {
+            activeFetches += 1;
+            resolve();
+          });
+        });
+      };
+
+      const releaseFetchSlot = (): void => {
+        const next = waiters.shift();
+        if (next) {
+          next();
+          return;
+        }
+        activeFetches -= 1;
+      };
+
+      const tasks = supportedRequests.map(async ({ request, contractAddress }) => {
+        const providerAssetId = `token/${DEXSCREENER_PULSECHAIN_SLUG}/${contractAddress}`;
+
+        let response: Response;
+        let ingestedAt: string;
+        await acquireFetchSlot();
+        try {
+          ingestedAt = now().toISOString();
+          response = await fetchImpl(`https://api.dexscreener.com/latest/dex/tokens/${contractAddress}`);
+        } catch {
+          unsupportedAssets.push(unsupported(request.assetId, request.chainId, 'Malformed or unreachable upstream payload.'));
+          return;
+        } finally {
+          releaseFetchSlot();
+        }
+
+        if (!response.ok) {
+          unsupportedAssets.push(unsupported(request.assetId, request.chainId, `Upstream unavailable: HTTP ${response.status}.`));
+          return;
+        }
 
         try {
-          const response = await fetchImpl(`https://api.dexscreener.com/latest/dex/tokens/${parsedAsset.contractAddress}`);
-          if (!response.ok) {
-            unsupportedAssets.push(unsupported(request.assetId, request.chainId, `Upstream unavailable: HTTP ${response.status}.`));
-            continue;
-          }
-
           const payload: unknown = await response.json();
           const pairs = asPairs(payload);
           if (pairs.length === 0) {
             unsupportedAssets.push(unsupported(request.assetId, request.chainId, 'No DexScreener pairs available for asset.'));
-            continue;
+            return;
           }
 
-          const selectedPair = selectBestPair(pairs, parsedAsset.contractAddress);
+          const selectedPair = selectBestPair(pairs, contractAddress);
           if (!selectedPair) {
             unsupportedAssets.push(unsupported(request.assetId, request.chainId, 'No supported PulseChain pair with valid price/liquidity.'));
-            continue;
+            return;
           }
 
           const priceUsdAtomic = parsePriceUsdAtomic(selectedPair.priceUsd);
           if (!priceUsdAtomic) {
             unsupportedAssets.push(unsupported(request.assetId, request.chainId, 'Malformed upstream priceUsd for selected pair.'));
-            continue;
+            return;
           }
 
           const observedAt = ingestedAt;
@@ -207,7 +260,22 @@ export function createDexScreenerPriceProvider(options: DexScreenerPriceProvider
         } catch {
           unsupportedAssets.push(unsupported(request.assetId, request.chainId, 'Malformed or unreachable upstream payload.'));
         }
-      }
+      });
+
+      await Promise.all(tasks);
+
+      observations.sort((a, b) =>
+        a.chainId - b.chainId ||
+        a.assetId.localeCompare(b.assetId) ||
+        a.providerAssetId.localeCompare(b.providerAssetId) ||
+        a.providerObservationId.localeCompare(b.providerObservationId)
+      );
+
+      unsupportedAssets.sort((a, b) =>
+        a.chainId - b.chainId ||
+        a.assetId.localeCompare(b.assetId) ||
+        a.reason.localeCompare(b.reason)
+      );
 
       return { observations, unsupportedAssets };
     },
