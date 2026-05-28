@@ -1,6 +1,8 @@
 import React from 'react';
 import { Calculator, ChevronDown, ChevronUp, Copy, ExternalLink, Trash2, X } from 'lucide-react';
 import type { Asset, Transaction, Wallet } from '../types';
+import { AtlasHoldingCard } from './atlas/AtlasHoldingCard';
+import { buildAtlasHoldingCards } from './atlas/atlas-holding-card-model';
 import { TransactionList } from './TransactionList';
 
 export type HoldingSortField = 'value' | 'change';
@@ -134,6 +136,15 @@ export function HoldingsTable({
   const tableTotalUsd = footerValueUsd ?? assets.reduce((sum, asset) => sum + asset.valueUsd, 0);
   const tableTotalPls = plsUsdPrice > 0 ? tableTotalUsd / plsUsdPrice : 0;
   const portfolioBase = shareBaseUsd ?? totalValueUsd;
+  const atlasHoldingCards = React.useMemo(() => buildAtlasHoldingCards({
+    assets: sortedAssets,
+    totalValueUsd: portfolioBase,
+    priceChangePeriod,
+    getLogoUrl: (asset) => {
+      const addrLower = asset.address?.toLowerCase?.() ?? '';
+      return staticLogos[addrLower] || asset.logoUrl || tokenLogos[addrLower] || getTokenLogoUrl(asset);
+    },
+  }), [getTokenLogoUrl, portfolioBase, priceChangePeriod, sortedAssets, staticLogos, tokenLogos]);
   const [isMobileLayout, setIsMobileLayout] = React.useState(() => typeof window !== 'undefined' && window.innerWidth <= 639);
   React.useEffect(() => {
     const handler = () => setIsMobileLayout(window.innerWidth <= 639);
@@ -154,8 +165,29 @@ export function HoldingsTable({
   ];
 
   return (
-    <div className="data-table-scroll">
-      <table className="data-table holdings-unified-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+    <div className="holdings-atlas-shell">
+      {atlasHoldingCards.length > 0 && (
+        <div className="atlas-holding-grid" aria-label="Top holdings">
+          {atlasHoldingCards.map(card => (
+            <AtlasHoldingCard
+              key={card.id}
+              card={card}
+              onSelect={(id) => {
+                const asset = sortedAssets.find(item => item.id === id);
+                if (!asset) return;
+                if (onSelectAsset) {
+                  onSelectAsset(asset);
+                  return;
+                }
+                onToggleExpanded(id);
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      <div className="data-table-scroll">
+        <table className="data-table holdings-unified-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr style={{ borderBottom: '1px solid var(--border)' }}>
             {columns.map(({ label, field, align, hideMobile }, i) => (
@@ -406,7 +438,8 @@ export function HoldingsTable({
             </tr>
           </tfoot>
         )}
-      </table>
+        </table>
+      </div>
     </div>
   );
 }
