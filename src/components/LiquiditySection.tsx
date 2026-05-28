@@ -571,13 +571,10 @@ export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySect
   useAutoFetch(walletAddresses, refetch, tokenPrices);
 
   const [atlasFilter, setAtlasFilter] = React.useState<'all' | 'farm' | 'lp'>('all');
-  const filteredPositions = atlasFilter === 'farm'
-    ? positions.filter(p => p.isStaked)
-    : atlasFilter === 'lp'
-      ? positions.filter(p => !p.isStaked)
-      : positions;
-  const stakedPositions  = filteredPositions.filter(p => p.isStaked);
-  const regularPositions = filteredPositions.filter(p => !p.isStaked);
+  const farmPositions = positions.filter(position => position.stakedLpBalance > 0);
+  const walletLpPositions = positions.filter(position => position.walletLpBalance > 0);
+  const stakedPositions = atlasFilter === 'lp' ? [] : farmPositions;
+  const regularPositions = atlasFilter === 'farm' ? [] : walletLpPositions;
   const incPrice         = tokenPrices['INC'] ?? 0;
   const atlasDefiCards = buildAtlasDefiSummaryCards({ positions, incPrice });
 

@@ -25,7 +25,12 @@ type DefiSummaryInput = {
 function fmtUsd(value: number): string {
   const abs = Math.abs(value);
   if (abs >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
-  if (abs >= 1_000) return `$${(value / 1_000).toFixed(abs >= 10_000 ? 0 : 1)}K`;
+  if (abs >= 1_000) {
+    const digits = abs >= 10_000 ? 0 : 1;
+    const roundedThousands = Number((abs / 1_000).toFixed(digits));
+    if (roundedThousands >= 1_000) return `$${(value / 1_000_000).toFixed(2)}M`;
+    return `$${(value / 1_000).toFixed(digits)}K`;
+  }
   if (abs >= 100) return `$${value.toFixed(0)}`;
   return `$${value.toFixed(2)}`;
 }
@@ -84,10 +89,10 @@ export function buildAtlasStakeSummaryCards({
 }
 
 export function buildAtlasDefiSummaryCards({ positions, incPrice }: DefiSummaryInput): AtlasIntelligenceCardData[] {
-  const staked = positions.filter(position => position.isStaked);
-  const walletLp = positions.filter(position => !position.isStaked);
+  const staked = positions.filter(position => position.stakedLpBalance > 0);
+  const walletLp = positions.filter(position => position.walletLpBalance > 0);
   const totalValue = positions.reduce((sum, position) => sum + position.totalUsd, 0);
-  const pendingUsd = positions.reduce((sum, position) => {
+  const pendingUsd = staked.reduce((sum, position) => {
     const pendingInc = (position as LpPositionEnriched & { pendingInc?: number }).pendingInc ?? 0;
     return sum + (position.pendingIncUsd ?? pendingInc * incPrice);
   }, 0);

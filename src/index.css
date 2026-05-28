@@ -3428,7 +3428,11 @@ textarea:focus-visible,
   .card,
   .neon-card,
   .asset-card,
-  .stat-card { transition: none !important; }
+  .stat-card,
+  .atlas-intelligence-card { transition: none !important; }
+  .atlas-intelligence-card:hover,
+  .atlas-intelligence-card:focus-visible,
+  .atlas-intelligence-card.is-active { transform: none !important; }
   .stake-progress-fill,
   .progress-bar-fill { transition: none !important; }
 }
@@ -8454,6 +8458,10 @@ body,
 
 .atlas-intelligence-card--accent strong {
   color: var(--atlas-accent);
+}
+
+.atlas-intelligence-card--muted strong {
+  color: var(--atlas-muted);
 }
 
 .atlas-home__middle {

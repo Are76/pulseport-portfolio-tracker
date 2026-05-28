@@ -68,18 +68,22 @@ describe('Atlas intelligence card model', () => {
     expect(cards[0]).toMatchObject({ label: 'Active stakes', value: '2', target: 'all' });
     expect(cards[1]).toMatchObject({ label: 'Ending soon', value: '1', target: 'ending-soon', tone: 'negative' });
     expect(cards[2]).toMatchObject({ value: '8 HEX', subvalue: '$0.64 / day' });
+    expect(cards[3]).toMatchObject({ label: 'Maturity value', value: '$1.0K', target: 'all' });
   });
 
-  it('builds DeFi cards that separate farming from wallet LP', () => {
+  it('builds DeFi cards from LP balances instead of pair-level staking flags', () => {
     const cards = buildAtlasDefiSummaryCards({
-      positions: [lpPosition, { ...lpPosition, pairAddress: '0xwallet', isStaked: false, totalUsd: 40, pendingIncUsd: 0 }],
+      positions: [
+        { ...lpPosition, totalUsd: 999_950, walletLpBalance: 4, stakedLpBalance: 10 },
+        { ...lpPosition, pairAddress: '0xwallet', isStaked: true, totalUsd: 40, pendingIncUsd: 0, walletLpBalance: 5, stakedLpBalance: 0 },
+      ],
       incPrice: 0.5,
     });
 
     expect(cards.map(card => card.id)).toEqual(['defi-value', 'farms', 'wallet-lp', 'pending-inc']);
-    expect(cards[0]).toMatchObject({ value: '$140', target: 'all' });
+    expect(cards[0]).toMatchObject({ value: '$1.00M', target: 'all' });
     expect(cards[1]).toMatchObject({ value: '1', target: 'farm' });
-    expect(cards[2]).toMatchObject({ value: '1', target: 'lp' });
+    expect(cards[2]).toMatchObject({ value: '2', target: 'lp' });
     expect(cards[3]).toMatchObject({ value: '$12.00' });
   });
 });
@@ -97,6 +101,7 @@ describe('AtlasIntelligenceCard', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Ending soon/i }));
 
+    expect(onSelect).toHaveBeenCalledTimes(1);
     expect(onSelect).toHaveBeenCalledWith('ending-soon');
   });
 });
