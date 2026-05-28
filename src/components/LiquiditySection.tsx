@@ -14,6 +14,8 @@ import { useLiquidityPositions } from '../hooks/useLiquidityPositions';
 import { LiquidityPositionCard } from './LiquidityPositionCard';
 import { fmtUsd, fmtTok } from '../lib/utils';
 import type { LpPositionEnriched } from '../types';
+import { AtlasIntelligenceCard } from './atlas/AtlasIntelligenceCard';
+import { buildAtlasDefiSummaryCards } from './atlas/atlas-intelligence-card-model';
 
 // --- Skeleton row -------------------------------------------------------------
 function SkeletonRow() {
@@ -568,9 +570,13 @@ export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySect
   const { positions, loading, error, refetch } = useLiquidityPositions(walletAddresses, tokenPrices);
   useAutoFetch(walletAddresses, refetch, tokenPrices);
 
-  const stakedPositions  = positions.filter(p => p.isStaked);
-  const regularPositions = positions.filter(p => !p.isStaked);
+  const [atlasFilter, setAtlasFilter] = React.useState<'all' | 'farm' | 'lp'>('all');
+  const farmPositions = positions.filter(position => position.stakedLpBalance > 0);
+  const walletLpPositions = positions.filter(position => position.walletLpBalance > 0 && position.stakedLpBalance === 0);
+  const stakedPositions = atlasFilter === 'lp' ? [] : farmPositions;
+  const regularPositions = atlasFilter === 'farm' ? [] : walletLpPositions;
   const incPrice         = tokenPrices['INC'] ?? 0;
+  const atlasDefiCards = buildAtlasDefiSummaryCards({ positions, incPrice });
 
   return (
     <div className="space-y-5">
@@ -623,6 +629,19 @@ export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySect
         }}>
           <AlertTriangle size={16} />
           <span>Failed to load positions: {error}</span>
+        </div>
+      )}
+
+      {!loading && positions.length > 0 && (
+        <div className="atlas-intelligence-grid" aria-label="DeFi intelligence">
+          {atlasDefiCards.map(card => (
+            <AtlasIntelligenceCard
+              key={card.id}
+              card={card}
+              active={atlasFilter === card.target}
+              onSelect={(target) => setAtlasFilter(target as 'all' | 'farm' | 'lp')}
+            />
+          ))}
         </div>
       )}
 

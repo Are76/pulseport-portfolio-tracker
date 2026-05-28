@@ -3428,7 +3428,11 @@ textarea:focus-visible,
   .card,
   .neon-card,
   .asset-card,
-  .stat-card { transition: none !important; }
+  .stat-card,
+  .atlas-intelligence-card { transition: none !important; }
+  .atlas-intelligence-card:hover,
+  .atlas-intelligence-card:focus-visible,
+  .atlas-intelligence-card.is-active { transform: none !important; }
   .stake-progress-fill,
   .progress-bar-fill { transition: none !important; }
 }
@@ -8378,6 +8382,88 @@ body,
   white-space: nowrap;
 }
 
+.atlas-intelligence-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.atlas-intelligence-card {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  min-height: 116px;
+  padding: 14px;
+  border: 1px solid var(--atlas-border);
+  border-radius: 8px;
+  background: var(--atlas-panel);
+  color: var(--atlas-fg);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.atlas-intelligence-card:hover,
+.atlas-intelligence-card:focus-visible,
+.atlas-intelligence-card.is-active {
+  border-color: color-mix(in srgb, var(--atlas-accent) 58%, var(--atlas-border));
+  background: var(--atlas-panel-strong);
+  transform: translateY(-1px);
+}
+
+.atlas-intelligence-card:focus-visible {
+  outline: 2px solid var(--atlas-accent);
+  outline-offset: 2px;
+}
+
+.atlas-intelligence-card span {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+
+.atlas-intelligence-card small {
+  color: var(--atlas-muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.atlas-intelligence-card strong {
+  overflow-wrap: anywhere;
+  color: var(--atlas-fg);
+  font-family: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.atlas-intelligence-card em {
+  color: var(--atlas-muted);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.atlas-intelligence-card--positive strong {
+  color: var(--atlas-positive);
+}
+
+.atlas-intelligence-card--negative strong {
+  color: var(--atlas-negative);
+}
+
+.atlas-intelligence-card--accent strong {
+  color: var(--atlas-accent);
+}
+
+.atlas-intelligence-card--muted strong {
+  color: var(--atlas-muted);
+}
+
 .atlas-home__middle {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -8434,7 +8520,8 @@ body,
 
   .atlas-home__metrics,
   .atlas-home__tokens,
-  .atlas-holding-grid {
+  .atlas-holding-grid,
+  .atlas-intelligence-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -8450,6 +8537,10 @@ body,
   }
 
   .atlas-holding-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .atlas-intelligence-grid {
     grid-template-columns: 1fr;
   }
 }

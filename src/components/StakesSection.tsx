@@ -6,6 +6,8 @@ import {
 import { Zap, Lock, Activity, Layers, Filter } from 'lucide-react';
 import type { HexStake } from '../types';
 import { PHEX_YIELD_PER_TSHARE, EHEX_YIELD_PER_TSHARE } from '../constants';
+import { AtlasIntelligenceCard } from './atlas/AtlasIntelligenceCard';
+import { buildAtlasStakeSummaryCards } from './atlas/atlas-intelligence-card-model';
 
 // -- Types ---------------------------------------------------------------------
 
@@ -266,6 +268,12 @@ export function StakesSection({
   const totalMaturityValueUsd = activeStakes.reduce((s, st) => s + (st.totalValueUsd ?? st.estimatedValueUsd ?? 0), 0);
   const totalMaturityHex = activeStakes.reduce((s, st) => s + stakeMaturityHex(st, ratePulse, rateEth), 0);
   const totalTShares = activeStakes.reduce((s, st) => s + (st.tShares ?? 0), 0);
+  const atlasStakeCards = buildAtlasStakeSummaryCards({
+    stakes,
+    dailyYieldHex,
+    dailyYieldUsd,
+    maturityValueUsd: totalMaturityValueUsd,
+  });
 
   const chainPerformance = ([
     { chain: 'pulsechain' as StakeChain, label: 'PulseChain', token: 'pHEX', price: phexUsdPrice, color: 'var(--chain-pulse)', stakes: pHexStakes, liquidHex: liquidPHex },
@@ -402,6 +410,17 @@ export function StakesSection({
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="atlas-intelligence-grid" aria-label="HEX stake intelligence">
+        {atlasStakeCards.map(card => (
+          <AtlasIntelligenceCard
+            key={card.id}
+            card={card}
+            active={stakeFilter === card.target}
+            onSelect={(target) => setStakeFilter(target as StakeFilter)}
+          />
+        ))}
       </div>
 
       <div className="stakes-charts-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
