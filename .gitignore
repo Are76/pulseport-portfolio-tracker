@@ -4,6 +4,7 @@ dist/
 release/
 coverage/
 .worktrees/
+.superpowers/
 .DS_Store
 *.log
 .env*
