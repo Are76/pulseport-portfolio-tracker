@@ -79,6 +79,7 @@ import { fetchHexStakeDashboard } from './lib/api/hex-stake-client';
 import { resolveBackendWalletAddress } from './lib/backend-dashboard-transition';
 import { BackendDashboardTransitionPanel } from './components/BackendDashboardTransitionPanel';
 import { BackendHexStakeTransitionPanel } from './components/BackendHexStakeTransitionPanel';
+import { AtlasHomeSurface } from './components/atlas/AtlasHomeSurface';
 
 const ERC20_ABI = [
   {
@@ -3626,6 +3627,18 @@ export default function App() {
     setActiveTab('product');
   };
 
+  const handleAtlasNavigate = (target: string) => {
+    const atlasTabs: ActiveTab[] = ['overview', 'assets', 'stakes', 'history', 'defi', 'bridge'];
+    if (atlasTabs.includes(target as ActiveTab)) {
+      setActiveTab(target as ActiveTab);
+      return;
+    }
+
+    if (target === 'product' && currentAssets.length > 0) {
+      openProductPage(currentAssets[0], activeTab);
+    }
+  };
+
   const runHomeSearch = (raw: string) => {
     const q = raw.trim();
     if (!q) return;
@@ -3964,6 +3977,12 @@ export default function App() {
 
           <AnimatePresence mode="wait">
             {activeTab === 'home' && (
+              <motion.div key="home" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="front-page">
+                <AtlasHomeSurface onNavigate={handleAtlasNavigate} />
+              </motion.div>
+            )}
+
+            {false && activeTab === 'home' && (
               <motion.div key="home" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="front-page dashboard-premium">
                 <section className="front-hero">
                   <div className="front-data-field" aria-hidden="true">
