@@ -4,11 +4,75 @@
 
 **Goal:** Rework PulsePort toward the approved GoPulse-inspired dark, high-contrast, clickable portfolio UI while preserving existing portfolio functionality.
 
-**Architecture:** Introduce a small design-token layer and reusable clickable information components first, then replace the home/overview surface in controlled slices. Keep existing data calculations in place for this phase; map current computed values into new presentational components and detail models.
+**Architecture:** Roll the redesign out in small product-reviewed branches. Start with a contained home-surface proof, then expand the visual system to details, cards, and main portfolio modules only after the product owner confirms the direction feels right in the real app.
 
 **Tech Stack:** Vite, React 19, TypeScript, CSS variables in `src/index.css`, Vitest, Testing Library, existing `lucide-react`, existing `motion`.
 
 ---
+
+## Reality Check
+
+This is a meaningful UI/UX redesign, not a simple color swap.
+
+Recommended scope:
+
+- **4-5 branches** for the core app experience.
+- **7-10 branches** only if the redesign is expanded to every modal, DeFi module, bridge view, transaction surface, and legacy edge view.
+
+Expected effort:
+
+- Prototype-quality first screen: **0.5-1 day**.
+- Production-quality home surface: **1-2 days**.
+- Coherent redesign of primary app surfaces: **4-7 days**.
+- Full design-system cleanup across the whole app: **1-2 weeks**.
+
+The first implementation branch should prove the direction in the real app before wider redesign work starts.
+
+## Branch Strategy
+
+Use these branches/PRs instead of one large redesign branch:
+
+1. **Branch 1: `ui/atlas-home-surface`**
+   - Goal: prove the GoPulse-like dark contrast direction on the home/portfolio first screen.
+   - Includes design tokens, minimal clickable components, desktop detail panel, and mobile detail sheet only where needed for the home surface.
+   - Product owner checkpoint: approve whether the real app now feels like the browser mockup direction.
+
+2. **Branch 2: `ui/atlas-token-holdings-cards`**
+   - Goal: apply the same visual language to token cards, holdings rows, market cards, and token detail entry points.
+   - Product owner checkpoint: confirm users can click holdings and understand where they go.
+
+3. **Branch 3: `ui/atlas-stakes-defi-summary`**
+   - Goal: bring HEX stakes and DeFi/LP summaries into the same clickable information model.
+   - Product owner checkpoint: confirm stake and LP information is clear without becoming text-heavy.
+
+4. **Branch 4: `ui/atlas-mobile-navigation-detail`**
+   - Goal: polish mobile navigation, bottom sheets, tap targets, and return-to-position behavior.
+   - Product owner checkpoint: mobile feels easy, not cramped.
+
+5. **Branch 5: `ui/atlas-polish-accessibility`**
+   - Goal: final spacing, hover/focus states, contrast, text overflow, empty states, and screenshot review.
+   - Product owner checkpoint: approve for broader rollout.
+
+Stop after any branch if the product owner does not like the direction in the real app.
+
+## Guardrails For Design Work
+
+For design exploration, keep the process light:
+
+- Use visual mockups and product-owner feedback.
+- Do not require heavy subagent review for every visual tweak.
+- Prefer fast iteration and browser review.
+
+For implementation, keep guardrails practical:
+
+- Work on a feature branch or isolated worktree.
+- Keep each branch focused.
+- Do not mix backend/data-source changes into UI branches.
+- Run `npm.cmd run lint`, relevant tests, and `npm.cmd run build` before calling a branch done.
+- Use browser verification for desktop and mobile.
+- Product owner reviews the visible result before the next branch begins.
+
+The coder should not implement the full plan in one pass unless explicitly requested.
 
 ## Product Owner Roadmap
 
@@ -23,6 +87,8 @@ The product owner should review after each milestone:
 The coder should not start by restyling everything. Build the reusable interaction system first, then migrate surfaces into it.
 
 ## File Structure
+
+The file structure below is for **Branch 1: `ui/atlas-home-surface`** only. Later branches should add their own focused plans after the product owner approves this first real-app implementation.
 
 Create:
 
