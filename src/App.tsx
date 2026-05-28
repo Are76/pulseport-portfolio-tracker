@@ -80,6 +80,7 @@ import { resolveBackendWalletAddress } from './lib/backend-dashboard-transition'
 import { BackendDashboardTransitionPanel } from './components/BackendDashboardTransitionPanel';
 import { BackendHexStakeTransitionPanel } from './components/BackendHexStakeTransitionPanel';
 import { AtlasHomeSurface } from './components/atlas/AtlasHomeSurface';
+import { buildAtlasHomeSnapshot } from './components/atlas/atlas-portfolio-snapshot';
 
 const ERC20_ABI = [
   {
@@ -2883,6 +2884,16 @@ export default function App() {
     [currentAssets, currentTransactions],
   );
 
+  const atlasHomeSnapshot = useMemo(() => buildAtlasHomeSnapshot({
+    summary,
+    walletCount: wallets.length,
+    assets: currentAssets,
+    stakes: currentStakes,
+    lpPositions,
+    farmPositions,
+    hiddenTokenCount: hiddenTokens.length,
+  }), [summary, wallets.length, currentAssets, currentStakes, lpPositions, farmPositions, hiddenTokens.length]);
+
   const stakeSummary = useMemo(() => {
     const stakes = wallets.length > 0 ? realStakes : MOCK_STAKES;
     const activeStakes = stakes.filter(s => (s.daysRemaining ?? 0) > 0);
@@ -3978,7 +3989,7 @@ export default function App() {
           <AnimatePresence mode="wait">
             {activeTab === 'home' && (
               <motion.div key="home" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="front-page">
-                <AtlasHomeSurface onNavigate={handleAtlasNavigate} />
+                <AtlasHomeSurface snapshot={atlasHomeSnapshot} onNavigate={handleAtlasNavigate} />
               </motion.div>
             )}
 
