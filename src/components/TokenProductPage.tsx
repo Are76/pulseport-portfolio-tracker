@@ -223,7 +223,7 @@ export function TokenProductPage({
               </div>
               <h1>{asset.name || asset.symbol}</h1>
               <p>
-                Live wallet-linked product page for {asset.symbol} with the same price, holdings, and transaction context used across Pulseport.
+                Price, position, market depth, and wallet activity for {asset.symbol}.
               </p>
             </div>
           </div>
