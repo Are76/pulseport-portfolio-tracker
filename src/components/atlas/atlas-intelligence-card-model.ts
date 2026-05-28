@@ -90,7 +90,7 @@ export function buildAtlasStakeSummaryCards({
 
 export function buildAtlasDefiSummaryCards({ positions, incPrice }: DefiSummaryInput): AtlasIntelligenceCardData[] {
   const staked = positions.filter(position => position.stakedLpBalance > 0);
-  const walletLp = positions.filter(position => position.walletLpBalance > 0);
+  const walletLp = positions.filter(position => position.walletLpBalance > 0 && position.stakedLpBalance === 0);
   const totalValue = positions.reduce((sum, position) => sum + position.totalUsd, 0);
   const pendingUsd = staked.reduce((sum, position) => {
     const pendingInc = (position as LpPositionEnriched & { pendingInc?: number }).pendingInc ?? 0;

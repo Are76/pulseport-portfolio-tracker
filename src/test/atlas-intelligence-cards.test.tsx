@@ -83,7 +83,7 @@ describe('Atlas intelligence card model', () => {
     expect(cards.map(card => card.id)).toEqual(['defi-value', 'farms', 'wallet-lp', 'pending-inc']);
     expect(cards[0]).toMatchObject({ value: '$1.00M', target: 'all' });
     expect(cards[1]).toMatchObject({ value: '1', target: 'farm' });
-    expect(cards[2]).toMatchObject({ value: '2', target: 'lp' });
+    expect(cards[2]).toMatchObject({ value: '1', target: 'lp' });
     expect(cards[3]).toMatchObject({ value: '$12.00' });
   });
 });

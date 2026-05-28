@@ -572,7 +572,7 @@ export function LiquiditySection({ walletAddresses, tokenPrices }: LiquiditySect
 
   const [atlasFilter, setAtlasFilter] = React.useState<'all' | 'farm' | 'lp'>('all');
   const farmPositions = positions.filter(position => position.stakedLpBalance > 0);
-  const walletLpPositions = positions.filter(position => position.walletLpBalance > 0);
+  const walletLpPositions = positions.filter(position => position.walletLpBalance > 0 && position.stakedLpBalance === 0);
   const stakedPositions = atlasFilter === 'lp' ? [] : farmPositions;
   const regularPositions = atlasFilter === 'farm' ? [] : walletLpPositions;
   const incPrice         = tokenPrices['INC'] ?? 0;
