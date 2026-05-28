@@ -85,4 +85,30 @@ describe('atlas home surface', () => {
     fireEvent.click(screen.getByRole('button', { name: /Stakes/i }));
     expect(screen.getByRole('heading', { name: 'HEX stakes' })).toBeInTheDocument();
   });
+
+  it('renders a supplied live snapshot instead of the design fallback', () => {
+    render(
+      <AtlasHomeSurface
+        onNavigate={() => undefined}
+        snapshot={{
+          eyebrow: '2 wallets',
+          headlineValue: '$450',
+          metrics: [
+            { id: 'change', label: '24h', value: '+0.31%', subvalue: '+$1.40', tone: 'positive', detailId: 'portfolio-change' },
+            { id: 'stakes', label: 'Stakes', value: '1', subvalue: '1 active', detailId: 'stakes' },
+            { id: 'lp', label: 'LP', value: '$100', subvalue: '22.2%', detailId: 'liquidity' },
+            { id: 'noise', label: 'Noise', value: '3', subvalue: 'hidden', detailId: 'hidden-noise' },
+          ],
+          signals: [{ id: 'top', label: 'Top holding', value: 'PLSX', detailId: 'portfolio-change' }],
+          allocation: [{ id: 'plsx', label: 'PLSX', width: 53.33 }],
+          tokens: [{ id: 'plsx', symbol: 'PLSX', price: '$0.00001', change: '-5.00%', ratio: '$80.00', tone: 'negative', detailId: 'portfolio-change' }],
+        }}
+      />,
+    );
+
+    expect(screen.getByText('2 wallets')).toBeInTheDocument();
+    expect(screen.getByText('$450')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Top holding/i })).toBeInTheDocument();
+    expect(screen.queryByText('$84,920')).not.toBeInTheDocument();
+  });
 });

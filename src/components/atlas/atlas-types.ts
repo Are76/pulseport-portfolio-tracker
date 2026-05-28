@@ -50,3 +50,19 @@ export type AtlasTokenCardData = {
   detailId: string;
   icon?: ReactNode;
 };
+
+export type AtlasAllocationItem = {
+  id: string;
+  label: string;
+  width: number;
+};
+
+export type AtlasHomeSnapshot = {
+  eyebrow: string;
+  headlineValue: string;
+  metrics: AtlasMetric[];
+  signals: AtlasSignal[];
+  allocation: AtlasAllocationItem[];
+  tokens: AtlasTokenCardData[];
+  emptyTokenMessage?: string;
+};
