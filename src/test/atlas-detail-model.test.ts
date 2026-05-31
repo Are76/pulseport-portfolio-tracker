@@ -41,4 +41,19 @@ describe('atlas detail model', () => {
     expect(buildAtlasDetail('token:hex', { 'token:hex': runtimeDetail })).toBe(runtimeDetail);
     expect(buildAtlasDetail('token:missing').id).toBe('unavailable');
   });
+
+  it('returns honest unavailable history for unsupported portfolio ranges', () => {
+    const detail = buildAtlasDetail('portfolio-change', {}, '30d');
+
+    expect(detail.title).toBe('30d history unavailable');
+    expect(detail.summary).toBe('Historical portfolio change data is not available yet.');
+    expect(detail.facts).toEqual([]);
+  });
+
+  it('preserves the real 24h portfolio change detail', () => {
+    const detail = buildAtlasDetail('portfolio-change');
+
+    expect(detail.title).toBe('24h change');
+    expect(detail.facts).toContainEqual({ label: 'Total', value: '+$3,182', tone: 'positive' });
+  });
 });

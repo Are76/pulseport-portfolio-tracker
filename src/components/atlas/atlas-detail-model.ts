@@ -117,13 +117,19 @@ const UNAVAILABLE_DETAIL: AtlasDetailContent = {
 };
 
 function buildPortfolioChangeDetail(range: AtlasRange): AtlasDetailContent {
+  if (range !== '24h') {
+    return {
+      id: 'unavailable',
+      breadcrumb: ['Home', 'Portfolio', range],
+      title: `${range} history unavailable`,
+      summary: 'Historical portfolio change data is not available yet.',
+      facts: [],
+      actions: [],
+    };
+  }
+
   return {
     ...DETAILS['portfolio-change'],
-    title: `${range} change`,
-    breadcrumb: ['Home', 'Portfolio', range],
-    facts: DETAILS['portfolio-change'].facts.map(fact => (
-      fact.label === 'Range' ? { ...fact, value: range } : fact
-    )),
   };
 }
 

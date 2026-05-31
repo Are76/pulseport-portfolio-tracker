@@ -27,4 +27,10 @@ describe('Atlas theme CSS', () => {
     expect(css).toMatch(/\[data-theme="light"\]\s+\.gopulse-shell\s*{[^}]*background:\s*var\(--shell-canvas\);[^}]*}/);
     expect(css).not.toMatch(/\[data-theme="light"\]\s+\.gopulse-shell\s*{[^}]*gradient\s*\(/);
   });
+
+  it('keeps allocation targets large enough with an internal visible focus style', () => {
+    expect(css).toMatch(/\.atlas-home__allocation\s*{[^}]*height:\s*44px;/);
+    expect(css).toMatch(/\.atlas-home__allocation button\s*{[^}]*min-height:\s*44px;/);
+    expect(css).toMatch(/\.atlas-home__allocation button:focus-visible\s*{[^}]*box-shadow:\s*inset 0 0 0 2px/);
+  });
 });

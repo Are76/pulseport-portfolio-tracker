@@ -8599,7 +8599,7 @@ body,
 
 .atlas-home__allocation {
   display: flex;
-  height: 42px;
+  height: 44px;
   overflow: hidden;
   border-radius: 999px;
   background: var(--atlas-panel);
@@ -8608,6 +8608,7 @@ body,
 .atlas-home__allocation button {
   display: grid;
   min-width: 48px;
+  min-height: 44px;
   place-items: center;
   border: 0;
   padding: 0;
@@ -8620,6 +8621,11 @@ body,
 .atlas-home__allocation button:nth-child(1) { background: var(--atlas-accent); }
 .atlas-home__allocation button:nth-child(2) { background: var(--atlas-fg); color: var(--atlas-on-fg); }
 .atlas-home__allocation button:nth-child(3) { background: var(--atlas-blue); color: #fff; }
+
+.atlas-home__allocation button:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--atlas-control-bg), inset 0 0 0 4px var(--atlas-accent);
+}
 
 @media (max-width: 900px) {
   .atlas-home__layout,

@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -155,7 +155,9 @@ describe('atlas home surface', () => {
 
     expect(screen.getByRole('button', { name: '30d' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: '24h' })).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.getByRole('heading', { name: '30d change' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '30d history unavailable' })).toBeInTheDocument();
+    expect(screen.getByText('Historical portfolio change data is not available yet.')).toBeInTheDocument();
+    expect(within(screen.getByRole('complementary')).queryByText('+$3,182')).not.toBeInTheDocument();
   });
 
   it('opens the exact allocation detail when an allocation segment is clicked', () => {
