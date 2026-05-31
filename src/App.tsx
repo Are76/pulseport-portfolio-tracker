@@ -3716,30 +3716,19 @@ export default function App() {
   const mobileMoreActive = mobileMoreNavItems.some(item => item.id === activeTab);
 
   return (
-    <div className="app-shell min-h-screen font-sans flex" style={{ fontSize: 14, color: 'var(--fg)' }}>
+    <div className="app-shell gopulse-shell min-h-screen font-sans flex" style={{ fontSize: 14, color: 'var(--fg)' }}>
       {/* -- SIDEBAR BACKDROP (mobile) -- */}
       <div className={`sidebar-backdrop${sidebarOpen ? ' open' : ''}`} onClick={() => setSidebarOpen(false)} />
       {/* -- SIDEBAR -- */}
-      <aside style={{
-          width: 248, minWidth: 248,
-          background: 'var(--bg-sidebar)',
-          borderRight: '1px solid var(--border)',
-        }}
-        className={`app-sidebar flex flex-col sticky top-0 h-screen overflow-y-auto custom-scrollbar${sidebarOpen ? ' open' : ''}`}>
+      <aside className={`app-sidebar gopulse-sidebar flex flex-col sticky top-0 h-screen overflow-y-auto custom-scrollbar${sidebarOpen ? ' open' : ''}`}>
         {/* Logo */}
-        <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--border)' }} className="flex items-center gap-3">
-          <div style={{
-            width: 40, height: 40,
-            background: 'linear-gradient(135deg, rgba(0,214,143,0.14), rgba(109,99,255,0.18))',
-            borderRadius: 14,
-            border: '1px solid rgba(0,214,143,0.18)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-          }}>
-            <img src={BRAND_ASSETS.logo} alt="Pulseport logo" style={{ width: 22, height: 22 }} />
+        <div className="gopulse-sidebar__brand flex items-center gap-3">
+          <div className="gopulse-sidebar__logo">
+            <img src={BRAND_ASSETS.logo} alt="Pulseport logo" />
           </div>
-          <div style={{ minWidth: 0 }}>
-            <img className="app-sidebar-wordmark" src={BRAND_ASSETS.wordmark} alt="Pulseport wordmark" style={{ width: 126, height: 'auto' }} />
-            <div style={{ marginTop: 6, fontSize: 11, color: 'var(--fg-subtle)', letterSpacing: '.08em', textTransform: 'uppercase' }}>Portfolio terminal</div>
+          <div className="gopulse-sidebar__identity">
+            <img className="app-sidebar-wordmark" src={BRAND_ASSETS.wordmark} alt="Pulseport wordmark" />
+            <div className="gopulse-sidebar__tagline">Portfolio intelligence</div>
           </div>
         </div>
 
@@ -3897,14 +3886,7 @@ export default function App() {
       {/* -- MAIN -- */}
       <main className="app-main flex-1 min-w-0 flex flex-col">
         {/* Top Nav / Header */}
-        <header
-          className="glass app-header shrink-0"
-          style={{
-            background: 'var(--bg-header)',
-            borderBottom: '1px solid var(--border)',
-            position: 'sticky', top: 0, zIndex: 50,
-            padding: '10px 20px 8px',
-          }}>
+        <header className="app-header gopulse-header shrink-0">
           <div className="app-header-main">
             {/* Page title */}
             <div className="flex items-center gap-3">

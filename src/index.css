@@ -236,12 +236,25 @@
 :root {
   --font-shell-display: 'Avenir Next Demi', 'Sora', ui-sans-serif, system-ui, sans-serif;
   --shell-bg: #090c12;
-  --shell-surface: #11141d;
-  --shell-fg: #f3f6ff;
-  --shell-muted: #97a0b7;
+  --shell-canvas: #020303;
+  --shell-sidebar: #050707;
+  --shell-header: #050707;
+  --shell-surface: #090d0c;
+  --shell-fg: #f4f7f6;
+  --shell-muted: #8b9894;
   --shell-subtle: #6b7388;
   --shell-accent: #00d68f;
-  --shell-border: rgba(255, 255, 255, 0.08);
+  --shell-border: #1a211f;
+}
+
+[data-theme="light"] {
+  --shell-canvas: #f3f6f5;
+  --shell-sidebar: #ffffff;
+  --shell-header: #ffffff;
+  --shell-surface: #ffffff;
+  --shell-border: #dce5e1;
+  --shell-fg: #17231f;
+  --shell-muted: #60716b;
 }
 
 /* btn-primary keeps white text (it has a colored bg so it's always legible) */
@@ -383,6 +396,68 @@ body {
     radial-gradient(ellipse 80% 40% at 50% 0%, rgba(59,91,219,0.07), transparent 70%),
     radial-gradient(ellipse 58% 34% at 100% 18%, rgba(61,85,192,0.05), transparent 68%),
     var(--bg-void);
+}
+
+.gopulse-shell {
+  background: var(--shell-canvas);
+  color: var(--shell-fg);
+}
+
+.gopulse-sidebar {
+  width: 224px;
+  min-width: 224px;
+  border-right: 1px solid var(--shell-border);
+  background: var(--shell-sidebar);
+}
+
+.gopulse-sidebar__brand {
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--shell-border);
+}
+
+.gopulse-sidebar__logo {
+  display: flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid var(--shell-border);
+  border-radius: 6px;
+  background: var(--shell-surface);
+}
+
+.gopulse-sidebar__logo img {
+  width: 20px;
+  height: 20px;
+}
+
+.gopulse-sidebar__identity {
+  min-width: 0;
+}
+
+.gopulse-sidebar__identity .app-sidebar-wordmark {
+  width: 126px;
+  height: auto;
+}
+
+.gopulse-sidebar__tagline {
+  margin-top: 5px;
+  color: var(--shell-muted);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.gopulse-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  padding: 9px 18px;
+  border-bottom: 1px solid var(--shell-border);
+  background: var(--shell-header);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 [data-theme="light"] .app-sidebar-wordmark {

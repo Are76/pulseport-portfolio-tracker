@@ -18,4 +18,11 @@ describe('Atlas theme CSS', () => {
     expect(css).toContain('color: var(--atlas-control-fg);');
     expect(css).toContain('color: var(--atlas-on-fg);');
   });
+
+  it('uses flat GoPulse Compact shell surfaces without decorative gradients', () => {
+    expect(css).toContain('--shell-canvas:');
+    expect(css).toContain('--shell-sidebar:');
+    expect(css).toContain('--shell-header:');
+    expect(css).not.toMatch(/\.gopulse-shell\s*{[^}]*radial-gradient/);
+  });
 });
