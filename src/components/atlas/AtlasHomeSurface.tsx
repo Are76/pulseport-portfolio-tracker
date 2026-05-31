@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { AtlasDetailPanel } from './AtlasDetailPanel';
 import { AtlasDetailSheet } from './AtlasDetailSheet';
@@ -44,6 +44,25 @@ export function AtlasHomeSurface({ onNavigate, snapshot = DEFAULT_SNAPSHOT }: Pr
   const [selectedDetailId, setSelectedDetailId] = useState<AtlasDetailId | string>('portfolio-change');
   const [sheetOpen, setSheetOpen] = useState(false);
   const detail = useMemo(() => buildAtlasDetail(selectedDetailId), [selectedDetailId]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const handleChange = (event: MediaQueryListEvent) => {
+      if (!event.matches) setSheetOpen(false);
+    };
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+
+    if (typeof mediaQuery.addListener === 'function') {
+      mediaQuery.addListener(handleChange);
+      return () => mediaQuery.removeListener(handleChange);
+    }
+  }, []);
 
   const selectDetail = (detailId: string) => {
     setSelectedDetailId(detailId);
