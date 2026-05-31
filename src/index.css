@@ -8364,7 +8364,6 @@ body,
 
 .atlas-home__layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
   gap: 16px;
   align-items: start;
 }
@@ -8666,7 +8665,6 @@ body,
 }
 
 @media (max-width: 900px) {
-  .atlas-home__layout,
   .atlas-home__middle {
     grid-template-columns: 1fr;
   }
@@ -8687,10 +8685,6 @@ body,
   .atlas-detail-panel {
     position: static;
     min-height: auto;
-  }
-
-  .atlas-home__layout > .atlas-detail-panel {
-    display: none;
   }
 
   .atlas-detail-sheet {

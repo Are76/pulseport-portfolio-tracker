@@ -33,4 +33,13 @@ describe('Atlas theme CSS', () => {
     expect(css).toMatch(/\.atlas-home__allocation button\s*{[^}]*min-height:\s*44px;/);
     expect(css).toMatch(/\.atlas-home__allocation button:focus-visible\s*{[^}]*box-shadow:\s*inset 0 0 0 2px/);
   });
+
+  it('does not reserve a desktop detail-panel column after moving details into a drawer', () => {
+    const layoutRule = css.match(/\.atlas-home__layout\s*{([^}]*)}/)?.[1];
+
+    expect(layoutRule).toBeDefined();
+    expect(layoutRule).not.toContain('grid-template-columns');
+    expect(css).not.toContain('.atlas-home__layout,');
+    expect(css).not.toContain('.atlas-home__layout > .atlas-detail-panel');
+  });
 });

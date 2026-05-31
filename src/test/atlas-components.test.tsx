@@ -11,6 +11,7 @@ import { AtlasTokenCard } from '../components/atlas/AtlasTokenCard';
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  document.body.style.overflow = '';
 });
 
 describe('atlas clickable components', () => {
@@ -152,10 +153,10 @@ describe('atlas home surface', () => {
     render(<AtlasHomeSurface onNavigate={() => undefined} />);
 
     fireEvent.click(screen.getByRole('button', { name: '30d' }));
-    fireEvent.click(screen.getByRole('button', { name: /24h \+3\.8%/i }));
 
     expect(screen.getByRole('button', { name: '30d' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: '24h' })).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(screen.getByRole('button', { name: /24h \+3\.8%/i }));
     expect(screen.getByRole('heading', { name: '30d history unavailable' })).toBeInTheDocument();
     expect(screen.getByText('Historical portfolio change data is not available yet.')).toBeInTheDocument();
     expect(within(screen.getByRole('dialog')).queryByText('+$3,182')).not.toBeInTheDocument();
@@ -266,6 +267,46 @@ describe('atlas home surface', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Dismiss detail panel' }));
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('isolates background content and locks document scrolling while the desktop drawer is open', () => {
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: false }));
+    document.body.style.overflow = 'clip';
+    const { container } = render(<AtlasHomeSurface onNavigate={() => undefined} />);
+    container.setAttribute('aria-hidden', 'false');
+    container.inert = false;
+
+    fireEvent.click(screen.getByRole('button', { name: /Stakes/i }));
+
+    const drawer = screen.getByRole('dialog', { name: 'HEX stakes details' });
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(container).toHaveAttribute('aria-hidden', 'true');
+    expect(container.inert).toBe(true);
+    expect(drawer).not.toHaveAttribute('aria-hidden');
+    expect(drawer.inert).not.toBe(true);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close detail panel' }));
+
+    expect(document.body.style.overflow).toBe('clip');
+    expect(container).toHaveAttribute('aria-hidden', 'false');
+    expect(container.inert).toBe(false);
+  });
+
+  it('restores background isolation and scroll state when an open desktop drawer unmounts', () => {
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: false }));
+    document.body.style.overflow = 'clip';
+    const { container, unmount } = render(<AtlasHomeSurface onNavigate={() => undefined} />);
+    container.setAttribute('aria-hidden', 'false');
+    container.inert = false;
+
+    fireEvent.click(screen.getByRole('button', { name: /Stakes/i }));
+    expect(container.inert).toBe(true);
+
+    unmount();
+
+    expect(document.body.style.overflow).toBe('clip');
+    expect(container).toHaveAttribute('aria-hidden', 'false');
+    expect(container.inert).toBe(false);
   });
 
   it('contains focus within the desktop drawer when tabbing past either boundary', () => {

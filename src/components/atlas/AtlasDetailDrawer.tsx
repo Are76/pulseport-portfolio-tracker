@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 import type { AtlasDetailContent } from './atlas-types';
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export function AtlasDetailDrawer({ detail, open, onClose, onAction }: Props) {
+  const drawerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
@@ -21,6 +23,14 @@ export function AtlasDetailDrawer({ detail, open, onClose, onAction }: Props) {
     if (!open) return;
 
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousBodyOverflow = document.body.style.overflow;
+    const isolatedElements = Array.from(document.body.children)
+      .filter((element): element is HTMLElement => element instanceof HTMLElement && element !== drawerRef.current)
+      .map(element => ({
+        element,
+        ariaHidden: element.getAttribute('aria-hidden'),
+        inert: element.inert,
+      }));
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         onCloseRef.current();
@@ -42,19 +52,33 @@ export function AtlasDetailDrawer({ detail, open, onClose, onAction }: Props) {
       }
     };
 
+    document.body.style.overflow = 'hidden';
+    isolatedElements.forEach(({ element }) => {
+      element.setAttribute('aria-hidden', 'true');
+      element.inert = true;
+    });
     closeButtonRef.current?.focus();
     document.addEventListener('keydown', handleKeyDown);
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousBodyOverflow;
+      isolatedElements.forEach(({ element, ariaHidden, inert }) => {
+        if (ariaHidden === null) {
+          element.removeAttribute('aria-hidden');
+        } else {
+          element.setAttribute('aria-hidden', ariaHidden);
+        }
+        element.inert = inert;
+      });
       previousFocus?.focus();
     };
   }, [open]);
 
-  if (!open) return null;
+  if (!open || typeof document === 'undefined') return null;
 
-  return (
-    <div className="atlas-detail-drawer" role="dialog" aria-modal="true" aria-label={`${detail.title} details`}>
+  return createPortal(
+    <div ref={drawerRef} className="atlas-detail-drawer" role="dialog" aria-modal="true" aria-label={`${detail.title} details`}>
       <button type="button" className="atlas-detail-drawer__backdrop" aria-label="Dismiss detail panel" onClick={onClose} />
       <div ref={bodyRef} className="atlas-detail-drawer__body">
         <button ref={closeButtonRef} type="button" className="atlas-detail-drawer__close" aria-label="Close detail panel" onClick={onClose}>
@@ -62,6 +86,7 @@ export function AtlasDetailDrawer({ detail, open, onClose, onAction }: Props) {
         </button>
         <AtlasDetailPanel detail={detail} onAction={onAction} />
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
