@@ -148,6 +148,41 @@ describe('atlas detail views', () => {
 });
 
 describe('atlas home surface', () => {
+  it('changes the selected time range when a range button is clicked', () => {
+    render(<AtlasHomeSurface onNavigate={() => undefined} />);
+
+    fireEvent.click(screen.getByRole('button', { name: '30d' }));
+
+    expect(screen.getByRole('button', { name: '30d' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '24h' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('heading', { name: '30d change' })).toBeInTheDocument();
+  });
+
+  it('opens the exact allocation detail when an allocation segment is clicked', () => {
+    render(
+      <AtlasHomeSurface
+        onNavigate={() => undefined}
+        snapshot={{
+          ...DEFAULT_LIVE_SNAPSHOT,
+          details: {
+            'token:plsx': {
+              id: 'token:plsx',
+              breadcrumb: ['Home', 'Coins', 'PLSX'],
+              title: 'PLSX',
+              summary: 'PLSX in your tracked portfolio.',
+              facts: [],
+              actions: [],
+            },
+          },
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'PLSX allocation' }));
+
+    expect(screen.getByRole('heading', { name: 'PLSX' })).toBeInTheDocument();
+  });
+
   it('renders portfolio value and updates detail panel when a tile is clicked', () => {
     render(<AtlasHomeSurface onNavigate={() => undefined} />);
 
@@ -222,3 +257,18 @@ describe('atlas home surface', () => {
     expect(mediaQuery.removeEventListener).toHaveBeenCalled();
   });
 });
+
+const DEFAULT_LIVE_SNAPSHOT = {
+  eyebrow: '2 wallets',
+  headlineValue: '$450',
+  metrics: [
+    { id: 'change', label: '24h', value: '+0.31%', subvalue: '+$1.40', tone: 'positive' as const, detailId: 'portfolio-change' },
+    { id: 'stakes', label: 'Stakes', value: '1', subvalue: '1 active', detailId: 'stakes' },
+    { id: 'lp', label: 'LP', value: '$100', subvalue: '22.2%', detailId: 'liquidity' },
+    { id: 'noise', label: 'Noise', value: '3', subvalue: 'hidden', detailId: 'hidden-noise' },
+  ],
+  signals: [{ id: 'top', label: 'Top holding', value: 'PLSX', detailId: 'portfolio-change' }],
+  allocation: [{ id: 'plsx', label: 'PLSX', width: 53.33, detailId: 'token:plsx' }],
+  tokens: [{ id: 'plsx', symbol: 'PLSX', price: '$0.00001', change: '-5.00%', ratio: '$80.00', tone: 'negative' as const, detailId: 'portfolio-change' }],
+  details: {},
+};

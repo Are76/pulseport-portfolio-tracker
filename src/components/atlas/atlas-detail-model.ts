@@ -1,4 +1,4 @@
-import type { AtlasDetailContent } from './atlas-types';
+import type { AtlasDetailContent, AtlasRange } from './atlas-types';
 
 export type AtlasDetailId =
   | 'portfolio-change'
@@ -116,9 +116,22 @@ const UNAVAILABLE_DETAIL: AtlasDetailContent = {
   actions: [],
 };
 
+function buildPortfolioChangeDetail(range: AtlasRange): AtlasDetailContent {
+  return {
+    ...DETAILS['portfolio-change'],
+    title: `${range} change`,
+    breadcrumb: ['Home', 'Portfolio', range],
+    facts: DETAILS['portfolio-change'].facts.map(fact => (
+      fact.label === 'Range' ? { ...fact, value: range } : fact
+    )),
+  };
+}
+
 export function buildAtlasDetail(
   id: AtlasDetailId | string,
   runtimeDetails: Record<string, AtlasDetailContent> = {},
+  range: AtlasRange = '24h',
 ): AtlasDetailContent {
+  if (id === 'portfolio-change') return buildPortfolioChangeDetail(range);
   return runtimeDetails[id] ?? DETAILS[id as AtlasDetailId] ?? UNAVAILABLE_DETAIL;
 }

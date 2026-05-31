@@ -8605,18 +8605,21 @@ body,
   background: var(--atlas-panel);
 }
 
-.atlas-home__allocation span {
+.atlas-home__allocation button {
   display: grid;
   min-width: 48px;
   place-items: center;
+  border: 0;
+  padding: 0;
   color: var(--atlas-on-accent);
   font-size: 12px;
   font-weight: 900;
+  cursor: pointer;
 }
 
-.atlas-home__allocation span:nth-child(1) { background: var(--atlas-accent); }
-.atlas-home__allocation span:nth-child(2) { background: var(--atlas-fg); color: var(--atlas-on-fg); }
-.atlas-home__allocation span:nth-child(3) { background: var(--atlas-blue); color: #fff; }
+.atlas-home__allocation button:nth-child(1) { background: var(--atlas-accent); }
+.atlas-home__allocation button:nth-child(2) { background: var(--atlas-fg); color: var(--atlas-on-fg); }
+.atlas-home__allocation button:nth-child(3) { background: var(--atlas-blue); color: #fff; }
 
 @media (max-width: 900px) {
   .atlas-home__layout,

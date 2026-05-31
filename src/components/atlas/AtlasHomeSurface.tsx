@@ -6,7 +6,7 @@ import { AtlasMetricTile } from './AtlasMetricTile';
 import { AtlasSignalRow } from './AtlasSignalRow';
 import { AtlasTokenCard } from './AtlasTokenCard';
 import { buildAtlasDetail, type AtlasDetailId } from './atlas-detail-model';
-import type { AtlasHomeSnapshot } from './atlas-types';
+import type { AtlasHomeSnapshot, AtlasRange } from './atlas-types';
 
 type Props = {
   onNavigate: (target: string) => void;
@@ -41,10 +41,16 @@ const DEFAULT_SNAPSHOT: AtlasHomeSnapshot = {
   details: {},
 };
 
+const RANGES: AtlasRange[] = ['24h', '7d', '30d', '90d'];
+
 export function AtlasHomeSurface({ onNavigate, snapshot = DEFAULT_SNAPSHOT }: Props) {
   const [selectedDetailId, setSelectedDetailId] = useState<AtlasDetailId | string>('portfolio-change');
+  const [selectedRange, setSelectedRange] = useState<AtlasRange>('24h');
   const [sheetOpen, setSheetOpen] = useState(false);
-  const detail = useMemo(() => buildAtlasDetail(selectedDetailId, snapshot.details), [selectedDetailId, snapshot.details]);
+  const detail = useMemo(
+    () => buildAtlasDetail(selectedDetailId, snapshot.details, selectedRange),
+    [selectedDetailId, selectedRange, snapshot.details],
+  );
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
@@ -81,10 +87,17 @@ export function AtlasHomeSurface({ onNavigate, snapshot = DEFAULT_SNAPSHOT }: Pr
           <h1 className="atlas-mono">{snapshot.headlineValue}</h1>
         </div>
         <div className="atlas-home__range" aria-label="Time range">
-          <button type="button" className="is-active">24h</button>
-          <button type="button">7d</button>
-          <button type="button">30d</button>
-          <button type="button">90d</button>
+          {RANGES.map(range => (
+            <button
+              key={range}
+              type="button"
+              className={selectedRange === range ? 'is-active' : undefined}
+              aria-pressed={selectedRange === range}
+              onClick={() => setSelectedRange(range)}
+            >
+              {range}
+            </button>
+          ))}
         </div>
       </header>
 
@@ -107,7 +120,15 @@ export function AtlasHomeSurface({ onNavigate, snapshot = DEFAULT_SNAPSHOT }: Pr
               <div className="atlas-home__panel-head"><strong>Allocation</strong><span>wallet-aware</span></div>
               <div className="atlas-home__allocation" aria-label="Portfolio allocation">
                 {snapshot.allocation.map(item => (
-                  <span key={item.id} style={{ width: `${Math.max(8, item.width)}%` }}>{item.label}</span>
+                  <button
+                    key={item.id}
+                    type="button"
+                    aria-label={`${item.label} allocation`}
+                    style={{ width: `${Math.max(8, item.width)}%` }}
+                    onClick={() => selectDetail(item.detailId)}
+                  >
+                    {item.label}
+                  </button>
                 ))}
               </div>
             </div>
