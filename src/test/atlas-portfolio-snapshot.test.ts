@@ -93,4 +93,21 @@ describe('atlas portfolio snapshot', () => {
       target: 'product:hex',
     });
   });
+
+  it('preserves a meaningful wallet value for positive sub-dollar holdings', () => {
+    const snapshot = buildAtlasHomeSnapshot({
+      summary: { totalValue: 0.42, pnl24h: 0, pnl24hPercent: 0 },
+      walletCount: 1,
+      assets: [
+        { id: 'dust', symbol: 'DUST', name: 'Dust', balance: 42, price: 0.01, value: 0.42, chain: 'pulsechain' },
+      ],
+      stakes: [],
+      hiddenTokenCount: 0,
+    });
+
+    expect(snapshot.details['token:dust'].facts).toContainEqual({
+      label: 'Your value',
+      value: '$0.42',
+    });
+  });
 });

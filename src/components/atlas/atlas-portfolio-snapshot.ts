@@ -27,6 +27,8 @@ function formatUsd(value: number): string {
   if (abs >= 1_000) return `$${(value / 1_000).toFixed(abs >= 10_000 ? 0 : 1)}K`;
   if (abs >= 100) return `$${value.toFixed(0)}`;
   if (abs >= 1) return `$${value.toFixed(2)}`;
+  if (abs >= 0.01) return `$${value.toFixed(2)}`;
+  if (abs > 0) return `$${value.toPrecision(3)}`;
   return '$0';
 }
 
