@@ -1,5 +1,6 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { useState } from 'react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { AtlasDetailPanel } from '../components/atlas/AtlasDetailPanel';
 import { AtlasDetailSheet } from '../components/atlas/AtlasDetailSheet';
@@ -7,6 +8,10 @@ import { AtlasHomeSurface } from '../components/atlas/AtlasHomeSurface';
 import { AtlasMetricTile } from '../components/atlas/AtlasMetricTile';
 import { AtlasSignalRow } from '../components/atlas/AtlasSignalRow';
 import { AtlasTokenCard } from '../components/atlas/AtlasTokenCard';
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe('atlas clickable components', () => {
   it('calls onSelect with the metric detail id', () => {
@@ -75,6 +80,71 @@ describe('atlas detail views', () => {
 
     expect(container).toBeEmptyDOMElement();
   });
+
+  it('focuses the close control when the mobile sheet opens', () => {
+    render(<AtlasDetailSheet detail={sampleDetail} open onClose={() => undefined} onAction={() => undefined} />);
+
+    expect(screen.getByRole('button', { name: 'Close detail panel' })).toHaveFocus();
+  });
+
+  it('dismisses the mobile sheet when Escape is pressed', () => {
+    function SheetHarness() {
+      const [open, setOpen] = useState(true);
+      return <AtlasDetailSheet detail={sampleDetail} open={open} onClose={() => setOpen(false)} onAction={() => undefined} />;
+    }
+
+    render(<SheetHarness />);
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('dismisses the mobile sheet when the backdrop is clicked', () => {
+    function SheetHarness() {
+      const [open, setOpen] = useState(true);
+      return <AtlasDetailSheet detail={sampleDetail} open={open} onClose={() => setOpen(false)} onAction={() => undefined} />;
+    }
+
+    render(<SheetHarness />);
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss detail panel' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('does not steal focus when the close callback changes while open', () => {
+    const { rerender } = render(<AtlasDetailSheet detail={sampleDetail} open onClose={() => undefined} onAction={() => undefined} />);
+    const action = screen.getByRole('button', { name: 'Value chart' });
+
+    action.focus();
+    rerender(<AtlasDetailSheet detail={sampleDetail} open onClose={() => undefined} onAction={() => undefined} />);
+
+    expect(action).toHaveFocus();
+  });
+
+  it('uses the latest close callback after rerender', () => {
+    const firstOnClose = vi.fn();
+    const latestOnClose = vi.fn();
+    const { rerender } = render(<AtlasDetailSheet detail={sampleDetail} open onClose={firstOnClose} onAction={() => undefined} />);
+
+    rerender(<AtlasDetailSheet detail={sampleDetail} open onClose={latestOnClose} onAction={() => undefined} />);
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(firstOnClose).not.toHaveBeenCalled();
+    expect(latestOnClose).toHaveBeenCalledOnce();
+  });
+
+  it('contains focus within the sheet when tabbing past either boundary', () => {
+    render(<AtlasDetailSheet detail={sampleDetail} open onClose={() => undefined} onAction={() => undefined} />);
+    const closeButton = screen.getByRole('button', { name: 'Close detail panel' });
+    const action = screen.getByRole('button', { name: 'Value chart' });
+
+    closeButton.focus();
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    expect(action).toHaveFocus();
+
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(closeButton).toHaveFocus();
+  });
 });
 
 describe('atlas home surface', () => {
@@ -110,5 +180,44 @@ describe('atlas home surface', () => {
     expect(screen.getByText('$450')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Top holding/i })).toBeInTheDocument();
     expect(screen.queryByText('$84,920')).not.toBeInTheDocument();
+  });
+
+  it('restores focus to the tile that launched the mobile detail sheet', () => {
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: true }));
+    render(<AtlasHomeSurface onNavigate={() => undefined} />);
+    const stakesTile = screen.getByRole('button', { name: /Stakes/i });
+
+    stakesTile.focus();
+    fireEvent.click(stakesTile);
+    const closeButton = screen.getByRole('button', { name: 'Close detail panel' });
+    expect(closeButton).toHaveFocus();
+    fireEvent.click(closeButton);
+
+    expect(stakesTile).toHaveFocus();
+  });
+
+  it('closes the mobile detail sheet when the media query changes to desktop', () => {
+    let handleChange: ((event: { matches: boolean }) => void) | undefined;
+    const mediaQuery = {
+      matches: true,
+      addEventListener: vi.fn((_type: string, listener: (event: { matches: boolean }) => void) => {
+        handleChange = listener;
+      }),
+      removeEventListener: vi.fn(),
+    };
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mediaQuery));
+    const { unmount } = render(<AtlasHomeSurface onNavigate={() => undefined} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Stakes/i }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    act(() => {
+      mediaQuery.matches = false;
+      handleChange?.({ matches: false });
+    });
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    unmount();
+    expect(mediaQuery.removeEventListener).toHaveBeenCalled();
   });
 });

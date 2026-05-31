@@ -8136,7 +8136,7 @@ body,
 .atlas-detail-sheet {
   position: fixed;
   inset: 0;
-  z-index: 80;
+  z-index: 100;
   display: none;
 }
 
@@ -8152,21 +8152,34 @@ body,
   right: 0;
   bottom: 0;
   left: 0;
+  box-sizing: border-box;
   max-height: 82vh;
   overflow: auto;
   border-radius: 20px 20px 0 0;
   background: var(--atlas-bg);
-  padding: 12px;
+  padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+}
+
+.atlas-detail-sheet__handle {
+  display: block;
+  width: 42px;
+  height: 4px;
+  margin: 0 auto 4px;
+  border-radius: 999px;
+  background: var(--atlas-border);
 }
 
 .atlas-detail-sheet__close {
-  display: block;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
   margin: 0 0 8px auto;
   border: 1px solid var(--atlas-border);
   border-radius: 999px;
   background: var(--atlas-surface);
   color: var(--atlas-fg);
-  padding: 8px 12px;
+  cursor: pointer;
 }
 
 .atlas-home {
@@ -8530,6 +8543,10 @@ body,
   .atlas-detail-panel {
     position: static;
     min-height: auto;
+  }
+
+  .atlas-home__layout > .atlas-detail-panel {
+    display: none;
   }
 
   .atlas-detail-sheet {
