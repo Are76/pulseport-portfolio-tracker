@@ -3738,7 +3738,7 @@ export default function App() {
             <img src={BRAND_ASSETS.logo} alt="Pulseport logo" style={{ width: 22, height: 22 }} />
           </div>
           <div style={{ minWidth: 0 }}>
-            <img src={BRAND_ASSETS.wordmark} alt="Pulseport wordmark" style={{ width: 126, height: 'auto' }} />
+            <img className="app-sidebar-wordmark" src={BRAND_ASSETS.wordmark} alt="Pulseport wordmark" style={{ width: 126, height: 'auto' }} />
             <div style={{ marginTop: 6, fontSize: 11, color: 'var(--fg-subtle)', letterSpacing: '.08em', textTransform: 'uppercase' }}>Portfolio terminal</div>
           </div>
         </div>
