@@ -28,9 +28,9 @@ const DEFAULT_SNAPSHOT: AtlasHomeSnapshot = {
     { id: 'lp-up', label: 'LP up', value: '15%', tone: 'muted', detailId: 'liquidity' },
   ],
   allocation: [
-    { id: 'plsx', label: 'PLSX', width: 42 },
-    { id: 'hex', label: 'HEX', width: 31 },
-    { id: 'inc', label: 'INC', width: 12 },
+    { id: 'plsx', label: 'PLSX', width: 42, detailId: 'signal-plsx-strength' },
+    { id: 'hex', label: 'HEX', width: 31, detailId: 'stakes' },
+    { id: 'inc', label: 'INC', width: 12, detailId: 'liquidity' },
   ],
   tokens: [
     { id: 'pls', symbol: 'PLS', price: '$0.00000694', change: '-3.21%', ratio: '0.07 x Sac', tone: 'negative', detailId: 'token-pls' },
@@ -38,12 +38,13 @@ const DEFAULT_SNAPSHOT: AtlasHomeSnapshot = {
     { id: 'inc', symbol: 'INC', price: '$0.317', change: '-2.69%', ratio: '45,740 PLS', tone: 'negative', detailId: 'liquidity' },
     { id: 'hex', symbol: 'HEX', price: '$0.00115', change: '-5.77%', ratio: '165 PLS', tone: 'negative', detailId: 'stakes' },
   ],
+  details: {},
 };
 
 export function AtlasHomeSurface({ onNavigate, snapshot = DEFAULT_SNAPSHOT }: Props) {
   const [selectedDetailId, setSelectedDetailId] = useState<AtlasDetailId | string>('portfolio-change');
   const [sheetOpen, setSheetOpen] = useState(false);
-  const detail = useMemo(() => buildAtlasDetail(selectedDetailId), [selectedDetailId]);
+  const detail = useMemo(() => buildAtlasDetail(selectedDetailId, snapshot.details), [selectedDetailId, snapshot.details]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;

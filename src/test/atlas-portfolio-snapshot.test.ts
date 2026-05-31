@@ -65,4 +65,32 @@ describe('atlas portfolio snapshot', () => {
     expect(snapshot.tokens).toHaveLength(0);
     expect(snapshot.emptyTokenMessage).toBe('Add a wallet to see your largest holdings here.');
   });
+
+  it('creates exact token and allocation drilldowns from live assets', () => {
+    const snapshot = buildAtlasHomeSnapshot({
+      summary: { totalValue: 450, pnl24h: 1.4, pnl24hPercent: 0.31 },
+      walletCount: 2,
+      assets,
+      stakes: [],
+      hiddenTokenCount: 0,
+    });
+
+    expect(snapshot.tokens.map(token => token.detailId)).toEqual([
+      'token:plsx',
+      'token:pls',
+      'token:hex',
+    ]);
+    expect(snapshot.allocation.map(item => item.detailId)).toEqual([
+      'token:plsx',
+      'token:pls',
+      'token:hex',
+    ]);
+    expect(snapshot.details['token:hex']).toMatchObject({
+      id: 'token:hex',
+      title: 'HEX',
+    });
+    expect(snapshot.details['token:hex'].actions[0]).toMatchObject({
+      target: 'product:hex',
+    });
+  });
 });

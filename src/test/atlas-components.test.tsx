@@ -170,8 +170,9 @@ describe('atlas home surface', () => {
             { id: 'noise', label: 'Noise', value: '3', subvalue: 'hidden', detailId: 'hidden-noise' },
           ],
           signals: [{ id: 'top', label: 'Top holding', value: 'PLSX', detailId: 'portfolio-change' }],
-          allocation: [{ id: 'plsx', label: 'PLSX', width: 53.33 }],
+          allocation: [{ id: 'plsx', label: 'PLSX', width: 53.33, detailId: 'token:plsx' }],
           tokens: [{ id: 'plsx', symbol: 'PLSX', price: '$0.00001', change: '-5.00%', ratio: '$80.00', tone: 'negative', detailId: 'portfolio-change' }],
+          details: {},
         }}
       />,
     );

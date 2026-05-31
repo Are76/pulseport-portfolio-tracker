@@ -107,6 +107,18 @@ const DETAILS: Record<AtlasDetailId, AtlasDetailContent> = {
   },
 };
 
-export function buildAtlasDetail(id: AtlasDetailId | string): AtlasDetailContent {
-  return DETAILS[id as AtlasDetailId] ?? DETAILS['portfolio-change'];
+const UNAVAILABLE_DETAIL: AtlasDetailContent = {
+  id: 'unavailable',
+  breadcrumb: ['Home', 'Details'],
+  title: 'Detail unavailable',
+  summary: 'This information is not available yet.',
+  facts: [],
+  actions: [],
+};
+
+export function buildAtlasDetail(
+  id: AtlasDetailId | string,
+  runtimeDetails: Record<string, AtlasDetailContent> = {},
+): AtlasDetailContent {
+  return runtimeDetails[id] ?? DETAILS[id as AtlasDetailId] ?? UNAVAILABLE_DETAIL;
 }
