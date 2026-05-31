@@ -8276,6 +8276,44 @@ body,
   cursor: pointer;
 }
 
+.atlas-detail-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+
+.atlas-detail-drawer__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(0, 0, 0, 0.48);
+}
+
+.atlas-detail-drawer__body {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(390px, 92vw);
+  overflow: auto;
+  padding: 14px;
+  border-left: 1px solid var(--atlas-border);
+  background: var(--atlas-bg);
+}
+
+.atlas-detail-drawer__close {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  margin: 0 0 8px auto;
+  border: 1px solid var(--atlas-border);
+  border-radius: 999px;
+  background: var(--atlas-surface);
+  color: var(--atlas-fg);
+  cursor: pointer;
+}
+
 .atlas-home {
   min-height: calc(100vh - 160px);
   padding: 24px;
@@ -8642,6 +8680,10 @@ body,
 }
 
 @media (max-width: 767px) {
+  .atlas-detail-drawer {
+    display: none;
+  }
+
   .atlas-detail-panel {
     position: static;
     min-height: auto;

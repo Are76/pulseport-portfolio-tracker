@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { AtlasDetailPanel } from './AtlasDetailPanel';
+import { AtlasDetailDrawer } from './AtlasDetailDrawer';
 import { AtlasDetailSheet } from './AtlasDetailSheet';
 import { AtlasMetricTile } from './AtlasMetricTile';
 import { AtlasSignalRow } from './AtlasSignalRow';
@@ -47,6 +47,7 @@ export function AtlasHomeSurface({ onNavigate, snapshot = DEFAULT_SNAPSHOT }: Pr
   const [selectedDetailId, setSelectedDetailId] = useState<AtlasDetailId | string>('portfolio-change');
   const [selectedRange, setSelectedRange] = useState<AtlasRange>('24h');
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const detail = useMemo(
     () => buildAtlasDetail(selectedDetailId, snapshot.details, selectedRange),
     [selectedDetailId, selectedRange, snapshot.details],
@@ -57,7 +58,11 @@ export function AtlasHomeSurface({ onNavigate, snapshot = DEFAULT_SNAPSHOT }: Pr
 
     const mediaQuery = window.matchMedia('(max-width: 767px)');
     const handleChange = (event: MediaQueryListEvent) => {
-      if (!event.matches) setSheetOpen(false);
+      if (event.matches) {
+        setDrawerOpen(false);
+      } else {
+        setSheetOpen(false);
+      }
     };
 
     if (typeof mediaQuery.addEventListener === 'function') {
@@ -73,10 +78,11 @@ export function AtlasHomeSurface({ onNavigate, snapshot = DEFAULT_SNAPSHOT }: Pr
 
   const selectDetail = (detailId: string) => {
     setSelectedDetailId(detailId);
-    const shouldOpenSheet = typeof window !== 'undefined'
+    const isMobile = typeof window !== 'undefined'
       && typeof window.matchMedia === 'function'
       && window.matchMedia('(max-width: 767px)').matches;
-    setSheetOpen(shouldOpenSheet);
+    setSheetOpen(isMobile);
+    setDrawerOpen(!isMobile);
   };
 
   return (
@@ -143,9 +149,9 @@ export function AtlasHomeSurface({ onNavigate, snapshot = DEFAULT_SNAPSHOT }: Pr
           </div>
         </div>
 
-        <AtlasDetailPanel detail={detail} onAction={onNavigate} />
       </div>
 
+      <AtlasDetailDrawer detail={detail} open={drawerOpen} onClose={() => setDrawerOpen(false)} onAction={onNavigate} />
       <AtlasDetailSheet detail={detail} open={sheetOpen} onClose={() => setSheetOpen(false)} onAction={onNavigate} />
     </section>
   );

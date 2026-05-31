@@ -152,12 +152,13 @@ describe('atlas home surface', () => {
     render(<AtlasHomeSurface onNavigate={() => undefined} />);
 
     fireEvent.click(screen.getByRole('button', { name: '30d' }));
+    fireEvent.click(screen.getByRole('button', { name: /24h \+3\.8%/i }));
 
     expect(screen.getByRole('button', { name: '30d' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: '24h' })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByRole('heading', { name: '30d history unavailable' })).toBeInTheDocument();
     expect(screen.getByText('Historical portfolio change data is not available yet.')).toBeInTheDocument();
-    expect(within(screen.getByRole('complementary')).queryByText('+$3,182')).not.toBeInTheDocument();
+    expect(within(screen.getByRole('dialog')).queryByText('+$3,182')).not.toBeInTheDocument();
   });
 
   it('opens the exact allocation detail when an allocation segment is clicked', () => {
@@ -232,6 +233,88 @@ describe('atlas home surface', () => {
     fireEvent.click(closeButton);
 
     expect(stakesTile).toHaveFocus();
+  });
+
+  it('keeps desktop details closed until a card is selected', () => {
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: false }));
+    render(<AtlasHomeSurface onNavigate={() => undefined} />);
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '24h change' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Stakes/i }));
+    expect(screen.getByRole('dialog', { name: 'HEX stakes details' })).toBeInTheDocument();
+  });
+
+  it('closes the desktop drawer on Escape and restores launching-card focus', () => {
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: false }));
+    render(<AtlasHomeSurface onNavigate={() => undefined} />);
+    const stakesTile = screen.getByRole('button', { name: /Stakes/i });
+
+    stakesTile.focus();
+    fireEvent.click(stakesTile);
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(stakesTile).toHaveFocus();
+  });
+
+  it('closes the desktop drawer when its backdrop is clicked', () => {
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: false }));
+    render(<AtlasHomeSurface onNavigate={() => undefined} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Stakes/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss detail panel' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('contains focus within the desktop drawer when tabbing past either boundary', () => {
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: false }));
+    render(<AtlasHomeSurface onNavigate={() => undefined} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Stakes/i }));
+    const closeButton = screen.getByRole('button', { name: 'Close detail panel' });
+    const lastAction = screen.getByRole('button', { name: 'Due stake' });
+
+    closeButton.focus();
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    expect(lastAction).toHaveFocus();
+
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(closeButton).toHaveFocus();
+  });
+
+  it('opens the mobile sheet without mounting the desktop drawer', () => {
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: true }));
+    const { container } = render(<AtlasHomeSurface onNavigate={() => undefined} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Stakes/i }));
+
+    expect(container.querySelector('.atlas-detail-sheet')).toBeInTheDocument();
+    expect(container.querySelector('.atlas-detail-drawer')).not.toBeInTheDocument();
+  });
+
+  it('closes the desktop drawer when the media query changes to mobile', () => {
+    let handleChange: ((event: { matches: boolean }) => void) | undefined;
+    const mediaQuery = {
+      matches: false,
+      addEventListener: vi.fn((_type: string, listener: (event: { matches: boolean }) => void) => {
+        handleChange = listener;
+      }),
+      removeEventListener: vi.fn(),
+    };
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mediaQuery));
+    render(<AtlasHomeSurface onNavigate={() => undefined} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Stakes/i }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    act(() => {
+      mediaQuery.matches = true;
+      handleChange?.({ matches: true });
+    });
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('closes the mobile detail sheet when the media query changes to desktop', () => {
