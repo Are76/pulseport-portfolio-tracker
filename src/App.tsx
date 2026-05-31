@@ -3716,7 +3716,7 @@ export default function App() {
   const mobileMoreActive = mobileMoreNavItems.some(item => item.id === activeTab);
 
   return (
-    <div className="app-shell gopulse-shell min-h-screen font-sans flex" style={{ fontSize: 14, color: 'var(--fg)' }}>
+    <div className="app-shell gopulse-shell min-h-screen font-sans flex" style={{ fontSize: 14 }}>
       {/* -- SIDEBAR BACKDROP (mobile) -- */}
       <div className={`sidebar-backdrop${sidebarOpen ? ' open' : ''}`} onClick={() => setSidebarOpen(false)} />
       {/* -- SIDEBAR -- */}

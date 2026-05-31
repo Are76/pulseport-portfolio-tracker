@@ -392,10 +392,7 @@ body {
 }
 
 [data-theme="light"] .app-shell {
-  background:
-    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(59,91,219,0.07), transparent 70%),
-    radial-gradient(ellipse 58% 34% at 100% 18%, rgba(61,85,192,0.05), transparent 68%),
-    var(--bg-void);
+  background: var(--shell-canvas);
 }
 
 .gopulse-shell {

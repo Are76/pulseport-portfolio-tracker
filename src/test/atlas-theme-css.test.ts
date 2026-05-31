@@ -24,5 +24,6 @@ describe('Atlas theme CSS', () => {
     expect(css).toContain('--shell-sidebar:');
     expect(css).toContain('--shell-header:');
     expect(css).not.toMatch(/\.gopulse-shell\s*{[^}]*radial-gradient/);
+    expect(css).toMatch(/\[data-theme="light"\]\s+\.app-shell\s*{[^}]*background:\s*var\(--shell-canvas\);[^}]*}/);
   });
 });

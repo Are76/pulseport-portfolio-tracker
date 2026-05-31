@@ -18,7 +18,10 @@ describe('GoPulse Compact shell', () => {
 
     render(<App />);
 
-    expect(document.querySelector('.app-shell')).toHaveClass('gopulse-shell');
+    const shell = document.querySelector('.app-shell');
+
+    expect(shell).toHaveClass('gopulse-shell');
+    expect(shell).not.toHaveStyle({ color: 'var(--fg)' });
     expect(document.querySelector('.app-sidebar')).toHaveClass('gopulse-sidebar');
     expect(document.querySelector('.app-header')).toHaveClass('gopulse-header');
   });
