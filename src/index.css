@@ -391,7 +391,7 @@ body {
     var(--bg-void);
 }
 
-[data-theme="light"] .app-shell {
+[data-theme="light"] .gopulse-shell {
   background: var(--shell-canvas);
 }
 

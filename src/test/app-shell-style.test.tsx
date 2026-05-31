@@ -1,7 +1,11 @@
 import { render } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import App from '../App';
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe('GoPulse Compact shell', () => {
   it('renders the shared shell, sidebar brand, and compact header classes', () => {
