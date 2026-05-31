@@ -7,10 +7,7 @@ const css = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8');
 
 describe('Atlas theme CSS', () => {
   it('keeps light-mode blur removal separate from the glass-card appearance rule', () => {
-    expect(css).toContain(`[data-theme="light"] .chart-tooltip {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}`);
+    expect(css).toMatch(/\[data-theme="light"\]\s+\.chart-tooltip\s*{[^}]*backdrop-filter:\s*none\s*!important;[^}]*-webkit-backdrop-filter:\s*none\s*!important;[^}]*}/);
   });
 
   it('uses theme-aware contrast colors for Atlas controls', () => {

@@ -9,7 +9,16 @@ afterEach(() => {
 
 describe('production mobile navigation', () => {
   it('exposes active destination and expandable secondary destinations', () => {
-    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: false }));
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({
+      matches: false,
+      media: '',
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
     render(<App />);
 
     const nav = screen.getByRole('navigation', { name: 'Mobile navigation' });
