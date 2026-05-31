@@ -6143,16 +6143,18 @@ export default function App() {
       </main>
 
       {/* -- MOBILE BOTTOM NAV -- */}
-      <nav className="mobile-bottom-nav bottom-nav-blur md:hidden fixed bottom-0 left-0 right-0 z-50"
+      <nav aria-label="Mobile navigation" className="mobile-bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-50"
         style={{
           background: 'var(--bg-header)',
           borderTop: '1px solid var(--border)',
         }}>
-        <div className={`mobile-more-sheet${mobileMoreOpen ? ' is-open' : ''}`}>
+        <div inert={!mobileMoreOpen} aria-hidden={!mobileMoreOpen} className={`mobile-more-sheet${mobileMoreOpen ? ' is-open' : ''}`}>
           {mobileMoreNavItems.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               type="button"
+              tabIndex={mobileMoreOpen ? 0 : -1}
+              aria-current={activeTab === id ? 'page' : undefined}
               className={`mobile-more-link${activeTab === id ? ' is-active' : ''}`}
               onClick={() => {
                 setActiveTab(id);
@@ -6166,7 +6168,7 @@ export default function App() {
         </div>
         <div className="mobile-bottom-nav-inner">
         {mobilePrimaryNavItems.map(({ id, label, icon: Icon }) => (
-          <button key={id} onClick={() => setActiveTab(id)}
+          <button key={id} type="button" aria-label={label} aria-current={activeTab === id ? 'page' : undefined} onClick={() => setActiveTab(id)}
             className="mobile-nav-tab-btn"
             style={{
               color: activeTab === id ? 'var(--accent)' : 'var(--fg-muted)',
@@ -6179,6 +6181,8 @@ export default function App() {
         ))}
           <button
             type="button"
+            aria-label="More destinations"
+            aria-expanded={mobileMoreOpen}
             onClick={() => setMobileMoreOpen(v => !v)}
             className="mobile-nav-tab-btn"
             style={{

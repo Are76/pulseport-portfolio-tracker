@@ -151,11 +151,6 @@
 [data-theme="light"] .asset-card,
 [data-theme="light"] .asset-card-premium,
 [data-theme="light"] .chart-tooltip,
-[data-theme="light"] .bottom-nav-blur {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
 /* Glass card solid background in light mode */
 [data-theme="light"] .glass-card {
   background: #ffffff;
@@ -2684,11 +2679,6 @@ textarea:focus-visible,
 .mobile-bottom-nav {
   padding-bottom: env(safe-area-inset-bottom);
 }
-.bottom-nav-blur {
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
-
 @keyframes bottom-nav-dot-in {
   from { transform: scaleX(0); }
   to { transform: scaleX(1); }

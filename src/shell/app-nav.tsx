@@ -30,7 +30,6 @@ export function AppNav({ activeView, onNavigate }: AppNavProps) {
           <button
             key={item.id}
             type="button"
-            aria-label={item.label}
             aria-pressed={item.id === activeView}
             onClick={() => onNavigate(item.id)}
           >

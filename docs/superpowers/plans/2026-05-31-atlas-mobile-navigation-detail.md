@@ -4,13 +4,13 @@
 
 **Goal:** Make the approved On-chain Atlas experience easy to navigate on phones without changing desktop information architecture.
 
-**Architecture:** Keep the existing `AtlasHomeSurface` selection model and use the existing mobile `AtlasDetailSheet` as the single mobile drilldown. Improve the sheet as an accessible overlay with focus restoration and Escape dismissal, then reshape the existing shell navigation into a stable mobile bottom bar with concise labels and comfortable tap targets.
+**Architecture:** Keep the existing `AtlasHomeSurface` selection model and use the existing mobile `AtlasDetailSheet` as the single mobile drilldown. Improve the sheet as an accessible overlay with focus restoration and Escape dismissal, then polish the production mobile bottom bar rendered by `App` with clear accessibility state and comfortable tap targets.
 
 **Tech Stack:** React 19, TypeScript, CSS, Vitest, Testing Library, lucide-react
 
 ---
 
-### Task 1: Accessible Atlas Mobile Detail Sheet
+## Task 1: Accessible Atlas Mobile Detail Sheet
 
 **Files:**
 - Modify: `src/components/atlas/AtlasDetailSheet.tsx`
@@ -41,43 +41,43 @@ Run: `npm.cmd run test -- src/test/atlas-components.test.tsx`
 
 Expected: PASS.
 
-### Task 2: Stable Mobile Shell Navigation
+## Task 2: Stable Production Mobile Navigation
 
 **Files:**
-- Modify: `src/shell/app-nav.tsx`
-- Modify: `src/shell/shell-layout.css`
-- Modify: `src/test/app-shell.test.tsx`
+- Modify: `src/App.tsx`
+- Modify: `src/index.css`
+- Test: `src/test/app-mobile-nav.test.tsx`
 
 - [ ] **Step 1: Write failing tests**
 
-Add assertions that the mobile navigation exposes concise labels and each destination keeps an accessible full label.
+Add assertions that the rendered mobile navigation exposes its purpose, current destination, and expandable secondary destinations.
 
 - [ ] **Step 2: Run tests to verify failure**
 
-Run: `npm.cmd run test -- src/test/app-shell.test.tsx`
+Run: `npm.cmd run test -- src/test/app-mobile-nav.test.tsx`
 
-Expected: FAIL until accessible labels and mobile label markup are present.
+Expected: FAIL until the rendered mobile navigation exposes accessibility state.
 
 - [ ] **Step 3: Add minimal navigation markup**
 
-Give each button its full accessible label and keep the concise `shortLabel` as the visible mobile label.
+Label the rendered mobile navigation, expose the active destination with `aria-current`, and expose the More menu state with `aria-expanded`.
 
 - [ ] **Step 4: Add mobile bottom-bar CSS**
 
-At phone width, anchor the primary nav to the viewport bottom, make it horizontally scrollable, give buttons stable minimum dimensions, preserve the active state, and add content padding so the bar does not cover page content.
+Keep the existing fixed production bottom bar, safe-area padding, stable tap targets, and content clearance. Remove the low-value backdrop blur from the opaque mobile bar.
 
 - [ ] **Step 5: Verify**
 
-Run: `npm.cmd run test -- src/test/app-shell.test.tsx`
+Run: `npm.cmd run test -- src/test/app-mobile-nav.test.tsx`
 
 Expected: PASS.
 
-### Task 3: Integration Verification
+## Task 3: Integration Verification
 
 **Files:**
 - Verify: `src/components/atlas/AtlasHomeSurface.tsx`
 - Verify: `src/index.css`
-- Verify: `src/shell/shell-layout.css`
+- Verify: `src/App.tsx`
 
 - [ ] **Step 1: Run automated checks**
 
