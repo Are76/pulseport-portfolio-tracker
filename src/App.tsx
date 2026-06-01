@@ -3645,8 +3645,10 @@ export default function App() {
       return;
     }
 
-    if (target === 'product' && currentAssets.length > 0) {
-      openProductPage(currentAssets[0], activeTab);
+    if (target.startsWith('product:')) {
+      const assetId = target.slice('product:'.length);
+      const asset = currentAssets.find(candidate => candidate.id === assetId);
+      if (asset) openProductPage(asset, activeTab);
     }
   };
 
