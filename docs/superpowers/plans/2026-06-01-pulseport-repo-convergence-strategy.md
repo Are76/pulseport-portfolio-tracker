@@ -156,9 +156,9 @@ Check that:
 ## Task 2: Turn CoinPulse Working Style Into Tracker Guardrails
 
 **Files:**
-- Verify: `C:/GitHub/CoinPulse/AGENTS.md`
-- Verify: `C:/GitHub/CoinPulse/docs/data-fetching-architecture.md`
-- Verify: `C:/GitHub/pulseport-portfolio-tracker/docs/data-source-audit.md`
+- Verify: `CoinPulse/AGENTS.md`
+- Verify: `CoinPulse/docs/data-fetching-architecture.md`
+- Verify: `pulseport-portfolio-tracker/docs/data-source-audit.md`
 - Modify: `docs/superpowers/plans/2026-06-01-pulseport-repo-convergence-strategy.md`
 
 - [ ] **Step 1: Preserve the smallest high-value rules**
@@ -245,4 +245,3 @@ That branch should:
 - borrow `PulsePort` wallet page structure and information architecture where useful
 - preserve Atlas visual direction
 - align wallet data surfaces more closely with `CoinPulse` backend DTO discipline
-
