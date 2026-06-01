@@ -8418,6 +8418,198 @@ body,
   gap: 14px;
 }
 
+.wallets-atlas-page {
+  display: grid;
+  gap: 16px;
+}
+
+.wallets-atlas-page__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.wallets-atlas-panel {
+  border: 1px solid var(--atlas-border);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--atlas-panel) 92%, transparent);
+  color: var(--atlas-fg);
+  overflow: hidden;
+}
+
+[data-theme="light"] .wallets-atlas-panel {
+  background: var(--atlas-surface);
+}
+
+.wallets-atlas-panel--hero,
+.wallets-atlas-panel--assets {
+  padding: 22px;
+}
+
+.wallets-atlas-eyebrow {
+  margin-bottom: 8px;
+  color: var(--atlas-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.wallets-atlas-hero__head,
+.wallets-atlas-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.wallets-atlas-hero__head h2 {
+  margin: 0;
+  font-family: var(--font-shell-display);
+  font-size: clamp(36px, 5vw, 56px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.wallets-atlas-hero__head p,
+.wallets-atlas-section-meta,
+.wallets-atlas-wallet-meta,
+.wallets-atlas-hidden-row div {
+  color: var(--atlas-muted);
+}
+
+.wallets-atlas-hero__buttons,
+.wallets-atlas-header-actions,
+.wallets-atlas-kpis,
+.wallets-atlas-filters,
+.wallets-atlas-scope {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.wallets-atlas-kpis {
+  margin-top: 18px;
+}
+
+.wallets-atlas-scope {
+  margin-top: 18px;
+}
+
+.wallets-atlas-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--atlas-border);
+  background: var(--atlas-surface);
+  color: var(--atlas-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.wallets-atlas-chip--accent {
+  border-color: color-mix(in srgb, var(--atlas-accent) 36%, var(--atlas-border));
+  background: var(--atlas-accent-dim);
+  color: var(--atlas-accent);
+}
+
+.wallets-atlas-pill-value {
+  color: var(--atlas-muted);
+  font-size: 11px;
+}
+
+.wallets-atlas-section-title,
+.wallets-atlas-wallet-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--atlas-fg);
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.wallets-atlas-wallet-title {
+  font-size: 15px;
+}
+
+.wallets-atlas-range,
+.wallets-atlas-view-switch {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--atlas-border);
+  border-radius: 999px;
+  background: var(--atlas-surface);
+}
+
+.wallets-atlas-range button,
+.wallets-atlas-view-switch button {
+  min-width: 54px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--atlas-muted);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.wallets-atlas-range button.is-active,
+.wallets-atlas-view-switch button.is-active {
+  background: var(--atlas-accent);
+  color: var(--atlas-on-accent);
+}
+
+.wallets-atlas-wallet-groups {
+  display: grid;
+  gap: 14px;
+}
+
+.wallets-atlas-wallet-group {
+  border: 1px solid var(--atlas-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--atlas-surface) 88%, transparent);
+  overflow: hidden;
+}
+
+.wallets-atlas-wallet-group__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--atlas-border);
+}
+
+.wallets-atlas-wallet-value {
+  color: var(--atlas-fg);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.wallets-atlas-hidden-list {
+  display: grid;
+}
+
+.wallets-atlas-hidden-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--atlas-border);
+}
+
+.wallets-atlas-hidden-row strong {
+  display: block;
+  color: var(--atlas-fg);
+  margin-bottom: 2px;
+}
+
 .atlas-holding-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -8725,6 +8917,20 @@ body,
 
   .atlas-intelligence-grid {
     grid-template-columns: 1fr;
+  }
+
+  .wallets-atlas-page__actions,
+  .wallets-atlas-hero__head,
+  .wallets-atlas-section-head,
+  .wallets-atlas-header-actions,
+  .wallets-atlas-wallet-group__head {
+    flex-direction: column;
+  }
+
+  .wallets-atlas-range,
+  .wallets-atlas-view-switch {
+    width: 100%;
+    justify-content: space-between;
   }
 }
 
