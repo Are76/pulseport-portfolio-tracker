@@ -102,8 +102,8 @@ const buy: Transaction = {
 
 describe('atlas token intelligence', () => {
   it('derives direct-PLS cost basis and purchased-token PnL', () => {
-    expect(buildAtlasTokenIntelligence(plsx, [buy], 0.000005)).toMatchObject({
-      costBasisStatus: 'estimated',
+    expect(buildAtlasTokenIntelligence(plsx, [buy], 0.000005, true)).toMatchObject({
+      costBasisStatus: 'recorded',
       purchasedAmount: 1_000,
       initialUsd: 10,
       initialPls: 2_000_000,
@@ -162,7 +162,7 @@ Create `src/components/atlas/atlas-token-intelligence.ts` with:
 ```ts
 import type { Asset, Transaction } from '../../types';
 
-export type AtlasCostBasisStatus = 'estimated' | 'unavailable';
+export type AtlasCostBasisStatus = 'recorded' | 'estimated' | 'unavailable';
 
 export type AtlasLastTrade = {
   hash: string;
@@ -205,6 +205,7 @@ export function buildAtlasTokenIntelligence(
   asset: Asset,
   transactions: Transaction[],
   plsPriceUsd: number,
+  historyComplete = false,
 ): AtlasTokenIntelligence {
   let purchasedAmount = 0;
   let initialUsd = 0;
@@ -247,10 +248,13 @@ export function buildAtlasTokenIntelligence(
   purchasedAmount = trackedHoldingAmount;
   initialUsd *= trackedCostRatio;
   initialPls *= trackedCostRatio;
+  if (purchasedAmount <= 0 || initialUsd <= 0) {
+    return { costBasisStatus: 'unavailable', purchasedAmount, transferredInAmount, lastTrade };
+  }
   const currentPurchasedValue = purchasedAmount * asset.price;
   const unrealizedPnlUsd = currentPurchasedValue - initialUsd;
   return {
-    costBasisStatus: 'estimated',
+    costBasisStatus: historyComplete ? 'recorded' : 'estimated',
     purchasedAmount,
     transferredInAmount,
     initialUsd,
@@ -404,10 +408,10 @@ Using a fixture with at least six positive holdings, add tests that assert:
 expect(snapshot.allocation[0]).toMatchObject({
   label: 'PLSX',
   value: '$80.00',
-  percentage: 53.33,
   logoUrl: undefined,
   detailId: 'token:plsx',
 });
+expect(snapshot.allocation[0].percentage).toBeCloseTo(53.33, 2);
 expect(snapshot.allocation.at(-1)).toMatchObject({ id: 'other', label: 'Other', detailId: undefined });
 ```
 

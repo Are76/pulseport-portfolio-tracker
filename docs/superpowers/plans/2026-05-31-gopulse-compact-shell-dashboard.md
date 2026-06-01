@@ -89,7 +89,7 @@ it('uses flat GoPulse Compact shell surfaces without decorative gradients', () =
   expect(css).toContain('--shell-canvas:');
   expect(css).toContain('--shell-sidebar:');
   expect(css).toContain('--shell-header:');
-  expect(css).not.toMatch(/\.gopulse-shell\s*{[^}]*radial-gradient/);
+  expect(css).not.toMatch(/\.gopulse-shell\s*{[^}]*gradient\s*\(/);
 });
 ```
 

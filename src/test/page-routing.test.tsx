@@ -30,7 +30,7 @@ describe('shell navigation', () => {
 });
 
 describe('Atlas product navigation', () => {
-  it('opens the exact selected token product page from the dashboard drawer', () => {
+  it('opens the exact selected token product page from the dashboard drawer', async () => {
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({
       matches: false,
       media: '',
@@ -47,6 +47,6 @@ describe('Atlas product navigation', () => {
     fireEvent.click(screen.getByRole('button', { name: /USDC.*\$1\.00.*\$2\.5K/i }));
     fireEvent.click(screen.getByRole('button', { name: 'Token page' }));
 
-    expect(screen.getByText('USDC product page')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'USD Coin (Base)' })).toBeInTheDocument();
   });
 });

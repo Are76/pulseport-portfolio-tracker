@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -193,6 +193,14 @@ describe('atlas home surface', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'PLSX allocation' }));
+
+    expect(screen.getByRole('heading', { name: 'PLSX' })).toBeInTheDocument();
+  });
+
+  it('opens an exact token detail from the design fallback', () => {
+    render(<AtlasHomeSurface onNavigate={() => undefined} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /PLSX -3\.51%/i }));
 
     expect(screen.getByRole('heading', { name: 'PLSX' })).toBeInTheDocument();
   });

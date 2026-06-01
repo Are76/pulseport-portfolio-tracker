@@ -583,7 +583,7 @@ export default function App() {
   const [prices, setPrices] = useState<Record<string, any>>(() => tryReadCache<Record<string, any>>('pulseport_cache_prices') ?? {});
   const [etherscanApiKey, setEtherscanApiKey] = useState<string>(() => {
     try {
-      return localStorage.getItem('pulseport_etherscan_key') || '';
+      return sessionStorage.getItem('pulseport_etherscan_key') || '';
     } catch {
       return '';
     }
@@ -599,9 +599,10 @@ export default function App() {
   };
   const removeEtherscanApiKey = () => {
     try {
+      sessionStorage.removeItem('pulseport_etherscan_key');
       localStorage.removeItem('pulseport_etherscan_key');
     } catch {
-      // localStorage may be unavailable in some contexts
+      // Browser storage may be unavailable in some contexts
     }
     setEtherscanApiKey('');
     setApiKeyInput('');
@@ -685,6 +686,7 @@ export default function App() {
   useEffect(() => {
     try {
       localStorage.removeItem('pulseport_basescan_key');
+      localStorage.removeItem('pulseport_etherscan_key');
     } catch {
       // localStorage may be unavailable in some contexts
     }
@@ -6461,7 +6463,7 @@ export default function App() {
                 </div>
                 <div>
                   <strong>Why is it here?</strong>
-                  <span>It improves ETH deposits, stablecoin inflows, transaction history, and invested/P&L calculations. Your key is stored only on this device and is not sent to our servers.</span>
+                  <span>It improves ETH deposits, stablecoin inflows, transaction history, and invested/P&L calculations. Your key is kept only for this browser tab and is not sent to our servers.</span>
                 </div>
                 <div>
                   <strong>What still works without it?</strong>
@@ -6493,12 +6495,12 @@ export default function App() {
                   const ethKey = apiKeyInput.trim();
                   try {
                     if (ethKey) {
-                      localStorage.setItem('pulseport_etherscan_key', ethKey);
+                      sessionStorage.setItem('pulseport_etherscan_key', ethKey);
                     } else {
-                      localStorage.removeItem('pulseport_etherscan_key');
+                      sessionStorage.removeItem('pulseport_etherscan_key');
                     }
                   } catch {
-                    // localStorage may be unavailable in some contexts
+                    // Browser storage may be unavailable in some contexts
                   }
                   setEtherscanApiKey(ethKey);
                   setIsApiKeyModalOpen(false);

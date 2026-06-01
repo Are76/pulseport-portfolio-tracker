@@ -18,12 +18,13 @@ function stubMatchMedia() {
 afterEach(() => {
   vi.unstubAllGlobals();
   window.localStorage.clear();
+  window.sessionStorage.clear();
 });
 
 describe('Etherscan API key settings', () => {
-  it('restores a locally saved key after refresh', () => {
+  it('restores a key saved for the browser tab after refresh', () => {
     stubMatchMedia();
-    window.localStorage.setItem('pulseport_etherscan_key', 'saved-key');
+    window.sessionStorage.setItem('pulseport_etherscan_key', 'saved-key');
 
     render(<App />);
 
@@ -32,18 +33,19 @@ describe('Etherscan API key settings', () => {
     expect(screen.getByLabelText('Etherscan API key')).toHaveValue('saved-key');
   });
 
-  it('saves and removes the key on this device', () => {
+  it('saves and removes the key for this browser tab', () => {
     stubMatchMedia();
     render(<App />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Open API key settings' }));
     fireEvent.change(screen.getByLabelText('Etherscan API key'), { target: { value: 'new-key' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save & Refresh' }));
-    expect(window.localStorage.getItem('pulseport_etherscan_key')).toBe('new-key');
+    expect(window.sessionStorage.getItem('pulseport_etherscan_key')).toBe('new-key');
+    expect(window.localStorage.getItem('pulseport_etherscan_key')).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'API key set. Open API key settings' }));
     fireEvent.click(screen.getByRole('button', { name: 'Remove key' }));
-    expect(window.localStorage.getItem('pulseport_etherscan_key')).toBeNull();
+    expect(window.sessionStorage.getItem('pulseport_etherscan_key')).toBeNull();
     expect(screen.getByRole('button', { name: 'Open API key settings' })).toBeInTheDocument();
   });
 });
