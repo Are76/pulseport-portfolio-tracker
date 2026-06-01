@@ -25,14 +25,14 @@
 
   /* Text */
   --fg: #EAECF0;
-  --fg-muted: #8B91A8;
-  --fg-subtle: #555B72;
+  --fg-muted: #9BA8A4;
+  --fg-subtle: #66736F;
 
-  /* Accent — DexScreener blue */
-  --accent: #4263EB;
-  --accent-glow: rgba(66,99,235,0.20);
-  --accent-dim: rgba(66,99,235,0.10);
-  --accent-border: rgba(66,99,235,0.28);
+  /* Interaction accent */
+  --accent: #00d68f;
+  --accent-glow: rgba(0,214,143,0.20);
+  --accent-dim: rgba(0,214,143,0.10);
+  --accent-border: rgba(0,214,143,0.28);
   --negative-dim: rgba(255,59,105,0.08);
   --negative-border: rgba(255,59,105,0.30);
 
@@ -79,8 +79,8 @@
   --bg-glass: rgba(14,16,26,0.90);
 
   /* Secondary accent */
-  --accent-purple: rgba(66,99,235,0.12);
-  --accent-purple-border: rgba(66,99,235,0.22);
+  --accent-purple: rgba(0,214,143,0.12);
+  --accent-purple-border: rgba(0,214,143,0.22);
 
   /* Inset panel backgrounds */
   --bg-inset: rgba(255,255,255,0.03);
@@ -96,8 +96,8 @@
   --bg-sidebar: #E2E5ED;
   --bg-header: rgba(236,238,242,0.96);
   --fg: #0F172A;               /* slate-900 */
-  --fg-muted: #334155;         /* 11:1 on white ✅ */
-  --fg-subtle: #64748B;        /* 6:1 on white ✅ */
+  --fg-muted: #52645E;
+  --fg-subtle: #71827C;
   --border: rgba(0,0,0,0.08);
   --border-strong: rgba(0,0,0,0.18);
   /* Chain colors for light mode */
@@ -111,11 +111,11 @@
   --md-sys-color-outline: rgba(0,0,0,0.08);
   /* Glass/card backgrounds for light mode */
   --bg-glass: rgba(255,255,255,0.92);
-  /* Accent — indigo/blue, 4.5:1 on white ✅ */
-  --accent: #3B5BDB;
-  --accent-glow: rgba(59,91,219,0.15);
-  --accent-dim: rgba(59,91,219,0.08);
-  --accent-border: rgba(59,91,219,0.22);
+  /* Interaction accent */
+  --accent: #148a4b;
+  --accent-glow: rgba(20,138,75,0.15);
+  --accent-dim: rgba(20,138,75,0.10);
+  --accent-border: rgba(20,138,75,0.24);
   --negative-dim: rgba(220,38,38,0.08);
   --negative-border: rgba(220,38,38,0.22);
   /* Inset panel backgrounds */
@@ -131,8 +131,8 @@
   --negative-text: #DC2626;       /* red-600 - 4.8:1 ✅ */
 
   /* Insets / secondary accent */
-  --accent-purple: rgba(59,91,219,0.12);
-  --accent-purple-border: rgba(59,91,219,0.22);
+  --accent-purple: rgba(20,138,75,0.12);
+  --accent-purple-border: rgba(20,138,75,0.22);
 }
 
 /* -- LIGHT MODE GLOBAL OVERRIDES --------------------------------------- */
@@ -235,10 +235,11 @@
 
 :root {
   --font-shell-display: 'Avenir Next Demi', 'Sora', ui-sans-serif, system-ui, sans-serif;
+  --font-shell-ui: 'Avenir Next Demi', 'Sora', ui-sans-serif, system-ui, sans-serif;
   --shell-bg: #090c12;
-  --shell-canvas: #020303;
-  --shell-sidebar: #050707;
-  --shell-header: #050707;
+  --shell-canvas: #0e1213;
+  --shell-sidebar: var(--shell-canvas);
+  --shell-header: var(--shell-canvas);
   --shell-surface: #090d0c;
   --shell-fg: #f4f7f6;
   --shell-muted: #8b9894;
@@ -249,8 +250,8 @@
 
 [data-theme="light"] {
   --shell-canvas: #f3f6f5;
-  --shell-sidebar: #ffffff;
-  --shell-header: #ffffff;
+  --shell-sidebar: var(--shell-canvas);
+  --shell-header: var(--shell-canvas);
   --shell-surface: #ffffff;
   --shell-border: #dce5e1;
   --shell-fg: #17231f;
@@ -398,6 +399,7 @@ body {
 .gopulse-shell {
   background: var(--shell-canvas);
   color: var(--shell-fg);
+  font-family: var(--font-shell-ui);
 }
 
 .gopulse-sidebar {
@@ -452,7 +454,7 @@ body {
   z-index: 50;
   padding: 9px 18px;
   border-bottom: 1px solid var(--shell-border);
-  background: var(--shell-header);
+  background: var(--shell-sidebar);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
@@ -2750,7 +2752,7 @@ textarea:focus-visible,
 }
 
 .nav-item-active {
-  background: var(--accent-dim) !important;
+  background: var(--shell-surface) !important;
   color: var(--accent) !important;
   border-left: 2px solid var(--accent) !important;
 }
@@ -7987,8 +7989,8 @@ body,
 
 /* -- ATLAS / GOPULSE-INSPIRED UI ---------------------------------------- */
 :root {
-  --atlas-bg: #080b0c;
-  --atlas-surface: #0e1213;
+  --atlas-bg: var(--shell-canvas);
+  --atlas-surface: var(--shell-canvas);
   --atlas-panel: #14191a;
   --atlas-panel-strong: #192021;
   --atlas-border: #242d2d;
@@ -8008,7 +8010,7 @@ body,
 }
 
 [data-theme="light"] {
-  --atlas-bg: #f4f7f6;
+  --atlas-bg: var(--shell-canvas);
   --atlas-surface: #ffffff;
   --atlas-panel: #f1f5f3;
   --atlas-panel-strong: #e9f0ed;

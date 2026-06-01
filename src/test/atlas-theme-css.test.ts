@@ -28,6 +28,20 @@ describe('Atlas theme CSS', () => {
     expect(css).not.toMatch(/\[data-theme="light"\]\s+\.gopulse-shell\s*{[^}]*gradient\s*\(/);
   });
 
+  it('keeps the compact shell neutral with a shared green interaction accent and consistent typography', () => {
+    expect(css).toContain("--font-shell-ui: 'Avenir Next Demi', 'Sora', ui-sans-serif, system-ui, sans-serif;");
+    expect(css).toMatch(/:root\s*{[^}]*--accent:\s*#00d68f;[^}]*--accent-dim:\s*rgba\(0,\s*214,\s*143,\s*0\.10\);[^}]*--accent-border:\s*rgba\(0,\s*214,\s*143,\s*0\.28\);[^}]*}/);
+    expect(css).toMatch(/\[data-theme="light"\]\s*{[^}]*--accent:\s*#148a4b;[^}]*--accent-dim:\s*rgba\(20,\s*138,\s*75,\s*0\.10\);[^}]*--accent-border:\s*rgba\(20,\s*138,\s*75,\s*0\.24\);[^}]*}/);
+    expect(css).toMatch(/\.gopulse-shell\s*{[^}]*font-family:\s*var\(--font-shell-ui\);[^}]*}/);
+    expect(css).toMatch(/\.gopulse-header\s*{[^}]*background:\s*var\(--shell-sidebar\);[^}]*}/);
+    expect(css).toMatch(/\.nav-item-active\s*{[^}]*background:\s*var\(--shell-surface\)\s*!important;[^}]*}/);
+    expect(css).toContain('--shell-canvas: #0e1213;');
+    expect(css).toContain('--shell-sidebar: var(--shell-canvas);');
+    expect(css).toContain('--shell-header: var(--shell-canvas);');
+    expect(css).toContain('--atlas-bg: var(--shell-canvas);');
+    expect(css).toContain('--atlas-surface: var(--shell-canvas);');
+  });
+
   it('keeps allocation targets large enough with an internal visible focus style', () => {
     expect(css).toMatch(/\.atlas-home__allocation\s*{[^}]*height:\s*44px;/);
     expect(css).toMatch(/\.atlas-home__allocation button\s*{[^}]*min-height:\s*44px;/);
