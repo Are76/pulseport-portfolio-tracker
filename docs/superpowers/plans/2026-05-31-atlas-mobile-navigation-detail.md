@@ -10,6 +10,16 @@
 
 ---
 
+## Strategic Update (2026-06-01)
+
+This plan still applies, but it now sits inside the clarified repo strategy:
+
+- `pulseport-portfolio-tracker` is the canonical implementation repo.
+- `PulsePort` is a UI/product donor, not the repo we should move active work back into.
+- `CoinPulse` is a backend/data donor for DTO and truth-model alignment.
+
+That means this plan should stay a focused **Atlas UI/mobile branch**. If a future mobile task depends on backend DTO changes, it should be split into a separate hybrid or backend-alignment slice rather than folded into this plan by default.
+
 ## Task 1: Accessible Atlas Mobile Detail Sheet
 
 **Files:**
