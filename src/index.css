@@ -8363,6 +8363,11 @@ body,
   color: var(--atlas-on-fg);
 }
 
+.atlas-home__range button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
 .atlas-home__layout {
   display: grid;
   gap: 16px;

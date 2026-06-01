@@ -42,6 +42,20 @@ describe('atlas detail model', () => {
     expect(buildAtlasDetail('token:missing').id).toBe('unavailable');
   });
 
+  it('ignores inherited runtime detail properties', () => {
+    const inheritedDetail = {
+      id: 'token:inherited',
+      breadcrumb: ['Home', 'Coins', 'Inherited'],
+      title: 'Inherited',
+      summary: 'This must not be exposed.',
+      facts: [],
+      actions: [],
+    };
+    const runtimeDetails = Object.create({ 'token:inherited': inheritedDetail });
+
+    expect(buildAtlasDetail('token:inherited', runtimeDetails).id).toBe('unavailable');
+  });
+
   it('returns honest unavailable history for unsupported portfolio ranges', () => {
     const detail = buildAtlasDetail('portfolio-change', {}, '30d');
 

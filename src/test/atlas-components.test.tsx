@@ -160,17 +160,16 @@ describe('atlas home surface', () => {
     expect(tokens!.compareDocumentPosition(secondary!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('changes the selected time range when a range button is clicked', () => {
+  it('keeps unsupported historical ranges disabled until data is available', () => {
     render(<AtlasHomeSurface onNavigate={() => undefined} />);
 
-    fireEvent.click(screen.getByRole('button', { name: '30d' }));
+    expect(screen.getByRole('button', { name: '24h' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '24h' })).toHaveAttribute('aria-pressed', 'true');
 
-    expect(screen.getByRole('button', { name: '30d' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: '24h' })).toHaveAttribute('aria-pressed', 'false');
-    fireEvent.click(screen.getByRole('button', { name: /24h \+3\.8%/i }));
-    expect(screen.getByRole('heading', { name: '30d history unavailable' })).toBeInTheDocument();
-    expect(screen.getByText('Historical portfolio change data is not available yet.')).toBeInTheDocument();
-    expect(within(screen.getByRole('dialog')).queryByText('+$3,182')).not.toBeInTheDocument();
+    for (const range of ['7d', '30d', '90d']) {
+      expect(screen.getByRole('button', { name: range })).toBeDisabled();
+      expect(screen.getByRole('button', { name: range })).toHaveAttribute('title', 'Historical data coming soon');
+    }
   });
 
   it('opens the exact allocation detail when an allocation segment is clicked', () => {

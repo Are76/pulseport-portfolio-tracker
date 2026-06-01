@@ -139,5 +139,7 @@ export function buildAtlasDetail(
   range: AtlasRange = '24h',
 ): AtlasDetailContent {
   if (id === 'portfolio-change') return buildPortfolioChangeDetail(range);
-  return runtimeDetails[id] ?? DETAILS[id as AtlasDetailId] ?? UNAVAILABLE_DETAIL;
+  if (Object.prototype.hasOwnProperty.call(runtimeDetails, id)) return runtimeDetails[id];
+  if (Object.prototype.hasOwnProperty.call(DETAILS, id)) return DETAILS[id as AtlasDetailId];
+  return UNAVAILABLE_DETAIL;
 }

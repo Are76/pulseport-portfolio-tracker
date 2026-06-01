@@ -581,7 +581,13 @@ export default function App() {
   const [timeSinceLastUpdate, setTimeSinceLastUpdate] = useState<number>(0);
   const [manualEntries, setManualEntries] = useState<Record<string, number>>(() => readStoredJSON<Record<string, number>>('pulseport_manual_entries', {}));
   const [prices, setPrices] = useState<Record<string, any>>(() => tryReadCache<Record<string, any>>('pulseport_cache_prices') ?? {});
-  const [etherscanApiKey, setEtherscanApiKey] = useState<string>('');
+  const [etherscanApiKey, setEtherscanApiKey] = useState<string>(() => {
+    try {
+      return localStorage.getItem('pulseport_etherscan_key') || '';
+    } catch {
+      return '';
+    }
+  });
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
 
@@ -590,6 +596,15 @@ export default function App() {
     event?.stopPropagation();
     setApiKeyInput(etherscanApiKey);
     setIsApiKeyModalOpen(true);
+  };
+  const removeEtherscanApiKey = () => {
+    try {
+      localStorage.removeItem('pulseport_etherscan_key');
+    } catch {
+      // localStorage may be unavailable in some contexts
+    }
+    setEtherscanApiKey('');
+    setApiKeyInput('');
   };
   const [hideDust, setHideDust] = useState<boolean>(() => readStoredJSON<boolean>('pulseport_hide_dust', false));
   const [hiddenTokens, setHiddenTokens] = useState<string[]>(() => {
@@ -669,7 +684,6 @@ export default function App() {
 
   useEffect(() => {
     try {
-      localStorage.removeItem('pulseport_etherscan_key');
       localStorage.removeItem('pulseport_basescan_key');
     } catch {
       // localStorage may be unavailable in some contexts
@@ -6447,7 +6461,7 @@ export default function App() {
                 </div>
                 <div>
                   <strong>Why is it here?</strong>
-                  <span>It improves ETH deposits, stablecoin inflows, transaction history, and invested/P&L calculations. Your key is used only for this session and is not persisted.</span>
+                  <span>It improves ETH deposits, stablecoin inflows, transaction history, and invested/P&L calculations. Your key is stored only on this device and is not sent to our servers.</span>
                 </div>
                 <div>
                   <strong>What still works without it?</strong>
@@ -6467,11 +6481,25 @@ export default function App() {
                 />
               </label>
               <div className="api-key-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 14 }}>
+                {etherscanApiKey && (
+                  <button type="button" onClick={removeEtherscanApiKey} style={{ border: '1px solid var(--border)', background: 'var(--bg-surface)', color: 'var(--fg-primary)', borderRadius: 10, padding: '9px 14px', fontWeight: 600, cursor: 'pointer' }}>
+                    Remove key
+                  </button>
+                )}
                 <button type="button" onClick={() => setIsApiKeyModalOpen(false)} style={{ border: '1px solid var(--border)', background: 'var(--bg-surface)', color: 'var(--fg-primary)', borderRadius: 10, padding: '9px 14px', fontWeight: 600, cursor: 'pointer' }}>
                   Cancel
                 </button>
                 <button type="button" onClick={() => {
                   const ethKey = apiKeyInput.trim();
+                  try {
+                    if (ethKey) {
+                      localStorage.setItem('pulseport_etherscan_key', ethKey);
+                    } else {
+                      localStorage.removeItem('pulseport_etherscan_key');
+                    }
+                  } catch {
+                    // localStorage may be unavailable in some contexts
+                  }
                   setEtherscanApiKey(ethKey);
                   setIsApiKeyModalOpen(false);
                   setTimeout(() => fetchPortfolio(ethKey), 100);

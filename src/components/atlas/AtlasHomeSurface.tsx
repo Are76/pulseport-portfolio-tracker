@@ -99,6 +99,8 @@ export function AtlasHomeSurface({ onNavigate, snapshot = DEFAULT_SNAPSHOT }: Pr
               type="button"
               className={selectedRange === range ? 'is-active' : undefined}
               aria-pressed={selectedRange === range}
+              disabled={range !== '24h'}
+              title={range === '24h' ? undefined : 'Historical data coming soon'}
               onClick={() => setSelectedRange(range)}
             >
               {range}
