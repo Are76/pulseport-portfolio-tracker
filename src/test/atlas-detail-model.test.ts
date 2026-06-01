@@ -21,10 +21,53 @@ describe('atlas detail model', () => {
     expect(detail.actions.length).toBeGreaterThan(0);
   });
 
-  it('falls back to portfolio-change for unknown detail ids', () => {
+  it('returns an honest unavailable state for unknown detail ids', () => {
     const detail = buildAtlasDetail('missing' as AtlasDetailId);
 
-    expect(detail.id).toBe('portfolio-change');
+    expect(detail.id).toBe('unavailable');
+    expect(detail.title).toBe('Detail unavailable');
+  });
+
+  it('uses runtime token details and returns an honest unavailable state for unknown ids', () => {
+    const runtimeDetail = {
+      id: 'token:hex',
+      breadcrumb: ['Home', 'Coins', 'HEX'],
+      title: 'HEX',
+      summary: 'Wallet-aware HEX detail.',
+      facts: [],
+      actions: [],
+    };
+
+    expect(buildAtlasDetail('token:hex', { 'token:hex': runtimeDetail })).toBe(runtimeDetail);
+    expect(buildAtlasDetail('token:missing').id).toBe('unavailable');
+  });
+
+  it('ignores inherited runtime detail properties', () => {
+    const inheritedDetail = {
+      id: 'token:inherited',
+      breadcrumb: ['Home', 'Coins', 'Inherited'],
+      title: 'Inherited',
+      summary: 'This must not be exposed.',
+      facts: [],
+      actions: [],
+    };
+    const runtimeDetails = Object.create({ 'token:inherited': inheritedDetail });
+
+    expect(buildAtlasDetail('token:inherited', runtimeDetails).id).toBe('unavailable');
+  });
+
+  it('returns honest unavailable history for unsupported portfolio ranges', () => {
+    const detail = buildAtlasDetail('portfolio-change', {}, '30d');
+
+    expect(detail.title).toBe('30d history unavailable');
+    expect(detail.summary).toBe('Historical portfolio change data is not available yet.');
+    expect(detail.facts).toEqual([]);
+  });
+
+  it('preserves the real 24h portfolio change detail', () => {
+    const detail = buildAtlasDetail('portfolio-change');
+
     expect(detail.title).toBe('24h change');
+    expect(detail.facts).toContainEqual({ label: 'Total', value: '+$3,182', tone: 'positive' });
   });
 });

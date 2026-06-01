@@ -27,6 +27,8 @@ function formatUsd(value: number): string {
   if (abs >= 1_000) return `$${(value / 1_000).toFixed(abs >= 10_000 ? 0 : 1)}K`;
   if (abs >= 100) return `$${value.toFixed(0)}`;
   if (abs >= 1) return `$${value.toFixed(2)}`;
+  if (abs >= 0.01) return `$${value.toFixed(2)}`;
+  if (abs > 0) return `$${value.toPrecision(3)}`;
   return '$0';
 }
 
@@ -62,7 +64,7 @@ function sumPositionValue(positions: Array<{ totalUsd: number }> | undefined): n
 }
 
 function tokenDetailId(asset: Asset): string {
-  return asset.symbol.toUpperCase() === 'PLS' ? 'token-pls' : 'portfolio-change';
+  return `token:${asset.id}`;
 }
 
 export function buildAtlasHomeSnapshot(input: AtlasSnapshotInput): AtlasHomeSnapshot {
@@ -145,11 +147,34 @@ export function buildAtlasHomeSnapshot(input: AtlasSnapshotInput): AtlasHomeSnap
     };
   });
 
+  const details = Object.fromEntries(sortedAssets.slice(0, MAX_TOKENS).map(asset => {
+    const detailId = tokenDetailId(asset);
+    const change = asset.pnl24h ?? asset.priceChange24h ?? 0;
+
+    return [detailId, {
+      id: detailId,
+      breadcrumb: ['Home', 'Coins', asset.symbol],
+      title: asset.symbol,
+      summary: `${asset.name || asset.symbol} in your tracked portfolio.`,
+      facts: [
+        { label: 'Price', value: formatPrice(asset.price) },
+        { label: 'Your value', value: formatUsd(asset.value) },
+        { label: '24h', value: formatPercent(change), tone: toneForChange(change) },
+        { label: 'Chain', value: asset.chain },
+      ],
+      actions: [
+        { label: 'Token page', target: `product:${asset.id}`, variant: 'primary' as const },
+        { label: 'Transactions', target: 'history' },
+      ],
+    }];
+  }));
+
   const allocationTotal = sortedAssets.reduce((sum, asset) => sum + asset.value, 0);
   const allocation = sortedAssets.slice(0, 3).map(asset => ({
     id: asset.id,
     label: asset.symbol,
     width: allocationTotal > 0 ? (asset.value / allocationTotal) * 100 : 0,
+    detailId: tokenDetailId(asset),
   }));
 
   return {
@@ -159,6 +184,7 @@ export function buildAtlasHomeSnapshot(input: AtlasSnapshotInput): AtlasHomeSnap
     signals,
     allocation,
     tokens,
+    details,
     emptyTokenMessage: tokens.length === 0 ? 'Add a wallet to see your largest holdings here.' : undefined,
   };
 }

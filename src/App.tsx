@@ -581,7 +581,13 @@ export default function App() {
   const [timeSinceLastUpdate, setTimeSinceLastUpdate] = useState<number>(0);
   const [manualEntries, setManualEntries] = useState<Record<string, number>>(() => readStoredJSON<Record<string, number>>('pulseport_manual_entries', {}));
   const [prices, setPrices] = useState<Record<string, any>>(() => tryReadCache<Record<string, any>>('pulseport_cache_prices') ?? {});
-  const [etherscanApiKey, setEtherscanApiKey] = useState<string>('');
+  const [etherscanApiKey, setEtherscanApiKey] = useState<string>(() => {
+    try {
+      return localStorage.getItem('pulseport_etherscan_key') || '';
+    } catch {
+      return '';
+    }
+  });
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
 
@@ -590,6 +596,15 @@ export default function App() {
     event?.stopPropagation();
     setApiKeyInput(etherscanApiKey);
     setIsApiKeyModalOpen(true);
+  };
+  const removeEtherscanApiKey = () => {
+    try {
+      localStorage.removeItem('pulseport_etherscan_key');
+    } catch {
+      // localStorage may be unavailable in some contexts
+    }
+    setEtherscanApiKey('');
+    setApiKeyInput('');
   };
   const [hideDust, setHideDust] = useState<boolean>(() => readStoredJSON<boolean>('pulseport_hide_dust', false));
   const [hiddenTokens, setHiddenTokens] = useState<string[]>(() => {
@@ -669,7 +684,6 @@ export default function App() {
 
   useEffect(() => {
     try {
-      localStorage.removeItem('pulseport_etherscan_key');
       localStorage.removeItem('pulseport_basescan_key');
     } catch {
       // localStorage may be unavailable in some contexts
@@ -3645,8 +3659,10 @@ export default function App() {
       return;
     }
 
-    if (target === 'product' && currentAssets.length > 0) {
-      openProductPage(currentAssets[0], activeTab);
+    if (target.startsWith('product:')) {
+      const assetId = target.slice('product:'.length);
+      const asset = currentAssets.find(candidate => candidate.id === assetId);
+      if (asset) openProductPage(asset, activeTab);
     }
   };
 
@@ -3716,30 +3732,19 @@ export default function App() {
   const mobileMoreActive = mobileMoreNavItems.some(item => item.id === activeTab);
 
   return (
-    <div className="app-shell min-h-screen font-sans flex" style={{ fontSize: 14, color: 'var(--fg)' }}>
+    <div className="app-shell gopulse-shell min-h-screen font-sans flex" style={{ fontSize: 14 }}>
       {/* -- SIDEBAR BACKDROP (mobile) -- */}
       <div className={`sidebar-backdrop${sidebarOpen ? ' open' : ''}`} onClick={() => setSidebarOpen(false)} />
       {/* -- SIDEBAR -- */}
-      <aside style={{
-          width: 248, minWidth: 248,
-          background: 'var(--bg-sidebar)',
-          borderRight: '1px solid var(--border)',
-        }}
-        className={`app-sidebar flex flex-col sticky top-0 h-screen overflow-y-auto custom-scrollbar${sidebarOpen ? ' open' : ''}`}>
+      <aside className={`app-sidebar gopulse-sidebar flex flex-col sticky top-0 h-screen overflow-y-auto custom-scrollbar${sidebarOpen ? ' open' : ''}`}>
         {/* Logo */}
-        <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--border)' }} className="flex items-center gap-3">
-          <div style={{
-            width: 40, height: 40,
-            background: 'linear-gradient(135deg, rgba(0,214,143,0.14), rgba(109,99,255,0.18))',
-            borderRadius: 14,
-            border: '1px solid rgba(0,214,143,0.18)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-          }}>
-            <img src={BRAND_ASSETS.logo} alt="Pulseport logo" style={{ width: 22, height: 22 }} />
+        <div className="gopulse-sidebar__brand flex items-center gap-3">
+          <div className="gopulse-sidebar__logo">
+            <img src={BRAND_ASSETS.logo} alt="Pulseport logo" />
           </div>
-          <div style={{ minWidth: 0 }}>
-            <img className="app-sidebar-wordmark" src={BRAND_ASSETS.wordmark} alt="Pulseport wordmark" style={{ width: 126, height: 'auto' }} />
-            <div style={{ marginTop: 6, fontSize: 11, color: 'var(--fg-subtle)', letterSpacing: '.08em', textTransform: 'uppercase' }}>Portfolio terminal</div>
+          <div className="gopulse-sidebar__identity">
+            <img className="app-sidebar-wordmark" src={BRAND_ASSETS.wordmark} alt="Pulseport wordmark" />
+            <div className="gopulse-sidebar__tagline">Portfolio intelligence</div>
           </div>
         </div>
 
@@ -3897,14 +3902,7 @@ export default function App() {
       {/* -- MAIN -- */}
       <main className="app-main flex-1 min-w-0 flex flex-col">
         {/* Top Nav / Header */}
-        <header
-          className="glass app-header shrink-0"
-          style={{
-            background: 'var(--bg-header)',
-            borderBottom: '1px solid var(--border)',
-            position: 'sticky', top: 0, zIndex: 50,
-            padding: '10px 20px 8px',
-          }}>
+        <header className="app-header gopulse-header shrink-0">
           <div className="app-header-main">
             {/* Page title */}
             <div className="flex items-center gap-3">
@@ -6463,7 +6461,7 @@ export default function App() {
                 </div>
                 <div>
                   <strong>Why is it here?</strong>
-                  <span>It improves ETH deposits, stablecoin inflows, transaction history, and invested/P&L calculations. Your key is used only for this session and is not persisted.</span>
+                  <span>It improves ETH deposits, stablecoin inflows, transaction history, and invested/P&L calculations. Your key is stored only on this device and is not sent to our servers.</span>
                 </div>
                 <div>
                   <strong>What still works without it?</strong>
@@ -6483,11 +6481,25 @@ export default function App() {
                 />
               </label>
               <div className="api-key-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 14 }}>
+                {etherscanApiKey && (
+                  <button type="button" onClick={removeEtherscanApiKey} style={{ border: '1px solid var(--border)', background: 'var(--bg-surface)', color: 'var(--fg-primary)', borderRadius: 10, padding: '9px 14px', fontWeight: 600, cursor: 'pointer' }}>
+                    Remove key
+                  </button>
+                )}
                 <button type="button" onClick={() => setIsApiKeyModalOpen(false)} style={{ border: '1px solid var(--border)', background: 'var(--bg-surface)', color: 'var(--fg-primary)', borderRadius: 10, padding: '9px 14px', fontWeight: 600, cursor: 'pointer' }}>
                   Cancel
                 </button>
                 <button type="button" onClick={() => {
                   const ethKey = apiKeyInput.trim();
+                  try {
+                    if (ethKey) {
+                      localStorage.setItem('pulseport_etherscan_key', ethKey);
+                    } else {
+                      localStorage.removeItem('pulseport_etherscan_key');
+                    }
+                  } catch {
+                    // localStorage may be unavailable in some contexts
+                  }
                   setEtherscanApiKey(ethKey);
                   setIsApiKeyModalOpen(false);
                   setTimeout(() => fetchPortfolio(ethKey), 100);

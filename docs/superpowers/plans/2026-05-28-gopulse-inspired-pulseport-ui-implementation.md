@@ -39,6 +39,7 @@ Use these branches/PRs instead of one large redesign branch:
 
 2. **Branch 2: `ui/atlas-token-holdings-cards`**
    - Goal: apply the same visual language to token cards, holdings rows, market cards, and token detail entry points.
+   - Detailed follow-on plan: `docs/superpowers/plans/2026-06-01-atlas-token-intelligence.md`
    - Product owner checkpoint: confirm users can click holdings and understand where they go.
 
 3. **Branch 3: `ui/atlas-stakes-defi-summary`**
