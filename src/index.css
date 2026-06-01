@@ -8029,26 +8029,25 @@ body,
 }
 
 .atlas-surface {
-  background:
-    radial-gradient(circle at 28% 12%, var(--atlas-accent-dim), transparent 26%),
-    var(--atlas-bg);
+  background: var(--atlas-bg);
   color: var(--atlas-fg);
 }
 
 .atlas-clickable-card {
   border: 1px solid var(--atlas-border);
+  border-radius: 4px;
   background: var(--atlas-surface);
   color: var(--atlas-fg);
   cursor: pointer;
+  box-shadow: none;
   transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
 .atlas-clickable-card:hover,
 .atlas-clickable-card:focus-visible {
   border-color: var(--atlas-border-strong);
-  box-shadow: 0 0 0 3px var(--atlas-accent-dim);
+  box-shadow: none;
   outline: none;
-  transform: translateY(-1px);
 }
 
 .atlas-clickable-card[aria-pressed='true'],
@@ -8072,7 +8071,7 @@ body,
   min-height: 96px;
   padding: 13px;
   text-align: left;
-  border-radius: 14px;
+  border-radius: 4px;
 }
 
 .atlas-metric-value {
@@ -8090,7 +8089,7 @@ body,
   min-height: 44px;
   padding: 8px 6px;
   text-align: left;
-  border-radius: 10px;
+  border-radius: 4px;
 }
 
 .atlas-signal-strip {
@@ -8104,7 +8103,7 @@ body,
   min-height: 116px;
   padding: 13px;
   text-align: left;
-  border-radius: 14px;
+  border-radius: 4px;
 }
 
 .atlas-token-card__top {
@@ -8375,6 +8374,28 @@ body,
   gap: 10px;
 }
 
+.atlas-home__token-section {
+  margin-top: 8px;
+}
+
+.atlas-home__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.atlas-home__section-head h2 {
+  margin: 0;
+  color: var(--atlas-fg);
+  font-size: 15px;
+}
+
+.atlas-home__section-head span {
+  color: var(--atlas-muted);
+  font-size: 12px;
+}
+
 .atlas-home__empty {
   grid-column: 1 / -1;
   margin: 0;
@@ -8607,18 +8628,18 @@ body,
   color: var(--atlas-muted);
 }
 
-.atlas-home__middle {
+.atlas-home__secondary {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin: 12px 0;
+  grid-template-columns: minmax(0, 1.25fr) minmax(220px, 0.75fr);
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .atlas-home__panel {
   border: 1px solid var(--atlas-border);
-  border-radius: 14px;
+  border-radius: 6px;
   background: var(--atlas-surface);
-  padding: 14px;
+  padding: 10px;
 }
 
 .atlas-home__panel-head {
@@ -8665,7 +8686,7 @@ body,
 }
 
 @media (max-width: 900px) {
-  .atlas-home__middle {
+  .atlas-home__secondary {
     grid-template-columns: 1fr;
   }
 

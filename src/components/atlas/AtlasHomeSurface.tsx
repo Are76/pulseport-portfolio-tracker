@@ -115,13 +115,21 @@ export function AtlasHomeSurface({ onNavigate, snapshot = DEFAULT_SNAPSHOT }: Pr
             ))}
           </div>
 
-          <div className="atlas-home__middle">
-            <div className="atlas-home__panel">
-              <div className="atlas-home__panel-head"><strong>Signals</strong><span>{snapshot.signals.length}</span></div>
-              {snapshot.signals.map((signal) => (
-                <AtlasSignalRow key={signal.id} signal={signal} active={selectedDetailId === signal.detailId} onSelect={selectDetail} />
-              ))}
+          <section className="atlas-home__token-section" aria-labelledby="atlas-token-heading">
+            <div className="atlas-home__section-head">
+              <h2 id="atlas-token-heading">Your tokens</h2>
+              <span>{snapshot.tokens.length}</span>
             </div>
+            <div className="atlas-home__tokens">
+              {snapshot.tokens.length > 0
+                ? snapshot.tokens.map((token) => (
+                  <AtlasTokenCard key={token.id} token={token} active={selectedDetailId === token.detailId} onSelect={selectDetail} />
+                ))
+                : <p className="atlas-home__empty">{snapshot.emptyTokenMessage}</p>}
+            </div>
+          </section>
+
+          <div className="atlas-home__secondary">
             <div className="atlas-home__panel">
               <div className="atlas-home__panel-head"><strong>Allocation</strong><span>wallet-aware</span></div>
               <div className="atlas-home__allocation" aria-label="Portfolio allocation">
@@ -138,14 +146,12 @@ export function AtlasHomeSurface({ onNavigate, snapshot = DEFAULT_SNAPSHOT }: Pr
                 ))}
               </div>
             </div>
-          </div>
-
-          <div className="atlas-home__tokens">
-            {snapshot.tokens.length > 0
-              ? snapshot.tokens.map((token) => (
-                <AtlasTokenCard key={token.id} token={token} active={selectedDetailId === token.detailId} onSelect={selectDetail} />
-              ))
-              : <p className="atlas-home__empty">{snapshot.emptyTokenMessage}</p>}
+            <div className="atlas-home__panel">
+              <div className="atlas-home__panel-head"><strong>Signals</strong><span>{snapshot.signals.length}</span></div>
+              {snapshot.signals.map((signal) => (
+                <AtlasSignalRow key={signal.id} signal={signal} active={selectedDetailId === signal.detailId} onSelect={selectDetail} />
+              ))}
+            </div>
           </div>
         </div>
 

@@ -42,4 +42,11 @@ describe('Atlas theme CSS', () => {
     expect(css).not.toContain('.atlas-home__layout,');
     expect(css).not.toContain('.atlas-home__layout > .atlas-detail-panel');
   });
+
+  it('uses a flat compact Atlas dashboard without card glow effects', () => {
+    expect(css).toMatch(/\.atlas-surface\s*{[^}]*background:\s*var\(--atlas-bg\);[^}]*}/);
+    expect(css).toMatch(/\.atlas-clickable-card\s*{[^}]*border-radius:\s*4px;[^}]*box-shadow:\s*none;[^}]*}/);
+    expect(css).toMatch(/\.atlas-clickable-card:hover,\s*\.atlas-clickable-card:focus-visible\s*{[^}]*box-shadow:\s*none;[^}]*}/);
+    expect(css).toMatch(/\.atlas-home__secondary\s*{[^}]*grid-template-columns:\s*minmax\(0,\s*1\.25fr\)\s+minmax\(220px,\s*0\.75fr\);[^}]*}/);
+  });
 });

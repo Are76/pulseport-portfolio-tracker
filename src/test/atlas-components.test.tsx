@@ -149,6 +149,17 @@ describe('atlas detail views', () => {
 });
 
 describe('atlas home surface', () => {
+  it('places token holdings before secondary allocation and signals', () => {
+    const { container } = render(<AtlasHomeSurface onNavigate={() => undefined} />);
+    const home = container.querySelector('.atlas-home');
+    const tokens = home?.querySelector('.atlas-home__tokens');
+    const secondary = home?.querySelector('.atlas-home__secondary');
+
+    expect(tokens).toBeTruthy();
+    expect(secondary).toBeTruthy();
+    expect(tokens!.compareDocumentPosition(secondary!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('changes the selected time range when a range button is clicked', () => {
     render(<AtlasHomeSurface onNavigate={() => undefined} />);
 
