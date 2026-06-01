@@ -1,4 +1,4 @@
-import type { AtlasDetailContent } from './atlas-types';
+import type { AtlasDetailContent, AtlasRange } from './atlas-types';
 
 export type AtlasDetailId =
   | 'portfolio-change'
@@ -107,6 +107,39 @@ const DETAILS: Record<AtlasDetailId, AtlasDetailContent> = {
   },
 };
 
-export function buildAtlasDetail(id: AtlasDetailId | string): AtlasDetailContent {
-  return DETAILS[id as AtlasDetailId] ?? DETAILS['portfolio-change'];
+const UNAVAILABLE_DETAIL: AtlasDetailContent = {
+  id: 'unavailable',
+  breadcrumb: ['Home', 'Details'],
+  title: 'Detail unavailable',
+  summary: 'This information is not available yet.',
+  facts: [],
+  actions: [],
+};
+
+function buildPortfolioChangeDetail(range: AtlasRange): AtlasDetailContent {
+  if (range !== '24h') {
+    return {
+      id: 'unavailable',
+      breadcrumb: ['Home', 'Portfolio', range],
+      title: `${range} history unavailable`,
+      summary: 'Historical portfolio change data is not available yet.',
+      facts: [],
+      actions: [],
+    };
+  }
+
+  return {
+    ...DETAILS['portfolio-change'],
+  };
+}
+
+export function buildAtlasDetail(
+  id: AtlasDetailId | string,
+  runtimeDetails: Record<string, AtlasDetailContent> = {},
+  range: AtlasRange = '24h',
+): AtlasDetailContent {
+  if (id === 'portfolio-change') return buildPortfolioChangeDetail(range);
+  if (Object.prototype.hasOwnProperty.call(runtimeDetails, id)) return runtimeDetails[id];
+  if (Object.prototype.hasOwnProperty.call(DETAILS, id)) return DETAILS[id as AtlasDetailId];
+  return UNAVAILABLE_DETAIL;
 }

@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 
 export type AtlasTone = 'neutral' | 'positive' | 'negative' | 'accent' | 'muted';
 
+export type AtlasRange = '24h' | '7d' | '30d' | '90d';
+
 export type AtlasAction = {
   label: string;
   target: string;
@@ -55,6 +57,7 @@ export type AtlasAllocationItem = {
   id: string;
   label: string;
   width: number;
+  detailId: string;
 };
 
 export type AtlasHomeSnapshot = {
@@ -64,5 +67,6 @@ export type AtlasHomeSnapshot = {
   signals: AtlasSignal[];
   allocation: AtlasAllocationItem[];
   tokens: AtlasTokenCardData[];
+  details: Record<string, AtlasDetailContent>;
   emptyTokenMessage?: string;
 };
