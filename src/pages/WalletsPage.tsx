@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
+  ArrowRightLeft,
+  Calculator,
   ChevronDown,
   Copy,
   Eye,
@@ -9,11 +11,10 @@ import {
   RefreshCcw,
   Shield,
   Wallet as WalletIcon,
-  ArrowRightLeft,
 } from 'lucide-react';
 
 import { HoldingsTable } from '../components/HoldingsTable';
-import type { Asset, Chain, Wallet } from '../types';
+import type { Asset, Chain, HexStake, Transaction, Wallet } from '../types';
 import type { HoldingDisplayAsset, HoldingSortField } from '../components/HoldingsTable';
 
 type WalletChainFilter = 'all' | 'pulsechain' | 'ethereum' | 'base';
@@ -25,7 +26,8 @@ interface WalletsPageProps {
   wallets: Wallet[];
   selectedWalletAddr: string;
   currentAssets: Asset[];
-  currentStakes: Array<{ walletAddress?: string }>;
+  currentStakes: HexStake[];
+  currentTransactions: Transaction[];
   walletAssets: Record<string, Asset[]>;
   hiddenAssetRows: HiddenAssetRow[];
   hiddenTokens: string[];
@@ -56,12 +58,19 @@ interface WalletsPageProps {
   plsUsdPrice: number;
   totalPortfolioUsd: number;
   summaryLiquidUsd: number;
+  summaryStakingUsd: number;
+  walletStakingUsdByAddress: Record<string, number>;
+  showHiddenCoins: boolean;
+  allocationCalculatorOpen: boolean;
+  allocationCalculatorRows: Array<{ name: string; percent: number; value: number }>;
   onSelectWallet: (walletAddress: string | null) => void;
   onOpenAddWallet: () => void;
   onOpenRenameWallet: (walletAddress: string, name: string) => void;
   onOpenOverview: () => void;
   onOpenTransactions: () => void;
   onToggleHiddenCoins: () => void;
+  onToggleAllocationCalculator: () => void;
+  onSetAllocationDraftPercentage: (name: string, value: number) => void;
   onRefreshPortfolio: () => void;
   onOpenCustomCoins: () => void;
   onScanForSpam: () => void;
@@ -96,6 +105,7 @@ export function WalletsPage({
   selectedWalletAddr,
   currentAssets,
   currentStakes,
+  currentTransactions,
   walletAssets,
   hiddenAssetRows,
   hiddenTokens,
@@ -126,12 +136,19 @@ export function WalletsPage({
   plsUsdPrice,
   totalPortfolioUsd,
   summaryLiquidUsd,
+  summaryStakingUsd,
+  walletStakingUsdByAddress,
+  showHiddenCoins,
+  allocationCalculatorOpen,
+  allocationCalculatorRows,
   onSelectWallet,
   onOpenAddWallet,
   onOpenRenameWallet,
   onOpenOverview,
   onOpenTransactions,
   onToggleHiddenCoins,
+  onToggleAllocationCalculator,
+  onSetAllocationDraftPercentage,
   onRefreshPortfolio,
   onOpenCustomCoins,
   onScanForSpam,
@@ -152,16 +169,20 @@ export function WalletsPage({
   const selectedScope = selectedWalletAddr === 'all'
     ? null
     : wallets.find(wallet => wallet.address.toLowerCase() === selectedWalletAddr) ?? null;
+  const selectedScopeKey = selectedScope?.address.toLowerCase() ?? null;
 
   const visibleWalletAssets = selectedScope
     ? (walletAssets[selectedWalletAddr] || [])
     : currentAssets;
+  const scopedTransactions = selectedScopeKey
+    ? currentTransactions.filter(tx => tx.from === selectedScopeKey || tx.to === selectedScopeKey)
+    : currentTransactions;
 
   const selectedLiquidUsd = visibleWalletAssets.reduce((sum, asset) => sum + asset.value, 0);
   const selectedStakeCount = selectedScope
-    ? currentStakes.filter(stake => stake.walletAddress === selectedWalletAddr).length
+    ? currentStakes.filter(stake => stake.walletAddress?.toLowerCase() === selectedWalletAddr).length
     : currentStakes.length;
-  const selectedStakingUsd = 0;
+  const selectedStakingUsd = selectedScopeKey ? (walletStakingUsdByAddress[selectedScopeKey] ?? 0) : summaryStakingUsd;
   const selectedTotalUsd = selectedLiquidUsd + selectedStakingUsd;
 
   const chainAssets = filterByChain(visibleWalletAssets, walletChainFilter);
@@ -178,6 +199,10 @@ export function WalletsPage({
       tokenCount: assets.length,
     };
   }), [walletAssets, wallets]);
+  const visibleWalletPills = selectedScope
+    ? walletPillData.filter(({ walletKey }) => walletKey === selectedScopeKey)
+    : walletPillData;
+  const allocationPercentTotal = allocationCalculatorRows.reduce((sum, row) => sum + row.percent, 0);
 
   return (
     <div className="wallets-atlas-page">
@@ -336,10 +361,17 @@ export function WalletsPage({
           <div>
             <div className="wallets-atlas-section-title">Assets</div>
             <div className="wallets-atlas-section-meta">
-              {chainAssets.length} tokens · {fmtUsd(chainAssets.reduce((sum, asset) => sum + asset.value, 0))}
+              {chainAssets.length} tokens - {fmtUsd(chainAssets.reduce((sum, asset) => sum + asset.value, 0))}
             </div>
           </div>
           <div className="wallets-atlas-header-actions">
+            <button
+              className={`btn-ghost${allocationCalculatorOpen ? ' is-active' : ''}`}
+              onClick={onToggleAllocationCalculator}
+            >
+              <Calculator size={14} />
+              {allocationCalculatorOpen ? 'Close Calculator' : 'Open Calculator'}
+            </button>
             <div className="wallets-atlas-range">
               {(['1h', '6h', '24h', '7d'] as const).map(period => (
                 <button
@@ -368,6 +400,35 @@ export function WalletsPage({
           </div>
         </div>
 
+        {allocationCalculatorOpen && (
+          <div className="wallets-atlas-allocation-panel">
+            <div className="wallets-atlas-allocation-panel__head">
+              <div>
+                <div className="wallets-atlas-section-title">Allocation Calculator</div>
+                <div className="wallets-atlas-section-meta">
+                  Draft targets for the visible asset mix. Total {allocationPercentTotal.toFixed(1)}%
+                </div>
+              </div>
+            </div>
+            <div className="wallets-atlas-allocation-grid">
+              {allocationCalculatorRows.map(row => (
+                <label key={row.name} className="wallets-atlas-allocation-row">
+                  <span>{row.name}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={0.1}
+                    value={Number.isFinite(row.percent) ? row.percent : 0}
+                    onChange={(event) => onSetAllocationDraftPercentage(row.name, Number(event.target.value))}
+                  />
+                  <strong>{fmtUsd(row.value)}</strong>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
         {viewMode === 'combined' ? (
           <HoldingsTable
             assets={chainDisplayAssets}
@@ -381,7 +442,7 @@ export function WalletsPage({
             expandedIds={expandedAssetIds}
             tokenLogos={tokenLogos}
             emptyMessage="No holdings found - add wallets to get started"
-            currentTransactions={[]}
+            currentTransactions={scopedTransactions}
             manualEntries={manualEntries}
             chainColors={chainColors}
             tokenMarketData={tokenMarketData}
@@ -417,9 +478,10 @@ export function WalletsPage({
           />
         ) : (
           <div className="wallets-atlas-wallet-groups">
-            {walletPillData.map(({ wallet, walletKey, totalUsd, tokenCount }) => {
+            {visibleWalletPills.map(({ wallet, walletKey, totalUsd, tokenCount }) => {
               const walletChainAssets = filterByChain(walletAssets[walletKey] || [], walletChainFilter);
               const walletDisplayAssets = normalizeHoldingAssets(walletChainAssets);
+              const walletTransactions = currentTransactions.filter(tx => tx.from === walletKey || tx.to === walletKey);
 
               if (walletDisplayAssets.length === 0) return null;
 
@@ -431,7 +493,7 @@ export function WalletsPage({
                         <WalletIcon size={14} />
                         <span>{wallet.name || shortenAddr(wallet.address)}</span>
                       </div>
-                      <div className="wallets-atlas-wallet-meta">{shortenAddr(wallet.address)} · {tokenCount} tokens</div>
+                      <div className="wallets-atlas-wallet-meta">{shortenAddr(wallet.address)} - {tokenCount} tokens</div>
                     </div>
                     <div className="wallets-atlas-wallet-value">{fmtUsd(totalUsd)}</div>
                   </div>
@@ -448,7 +510,7 @@ export function WalletsPage({
                     expandedIds={expandedAssetIds}
                     tokenLogos={tokenLogos}
                     emptyMessage="No visible tokens for this wallet"
-                    currentTransactions={[]}
+                    currentTransactions={walletTransactions}
                     manualEntries={manualEntries}
                     chainColors={chainColors}
                     tokenMarketData={tokenMarketData}
@@ -490,7 +552,7 @@ export function WalletsPage({
         )}
       </section>
 
-      {hiddenChainAssets.length > 0 && (
+      {showHiddenCoins && hiddenChainAssets.length > 0 && (
         <section className="wallets-atlas-panel">
           <div className="wallets-atlas-section-head">
             <div>

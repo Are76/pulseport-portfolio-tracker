@@ -2692,15 +2692,10 @@ export default function App() {
     });
   }, [currentTransactions, selectedWalletAddr, txTypeFilter, txAssetFilter, txYearFilter, txCoinCategory]);
 
-  const summary = useMemo(() => {
-    const assets = currentAssets;
-    const liquidValue = assets.reduce((acc, curr) => acc + curr.value, 0);
-
-    // Add HEX staking value so the grand total reflects everything the user owns.
-    // Recalculate accrued yield from tShares * daysStaked * chain-specific rate so
-    // stale cached interestHearts never corrupt the total.
+  const stakeValuation = useMemo(() => {
+    const byWallet: Record<string, number> = {};
     const { avgPayoutPulse, avgPayoutEth, dailyMapPulse, dailyMapEth } = hexDailyData;
-    const stakingValueUsd = currentStakes.reduce((acc, s) => {
+    const total = currentStakes.reduce((acc, s) => {
       if ((s.daysRemaining ?? 0) <= 0) return acc; // exclude ended stakes
       const hexPriceKey = `${s.chain}:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39`;
       const chainHexFallback = s.chain === 'pulsechain' ? prices['pulsechain:hex']?.usd : prices['hex']?.usd;
@@ -2712,8 +2707,18 @@ export default function App() {
       const chainMap  = s.chain === 'pulsechain' ? dailyMapPulse : dailyMapEth;
       const fallback  = s.chain === 'pulsechain' ? (avgPayoutPulse || PHEX_YIELD_PER_TSHARE) : (avgPayoutEth || EHEX_YIELD_PER_TSHARE);
       const interestHex = computeStakeYield(tShares, lockedDay, daysStaked, chainMap, fallback);
-      return acc + (stakedHex + interestHex) * hexPrice;
+      const stakeUsd = (stakedHex + interestHex) * hexPrice;
+      const walletKey = s.walletAddress?.toLowerCase();
+      if (walletKey) byWallet[walletKey] = (byWallet[walletKey] || 0) + stakeUsd;
+      return acc + stakeUsd;
     }, 0);
+    return { total, byWallet };
+  }, [currentStakes, hexDailyData, prices]);
+
+  const summary = useMemo(() => {
+    const assets = currentAssets;
+    const liquidValue = assets.reduce((acc, curr) => acc + curr.value, 0);
+    const stakingValueUsd = stakeValuation.total;
 
     const totalValue = liquidValue + stakingValueUsd;
     const totalPnl = assets.reduce((acc, curr) => acc + (curr.value * (curr.pnl24h || 0) / 100), 0);
@@ -2887,7 +2892,7 @@ export default function App() {
       chainPnlUsd,
       chainPnlPercent
     };
-  }, [currentAssets, currentStakes, currentTransactions, prices, wallets, hexDailyData]);
+  }, [currentAssets, currentTransactions, currentStakes, hexDailyData, prices, stakeValuation.total, wallets]);
 
   const pieData = Object.entries(summary.chainDistribution).map(([name, value]) => ({
     name: name.charAt(0).toUpperCase() + name.slice(1),
@@ -4926,6 +4931,7 @@ export default function App() {
                   selectedWalletAddr={selectedWalletAddr}
                   currentAssets={currentAssets}
                   currentStakes={currentStakes}
+                  currentTransactions={currentTransactions}
                   walletAssets={walletAssets}
                   hiddenAssetRows={hiddenAssetRows}
                   hiddenTokens={hiddenTokens}
@@ -4956,6 +4962,11 @@ export default function App() {
                   plsUsdPrice={prices['pulsechain']?.usd || 0.00005}
                   totalPortfolioUsd={summary.totalValue}
                   summaryLiquidUsd={summary.liquidValue}
+                  summaryStakingUsd={summary.stakingValueUsd}
+                  walletStakingUsdByAddress={stakeValuation.byWallet}
+                  showHiddenCoins={showHiddenCoins}
+                  allocationCalculatorOpen={allocationCalculatorOpen}
+                  allocationCalculatorRows={allocationCalculatorRows}
                   onSelectWallet={(walletAddress) => {
                     if (!walletAddress) {
                       setSelectedWalletAddr('all');
@@ -4973,6 +4984,10 @@ export default function App() {
                   onOpenOverview={() => setActiveTab('overview')}
                   onOpenTransactions={() => setActiveTab('history')}
                   onToggleHiddenCoins={() => setShowHiddenCoins(v => !v)}
+                  onToggleAllocationCalculator={() => setAllocationCalculatorOpen(v => !v)}
+                  onSetAllocationDraftPercentage={(name, value) => {
+                    setAllocationDraftPercentages(prev => ({ ...prev, [name]: value }));
+                  }}
                   onRefreshPortfolio={fetchPortfolio}
                   onOpenCustomCoins={() => setIsCustomCoinsModalOpen(true)}
                   onScanForSpam={scanForSpam}

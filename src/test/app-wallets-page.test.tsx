@@ -36,6 +36,7 @@ describe('Wallets Atlas surface', () => {
     expect(walletsTransactionsButton).toBeDefined();
     expect(screen.getByText('Coin visibility')).toBeInTheDocument();
     expect(screen.getByText('Assets')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /open calculator/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Combined' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Per wallet' })).toBeInTheDocument();
   });
