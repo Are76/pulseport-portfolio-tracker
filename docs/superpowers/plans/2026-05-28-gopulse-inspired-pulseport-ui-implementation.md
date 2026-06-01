@@ -10,6 +10,23 @@
 
 ---
 
+## Strategic Update (2026-06-01)
+
+This plan remains valid, but the repository strategy is now explicit:
+
+- `pulseport-portfolio-tracker` is the **canonical implementation repo**.
+- `PulsePort` is a **frontend/product donor repo** for shell structure, page composition, and interaction patterns.
+- `CoinPulse` is a **backend/data donor repo** for DTO discipline, truth-model guardrails, and service boundaries.
+
+This plan should therefore be executed with these constraints:
+
+- Keep all implementation work in `pulseport-portfolio-tracker`.
+- Do not restart the product in `PulsePort`.
+- Do not mix `CoinPulse` backend migration work into UI-only branches unless the branch is explicitly a hybrid DTO integration slice.
+- Prefer page-by-page migration inside the canonical repo over broad copy/move operations between repos.
+
+For the current branch family, this remains a **UI system plan**, not a backend migration plan. Any backend alignment work should follow the convergence strategy recorded in `docs/superpowers/plans/2026-06-01-pulseport-repo-convergence-strategy.md`.
+
 ## Reality Check
 
 This is a meaningful UI/UX redesign, not a simple color swap.
