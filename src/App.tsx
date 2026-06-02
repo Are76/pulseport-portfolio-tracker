@@ -3666,6 +3666,21 @@ export default function App() {
     }
   };
 
+  const handleDashboardAtlasNavigate = (target: string) => {
+    if (target === 'planner') {
+      setProfitPlannerOpen(true);
+      return;
+    }
+
+    if (target === 'overview:rebalance') {
+      setActiveTab('assets');
+      setAllocationCalculatorOpen(true);
+      return;
+    }
+
+    handleAtlasNavigate(target);
+  };
+
   const runHomeSearch = (raw: string) => {
     const q = raw.trim();
     if (!q) return;
@@ -3987,7 +4002,7 @@ export default function App() {
           <AnimatePresence mode="wait">
             {activeTab === 'home' && (
               <motion.div key="home" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="front-page">
-                <AtlasHomeSurface snapshot={atlasHomeSnapshot} onNavigate={handleAtlasNavigate} />
+                <AtlasHomeSurface snapshot={atlasHomeSnapshot} onNavigate={handleDashboardAtlasNavigate} />
               </motion.div>
             )}
 
@@ -4329,7 +4344,13 @@ export default function App() {
             )}
 
             {activeTab === 'overview' && (
-              <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="overview-page-shell space-y-4" style={{ width: '100%', minWidth: 1 }}>
+              <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="front-page">
+                <AtlasHomeSurface snapshot={atlasHomeSnapshot} onNavigate={handleDashboardAtlasNavigate} />
+              </motion.div>
+            )}
+
+            {false && activeTab === 'overview' && (
+              <motion.div key="overview-legacy" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="overview-page-shell space-y-4" style={{ width: '100%', minWidth: 1 }}>
 
                 {/* -- ONBOARDING -- */}
                 {wallets.length === 0 && (

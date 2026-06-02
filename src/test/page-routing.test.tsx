@@ -9,6 +9,10 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
+function getDashboardNavButton() {
+  return screen.getAllByRole('button', { name: /Dashboard/i })[0];
+}
+
 function Harness() {
   const shell = useShellState();
 
@@ -30,6 +34,36 @@ describe('shell navigation', () => {
 });
 
 describe('Atlas product navigation', () => {
+  it('routes the dashboard quick actions into overview, history, assets, and planner flows', async () => {
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({
+      matches: false,
+      media: '',
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Portfolio insights/i }));
+    expect(await screen.findByText('Holdings, allocation, and performance by exact asset identity.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Review transactions/i }));
+    expect(await screen.findByText('Full ledger for bridges, swaps, and cost-basis drill-down.')).toBeInTheDocument();
+
+    fireEvent.click(getDashboardNavButton());
+    fireEvent.click(screen.getByRole('button', { name: /Rebalance planner/i }));
+    expect(await screen.findByText('Allocation Calculator')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Close Calculator/i })).toBeInTheDocument();
+
+    fireEvent.click(getDashboardNavButton());
+    fireEvent.click(await screen.findByRole('button', { name: /Exit plan/i }));
+    expect(await screen.findByText('Profit Planner')).toBeInTheDocument();
+  });
+
   it('opens the exact selected token product page from the dashboard drawer', async () => {
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({
       matches: false,
