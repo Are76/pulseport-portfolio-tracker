@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 
+import { AtlasAllocationCard } from './AtlasAllocationCard';
 import { AtlasDetailDrawer } from './AtlasDetailDrawer';
 import { AtlasDetailSheet } from './AtlasDetailSheet';
 import { AtlasMetricTile } from './AtlasMetricTile';
+import { AtlasQuickActionCard } from './AtlasQuickActionCard';
 import { AtlasSignalRow } from './AtlasSignalRow';
 import { AtlasTokenCard } from './AtlasTokenCard';
 import { buildAtlasDetail, type AtlasDetailId } from './atlas-detail-model';
@@ -44,24 +46,61 @@ const DEFAULT_SNAPSHOT: AtlasHomeSnapshot = {
   metrics: [
     { id: 'change', label: '24h', value: '+3.8%', subvalue: '+$3,182', tone: 'positive', detailId: 'portfolio-change' },
     { id: 'stakes', label: 'Stakes', value: '18', subvalue: '1 due soon', detailId: 'stakes' },
-    { id: 'lp', label: 'LP', value: '$12.6K', subvalue: '15%', detailId: 'liquidity' },
-    { id: 'noise', label: 'Noise', value: '2', subvalue: 'hidden', detailId: 'hidden-noise' },
+    { id: 'lp', label: 'LP / DeFi', value: '$12.6K', subvalue: '15.0% allocated', detailId: 'liquidity' },
+    { id: 'top', label: 'Top holding', value: 'PLSX', subvalue: '$35.7K', tone: 'negative', detailId: 'token:plsx' },
   ],
   signals: [
-    { id: 'plsx-strength', label: 'PLSX strength', value: '+4.1%', tone: 'positive', detailId: 'signal-plsx-strength' },
-    { id: 'stake-soon', label: 'Stake soon', value: 'Open', tone: 'accent', detailId: 'stakes' },
-    { id: 'lp-up', label: 'LP up', value: '15%', tone: 'muted', detailId: 'liquidity' },
+    {
+      id: 'plsx-strength',
+      label: 'Top holding',
+      value: 'PLSX',
+      tone: 'negative',
+      detailId: 'token:plsx',
+      description: '$35.7K of current value',
+      iconKey: 'holding',
+    },
+    {
+      id: 'stake-soon',
+      label: 'Active stakes',
+      value: '18',
+      tone: 'accent',
+      detailId: 'stakes',
+      description: '1 due soon across tracked HEX positions',
+      iconKey: 'stakes',
+    },
+    {
+      id: 'lp-up',
+      label: 'Liquidity + farms',
+      value: '$12.6K',
+      tone: 'muted',
+      detailId: 'liquidity',
+      description: '15.0% of portfolio deployed',
+      iconKey: 'defi',
+    },
   ],
-  allocation: [
-    { id: 'plsx', label: 'PLSX', width: 42, detailId: 'token:plsx' },
-    { id: 'hex', label: 'HEX', width: 31, detailId: 'token:hex' },
-    { id: 'inc', label: 'INC', width: 12, detailId: 'token:inc' },
-  ],
+  allocation: {
+    segments: [
+      { id: 'plsx', label: 'PLSX', width: 42, detailId: 'token:plsx' },
+      { id: 'hex', label: 'HEX', width: 31, detailId: 'token:hex' },
+      { id: 'inc', label: 'INC', width: 12, detailId: 'token:inc' },
+    ],
+    topWeights: [
+      { id: 'plsx', label: 'PLSX', value: '$35.7K', percent: 42.0, detailId: 'token:plsx' },
+      { id: 'hex', label: 'HEX', value: '$26.3K', percent: 31.0, detailId: 'token:hex' },
+      { id: 'inc', label: 'INC', value: '$10.2K', percent: 12.0, detailId: 'token:inc' },
+    ],
+  },
   tokens: [
     { id: 'pls', symbol: 'PLS', price: '$0.00000694', change: '-3.21%', ratio: '0.07 x Sac', tone: 'negative', detailId: 'token:pls' },
     { id: 'plsx', symbol: 'PLSX', price: '$0.0000053', change: '-3.51%', ratio: '0.76 PLS', tone: 'negative', detailId: 'token:plsx' },
     { id: 'inc', symbol: 'INC', price: '$0.317', change: '-2.69%', ratio: '45,740 PLS', tone: 'negative', detailId: 'token:inc' },
     { id: 'hex', symbol: 'HEX', price: '$0.00115', change: '-5.77%', ratio: '165 PLS', tone: 'negative', detailId: 'token:hex' },
+  ],
+  quickActions: [
+    { id: 'insights', label: 'Portfolio insights', description: 'Open the portfolio narrative and context.', target: 'overview' },
+    { id: 'transactions', label: 'Review transactions', description: 'Go to the ledger with your current portfolio context.', target: 'history' },
+    { id: 'rebalance', label: 'Rebalance planner', description: 'Set target allocation and see the best path via PLS.', target: 'overview:rebalance' },
+    { id: 'exit-plan', label: 'Exit plan', description: 'Open the profit planner for phased exits.', target: 'planner' },
   ],
   details: DEFAULT_TOKEN_DETAILS,
 };
@@ -150,8 +189,8 @@ export function AtlasHomeSurface({ onNavigate, snapshot = DEFAULT_SNAPSHOT }: Pr
 
           <section className="atlas-home__token-section" aria-labelledby="atlas-token-heading">
             <div className="atlas-home__section-head">
-              <h2 id="atlas-token-heading">Your tokens</h2>
-              <span>{snapshot.tokens.length}</span>
+              <h2 id="atlas-token-heading">Live Prices</h2>
+              <span>top 6 by value</span>
             </div>
             <div className="atlas-home__tokens">
               {snapshot.tokens.length > 0
@@ -163,26 +202,22 @@ export function AtlasHomeSurface({ onNavigate, snapshot = DEFAULT_SNAPSHOT }: Pr
           </section>
 
           <div className="atlas-home__secondary">
-            <div className="atlas-home__panel">
-              <div className="atlas-home__panel-head"><strong>Allocation</strong><span>wallet-aware</span></div>
-              <div className="atlas-home__allocation" aria-label="Portfolio allocation">
-                {snapshot.allocation.map(item => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    aria-label={`${item.label} allocation`}
-                    style={{ width: `${Math.max(8, item.width)}%` }}
-                    onClick={() => selectDetail(item.detailId)}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <AtlasAllocationCard allocation={snapshot.allocation} activeDetailId={selectedDetailId} onSelect={selectDetail} />
             <div className="atlas-home__panel">
               <div className="atlas-home__panel-head"><strong>Signals</strong><span>{snapshot.signals.length}</span></div>
               {snapshot.signals.map((signal) => (
                 <AtlasSignalRow key={signal.id} signal={signal} active={selectedDetailId === signal.detailId} onSelect={selectDetail} />
+              ))}
+            </div>
+            <div className="atlas-home__panel">
+              <div className="atlas-home__panel-head"><strong>Decision support</strong><span>{snapshot.quickActions.length}</span></div>
+              {snapshot.quickActions.map((action) => (
+                <AtlasQuickActionCard
+                  key={action.id}
+                  label={action.label}
+                  description={action.description}
+                  onClick={() => navigateFromDetail(action.target)}
+                />
               ))}
             </div>
           </div>

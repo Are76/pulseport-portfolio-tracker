@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import App from '../App';
@@ -39,5 +39,55 @@ describe('Wallets Atlas surface', () => {
     expect(screen.getByRole('button', { name: /open calculator/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Combined' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Per wallet' })).toBeInTheDocument();
+  });
+
+  it('turns the calculator into a rebalance planner with normalized targets and PLS guidance', () => {
+    stubMatchMedia();
+    window.localStorage.setItem('pulseport_active_tab', 'assets');
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: /open calculator/i }));
+
+    expect(screen.getByText('Rebalance planner')).toBeInTheDocument();
+    expect(screen.getByText('Current mix')).toBeInTheDocument();
+    expect(screen.getByText('Target mix')).toBeInTheDocument();
+    expect(screen.getByText('Suggested move')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole('spinbutton', { name: /target allocation for usdc/i }), {
+      target: { value: '30' },
+    });
+
+    expect(screen.getByText(/Target mix auto-normalized from/i)).toBeInTheDocument();
+    expect(screen.getByText(/Swap about .* PLS to buy the needed USDC\./i)).toBeInTheDocument();
+  });
+
+  it('keeps the synthetic Other rebalance row editable once it is created', () => {
+    stubMatchMedia();
+    window.localStorage.setItem('pulseport_active_tab', 'assets');
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: /open calculator/i }));
+
+    const otherInput = screen.getByRole('spinbutton', { name: /target allocation for other/i });
+    fireEvent.change(otherInput, { target: { value: '7.5' } });
+
+    expect(screen.getByRole('spinbutton', { name: /target allocation for other/i })).toHaveValue(7.5);
+  });
+
+  it('does not show the auto-normalized banner when every target is cleared to zero', () => {
+    stubMatchMedia();
+    window.localStorage.setItem('pulseport_active_tab', 'assets');
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: /open calculator/i }));
+
+    for (const input of screen.getAllByRole('spinbutton')) {
+      fireEvent.change(input, { target: { value: '0' } });
+    }
+
+    expect(screen.queryByText(/Target mix auto-normalized from/i)).not.toBeInTheDocument();
   });
 });

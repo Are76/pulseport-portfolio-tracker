@@ -59,9 +59,9 @@ const DETAILS: Record<AtlasDetailId, AtlasDetailContent> = {
   },
   'hidden-noise': {
     id: 'hidden-noise',
-    breadcrumb: ['Home', 'Hidden Tokens'],
-    title: 'Hidden noise',
-    summary: 'Shows what was hidden by the spam/noise filter.',
+    breadcrumb: ['Home', 'Portfolio hygiene'],
+    title: 'Hidden assets',
+    summary: 'Shows what was hidden by the current spam and noise filters.',
     facts: [
       { label: 'Hidden', value: '2' },
       { label: 'Value', value: '$0' },
@@ -70,7 +70,7 @@ const DETAILS: Record<AtlasDetailId, AtlasDetailContent> = {
     ],
     actions: [
       { label: 'Review hidden', target: 'assets', variant: 'primary' },
-      { label: 'Filter', target: 'assets' },
+      { label: 'Coin visibility', target: 'assets' },
     ],
   },
   'signal-plsx-strength': {

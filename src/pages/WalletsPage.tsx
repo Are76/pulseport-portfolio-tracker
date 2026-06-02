@@ -63,6 +63,7 @@ interface WalletsPageProps {
   showHiddenCoins: boolean;
   allocationCalculatorOpen: boolean;
   allocationCalculatorRows: Array<{ name: string; percent: number; value: number }>;
+  allocationDraftPercentages: Record<string, number>;
   onSelectWallet: (walletAddress: string | null) => void;
   onOpenAddWallet: () => void;
   onOpenRenameWallet: (walletAddress: string, name: string) => void;
@@ -94,6 +95,14 @@ function shortenAddr(address: string) {
 
 function fmtUsd(value: number, maximumFractionDigits = 0) {
   return `$${value.toLocaleString('en-US', { maximumFractionDigits })}`;
+}
+
+function fmtPercent(value: number) {
+  return `${value.toFixed(1)}%`;
+}
+
+function fmtPls(value: number) {
+  return `${Math.round(value).toLocaleString('en-US')} PLS`;
 }
 
 function filterByChain<T extends { chain: Chain }>(items: T[], filter: WalletChainFilter) {
@@ -141,6 +150,7 @@ export function WalletsPage({
   showHiddenCoins,
   allocationCalculatorOpen,
   allocationCalculatorRows,
+  allocationDraftPercentages,
   onSelectWallet,
   onOpenAddWallet,
   onOpenRenameWallet,
@@ -202,7 +212,82 @@ export function WalletsPage({
   const visibleWalletPills = selectedScope
     ? walletPillData.filter(({ walletKey }) => walletKey === selectedScopeKey)
     : walletPillData;
-  const allocationPercentTotal = allocationCalculatorRows.reduce((sum, row) => sum + row.percent, 0);
+  const visibleAllocationRows = useMemo(() => {
+    const draftByName = new Map<string, number>([
+      ...allocationCalculatorRows.map((row) => [row.name, row.percent] as const),
+      ...Object.entries(allocationDraftPercentages),
+    ]);
+    const visibleMixMap = new Map<string, number>();
+    chainDisplayAssets.forEach((asset) => {
+      visibleMixMap.set(asset.symbol, (visibleMixMap.get(asset.symbol) ?? 0) + asset.valueUsd);
+    });
+    const visibleMix = [...visibleMixMap.entries()]
+      .map(([name, currentValue]) => ({
+        name,
+        currentValue,
+      }))
+      .sort((a, b) => b.currentValue - a.currentValue);
+
+    const maxPlannerRows = 6;
+    const plannerRows = visibleMix.length > maxPlannerRows
+      ? [
+          ...visibleMix.slice(0, maxPlannerRows - 1),
+          {
+            name: 'Other',
+            currentValue: visibleMix.slice(maxPlannerRows - 1).reduce((sum, row) => sum + row.currentValue, 0),
+          },
+        ]
+      : visibleMix;
+    const portfolioTotal = visibleMix.reduce((sum, row) => sum + row.currentValue, 0);
+    const rawTargetTotal = plannerRows.reduce((sum, row) => {
+      const currentPercent = portfolioTotal > 0 ? (row.currentValue / portfolioTotal) * 100 : 0;
+      const draftPercent = Math.min(100, Math.max(0, draftByName.get(row.name) ?? currentPercent));
+      return sum + draftPercent;
+    }, 0);
+
+    return plannerRows.map((row) => {
+      const currentPercent = portfolioTotal > 0 ? (row.currentValue / portfolioTotal) * 100 : 0;
+      const draftPercent = Math.min(100, Math.max(0, draftByName.get(row.name) ?? currentPercent));
+      const normalizedPercent = rawTargetTotal > 0 ? (draftPercent / rawTargetTotal) * 100 : 0;
+      const targetValue = portfolioTotal * (normalizedPercent / 100);
+      const deltaValue = targetValue - row.currentValue;
+      const deltaPercent = portfolioTotal > 0 ? (deltaValue / portfolioTotal) * 100 : 0;
+      const absDeltaValue = Math.abs(deltaValue);
+      const absDeltaPercent = Math.abs(deltaPercent);
+      const plsAmount = plsUsdPrice > 0 ? absDeltaValue / plsUsdPrice : 0;
+
+      let guidance = 'Add at least one target percentage to generate a rebalance path.';
+      if (rawTargetTotal > 0 && absDeltaValue < 1) {
+        guidance = 'You already match the target closely.';
+      } else if (rawTargetTotal > 0 && row.name === 'PLS' && deltaValue > 0) {
+        guidance = `Keep about ${fmtPls(plsAmount)} available as funding buffer.`;
+      } else if (rawTargetTotal > 0 && row.name === 'PLS' && deltaValue < 0) {
+        guidance = `Use about ${fmtPls(plsAmount)} to fund the target buys.`;
+      } else if (rawTargetTotal > 0 && row.name === 'Other' && deltaValue > 0) {
+        guidance = `Keep about ${fmtUsd(absDeltaValue)} spread across the smaller visible positions.`;
+      } else if (rawTargetTotal > 0 && row.name === 'Other' && deltaValue < 0) {
+        guidance = `Trim about ${fmtUsd(absDeltaValue)} across the smaller visible positions into PLS.`;
+      } else if (rawTargetTotal > 0 && deltaValue > 0) {
+        guidance = `Swap about ${fmtPls(plsAmount)} to buy the needed ${row.name}.`;
+      } else if (rawTargetTotal > 0 && deltaValue < 0) {
+        guidance = `Trim about ${fmtUsd(absDeltaValue)} of ${row.name} into PLS (${fmtPercent(absDeltaPercent)} of the visible mix).`;
+      }
+
+      return {
+        ...row,
+        currentPercent,
+        draftPercent,
+        normalizedPercent,
+        targetValue,
+        deltaValue,
+        guidance,
+      };
+    });
+  }, [allocationCalculatorRows, allocationDraftPercentages, chainDisplayAssets, plsUsdPrice]);
+  const allocationPercentTotal = visibleAllocationRows.reduce((sum, row) => sum + row.draftPercent, 0);
+  const allocationAutoNormalized = visibleAllocationRows.length > 0
+    && allocationPercentTotal > 0.05
+    && Math.abs(allocationPercentTotal - 100) > 0.05;
 
   return (
     <div className="wallets-atlas-page">
@@ -404,25 +489,46 @@ export function WalletsPage({
           <div className="wallets-atlas-allocation-panel">
             <div className="wallets-atlas-allocation-panel__head">
               <div>
-                <div className="wallets-atlas-section-title">Allocation Calculator</div>
+                <div className="wallets-atlas-section-title">Rebalance planner</div>
                 <div className="wallets-atlas-section-meta">
-                  Draft targets for the visible asset mix. Total {allocationPercentTotal.toFixed(1)}%
+                  Set target weights for the visible asset mix and see the simplest path via PLS.
                 </div>
               </div>
             </div>
+            <div className="wallets-atlas-allocation-summary" role="status">
+              <span>Current mix</span>
+              <span>Target mix</span>
+              <span>Suggested move</span>
+            </div>
+            {allocationAutoNormalized && (
+              <div className="wallets-atlas-allocation-note">
+                Target mix auto-normalized from {allocationPercentTotal.toFixed(1)}% to 100.0%.
+              </div>
+            )}
             <div className="wallets-atlas-allocation-grid">
-              {allocationCalculatorRows.map(row => (
+              {visibleAllocationRows.length === 0 ? (
+                <div className="wallets-atlas-allocation-note">
+                  No visible holdings in this scope yet. Adjust wallet or chain filters to build a rebalance plan.
+                </div>
+              ) : visibleAllocationRows.map(row => (
                 <label key={row.name} className="wallets-atlas-allocation-row">
-                  <span>{row.name}</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={0.1}
-                    value={Number.isFinite(row.percent) ? row.percent : 0}
-                    onChange={(event) => onSetAllocationDraftPercentage(row.name, Number(event.target.value))}
-                  />
-                  <strong>{fmtUsd(row.value)}</strong>
+                  <div className="wallets-atlas-allocation-row__asset">
+                    <strong>{row.name}</strong>
+                    <small>{fmtUsd(row.currentValue)} now / {fmtPercent(row.currentPercent)}</small>
+                  </div>
+                  <div className="wallets-atlas-allocation-row__target">
+                    <input
+                      aria-label={`Target allocation for ${row.name}`}
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      value={Number.isFinite(row.draftPercent) ? row.draftPercent : 0}
+                      onChange={(event) => onSetAllocationDraftPercentage(row.name, Number(event.target.value))}
+                    />
+                    <small>Target {fmtPercent(row.normalizedPercent)} / {fmtUsd(row.targetValue)}</small>
+                  </div>
+                  <strong className="wallets-atlas-allocation-row__guidance">{row.guidance}</strong>
                 </label>
               ))}
             </div>

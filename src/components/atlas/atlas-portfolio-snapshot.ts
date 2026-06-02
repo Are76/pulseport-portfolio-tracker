@@ -1,5 +1,13 @@
 import type { Asset, FarmPosition, HexStake, LpPosition } from '../../types';
-import type { AtlasHomeSnapshot, AtlasMetric, AtlasSignal, AtlasTokenCardData } from './atlas-types';
+import type {
+  AtlasAllocationItem,
+  AtlasAllocationModel,
+  AtlasHomeSnapshot,
+  AtlasMetric,
+  AtlasQuickAction,
+  AtlasSignal,
+  AtlasTokenCardData,
+} from './atlas-types';
 
 type AtlasSummaryInput = {
   totalValue: number;
@@ -12,14 +20,14 @@ type AtlasSnapshotInput = {
   walletCount: number;
   assets: Asset[];
   stakes: HexStake[];
+  getTokenIconUrl?: (asset: Asset) => string | undefined;
   lpPositions?: LpPosition[];
   farmPositions?: FarmPosition[];
   lpValueUsd?: number;
   farmValueUsd?: number;
-  hiddenTokenCount: number;
 };
 
-const MAX_TOKENS = 4;
+const MAX_TOKENS = 6;
 
 function formatUsd(value: number): string {
   const abs = Math.abs(value);
@@ -96,17 +104,18 @@ export function buildAtlasHomeSnapshot(input: AtlasSnapshotInput): AtlasHomeSnap
     },
     {
       id: 'lp',
-      label: 'LP',
+      label: 'LP / DeFi',
       value: formatUsd(defiValue),
-      subvalue: `${defiShare.toFixed(1)}%`,
+      subvalue: `${defiShare.toFixed(1)}% allocated`,
       detailId: 'liquidity',
     },
     {
-      id: 'noise',
-      label: 'Noise',
-      value: String(input.hiddenTokenCount),
-      subvalue: input.hiddenTokenCount === 1 ? 'hidden' : 'hidden',
-      detailId: 'hidden-noise',
+      id: 'top',
+      label: 'Top holding',
+      value: topHolding?.symbol ?? 'None',
+      subvalue: topHolding ? formatUsd(topHolding.value) : 'add wallet',
+      tone: topHolding ? toneForChange(topHolding.pnl24h ?? topHolding.priceChange24h ?? 0) : 'muted',
+      detailId: topHolding ? tokenDetailId(topHolding) : 'portfolio-change',
     },
   ];
 
@@ -117,13 +126,17 @@ export function buildAtlasHomeSnapshot(input: AtlasSnapshotInput): AtlasHomeSnap
       value: topHolding?.symbol ?? 'None',
       tone: topHolding ? toneForChange(topHolding.pnl24h ?? topHolding.priceChange24h ?? 0) : 'muted',
       detailId: topHolding ? tokenDetailId(topHolding) : 'portfolio-change',
+      description: topHolding ? `${formatUsd(topHolding.value)} of current value` : 'Add a wallet to see concentration',
+      iconKey: 'holding',
     },
     {
-      id: 'wallets',
-      label: 'Wallets tracked',
-      value: String(input.walletCount),
-      tone: input.walletCount > 0 ? 'accent' : 'muted',
-      detailId: 'portfolio-change',
+      id: 'stakes',
+      label: 'Active stakes',
+      value: String(activeStakes),
+      tone: activeStakes > 0 ? 'accent' : 'muted',
+      detailId: 'stakes',
+      description: activeStakes > 0 ? `${activeStakes} maturing positions in view` : 'No active HEX stakes tracked',
+      iconKey: 'stakes',
     },
     {
       id: 'defi',
@@ -131,6 +144,44 @@ export function buildAtlasHomeSnapshot(input: AtlasSnapshotInput): AtlasHomeSnap
       value: formatUsd(defiValue),
       tone: defiValue > 0 ? 'positive' : 'muted',
       detailId: 'liquidity',
+      description: defiValue > 0 ? `${defiShare.toFixed(1)}% of portfolio deployed` : 'No LP or farm exposure detected',
+      iconKey: 'defi',
+    },
+    {
+      id: 'wallets',
+      label: 'Wallet coverage',
+      value: String(input.walletCount),
+      tone: input.walletCount > 0 ? 'accent' : 'muted',
+      detailId: 'portfolio-change',
+      description: input.walletCount > 0 ? `${input.walletCount} wallet${input.walletCount === 1 ? '' : 's'} contributing to this view` : 'Connect a wallet to expand coverage',
+      iconKey: 'flow',
+    },
+  ];
+
+  const quickActions: AtlasQuickAction[] = [
+    {
+      id: 'insights',
+      label: 'Portfolio insights',
+      description: 'Open the portfolio narrative and context.',
+      target: 'overview',
+    },
+    {
+      id: 'transactions',
+      label: 'Review transactions',
+      description: 'Go to the ledger with your current portfolio context.',
+      target: 'history',
+    },
+    {
+      id: 'rebalance',
+      label: 'Rebalance planner',
+      description: 'Set target allocation and see the best path via PLS.',
+      target: 'overview:rebalance',
+    },
+    {
+      id: 'exit-plan',
+      label: 'Exit plan',
+      description: 'Open the profit planner for phased exits.',
+      target: 'planner',
     },
   ];
 
@@ -144,6 +195,7 @@ export function buildAtlasHomeSnapshot(input: AtlasSnapshotInput): AtlasHomeSnap
       ratio: formatUsd(asset.value),
       tone: toneForChange(change),
       detailId: tokenDetailId(asset),
+      iconUrl: asset.logoUrl || input.getTokenIconUrl?.(asset),
     };
   });
 
@@ -170,12 +222,22 @@ export function buildAtlasHomeSnapshot(input: AtlasSnapshotInput): AtlasHomeSnap
   }));
 
   const allocationTotal = sortedAssets.reduce((sum, asset) => sum + asset.value, 0);
-  const allocation = sortedAssets.slice(0, 3).map(asset => ({
+  const allocationSegments: AtlasAllocationItem[] = sortedAssets.slice(0, MAX_TOKENS).map(asset => ({
     id: asset.id,
     label: asset.symbol,
     width: allocationTotal > 0 ? (asset.value / allocationTotal) * 100 : 0,
     detailId: tokenDetailId(asset),
   }));
+  const allocation: AtlasAllocationModel = {
+    segments: allocationSegments,
+    topWeights: sortedAssets.slice(0, 4).map(asset => ({
+      id: asset.id,
+      label: asset.symbol,
+      value: formatUsd(asset.value),
+      percent: allocationTotal > 0 ? (asset.value / allocationTotal) * 100 : 0,
+      detailId: tokenDetailId(asset),
+    })),
+  };
 
   return {
     eyebrow: input.walletCount > 0 ? `${input.walletCount} wallet${input.walletCount === 1 ? '' : 's'}` : 'Add wallet',
@@ -184,6 +246,7 @@ export function buildAtlasHomeSnapshot(input: AtlasSnapshotInput): AtlasHomeSnap
     signals,
     allocation,
     tokens,
+    quickActions,
     details,
     emptyTokenMessage: tokens.length === 0 ? 'Add a wallet to see your largest holdings here.' : undefined,
   };

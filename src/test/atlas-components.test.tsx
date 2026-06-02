@@ -14,6 +14,10 @@ afterEach(() => {
   document.body.style.overflow = '';
 });
 
+function getStakesMetricButton() {
+  return screen.getAllByRole('button', { name: /Stakes/i })[0];
+}
+
 describe('atlas clickable components', () => {
   it('calls onSelect with the metric detail id', () => {
     const onSelect = vi.fn();
@@ -33,19 +37,37 @@ describe('atlas clickable components', () => {
   it('marks active signal rows with aria-pressed', () => {
     render(
       <AtlasSignalRow
-        signal={{ id: 'plsx', label: 'PLSX strength', value: '+4.1%', tone: 'positive', detailId: 'signal-plsx-strength' }}
+        signal={{
+          id: 'plsx',
+          label: 'PLSX strength',
+          value: '+4.1%',
+          tone: 'positive',
+          detailId: 'signal-plsx-strength',
+          description: 'Leading mover across held assets',
+          iconKey: 'flow',
+        }}
         active={true}
         onSelect={() => undefined}
       />,
     );
 
     expect(screen.getByRole('button', { name: /PLSX strength/i })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Leading mover across held assets')).toBeInTheDocument();
   });
 
-  it('renders token market card price and ratio', () => {
+  it('renders token market card price, ratio, and logo slot', () => {
     render(
       <AtlasTokenCard
-        token={{ id: 'pls', symbol: 'PLS', price: '$0.00000694', change: '-3.21%', ratio: '0.07 x Sac', tone: 'negative', detailId: 'token-pls' }}
+        token={{
+          id: 'pls',
+          symbol: 'PLS',
+          price: '$0.00000694',
+          change: '-3.21%',
+          ratio: '0.07 x Sac',
+          tone: 'negative',
+          detailId: 'token-pls',
+          icon: <span data-testid="token-logo">P</span>,
+        }}
         active={false}
         onSelect={() => undefined}
       />,
@@ -54,6 +76,32 @@ describe('atlas clickable components', () => {
     expect(screen.getByText('PLS')).toBeInTheDocument();
     expect(screen.getByText('$0.00000694')).toBeInTheDocument();
     expect(screen.getByText('0.07 x Sac')).toBeInTheDocument();
+    expect(screen.getByTestId('token-logo')).toBeInTheDocument();
+  });
+
+  it('falls back to the icon slot when token iconUrl fails to load', () => {
+    const { container } = render(
+      <AtlasTokenCard
+        token={{
+          id: 'inc',
+          symbol: 'INC',
+          price: '$0.32',
+          change: '+0.00%',
+          tone: 'positive',
+          detailId: 'token-inc',
+          iconUrl: 'https://example.com/inc.png',
+          icon: <span data-testid="token-logo-fallback">I</span>,
+        }}
+        active={false}
+        onSelect={() => undefined}
+      />,
+    );
+
+    const image = container.querySelector('img');
+    expect(image).toBeTruthy();
+    fireEvent.error(image!);
+
+    expect(screen.getByTestId('token-logo-fallback')).toBeInTheDocument();
   });
 });
 
@@ -149,7 +197,17 @@ describe('atlas detail views', () => {
 });
 
 describe('atlas home surface', () => {
-  it('places token holdings before secondary allocation and signals', () => {
+  it('renders top-6 live prices, decision support actions, and hybrid allocation weights', () => {
+    render(<AtlasHomeSurface onNavigate={() => undefined} snapshot={DEFAULT_LIVE_SNAPSHOT} />);
+
+    expect(screen.getByText('Live Prices')).toBeInTheDocument();
+    expect(screen.getByText('top 6 by value')).toBeInTheDocument();
+    expect(screen.getByText('Rebalance planner')).toBeInTheDocument();
+    expect(screen.getByText('Portfolio insights')).toBeInTheDocument();
+    expect(screen.getByText('Top weights')).toBeInTheDocument();
+  });
+
+  it('places live prices before the secondary allocation, signals, and actions rail', () => {
     const { container } = render(<AtlasHomeSurface onNavigate={() => undefined} />);
     const home = container.querySelector('.atlas-home');
     const tokens = home?.querySelector('.atlas-home__tokens');
@@ -209,7 +267,7 @@ describe('atlas home surface', () => {
     render(<AtlasHomeSurface onNavigate={() => undefined} />);
 
     expect(screen.getByText('$84,920')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Stakes/i }));
+    fireEvent.click(getStakesMetricButton());
     expect(screen.getByRole('heading', { name: 'HEX stakes' })).toBeInTheDocument();
   });
 
@@ -223,11 +281,24 @@ describe('atlas home surface', () => {
           metrics: [
             { id: 'change', label: '24h', value: '+0.31%', subvalue: '+$1.40', tone: 'positive', detailId: 'portfolio-change' },
             { id: 'stakes', label: 'Stakes', value: '1', subvalue: '1 active', detailId: 'stakes' },
-            { id: 'lp', label: 'LP', value: '$100', subvalue: '22.2%', detailId: 'liquidity' },
-            { id: 'noise', label: 'Noise', value: '3', subvalue: 'hidden', detailId: 'hidden-noise' },
+            { id: 'lp', label: 'LP / DeFi', value: '$100', subvalue: '22.2%', detailId: 'liquidity' },
+            { id: 'top', label: 'Top holding', value: 'PLSX', subvalue: '$80.00', detailId: 'token:plsx' },
           ],
-          signals: [{ id: 'top', label: 'Top holding', value: 'PLSX', detailId: 'portfolio-change' }],
-          allocation: [{ id: 'plsx', label: 'PLSX', width: 53.33, detailId: 'token:plsx' }],
+          signals: [{
+            id: 'top',
+            label: 'Top holding',
+            value: 'PLSX',
+            detailId: 'portfolio-change',
+            description: '$80.00 of current value',
+            iconKey: 'holding',
+          }],
+          allocation: {
+            segments: [{ id: 'plsx', label: 'PLSX', width: 53.33, detailId: 'token:plsx' }],
+            topWeights: [{ id: 'plsx', label: 'PLSX', value: '$80.00', percent: 53.33, detailId: 'token:plsx' }],
+          },
+          quickActions: [
+            { id: 'insights', label: 'Portfolio insights', description: 'Open the portfolio narrative and context.', target: 'overview' },
+          ],
           tokens: [{ id: 'plsx', symbol: 'PLSX', price: '$0.00001', change: '-5.00%', ratio: '$80.00', tone: 'negative', detailId: 'portfolio-change' }],
           details: {},
         }}
@@ -236,14 +307,14 @@ describe('atlas home surface', () => {
 
     expect(screen.getByText('2 wallets')).toBeInTheDocument();
     expect(screen.getByText('$450')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Top holding/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /Top holding/i })[0]).toBeInTheDocument();
     expect(screen.queryByText('$84,920')).not.toBeInTheDocument();
   });
 
   it('restores focus to the tile that launched the mobile detail sheet', () => {
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: true }));
     render(<AtlasHomeSurface onNavigate={() => undefined} />);
-    const stakesTile = screen.getByRole('button', { name: /Stakes/i });
+    const stakesTile = getStakesMetricButton();
 
     stakesTile.focus();
     fireEvent.click(stakesTile);
@@ -260,14 +331,14 @@ describe('atlas home surface', () => {
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: '24h change' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Stakes/i }));
+    fireEvent.click(getStakesMetricButton());
     expect(screen.getByRole('dialog', { name: 'HEX stakes details' })).toBeInTheDocument();
   });
 
   it('closes the desktop drawer on Escape and restores launching-card focus', () => {
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: false }));
     render(<AtlasHomeSurface onNavigate={() => undefined} />);
-    const stakesTile = screen.getByRole('button', { name: /Stakes/i });
+    const stakesTile = getStakesMetricButton();
 
     stakesTile.focus();
     fireEvent.click(stakesTile);
@@ -281,7 +352,7 @@ describe('atlas home surface', () => {
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: false }));
     render(<AtlasHomeSurface onNavigate={() => undefined} />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Stakes/i }));
+    fireEvent.click(getStakesMetricButton());
     fireEvent.click(screen.getByRole('button', { name: 'Dismiss detail panel' }));
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -294,7 +365,7 @@ describe('atlas home surface', () => {
     container.setAttribute('aria-hidden', 'false');
     container.inert = false;
 
-    fireEvent.click(screen.getByRole('button', { name: /Stakes/i }));
+    fireEvent.click(getStakesMetricButton());
 
     const drawer = screen.getByRole('dialog', { name: 'HEX stakes details' });
     expect(document.body.style.overflow).toBe('hidden');
@@ -317,7 +388,7 @@ describe('atlas home surface', () => {
     container.setAttribute('aria-hidden', 'false');
     container.inert = false;
 
-    fireEvent.click(screen.getByRole('button', { name: /Stakes/i }));
+    fireEvent.click(getStakesMetricButton());
     expect(container.inert).toBe(true);
 
     unmount();
@@ -331,7 +402,7 @@ describe('atlas home surface', () => {
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: false }));
     render(<AtlasHomeSurface onNavigate={() => undefined} />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Stakes/i }));
+    fireEvent.click(getStakesMetricButton());
     const closeButton = screen.getByRole('button', { name: 'Close detail panel' });
     const lastAction = screen.getByRole('button', { name: 'Due stake' });
 
@@ -347,7 +418,7 @@ describe('atlas home surface', () => {
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: true }));
     const { container } = render(<AtlasHomeSurface onNavigate={() => undefined} />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Stakes/i }));
+    fireEvent.click(getStakesMetricButton());
 
     expect(container.querySelector('.atlas-detail-sheet')).toBeInTheDocument();
     expect(container.querySelector('.atlas-detail-drawer')).not.toBeInTheDocument();
@@ -365,7 +436,7 @@ describe('atlas home surface', () => {
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mediaQuery));
     render(<AtlasHomeSurface onNavigate={() => undefined} />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Stakes/i }));
+    fireEvent.click(getStakesMetricButton());
     expect(screen.getByRole('dialog')).toBeInTheDocument();
 
     act(() => {
@@ -388,7 +459,7 @@ describe('atlas home surface', () => {
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mediaQuery));
     const { unmount } = render(<AtlasHomeSurface onNavigate={() => undefined} />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Stakes/i }));
+    fireEvent.click(getStakesMetricButton());
     expect(screen.getByRole('dialog')).toBeInTheDocument();
 
     act(() => {
@@ -408,11 +479,29 @@ const DEFAULT_LIVE_SNAPSHOT = {
   metrics: [
     { id: 'change', label: '24h', value: '+0.31%', subvalue: '+$1.40', tone: 'positive' as const, detailId: 'portfolio-change' },
     { id: 'stakes', label: 'Stakes', value: '1', subvalue: '1 active', detailId: 'stakes' },
-    { id: 'lp', label: 'LP', value: '$100', subvalue: '22.2%', detailId: 'liquidity' },
-    { id: 'noise', label: 'Noise', value: '3', subvalue: 'hidden', detailId: 'hidden-noise' },
+    { id: 'lp', label: 'LP / DeFi', value: '$100', subvalue: '22.2%', detailId: 'liquidity' },
+    { id: 'top', label: 'Top holding', value: 'PLSX', subvalue: '$240', tone: 'positive' as const, detailId: 'token:plsx' },
   ],
-  signals: [{ id: 'top', label: 'Top holding', value: 'PLSX', detailId: 'portfolio-change' }],
-  allocation: [{ id: 'plsx', label: 'PLSX', width: 53.33, detailId: 'token:plsx' }],
+  signals: [
+    {
+      id: 'top',
+      label: 'Top holding',
+      value: 'PLSX',
+      detailId: 'portfolio-change',
+      description: '$240 of current value',
+      iconKey: 'holding' as const,
+    },
+  ],
+  allocation: {
+    segments: [{ id: 'plsx', label: 'PLSX', width: 53.33, detailId: 'token:plsx' }],
+    topWeights: [{ id: 'plsx', label: 'PLSX', value: '$240', percent: 53.33, detailId: 'token:plsx' }],
+  },
+  quickActions: [
+    { id: 'insights', label: 'Portfolio insights', description: 'Open the portfolio narrative and context.', target: 'overview' },
+    { id: 'transactions', label: 'Review transactions', description: 'Go to the ledger with your current portfolio context.', target: 'history' },
+    { id: 'rebalance', label: 'Rebalance planner', description: 'Set target allocation and see the best path via PLS.', target: 'overview:rebalance' },
+    { id: 'exit-plan', label: 'Exit plan', description: 'Open the profit planner for phased exits.', target: 'planner' },
+  ],
   tokens: [{ id: 'plsx', symbol: 'PLSX', price: '$0.00001', change: '-5.00%', ratio: '$80.00', tone: 'negative' as const, detailId: 'portfolio-change' }],
   details: {},
 };
