@@ -72,6 +72,7 @@ import type { HoldingDisplayAsset, HoldingSortField } from './components/Holding
 import { WalletsPage } from './pages/WalletsPage';
 import { TransactionsPage } from './pages/TransactionsPage';
 import { normalizeTransactions } from './utils/normalizeTransactions';
+import { filterVisibleAssets } from './utils/visibleAssets';
 import { scheduleLocalStorageWrite, resolveBlockscoutBase, resolveEtherscanCompatBase } from './utils/localStorageDebounce';
 import { buildPulsechainInsights } from './utils/pulsechainInsights';
 import { normalizeAssetSymbol, sameAssetSymbol } from './utils/assetSymbols';
@@ -2538,10 +2539,12 @@ export default function App() {
   };
 
   const currentAssets = useMemo(() => {
-    return assetUniverse
-      .filter(a => !hiddenTokens.includes(a.id))
-      .filter(a => !hideDust || a.value >= 1 || (a.balance > 0 && a.price === 0))
-      .filter(a => !hideSpam || (!(a as any).isSpam && !spamTokenIds.includes(a.id)))
+    return filterVisibleAssets(assetUniverse, {
+      hiddenTokens,
+      hideDust,
+      hideSpam,
+      spamTokenIds,
+    })
       .map(a => {
         const addr = (a as any).address?.toLowerCase?.();
         const isEHex = (a.chain === 'ethereum' && addr === ETH_HEX_ADDR) || (a.chain === 'pulsechain' && addr === EHEX_PULSECHAIN_ADDR);
@@ -2957,15 +2960,16 @@ export default function App() {
 
   const assetAllocation = useMemo(() => {
     // Aggregate by symbol across chains (e.g. ETH on Ethereum + ETH on Base)
+    const allocationSource = wallets.length > 0 ? realAssets : MOCK_ASSETS;
     const agg: Record<string, number> = {};
-    realAssets.filter(a => a.value > 0).forEach(a => {
+    allocationSource.filter(a => a.value > 0).forEach(a => {
       agg[a.symbol] = (agg[a.symbol] || 0) + a.value;
     });
     return Object.entries(agg)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 5);
-  }, [realAssets]);
+  }, [realAssets, wallets.length]);
 
   useEffect(() => {
     const total = assetAllocation.reduce((sum, a) => sum + a.value, 0);

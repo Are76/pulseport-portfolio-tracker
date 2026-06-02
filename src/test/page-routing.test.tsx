@@ -56,10 +56,11 @@ describe('Atlas product navigation', () => {
 
     fireEvent.click(getDashboardNavButton());
     fireEvent.click(screen.getByRole('button', { name: /Rebalance planner/i }));
-    expect(await screen.findByText('Allocation Calculator')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Close Calculator/i })).toBeInTheDocument();
+    expect(await screen.findByText('Coin visibility')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Close Calculator/i })).toBeInTheDocument();
 
     fireEvent.click(getDashboardNavButton());
+    expect(await screen.findByText('Live Prices')).toBeInTheDocument();
     fireEvent.click(await screen.findByRole('button', { name: /Exit plan/i }));
     expect(await screen.findByText('Profit Planner')).toBeInTheDocument();
   });

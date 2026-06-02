@@ -8659,16 +8659,55 @@ body,
   gap: 10px;
 }
 
+.wallets-atlas-allocation-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(180px, 0.8fr) minmax(0, 1.4fr);
+  gap: 12px;
+  padding: 0 4px;
+  color: var(--atlas-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.wallets-atlas-allocation-note {
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--atlas-accent) 22%, var(--atlas-border));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--atlas-accent) 8%, var(--atlas-surface));
+  color: var(--atlas-fg);
+  font-size: 12px;
+}
+
 .wallets-atlas-allocation-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) 96px auto;
-  align-items: center;
+  grid-template-columns: minmax(0, 1.2fr) minmax(180px, 0.8fr) minmax(0, 1.4fr);
+  align-items: flex-start;
   gap: 12px;
   padding: 12px 14px;
   border: 1px solid var(--atlas-border);
   border-radius: 12px;
   background: var(--atlas-panel);
   color: var(--atlas-fg);
+}
+
+.wallets-atlas-allocation-row__asset,
+.wallets-atlas-allocation-row__target {
+  display: grid;
+  gap: 6px;
+}
+
+.wallets-atlas-allocation-row__asset small,
+.wallets-atlas-allocation-row__target small {
+  color: var(--atlas-muted);
+  font-size: 12px;
+}
+
+.wallets-atlas-allocation-row__guidance {
+  color: var(--atlas-fg);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .wallets-atlas-allocation-row input {
@@ -9097,6 +9136,10 @@ body,
   }
 
   .wallets-atlas-allocation-row {
+    grid-template-columns: 1fr;
+  }
+
+  .wallets-atlas-allocation-summary {
     grid-template-columns: 1fr;
   }
 }
