@@ -8084,25 +8084,76 @@ body,
 
 .atlas-signal-row {
   display: grid;
-  grid-template-columns: 6px minmax(0, 1fr) auto;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
   gap: 9px;
   align-items: center;
   width: 100%;
-  min-height: 44px;
-  padding: 8px 6px;
+  min-height: 56px;
+  padding: 10px 10px;
   text-align: left;
   border-radius: 4px;
 }
 
-.atlas-signal-strip {
-  width: 6px;
-  height: 28px;
+.atlas-signal-icon {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
   border-radius: 999px;
-  background: var(--atlas-subtle);
+  background: var(--atlas-panel);
+  border: 1px solid var(--atlas-border);
+  color: var(--atlas-muted);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.atlas-signal-icon::before {
+  content: '*';
+}
+
+.atlas-signal-icon--holding::before {
+  content: 'H';
+}
+
+.atlas-signal-icon--stakes::before {
+  content: 'S';
+}
+
+.atlas-signal-icon--defi::before {
+  content: 'D';
+}
+
+.atlas-signal-icon--flow::before {
+  content: 'F';
+}
+
+.atlas-signal-icon--alert::before {
+  content: '!';
+}
+
+.atlas-signal-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.atlas-signal-copy strong,
+.atlas-signal-copy small {
+  display: block;
+}
+
+.atlas-signal-copy small {
+  overflow: hidden;
+  color: var(--atlas-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .atlas-token-card {
-  min-height: 116px;
+  display: grid;
+  gap: 8px;
+  min-height: 132px;
   padding: 13px;
   text-align: left;
   border-radius: 4px;
@@ -8113,6 +8164,26 @@ body,
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+}
+
+.atlas-token-card__icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--atlas-border);
+  border-radius: 50%;
+  background: var(--atlas-panel);
+  color: var(--atlas-accent);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.atlas-token-card__icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .atlas-token-card__price {
@@ -8129,8 +8200,9 @@ body,
   color: var(--atlas-positive);
 }
 
-.atlas-tone-positive.atlas-signal-row .atlas-signal-strip {
-  background-color: var(--atlas-positive);
+.atlas-tone-positive.atlas-signal-row .atlas-signal-icon {
+  border-color: color-mix(in srgb, var(--atlas-positive) 42%, var(--atlas-border));
+  color: var(--atlas-positive);
 }
 
 .atlas-tone-negative .atlas-metric-value,
@@ -8140,14 +8212,15 @@ body,
   color: var(--atlas-negative);
 }
 
-.atlas-tone-negative.atlas-signal-row .atlas-signal-strip {
-  background-color: var(--atlas-negative);
+.atlas-tone-negative.atlas-signal-row .atlas-signal-icon {
+  border-color: color-mix(in srgb, var(--atlas-negative) 42%, var(--atlas-border));
+  color: var(--atlas-negative);
 }
 
-.atlas-tone-accent.atlas-signal-row .atlas-signal-strip,
+.atlas-tone-accent.atlas-signal-row .atlas-signal-icon,
 .atlas-detail-fact.atlas-tone-accent strong {
-  background-color: var(--atlas-accent);
-  color: var(--atlas-on-accent);
+  border-color: color-mix(in srgb, var(--atlas-accent) 52%, var(--atlas-border));
+  color: var(--atlas-accent);
 }
 
 .atlas-detail-panel {
@@ -8927,6 +9000,51 @@ body,
 .atlas-home__allocation button:focus-visible {
   outline: none;
   box-shadow: inset 0 0 0 2px var(--atlas-control-bg), inset 0 0 0 4px var(--atlas-accent);
+}
+
+.atlas-home__allocation-weights {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.atlas-allocation-weight-row,
+.atlas-quick-action-card {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--atlas-border);
+  border-radius: 8px;
+  background: var(--atlas-panel);
+  color: var(--atlas-fg);
+  text-align: left;
+}
+
+.atlas-allocation-weight-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.atlas-allocation-weight-row span:first-child {
+  color: var(--atlas-fg);
+  font-weight: 800;
+}
+
+.atlas-allocation-weight-row span:last-child {
+  color: var(--atlas-muted);
+  font-size: 12px;
+}
+
+.atlas-quick-action-card strong {
+  color: var(--atlas-fg);
+  font-size: 14px;
+}
+
+.atlas-quick-action-card span {
+  color: var(--atlas-muted);
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 @media (max-width: 900px) {

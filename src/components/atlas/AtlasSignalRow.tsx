@@ -14,8 +14,11 @@ export function AtlasSignalRow({ signal, active, onSelect }: Props) {
       aria-pressed={active}
       onClick={() => onSelect(signal.detailId)}
     >
-      <span className="atlas-signal-strip" aria-hidden="true" />
-      <strong>{signal.label}</strong>
+      <span className={`atlas-signal-icon atlas-signal-icon--${signal.iconKey ?? 'holding'}`} aria-hidden="true" />
+      <span className="atlas-signal-copy">
+        <strong>{signal.label}</strong>
+        {signal.description ? <small>{signal.description}</small> : null}
+      </span>
       <span className="atlas-mono">{signal.value}</span>
     </button>
   );

@@ -18,6 +18,7 @@ export function AtlasTokenCard({ token, active, onSelect }: Props) {
         <strong>{token.symbol}</strong>
         <span className="atlas-mono">{token.change}</span>
       </span>
+      {token.icon ? <span className="atlas-token-card__icon">{token.icon}</span> : null}
       <span className="atlas-token-card__price atlas-mono">{token.price}</span>
       {token.ratio ? <span className="atlas-token-card__ratio">{token.ratio}</span> : null}
     </button>
