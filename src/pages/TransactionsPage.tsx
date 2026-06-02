@@ -82,6 +82,23 @@ function fmtTokenPrice(value: number) {
   return value.toFixed(2);
 }
 
+function formatCoinCategoryLabel(category: string) {
+  switch (category) {
+    case 'stablecoins':
+      return 'Stablecoins';
+    case 'eth_weth':
+      return 'ETH/WETH';
+    case 'hex':
+      return 'HEX/eHEX';
+    case 'pls_wpls':
+      return 'PLS/WPLS';
+    case 'bridged':
+      return 'Bridged';
+    default:
+      return category;
+  }
+}
+
 export function TransactionsPage({
   wallets,
   currentAssets,
@@ -138,6 +155,28 @@ export function TransactionsPage({
         sameAssetSymbol(tx.asset, txAssetFilter, tx.chain) ||
         sameAssetSymbol(tx.counterAsset ?? '', txAssetFilter, tx.chain),
       );
+  const receivedValue = filteredTransactions
+    .filter(tx => tx.type === 'deposit')
+    .reduce((sum, tx) => sum + (tx.valueUsd ?? 0), 0);
+  const sentValue = filteredTransactions
+    .filter(tx => tx.type === 'withdraw')
+    .reduce((sum, tx) => sum + (tx.valueUsd ?? 0), 0);
+  const swapCount = filteredTransactions.filter(tx => tx.type === 'swap').length;
+  const chainsActive = new Set(filteredTransactions.map(tx => tx.chain)).size;
+  const activeFilterChips = [
+    txTypeFilter !== 'all'
+      ? { key: 'type', label: txTypeFilter === 'deposit' ? 'Received' : txTypeFilter === 'withdraw' ? 'Sent' : 'Swaps', clear: () => setTxTypeFilter('all') }
+      : null,
+    txAssetFilter !== 'all'
+      ? { key: 'asset', label: txAssetFilter, clear: () => setTxAssetFilter('all') }
+      : null,
+    txYearFilter !== 'all'
+      ? { key: 'year', label: txYearFilter, clear: () => setTxYearFilter('all') }
+      : null,
+    txCoinCategory !== 'all'
+      ? { key: 'category', label: formatCoinCategoryLabel(txCoinCategory), clear: () => setTxCoinCategory('all') }
+      : null,
+  ].filter(Boolean) as Array<{ key: string; label: string; clear: () => void }>;
 
   return (
     <div className="transaction-page-shell space-y-4">
@@ -181,6 +220,30 @@ export function TransactionsPage({
             { label: 'Hidden rows', value: hiddenTxIds.length.toLocaleString('en-US'), sub: showHiddenTxs ? 'Hidden rows visible' : 'Hidden rows tucked away', color: 'var(--atlas-fg)' },
             { label: 'Token filter', value: txAssetFilter === 'all' ? 'All assets' : txAssetFilter, sub: txCoinCategory === 'all' ? 'All categories' : txCoinCategory, color: 'var(--atlas-accent)' },
             { label: 'PLS reference', value: `$${fmtTokenPrice(pulseUsdPrice || 0)}`, sub: 'Native pricing anchor', color: 'var(--atlas-fg)' },
+          ].map(card => (
+            <div
+              key={card.label}
+              style={{
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border)',
+                borderRadius: 12,
+                padding: '14px 16px',
+                display: 'grid',
+                gap: 5,
+              }}
+            >
+              <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em' }}>{card.label}</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: card.color }}>{card.value}</div>
+              <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{card.sub}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+          {[
+            { label: 'Received value', value: `$${receivedValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}`, sub: 'Filtered transfer inflow', color: 'var(--positive)' },
+            { label: 'Sent value', value: `$${sentValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}`, sub: 'Filtered transfer outflow', color: sentValue > 0 ? 'var(--negative)' : 'var(--atlas-fg)' },
+            { label: 'Swap count', value: swapCount.toLocaleString('en-US'), sub: 'Token-for-token events', color: 'var(--atlas-fg)' },
+            { label: 'Chains active', value: chainsActive.toLocaleString('en-US'), sub: 'Chains in current result set', color: 'var(--atlas-accent)' },
           ].map(card => (
             <div
               key={card.label}
@@ -263,6 +326,21 @@ export function TransactionsPage({
                 Clear all
               </button>
             </div>
+            {activeFilterChips.length > 0 && (
+              <div style={{ padding: '10px 18px', borderBottom: '1px solid var(--border)', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {activeFilterChips.map(chip => (
+                  <button
+                    key={chip.key}
+                    type="button"
+                    className="filter-chip"
+                    onClick={chip.clear}
+                  >
+                    {chip.label}
+                    <span className="chip-x">x</span>
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="custom-scrollbar tx-module-list wallet-tx-list">
               <TransactionList
                 transactions={filteredTransactions}
