@@ -157,18 +157,25 @@ export function TransactionsPage({
         sameAssetSymbol(tx.counterAsset ?? '', txAssetFilter, tx.chain),
       );
   const preferredAssetChain = (() => {
-    const exactSymbolMatches = currentAssets.filter(asset => sameAssetSymbol(asset.symbol, txAssetFilter, asset.chain));
-    if (exactSymbolMatches.length <= 1) return exactSymbolMatches[0]?.chain;
     const txChains = Array.from(new Set(tokenFilterMatches.map(tx => tx.chain)));
-    return txChains.length === 1 ? txChains[0] : undefined;
+    if (txChains.length === 1) return txChains[0];
+
+    const exactSymbolMatches = currentAssets.filter(asset => sameAssetSymbol(asset.symbol, txAssetFilter, asset.chain));
+    if (txChains.length > 1) {
+      const heldChainsInLedger = exactSymbolMatches
+        .map(asset => asset.chain)
+        .filter((chain, index, list) => list.indexOf(chain) === index && txChains.includes(chain));
+      return heldChainsInLedger.length === 1 ? heldChainsInLedger[0] : undefined;
+    }
+
+    return exactSymbolMatches.length === 1 ? exactSymbolMatches[0]?.chain : undefined;
   })();
 
   const filteredAsset = txAssetFilter === 'all'
     ? undefined
-    : currentAssets.find(asset =>
-        sameAssetSymbol(asset.symbol, txAssetFilter, asset.chain) &&
-        (!preferredAssetChain || asset.chain === preferredAssetChain),
-      ) ?? currentAssets.find(asset => sameAssetSymbol(asset.symbol, txAssetFilter, asset.chain));
+    : preferredAssetChain
+      ? currentAssets.find(asset => sameAssetSymbol(asset.symbol, txAssetFilter, asset.chain) && asset.chain === preferredAssetChain)
+      : currentAssets.find(asset => sameAssetSymbol(asset.symbol, txAssetFilter, asset.chain));
   const tokenPrice = filteredAsset?.price ?? 0;
   const logoUrl = filteredAsset ? getTokenLogoUrl(filteredAsset) : undefined;
   const allTokenTxs = txAssetFilter === 'all'

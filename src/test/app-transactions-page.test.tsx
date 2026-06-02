@@ -94,4 +94,53 @@ describe('Transactions Atlas surface', () => {
     expect(screen.getByRole('button', { name: /show hidden rows/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /clear hidden rows/i })).toBeInTheDocument();
   });
+
+  it('keeps token drill-down aligned with ledger chain when the asset is only still held on another chain', () => {
+    render(
+      <TransactionsPage
+        wallets={[{ address: '0xabc', name: 'Main wallet' }]}
+        currentAssets={[{ id: 'hex-eth', symbol: 'HEX', name: 'HEX', balance: 50, price: 0.02, value: 1, chain: 'ethereum', pnl24h: 1 }]}
+        currentTransactions={[
+          { id: '1', hash: '0x1', timestamp: Date.now(), type: 'deposit', from: '0xext', to: '0xabc', asset: 'HEX', amount: 100, chain: 'pulsechain', valueUsd: 1 },
+        ]}
+        filteredTransactions={[
+          { id: '1', hash: '0x1', timestamp: Date.now(), type: 'deposit', from: '0xext', to: '0xabc', asset: 'HEX', amount: 100, chain: 'pulsechain', valueUsd: 1 },
+        ]}
+        txTypeFilter="all"
+        setTxTypeFilter={vi.fn()}
+        txAssetFilter="HEX"
+        setTxAssetFilter={vi.fn()}
+        txYearFilter="all"
+        setTxYearFilter={vi.fn()}
+        txCoinCategory="all"
+        setTxCoinCategory={vi.fn()}
+        onClearFilters={vi.fn()}
+        viewAsYou={false}
+        setViewAsYou={vi.fn()}
+        txCompact={false}
+        setTxCompact={vi.fn()}
+        onExportCsv={vi.fn()}
+        transactionsCollapsed={false}
+        onToggleTransactionsCollapsed={vi.fn()}
+        hiddenTxIds={[]}
+        onToggleHiddenTx={vi.fn()}
+        showHiddenTxs={false}
+        onToggleShowHiddenTxs={vi.fn()}
+        onClearHiddenTxs={vi.fn()}
+        tokenLogos={{}}
+        getTokenLogoUrl={() => ''}
+        plsSwapData={{ rows: [], totalReceived: 0, totalSpent: 0, totalNet: 0, netUsd: 0, plsPrice: 0.00005 }}
+        plsFlowCollapsed={false}
+        onTogglePlsFlowCollapsed={vi.fn()}
+        pulseUsdPrice={0.00005}
+        isLoading={false}
+        onSyncSwaps={vi.fn()}
+        onOpenOverview={vi.fn()}
+        onOpenWallets={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/filtering by/i)).toBeInTheDocument();
+    expect(screen.queryByText(/ethereum/i)).not.toBeInTheDocument();
+  });
 });
