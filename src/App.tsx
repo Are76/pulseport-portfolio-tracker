@@ -70,6 +70,7 @@ import { TokenProductPage } from './components/TokenProductPage';
 import { TransactionList } from './components/TransactionList';
 import { HoldingsTable } from './components/HoldingsTable';
 import type { HoldingDisplayAsset, HoldingSortField } from './components/HoldingsTable';
+import { WalletsPage } from './pages/WalletsPage';
 import { normalizeTransactions } from './utils/normalizeTransactions';
 import { scheduleLocalStorageWrite, resolveBlockscoutBase, resolveEtherscanCompatBase } from './utils/localStorageDebounce';
 import { buildPulsechainInsights } from './utils/pulsechainInsights';
@@ -2691,15 +2692,10 @@ export default function App() {
     });
   }, [currentTransactions, selectedWalletAddr, txTypeFilter, txAssetFilter, txYearFilter, txCoinCategory]);
 
-  const summary = useMemo(() => {
-    const assets = currentAssets;
-    const liquidValue = assets.reduce((acc, curr) => acc + curr.value, 0);
-
-    // Add HEX staking value so the grand total reflects everything the user owns.
-    // Recalculate accrued yield from tShares * daysStaked * chain-specific rate so
-    // stale cached interestHearts never corrupt the total.
+  const stakeValuation = useMemo(() => {
+    const byWallet: Record<string, number> = {};
     const { avgPayoutPulse, avgPayoutEth, dailyMapPulse, dailyMapEth } = hexDailyData;
-    const stakingValueUsd = currentStakes.reduce((acc, s) => {
+    const total = currentStakes.reduce((acc, s) => {
       if ((s.daysRemaining ?? 0) <= 0) return acc; // exclude ended stakes
       const hexPriceKey = `${s.chain}:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39`;
       const chainHexFallback = s.chain === 'pulsechain' ? prices['pulsechain:hex']?.usd : prices['hex']?.usd;
@@ -2711,8 +2707,18 @@ export default function App() {
       const chainMap  = s.chain === 'pulsechain' ? dailyMapPulse : dailyMapEth;
       const fallback  = s.chain === 'pulsechain' ? (avgPayoutPulse || PHEX_YIELD_PER_TSHARE) : (avgPayoutEth || EHEX_YIELD_PER_TSHARE);
       const interestHex = computeStakeYield(tShares, lockedDay, daysStaked, chainMap, fallback);
-      return acc + (stakedHex + interestHex) * hexPrice;
+      const stakeUsd = (stakedHex + interestHex) * hexPrice;
+      const walletKey = s.walletAddress?.toLowerCase();
+      if (walletKey) byWallet[walletKey] = (byWallet[walletKey] || 0) + stakeUsd;
+      return acc + stakeUsd;
     }, 0);
+    return { total, byWallet };
+  }, [currentStakes, hexDailyData, prices]);
+
+  const summary = useMemo(() => {
+    const assets = currentAssets;
+    const liquidValue = assets.reduce((acc, curr) => acc + curr.value, 0);
+    const stakingValueUsd = stakeValuation.total;
 
     const totalValue = liquidValue + stakingValueUsd;
     const totalPnl = assets.reduce((acc, curr) => acc + (curr.value * (curr.pnl24h || 0) / 100), 0);
@@ -2886,7 +2892,7 @@ export default function App() {
       chainPnlUsd,
       chainPnlPercent
     };
-  }, [currentAssets, currentStakes, currentTransactions, prices, wallets, hexDailyData]);
+  }, [currentAssets, currentTransactions, currentStakes, hexDailyData, prices, stakeValuation.total, wallets]);
 
   const pieData = Object.entries(summary.chainDistribution).map(([name, value]) => ({
     name: name.charAt(0).toUpperCase() + name.slice(1),
@@ -4920,720 +4926,91 @@ export default function App() {
 
             {activeTab === 'assets' && (
               <motion.div key="assets" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {(() => {
-                  const selectedScope = selectedWalletAddr === 'all' ? null : wallets.find(w => w.address.toLowerCase() === selectedWalletAddr);
-                  const visibleWalletAssets = selectedScope ? (walletAssets[selectedWalletAddr] || []) : currentAssets;
-                  const selectedWalletStakes = selectedScope ? currentStakes.filter(s => s.walletAddress === selectedWalletAddr) : currentStakes;
-                  const selectedLiquidUsd = visibleWalletAssets.reduce((sum, asset) => sum + asset.value, 0);
-                  const selectedStakingUsd = selectedWalletStakes.reduce((sum, st) => {
-                    if ((st.daysRemaining ?? 0) <= 0) return sum; // exclude ended stakes
-                    const hexPriceKey = `${st.chain}:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39`;
-                    const chainHexFallback = st.chain === 'pulsechain' ? prices['pulsechain:hex']?.usd : prices['hex']?.usd;
-                    const hexPrice = prices[hexPriceKey]?.usd || chainHexFallback || 0;
-                    const stakedHex = st.stakedHex ?? Number(st.stakedHearts ?? 0n) / 1e8;
-                    const tShares = st.tShares ?? Number(st.stakeShares ?? 0n) / 1e12;
-                    const lockedDay = st.lockedDay ?? 0;
-                    const daysStaked = Math.max(0, (st.stakedDays ?? 0) - (st.daysRemaining ?? 0));
-                    const chainMap = st.chain === 'pulsechain' ? hexDailyData.dailyMapPulse : hexDailyData.dailyMapEth;
-                    const fb = st.chain === 'pulsechain' ? (hexDailyData.avgPayoutPulse || PHEX_YIELD_PER_TSHARE) : (hexDailyData.avgPayoutEth || EHEX_YIELD_PER_TSHARE);
-                    const interestHex = computeStakeYield(tShares, lockedDay, daysStaked, chainMap, fb);
-                    return sum + (stakedHex + interestHex) * hexPrice;
-                  }, 0);
-                  const selectedTotalUsd = selectedLiquidUsd + selectedStakingUsd;
-                  const chainAssets = walletChainFilter === 'all' ? visibleWalletAssets : visibleWalletAssets.filter(a => a.chain === walletChainFilter);
-                  const chainDisplayAssets = normalizeHoldingAssets(chainAssets);
-                  const hiddenChainAssets = walletChainFilter === 'all' ? hiddenAssetRows : hiddenAssetRows.filter(a => a.chain === walletChainFilter);
-                  return (<>
-
-                {/* -- Portfolio Insights link -- */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <button
-                    className="btn-ghost"
-                    style={{ fontSize: 13, padding: '8px 14px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                    onClick={() => setActiveTab('overview')}
-                  >
-                    <LayoutDashboard size={14} />
-                    Portfolio Insights
-                  </button>
-                </div>
-
-                {/* -- Wallet scope + management banner -- */}
-                <div style={{ background: 'var(--bg-elevated)', borderRadius: 16, padding: '24px', border: '1px solid var(--accent-border)' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
-                    <div>
-                      <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 8 }}>
-                        {selectedScope ? selectedScope.name : 'All Wallets'}
-                      </div>
-                      {selectedScope && (
-                        <div style={{ fontSize: 12, color: 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace' }}>
-                          {selectedScope.address.slice(0, 10)}...{selectedScope.address.slice(-8)}
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      {selectedScope && (
-                        <>
-                          <button className="btn-ghost" style={{ fontSize: 12, padding: '7px 10px' }} onClick={() => navigator.clipboard.writeText(selectedScope.address)}>
-                            <Copy size={13} /> Copy
-                          </button>
-                          <button className="btn-ghost" style={{ fontSize: 12, padding: '7px 10px' }} onClick={() => { setEditingWalletAddress(selectedScope.address); setEditWalletName(selectedScope.name); }}>
-                            <Pencil size={13} /> Rename
-                          </button>
-                        </>
-                      )}
-                      <button className="btn-primary" style={{ fontSize: 12, padding: '7px 12px' }} onClick={() => setIsAddingWallet(true)}>
-                        <Plus size={13} /> Add Wallet
-                      </button>
-                    </div>
-                  </div>
-                  <div style={{ fontSize: 36, fontWeight: 800, color: 'var(--fg)', marginBottom: 16 }}>
-                    ${(selectedScope ? selectedTotalUsd : summary.totalValue).toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-                    <span className="wallet-stat-pill-green">
-                      Liquid ${(selectedScope ? selectedLiquidUsd : summary.liquidValue).toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                    </span>
-                    <span style={{ background: 'rgba(239,68,68,0.12)', color: t.red, padding: '4px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: '1px solid rgba(239,68,68,0.20)' }}>
-                      Staking ${(selectedScope ? selectedStakingUsd : summary.stakingValueUsd).toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                    </span>
-                    <span style={{ background: 'var(--bg-surface)', color: 'var(--fg-muted)', padding: '4px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: '1px solid var(--border)' }}>
-                      {visibleWalletAssets.length} token{visibleWalletAssets.length !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                  <div className="wallet-selector-bar" style={{ marginBottom: 14 }}>
-                    <button
-                      className={`wallet-pill${selectedWalletAddr === 'all' ? ' active' : ''}`}
-                      onClick={() => { setSelectedWalletAddr('all'); setActiveWallet(null); }}
-                    >
-                      <span className="wallet-dot wallet-dot-multi" />
-                      All
-                    </button>
-                    {wallets.map((wallet, idx) => {
-                      const walletKey = wallet.address.toLowerCase();
-                      const isWalletActive = selectedWalletAddr === walletKey;
-                      const dotColor = WALLET_DOT_COLORS[idx % WALLET_DOT_COLORS.length];
-                      const walletValue = (walletAssets[walletKey] || []).reduce((sum, asset) => sum + asset.value, 0);
-                      return (
-                        <button
-                          key={wallet.address}
-                          className={`wallet-pill${isWalletActive ? ' active' : ''}`}
-                          title={wallet.address}
-                          onClick={() => { setSelectedWalletAddr(walletKey); setActiveWallet(wallet.address); }}
-                          style={isWalletActive ? { background: `${dotColor}1a`, borderColor: `${dotColor}55`, color: dotColor } : undefined}
-                        >
-                          <span className="wallet-dot" style={{ background: dotColor, boxShadow: `0 0 5px ${dotColor}bb` }} />
-                          <span>{wallet.name || shortenAddr(wallet.address)}</span>
-                          <span style={{ color: 'var(--fg-subtle)', fontSize: 11 }}>${walletValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {(['all', 'pulsechain', 'ethereum', 'base'] as const).map(c => (
-                      <button key={c} onClick={() => setWalletChainFilter(c)}
-                        className={`filter-pill${walletChainFilter === c ? ' active' : ''}`}>
-                        {c === 'all' ? 'All' : c === 'pulsechain' ? 'PulseChain' : c === 'ethereum' ? 'Ethereum' : 'Base'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className={`coin-visibility-panel${coinVisibilityMenuOpen ? ' is-open' : ''}`}>
-                  <button
-                    type="button"
-                    className="coin-visibility-trigger"
-                    onClick={() => setCoinVisibilityMenuOpen(v => !v)}
-                    aria-expanded={coinVisibilityMenuOpen}
-                  >
-                    <div className="coin-visibility-copy">
-                      <span>Coin visibility</span>
-                      <strong>Wallet coins are auto-detected on refresh.</strong>
-                      <small>
-                        Open filters, hidden coins, manual coins, and spam scan controls.
-                      </small>
-                      <div className="coin-visibility-stats">
-                        <span>{hiddenTokens.length} hidden</span>
-                        <span>{customCoins.length} manual</span>
-                        <span>{hideDust ? 'Dust hidden' : 'Dust visible'}</span>
-                        <span>{hideSpam ? 'Spam hidden' : 'Spam visible'}</span>
-                      </div>
-                    </div>
-                    <ChevronDown size={16} className="coin-visibility-chevron" />
-                  </button>
-                  {coinVisibilityMenuOpen && (
-                    <div className="coin-visibility-dropdown-panel">
-                      <div className="coin-visibility-actions">
-                        <button type="button" onClick={() => fetchPortfolio()}>
-                          <RefreshCcw size={13} className={isLoading ? 'animate-spin' : ''} />
-                          Refresh / detect
-                        </button>
-                        <button type="button" onClick={() => setShowHiddenCoins(v => !v)}>
-                          <Eye size={13} />
-                          {showHiddenCoins ? 'Close hidden coins' : 'Open hidden coins'}
-                          {hiddenTokens.length > 0 && <span className="hidden-coins-count">{hiddenTokens.length}</span>}
-                        </button>
-                        <button type="button" className="coin-visibility-primary" onClick={() => setIsCustomCoinsModalOpen(true)}>
-                          <Plus size={13} />
-                          Add coin
-                        </button>
-                        <button type="button" onClick={scanForSpam} disabled={isScanning || wallets.length === 0}>
-                          <Shield size={13} />
-                          {isScanning ? 'Scanning...' : 'Scan spam'}
-                          {scanResult !== null && !isScanning && (
-                            <span className="hidden-coins-count">{scanResult > 0 ? `+${scanResult}` : 'clean'}</span>
-                          )}
-                        </button>
-                      </div>
-                      <div className="coin-visibility-dropdown">
-                        <button type="button" onClick={() => setHideDust(v => !v)}>
-                          <span>{hideDust ? 'Show dust coins' : 'Hide dust coins'}</span>
-                          <small>{hideDust ? 'Dust filter is on' : 'Dust filter is off'}</small>
-                        </button>
-                        <button type="button" onClick={() => setHideSpam(v => !v)}>
-                          <span>{hideSpam ? 'Show spam coins' : 'Hide spam coins'}</span>
-                          <small>{hideSpam ? 'Spam filter is on' : 'Spam filter is off'}</small>
-                        </button>
-                        <button type="button" disabled={hiddenTokens.length === 0} onClick={() => { setHiddenTokens([]); setShowHiddenCoins(false); }}>
-                          <span>Unhide all manual coins</span>
-                          <small>Restore every hidden coin</small>
-                        </button>
-                        <button type="button" onClick={() => { setHideDust(false); setHideSpam(false); setShowHiddenCoins(true); }}>
-                          <span>Show everything</span>
-                          <small>Turn off filters and open hidden list</small>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Header row */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-                  <div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: t.text, marginBottom: 2 }}>Holdings</div>
-                    <div style={{ fontSize: 13, color: t.textSecondary }}>{chainAssets.length} token{chainAssets.length !== 1 ? 's' : ''}  -  ${summary.liquidValue.toLocaleString('en-US', { maximumFractionDigits: 0 })} liquid</div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', gap: 3, background: t.cardHigh, border: `1px solid ${t.border}`, borderRadius: 8, padding: 3 }}>
-                      {([['1h','1H'],['6h','6H'],['24h','24H'],['7d','7D']] as const).map(([p, label]) => (
-                        <button key={p} onClick={() => setPriceChangePeriod(p)}
-                          style={{ padding: '4px 10px', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all .12s', border: 'none',
-                            background: priceChangePeriod === p ? 'var(--accent)' : 'transparent',
-                            color: priceChangePeriod === p ? '#fff' : t.textMuted }}>
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                {/* Token Table */}
-                <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, overflow: 'hidden' }} className="md-elevation-1">
-                  <div style={{ padding: '14px 16px', borderBottom: isCollapsed('assets-table') ? 'none' : `1px solid ${t.borderLight}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: t.text }}>Assets</div>
-                      <div style={{ fontSize: 13, color: t.textSecondary, marginTop: 2 }}>{chainAssets.length} tokens  -  ${summary.liquidValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <button
-                        type="button"
-                        onClick={() => setAllocationCalculatorOpen(v => !v)}
-                        style={{ padding: '6px 10px', borderRadius: 8, border: `1px solid ${allocationCalculatorOpen ? 'var(--accent-border)' : t.border}`,
-                          background: allocationCalculatorOpen ? 'var(--accent-dim)' : t.cardHigh,
-                          color: allocationCalculatorOpen ? 'var(--accent)' : t.textSecondary,
-                          cursor: 'pointer', transition: 'all .12s', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700 }}
-                      >
-                        <Calculator size={13} />
-                        {allocationCalculatorOpen ? 'Close Calculator' : 'Open Calculator'}
-                      </button>
-                      <button onClick={() => toggleSection('assets-table')}
-                        style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s' }}
-                        onMouseOver={e => (e.currentTarget.style.color = 'var(--fg)')}
-                        onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}
-                        title={isCollapsed('assets-table') ? 'Expand' : 'Collapse'}>
-                        {isCollapsed('assets-table') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-                      </button>
-                    </div>
-                  </div>
-                  {!isCollapsed('assets-table') && (<>
-                  {allocationCalculatorOpen && (
-                    <div style={{ margin: '0 16px 16px', padding: '16px 18px', borderRadius: 12, border: `1px solid ${t.border}`, background: t.cardHigh, display: 'grid', gap: 10 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>Adjust Allocation</div>
-                        <div style={{ fontSize: 12, color: t.textSecondary }}>
-                          Total: {allocationCalculatorRows.reduce((sum, r) => sum + r.percent, 0).toFixed(1)}%
-                        </div>
-                      </div>
-                      {allocationCalculatorRows.length > 0 ? allocationCalculatorRows.map((row, i) => (
-                        <div key={row.name} style={{ display: 'grid', gridTemplateColumns: '100px 1fr 80px 80px', alignItems: 'center', gap: 10 }} className="max-sm:grid-cols-1">
-                          <span style={{ fontSize: 13, color: t.text }}>{row.name}</span>
-                          <input
-                            type="range"
-                            min={0}
-                            max={100}
-                            step={0.1}
-                            value={row.percent}
-                            onChange={(e) => {
-                              const next = Number(e.target.value);
-                              setAllocationDraftPercentages(prev => ({ ...prev, [row.name]: next }));
-                            }}
-                            style={{ accentColor: ['#4263EB','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'][i % 7] }}
-                          />
-                          <input
-                            type="number"
-                            min={0}
-                            max={100}
-                            step={0.1}
-                            value={row.percent.toFixed(1)}
-                            onChange={(e) => {
-                              const next = Number(e.target.value);
-                              if (!Number.isFinite(next)) return;
-                              setAllocationDraftPercentages(prev => ({ ...prev, [row.name]: Math.min(100, Math.max(0, next)) }));
-                            }}
-                            style={{ width: '100%', background: t.card, color: t.text, border: `1px solid ${t.border}`, borderRadius: 6, padding: '5px 8px', fontSize: 12, fontFamily: 'JetBrains Mono, monospace' }}
-                          />
-                          <span style={{ fontSize: 12, color: t.textSecondary, textAlign: 'right', fontFamily: 'JetBrains Mono, monospace' }}>
-                            ${row.value.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                          </span>
-                        </div>
-                      )) : (
-                        <div style={{ fontSize: 13, color: t.textMuted }}>No holdings available for allocation calculator.</div>
-                      )}
-                    </div>
-                  )}
-                  <HoldingsTable
-                    assets={chainDisplayAssets}
-                    allAssets={currentAssets}
-                    wallets={wallets}
-                    totalValueUsd={summary.totalValue}
-                    plsUsdPrice={prices['pulsechain']?.usd || 0}
-                    priceChangePeriod={priceChangePeriod}
-                    sortField={assetSortField as HoldingSortField}
-                    sortDir={assetSortDir}
-                    expandedIds={expandedAssetIds}
-                    tokenLogos={tokenLogos}
-                    emptyMessage="No holdings found - add wallets to get started"
-                    currentTransactions={currentTransactions}
-                    manualEntries={manualEntries}
-                    chainColors={CHAIN_COLORS}
-                    tokenMarketData={tokenMarketData}
-                    staticLogos={STATIC_LOGOS}
-                    getTokenLogoUrl={getTokenLogoUrl}
-                    explorerUrl={explorerUrl}
-                    dexScreenerUrl={dexScreenerUrl}
-                     onSort={(field) => {
-                       if (assetSortField === field) setAssetSortDir(d => d === 'desc' ? 'asc' : 'desc');
-                       else { setAssetSortField(field); setAssetSortDir('desc'); }
-                     }}
-                     onToggleExpanded={(id) => setExpandedAssetIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; })}
-                     onSelectAsset={asset => openProductPage(asset, 'assets')}
-                     onOpenPnl={asset => setPnlAsset(asset)}
-                     onHide={hideToken}
-                    onSetEntry={(id, value) => setManualEntries(prev => ({ ...prev, [id]: value }))}
-                    onClearEntry={(id) => setManualEntries(prev => { const n = { ...prev }; delete n[id]; return n; })}
-                    onFilterByAsset={symbol => { setTxAssetFilter(symbol); setActiveTab('assets'); }}
-                    showSkeleton={isLoading && wallets.length > 0 && currentAssets.length === 0}
-                    footerValueUsd={chainAssets.reduce((sum, asset) => sum + asset.value, 0)}
-                    shareBaseUsd={summary.totalValue}
-                  />
-                  {false && <div className="data-table-scroll">
-                    <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-                      <thead>
-                        <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                          {[
-                            { label: 'Token', field: null, align: 'left' },
-                            { label: priceChangePeriod.toUpperCase(), field: 'change', align: 'right' },
-                            { label: 'Value', field: 'value', align: 'right' },
-                            { label: '% of Portfolio', field: null, align: 'right' },
-                            { label: '', field: null, align: 'right' },
-                          ].map(({ label, field, align }, i) => (
-                            <th key={i} onClick={field ? () => {
-                              if (assetSortField === field) setAssetSortDir(d => d === 'desc' ? 'asc' : 'desc');
-                              else { setAssetSortField(field as any); setAssetSortDir('desc'); }
-                            } : undefined}
-                              style={{ padding: '11px 16px', fontSize: 13, fontWeight: 600,
-                                color: assetSortField === field ? t.green : t.textSecondary,
-                                textTransform: 'uppercase', letterSpacing: '.5px',
-                                textAlign: align as any, whiteSpace: 'nowrap', background: t.card,
-                                cursor: field ? 'pointer' : 'default', userSelect: 'none' }}>
-                              {label}{field && assetSortField === field ? (assetSortDir === 'desc' ? ' down' : ' up') : ''}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {isLoading && wallets.length > 0 && currentAssets.length === 0 && [...Array(5)].map((_, i) => (
-                          <tr key={`skel-${i}`}>
-                            <td style={{ padding: '13px 16px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <div className="skeleton" style={{ width: 42, height: 42, borderRadius: '50%', flexShrink: 0 }} />
-                                <div>
-                                  <div className="skeleton" style={{ width: 80, height: 13, marginBottom: 5 }} />
-                                  <div className="skeleton" style={{ width: 110, height: 11 }} />
-                                </div>
-                              </div>
-                            </td>
-                            {[...Array(4)].map((_, j) => (
-                              <td key={j} style={{ padding: '13px 16px', textAlign: 'right' }}>
-                                <div className="skeleton" style={{ height: 13, width: 60, marginLeft: 'auto' }} />
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                        {currentAssets.length === 0 ? (
-                          <tr>
-                            <td colSpan={5} style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 13 }}>
-                              No holdings found - add wallets to get started
-                            </td>
-                          </tr>
-                        ) : (
-                          [...chainAssets].sort((a, b) => {
-                            const getVal = (x: any) => assetSortField === 'change'
-                              ? (priceChangePeriod === '1h' ? (x.priceChange1h ?? 0)
-                                : priceChangePeriod === '7d' ? (x.priceChange7d ?? 0)
-                                : (x.priceChange24h ?? x.pnl24h ?? 0))
-                              : x.value;
-                            const diff = getVal(b) - getVal(a);
-                            return assetSortDir === 'desc' ? diff : -diff;
-                          }).map((asset, idx) => {
-                            const pct = priceChangePeriod === '1h' ? (asset.priceChange1h ?? 0)
-                              : priceChangePeriod === '7d' ? (asset.priceChange7d ?? 0)
-                              : priceChangePeriod === '6h' ? 0
-                              : (asset.priceChange24h ?? asset.pnl24h ?? 0);
-                            const share = ((asset.value / (summary.totalValue || 1)) * 100);
-                            const addr = (asset as any).address;
-                            const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()]
-                              || tokenLogos[(asset as any).address?.toLowerCase?.()]
-                              || (asset as any).logoUrl
-                              || getTokenLogoUrl(asset);
-                            const explUrl = explorerUrl(asset.chain, addr);
-                            const dsUrl = dexScreenerUrl(asset.chain, addr);
-                            const isExpanded = expandedAssetIds.has(asset.id);
-                            const plsUsdPrice = prices['pulsechain']?.usd || 0.00005;
-                            const priceInPls = asset.price > 0 && plsUsdPrice > 0 ? asset.price / plsUsdPrice : 0;
-                            const entryPls = manualEntries[asset.id];
-                            const currentPlsValue = asset.value / plsUsdPrice;
-                            const pnlPls = entryPls ? currentPlsValue - entryPls : null;
-                            const fmtBal = (b: number) =>
-                              b >= 1e9 ? `${(b/1e9).toFixed(2)}B` :
-                              b >= 1e6 ? `${(b/1e6).toFixed(2)}M` :
-                              b >= 1e3 ? `${(b/1e3).toFixed(2)}K` :
-                              b.toLocaleString('en-US', { maximumFractionDigits: 4 });
-                            return (
-                              <React.Fragment key={asset.id}>
-                              <motion.tr
-                                initial={{ opacity: 0, y: 8 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: Math.min(idx * 0.03, 0.5), duration: 0.2 }}
-                                style={{ borderBottom: isExpanded ? 'none' : '1px solid var(--border)', transition: 'background .1s', borderLeft: `3px solid ${CHAIN_COLORS[asset.chain] || '#333'}`, cursor: 'pointer' }}
-                                onClick={() => setExpandedAssetIds(prev => { const s = new Set(prev); s.has(asset.id) ? s.delete(asset.id) : s.add(asset.id); return s; })}
-                                onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
-                                onMouseOut={e => (e.currentTarget.style.background = isExpanded ? 'var(--bg-elevated)' : 'transparent')}>
-                                {/* -- Token cell -- */}
-                                <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                    {/* Logo */}
-                                    <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-                                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 800, color: 'var(--fg)', flexShrink: 0, overflow: 'hidden' }}>
-                                      {logo ? <img src={logo} alt={asset.symbol} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
-                                          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.removeAttribute('hidden'); }} /> : null}
-                                      <span hidden={!!logo}>{asset.symbol[0]}</span>
-                                    </div>
-                                    {/* Name + subtitle */}
-                                    <div>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                                        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>{asset.name || asset.symbol}</span>
-                                        {addr && addr !== 'native' && (
-                                          <button onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(addr); }}
-                                            title={`Copy: ${addr}`}
-                                            style={{ padding: '1px 3px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s', lineHeight: 1 }}
-                                            onMouseOver={e => (e.currentTarget.style.color = '#aaa')}
-                                            onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
-                                            <Copy size={10} />
-                                          </button>
-                                        )}
-                                        {dsUrl && addr !== 'native' && (
-                                          <a href={dsUrl} target="_blank" rel="noopener noreferrer"
-                                            title="DexScreener" onClick={e => e.stopPropagation()}
-                                            style={{ padding: '1px 3px', color: 'var(--fg-subtle)', transition: 'color .12s', lineHeight: 1, display: 'inline-flex' }}
-                                            onMouseOver={e => (e.currentTarget.style.color = '#f4c542')}
-                                            onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
-                                            <ExternalLink size={10} />
-                                          </a>
-                                        )}
-                                      </div>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3 }}>
-                                        <div style={{ width: 5, height: 5, borderRadius: '50%', background: CHAIN_COLORS[asset.chain] || '#555', flexShrink: 0 }} />
-                                        <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>
-                                          {asset.symbol}{asset.price > 0 && <>  -  <PriceDisplay price={asset.price} /></>}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </td>
-                                {/* -- Change cell -- */}
-                                <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap',
-                                  fontSize: 13, fontWeight: 600, color: pct >= 0 ? t.green : t.red }}>
-                                  {pct >= 0 ? '^' : 'v'} {Math.abs(pct).toFixed(2)}%
-                                </td>
-                                <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>
-                                    ${asset.value.toLocaleString('en-US', { maximumFractionDigits: 2 })}
-                                  </div>
-                                  <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 2 }}>
-                                    {fmtBal(asset.balance)} {asset.symbol}
-                                  </div>
-                                </td>
-                                <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap', minWidth: 90 }}>
-                                  <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 3 }}>{share.toFixed(1)}%</div>
-                                  <div style={{ height: 2, background: 'var(--border)', borderRadius: 1 }}>
-                                    <div style={{ height: '100%', width: `${Math.min(share, 100)}%`, background: 'var(--accent)', borderRadius: 1 }} />
-                                  </div>
-                                </td>
-                                <td style={{ padding: '11px 12px', textAlign: 'right' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2 }}>
-                                    <button
-                                      onClick={e => { e.stopPropagation(); setPnlAsset(pnlAsset?.id === asset.id ? null : asset); }}
-                                      title="View P&L"
-                                      style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', transition: 'color .12s',
-                                        color: pnlAsset?.id === asset.id ? '#a78bfa' : '#555' }}
-                                      onMouseOver={e => (e.currentTarget.style.color = '#a78bfa')}
-                                      onMouseOut={e => (e.currentTarget.style.color = pnlAsset?.id === asset.id ? '#a78bfa' : '#555')}>
-                                      <Calculator size={13} />
-                                    </button>
-                                    <button onClick={e => { e.stopPropagation(); hideToken(asset.id); }}
-                                      style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s' }}
-                                      onMouseOver={e => (e.currentTarget.style.color = '#ef4444')}
-                                      onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}
-                                      title="Hide">
-                                      <Trash2 size={13} />
-                                    </button>
-                                    <span style={{ color: isExpanded ? t.green : 'var(--fg-subtle)', padding: 4, display: 'inline-flex', transition: 'color .12s' }}>
-                                      {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                                    </span>
-                                  </div>
-                                </td>
-                              </motion.tr>
-                              {/* -- Expanded details row -- */}
-                              {isExpanded && (
-                                <tr style={{ borderBottom: `1px solid ${t.borderLight}`, borderLeft: `3px solid ${CHAIN_COLORS[asset.chain] || '#333'}`, background: t.expandedBg }}>
-                                  <td colSpan={5} style={{ padding: '0 16px 14px 16px' }}>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, paddingTop: 12 }}>
-                                      {/* Price details */}
-                                      <div style={{ background: t.cardHigh, borderRadius: 8, padding: '12px 14px' }}>
-                                        <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Price Details</div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>USD</span>
-                                            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)', fontFamily: 'monospace' }}><PriceDisplay price={asset.price} /></span>
-                                          </div>
-                                          {priceInPls > 0 && (
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                              <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>in PLS</span>
-                                              <span style={{ fontSize: 13, fontWeight: 700, color: '#f739ff', fontFamily: 'monospace' }}>
-                                                {priceInPls >= 1e6 ? `${(priceInPls/1e6).toFixed(2)}M` : priceInPls >= 1e3 ? `${(priceInPls/1e3).toFixed(2)}K` : priceInPls >= 1 ? priceInPls.toFixed(2) : priceInPls < 0.001 ? priceInPls.toFixed(8) : priceInPls.toFixed(6)} PLS
-                                              </span>
-                                            </div>
-                                          )}
-                                          {(asset.priceChange1h ?? null) !== null && (
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                              <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>1H</span>
-                                              <span style={{ fontSize: 12, fontWeight: 700, color: (asset.priceChange1h ?? 0) >= 0 ? t.green : t.red }}>
-                                                {(asset.priceChange1h ?? 0) >= 0 ? '^' : 'v'} {Math.abs(asset.priceChange1h ?? 0).toFixed(2)}%
-                                              </span>
-                                            </div>
-                                          )}
-                                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>24H</span>
-                                            <span style={{ fontSize: 12, fontWeight: 700, color: (asset.priceChange24h ?? asset.pnl24h ?? 0) >= 0 ? t.green : t.red }}>
-                                              {(asset.priceChange24h ?? asset.pnl24h ?? 0) >= 0 ? '^' : 'v'} {Math.abs(asset.priceChange24h ?? asset.pnl24h ?? 0).toFixed(2)}%
-                                            </span>
-                                          </div>
-                                          {(asset.priceChange7d ?? null) !== null && (
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                              <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>7D</span>
-                                              <span style={{ fontSize: 12, fontWeight: 700, color: (asset.priceChange7d ?? 0) >= 0 ? t.green : t.red }}>
-                                                {(asset.priceChange7d ?? 0) >= 0 ? '^' : 'v'} {Math.abs(asset.priceChange7d ?? 0).toFixed(2)}%
-                                              </span>
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                      {/* Market Data */}
-                                      <div style={{ background: t.cardHigh, borderRadius: 8, padding: '12px 14px' }}>
-                                        <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Market Data</div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                                          {(() => {
-                                            const md = tokenMarketData[asset.id];
-                                            const fmtNum = (n: number) => n >= 1e9 ? `$${(n/1e9).toFixed(2)}B` : n >= 1e6 ? `$${(n/1e6).toFixed(2)}M` : n >= 1e3 ? `$${(n/1e3).toFixed(1)}K` : `$${n.toFixed(0)}`;
-                                            return (
-                                              <>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                  <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Native Price</span>
-                                                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)', fontFamily: 'monospace' }}>
-                                                    {md?.nativePriceUsd ? `${parseFloat(md.nativePriceUsd).toFixed(4)}` : '-'}
-                                                  </span>
-                                                </div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                  <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Liquidity</span>
-                                                  <span style={{ fontSize: 13, fontWeight: 700, color: t.green }}>{md ? fmtNum(md.liquidity) : <span style={{ color: 'var(--fg-subtle)' }}>-</span>}</span>
-                                                </div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                  <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Volume 24h</span>
-                                                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>{md ? fmtNum(md.volume24h) : <span style={{ color: 'var(--fg-subtle)' }}>-</span>}</span>
-                                                </div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                  <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Pools</span>
-                                                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-muted)' }}>{md ? md.pools : <span style={{ color: 'var(--fg-subtle)' }}>-</span>}</span>
-                                                </div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                  <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Txns 24h</span>
-                                                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-muted)' }}>{md?.txns24h != null ? md.txns24h.toLocaleString() : <span style={{ color: 'var(--fg-subtle)' }}>-</span>}</span>
-                                                </div>
-                                              </>
-                                            );
-                                          })()}
-                                        </div>
-                                      </div>
-                                      {/* Holdings breakdown */}
-                                      <div style={{ background: t.cardHigh, borderRadius: 8, padding: '12px 14px' }}>
-                                        <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Your Holdings</div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Held</span>
-                                            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>
-                                              {asset.balance >= 1e6 ? `${(asset.balance/1e6).toFixed(2)}M` : asset.balance >= 1e3 ? `${(asset.balance/1e3).toFixed(2)}K` : asset.balance.toLocaleString('en-US', { maximumFractionDigits: 4 })} {asset.symbol}
-                                            </span>
-                                          </div>
-                                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Value</span>
-                                            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>${asset.value.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
-                                          </div>
-                                          {priceInPls > 0 && (
-                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                              <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Value PLS</span>
-                                              <span style={{ fontSize: 13, fontWeight: 600, color: '#f739ff' }}>
-                                                {currentPlsValue >= 1e6 ? `${(currentPlsValue/1e6).toFixed(2)}M` : currentPlsValue >= 1e3 ? `${(currentPlsValue/1e3).toFixed(2)}K` : currentPlsValue.toFixed(0)} PLS
-                                              </span>
-                                            </div>
-                                          )}
-                                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>% of Portfolio</span>
-                                            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)' }}>{share.toFixed(2)}%</span>
-                                          </div>
-                                        </div>
-                                      </div>
-                                      {/* PLS-denominated P&L */}
-                                      <div style={{ background: t.cardHigh, borderRadius: 8, padding: '12px 14px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                                          <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.7px' }}>PLS P&L</div>
-                                          {entryPls && entryPls > 0 && (
-                                            <button onClick={e => { e.stopPropagation(); setManualEntries(prev => { const n = { ...prev }; delete n[asset.id]; return n; }); }}
-                                              title="Clear entry"
-                                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', padding: 2, display: 'flex', alignItems: 'center', transition: 'color .12s' }}
-                                              onMouseOver={e => (e.currentTarget.style.color = '#ef4444')}
-                                              onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
-                                              <X size={13} />
-                                            </button>
-                                          )}
-                                        </div>
-                                        {pnlPls !== null ? (
-                                          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                              <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Entry</span>
-                                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-muted)' }}>{(entryPls!).toLocaleString('en-US', { maximumFractionDigits: 0 })} PLS</span>
-                                            </div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                              <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Now</span>
-                                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{currentPlsValue.toLocaleString('en-US', { maximumFractionDigits: 0 })} PLS</span>
-                                            </div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 4, borderTop: '1px solid var(--border)', marginTop: 2 }}>
-                                              <span style={{ fontSize: 12, color: 'var(--fg-subtle)', fontWeight: 700 }}>Net P&L</span>
-                                              <span style={{ fontSize: 14, fontWeight: 800, color: pnlPls >= 0 ? t.green : t.red }}>
-                                                {pnlPls >= 0 ? '+' : ''}{pnlPls.toLocaleString('en-US', { maximumFractionDigits: 0 })} PLS
-                                              </span>
-                                            </div>
-                                          </div>
-                                        ) : (
-                                          <div>
-                                            <div style={{ fontSize: 12, color: 'var(--fg-subtle)', marginBottom: 8 }}>Set entry to track P&L</div>
-                                            <input type="number" placeholder="Entry PLS amount"
-                                              style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--fg)', fontSize: 12, padding: '5px 8px', outline: 'none' }}
-                                              onClick={e => e.stopPropagation()}
-                                              onBlur={e => { const v = parseFloat(e.target.value); if (!isNaN(v) && v > 0) setManualEntries(prev => ({ ...prev, [asset.id]: v })); }} />
-                                          </div>
-                                        )}
-                                      </div>
-                                      {/* Links */}
-                                      <div style={{ background: t.cardHigh, borderRadius: 8, padding: '12px 14px' }}>
-                                        <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '.7px', marginBottom: 8 }}>Links & Info</div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                                          {addr && addr !== 'native' && (
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
-                                              <span style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>Contract</span>
-                                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                                <span style={{ fontSize: 12, fontFamily: 'monospace', color: 'var(--fg-muted)' }}>{addr.slice(0,6)}...{addr.slice(-4)}</span>
-                                                <button onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(addr); }}
-                                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', padding: 2 }}
-                                                  onMouseOver={e => (e.currentTarget.style.color = '#aaa')}
-                                                  onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}>
-                                                  <Copy size={11} />
-                                                </button>
-                                              </div>
-                                            </div>
-                                          )}
-                                          {explUrl && (
-                                            <a href={explUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-                                              style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--accent)', textDecoration: 'none', transition: 'opacity .12s' }}
-                                              onMouseOver={e => (e.currentTarget.style.opacity = '0.75')}
-                                              onMouseOut={e => (e.currentTarget.style.opacity = '1')}>
-                                              <ExternalLink size={11} /> Explorer
-                                            </a>
-                                          )}
-                                          {dsUrl && addr !== 'native' && (
-                                            <a href={dsUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-                                              style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#f4c542', textDecoration: 'none', transition: 'opacity .12s' }}
-                                              onMouseOver={e => (e.currentTarget.style.opacity = '0.75')}
-                                              onMouseOut={e => (e.currentTarget.style.opacity = '1')}>
-                                              <ExternalLink size={11} /> DexScreener
-                                            </a>
-                                          )}
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: CHAIN_COLORS[asset.chain] || '#555' }} />
-                                            <span style={{ fontSize: 12, color: 'var(--fg-subtle)', textTransform: 'capitalize' }}>{asset.chain}</span>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </td>
-                                </tr>
-                              )}
-                              </React.Fragment>
-                            );
-                          })
-                        )}
-                      </tbody>
-                      {currentAssets.length > 0 && (
-                        <tfoot>
-                          <tr style={{ borderTop: '1px solid var(--border)' }}>
-                            <td colSpan={2} style={{ padding: '10px 16px', fontSize: 13, color: 'var(--fg-muted)', fontWeight: 600 }}>
-                              TOTAL LIQUID
-                            </td>
-                            <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>
-                              ${summary.liquidValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                            </td>
-                            <td colSpan={2} />
-                          </tr>
-                        </tfoot>
-                      )}
-                    </table>
-                  </div>}
-                  {unpricedCount > 0 && (
-                    <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', fontSize: 13, color: 'var(--fg-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <Activity size={12} /> {unpricedCount} token{unpricedCount !== 1 ? 's' : ''} with no price data omitted
-                    </div>
-                  )}
-                  </>)}
-                </div>
-
+                <WalletsPage
+                  wallets={wallets}
+                  selectedWalletAddr={selectedWalletAddr}
+                  currentAssets={currentAssets}
+                  currentStakes={currentStakes}
+                  currentTransactions={currentTransactions}
+                  walletAssets={walletAssets}
+                  hiddenAssetRows={hiddenAssetRows}
+                  hiddenTokens={hiddenTokens}
+                  customCoinsCount={customCoins.length}
+                  hideDust={hideDust}
+                  hideSpam={hideSpam}
+                  isScanning={isScanning}
+                  scanResult={scanResult}
+                  isLoading={isLoading}
+                  walletChainFilter={walletChainFilter}
+                  setWalletChainFilter={setWalletChainFilter}
+                  coinVisibilityMenuOpen={coinVisibilityMenuOpen}
+                  setCoinVisibilityMenuOpen={setCoinVisibilityMenuOpen}
+                  priceChangePeriod={priceChangePeriod}
+                  setPriceChangePeriod={setPriceChangePeriod}
+                  assetSortField={assetSortField as HoldingSortField}
+                  assetSortDir={assetSortDir}
+                  setAssetSortField={setAssetSortField}
+                  setAssetSortDir={setAssetSortDir}
+                  expandedAssetIds={expandedAssetIds}
+                  setExpandedAssetIds={setExpandedAssetIds}
+                  manualEntries={manualEntries}
+                  setManualEntries={setManualEntries}
+                  tokenLogos={tokenLogos}
+                  tokenMarketData={tokenMarketData}
+                  staticLogos={STATIC_LOGOS}
+                  chainColors={CHAIN_COLORS}
+                  plsUsdPrice={prices['pulsechain']?.usd || 0.00005}
+                  totalPortfolioUsd={summary.totalValue}
+                  summaryLiquidUsd={summary.liquidValue}
+                  summaryStakingUsd={summary.stakingValueUsd}
+                  walletStakingUsdByAddress={stakeValuation.byWallet}
+                  showHiddenCoins={showHiddenCoins}
+                  allocationCalculatorOpen={allocationCalculatorOpen}
+                  allocationCalculatorRows={allocationCalculatorRows}
+                  onSelectWallet={(walletAddress) => {
+                    if (!walletAddress) {
+                      setSelectedWalletAddr('all');
+                      setActiveWallet(null);
+                      return;
+                    }
+                    setSelectedWalletAddr(walletAddress.toLowerCase());
+                    setActiveWallet(walletAddress);
+                  }}
+                  onOpenAddWallet={() => setIsAddingWallet(true)}
+                  onOpenRenameWallet={(walletAddress, name) => {
+                    setEditingWalletAddress(walletAddress);
+                    setEditWalletName(name);
+                  }}
+                  onOpenOverview={() => setActiveTab('overview')}
+                  onOpenTransactions={() => setActiveTab('history')}
+                  onToggleHiddenCoins={() => setShowHiddenCoins(v => !v)}
+                  onToggleAllocationCalculator={() => setAllocationCalculatorOpen(v => !v)}
+                  onSetAllocationDraftPercentage={(name, value) => {
+                    setAllocationDraftPercentages(prev => ({ ...prev, [name]: value }));
+                  }}
+                  onRefreshPortfolio={fetchPortfolio}
+                  onOpenCustomCoins={() => setIsCustomCoinsModalOpen(true)}
+                  onScanForSpam={scanForSpam}
+                  onSetHideDust={setHideDust}
+                  onSetHideSpam={setHideSpam}
+                  onResetCoinVisibility={() => {
+                    setHiddenTokens([]);
+                    setShowHiddenCoins(false);
+                  }}
+                  onShowEverything={() => {
+                    setHideDust(false);
+                    setHideSpam(false);
+                    setShowHiddenCoins(true);
+                  }}
+                  onHideToken={hideToken}
+                  onUnhideToken={unhideToken}
+                  onSelectAsset={(asset) => openProductPage(asset, 'assets')}
+                  onOpenPnl={setPnlAsset}
+                  normalizeHoldingAssets={normalizeHoldingAssets}
+                  getTokenLogoUrl={getTokenLogoUrl}
+                  explorerUrl={explorerUrl}
+                  dexScreenerUrl={dexScreenerUrl}
+                />
                 {/* -- Transactions -- */}
                 <div style={{ marginTop: 8 }}>
                   {/* Type filter pills + active filter chips */}
@@ -5779,10 +5156,7 @@ export default function App() {
                     </div>
                     </>)}
                   </div>
-                </div>
-
-                  </>);
-                })()}
+                  </div>
               </motion.div>
             )}
 

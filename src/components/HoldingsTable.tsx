@@ -47,6 +47,7 @@ interface HoldingsTableProps {
   onClearEntry: (id: string) => void;
   onFilterByAsset?: (symbol: string) => void;
   showActions?: boolean;
+  showAtlasCards?: boolean;
   showSkeleton?: boolean;
   skeletonRows?: number;
   footerLabel?: string;
@@ -118,6 +119,7 @@ export function HoldingsTable({
   onClearEntry,
   onFilterByAsset,
   showActions = true,
+  showAtlasCards = true,
   showSkeleton = false,
   skeletonRows = 5,
   footerLabel = 'TOTAL LIQUID',
@@ -166,7 +168,7 @@ export function HoldingsTable({
 
   return (
     <div className="holdings-atlas-shell">
-      {atlasHoldingCards.length > 0 && (
+      {showAtlasCards && atlasHoldingCards.length > 0 && (
         <div className="atlas-holding-grid" aria-label="Top holdings">
           {atlasHoldingCards.map(card => (
             <AtlasHoldingCard
