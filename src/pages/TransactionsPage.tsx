@@ -47,6 +47,8 @@ interface TransactionsPageProps {
   hiddenTxIds: string[];
   onToggleHiddenTx: (id: string) => void;
   showHiddenTxs: boolean;
+  onToggleShowHiddenTxs: () => void;
+  onClearHiddenTxs: () => void;
   tokenLogos: Record<string, string>;
   getTokenLogoUrl: (asset: Asset) => string;
   plsSwapData: PlsFlowSummary;
@@ -66,6 +68,8 @@ const normalizeAssetSymbol = (symbol: string, chain?: string): string => {
 
 const sameAssetSymbol = (left: string, right: string, chain?: string): boolean =>
   normalizeAssetSymbol(left, chain) === normalizeAssetSymbol(right, chain);
+
+const formatSignedUsd = (value: number) => `${value < 0 ? '-' : value > 0 ? '+' : ''}$${Math.abs(value).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 
 const fmtCompact = (n: number) =>
   n >= 1e9
@@ -123,6 +127,8 @@ export function TransactionsPage({
   hiddenTxIds,
   onToggleHiddenTx,
   showHiddenTxs,
+  onToggleShowHiddenTxs,
+  onClearHiddenTxs,
   tokenLogos,
   getTokenLogoUrl,
   plsSwapData,
@@ -144,17 +150,30 @@ export function TransactionsPage({
     .sort()
     .map(asset => [asset, asset] as [string, string]);
 
-  const filteredAsset = txAssetFilter === 'all'
-    ? undefined
-    : currentAssets.find(asset => sameAssetSymbol(asset.symbol, txAssetFilter, asset.chain));
-  const tokenPrice = filteredAsset?.price ?? 0;
-  const logoUrl = filteredAsset ? getTokenLogoUrl(filteredAsset) : undefined;
-  const allTokenTxs = txAssetFilter === 'all'
+  const tokenFilterMatches = txAssetFilter === 'all'
     ? []
     : currentTransactions.filter(tx =>
         sameAssetSymbol(tx.asset, txAssetFilter, tx.chain) ||
         sameAssetSymbol(tx.counterAsset ?? '', txAssetFilter, tx.chain),
       );
+  const preferredAssetChain = (() => {
+    const exactSymbolMatches = currentAssets.filter(asset => sameAssetSymbol(asset.symbol, txAssetFilter, asset.chain));
+    if (exactSymbolMatches.length <= 1) return exactSymbolMatches[0]?.chain;
+    const txChains = Array.from(new Set(tokenFilterMatches.map(tx => tx.chain)));
+    return txChains.length === 1 ? txChains[0] : undefined;
+  })();
+
+  const filteredAsset = txAssetFilter === 'all'
+    ? undefined
+    : currentAssets.find(asset =>
+        sameAssetSymbol(asset.symbol, txAssetFilter, asset.chain) &&
+        (!preferredAssetChain || asset.chain === preferredAssetChain),
+      ) ?? currentAssets.find(asset => sameAssetSymbol(asset.symbol, txAssetFilter, asset.chain));
+  const tokenPrice = filteredAsset?.price ?? 0;
+  const logoUrl = filteredAsset ? getTokenLogoUrl(filteredAsset) : undefined;
+  const allTokenTxs = txAssetFilter === 'all'
+    ? []
+    : tokenFilterMatches.filter(tx => !preferredAssetChain || tx.chain === preferredAssetChain);
   const receivedValue = filteredTransactions
     .filter(tx => tx.type === 'deposit')
     .reduce((sum, tx) => sum + (tx.valueUsd ?? 0), 0);
@@ -300,13 +319,14 @@ export function TransactionsPage({
           <>
             <div className="tx-filter-row history-filter-row" style={{ padding: '10px 18px', borderBottom: '1px solid var(--border)', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {([
-                { value: txTypeFilter, onChange: setTxTypeFilter, options: [['all', 'All Types'], ['deposit', 'Received'], ['withdraw', 'Sent'], ['swap', 'Swaps']] as [string, string][] },
-                { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all', 'All Tokens'], ...txAssetOptions] as [string, string][] },
-                { value: txYearFilter, onChange: setTxYearFilter, options: [['all', 'All Years'], ['2026', '2026'], ['2025', '2025'], ['2024', '2024'], ['2023', '2023'], ['2022', '2022'], ['2021', '2021']] as [string, string][] },
-                { value: txCoinCategory, onChange: setTxCoinCategory, options: [['all', 'All Coins'], ['stablecoins', 'Stablecoins'], ['eth_weth', 'ETH/WETH'], ['hex', 'HEX/eHEX'], ['pls_wpls', 'PLS/WPLS'], ['bridged', 'Bridged']] as [string, string][] },
-              ]).map(({ value, onChange, options }) => (
+                { ariaLabel: 'Transaction type filter', value: txTypeFilter, onChange: setTxTypeFilter, options: [['all', 'All Types'], ['deposit', 'Received'], ['withdraw', 'Sent'], ['swap', 'Swaps']] as [string, string][] },
+                { ariaLabel: 'Transaction asset filter', value: txAssetFilter, onChange: setTxAssetFilter, options: [['all', 'All Tokens'], ...txAssetOptions] as [string, string][] },
+                { ariaLabel: 'Transaction year filter', value: txYearFilter, onChange: setTxYearFilter, options: [['all', 'All Years'], ['2026', '2026'], ['2025', '2025'], ['2024', '2024'], ['2023', '2023'], ['2022', '2022'], ['2021', '2021']] as [string, string][] },
+                { ariaLabel: 'Transaction coin category filter', value: txCoinCategory, onChange: setTxCoinCategory, options: [['all', 'All Coins'], ['stablecoins', 'Stablecoins'], ['eth_weth', 'ETH/WETH'], ['hex', 'HEX/eHEX'], ['pls_wpls', 'PLS/WPLS'], ['bridged', 'Bridged']] as [string, string][] },
+              ]).map(({ ariaLabel, value, onChange, options }) => (
                 <select
                   key={options[0][1]}
+                  aria-label={ariaLabel}
                   value={value}
                   onChange={event => onChange(event.target.value)}
                   className="history-filter-select"
@@ -339,6 +359,27 @@ export function TransactionsPage({
                     <span className="chip-x">x</span>
                   </button>
                 ))}
+              </div>
+            )}
+            {hiddenTxIds.length > 0 && (
+              <div style={{ padding: '10px 18px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{hiddenTxIds.length} hidden event{hiddenTxIds.length > 1 ? 's' : ''}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={onToggleShowHiddenTxs}
+                    style={{ fontSize: 12, color: 'var(--fg-subtle)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                  >
+                    {showHiddenTxs ? 'Hide hidden rows' : 'Show hidden rows'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onClearHiddenTxs}
+                    style={{ fontSize: 12, color: 'var(--fg-subtle)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                  >
+                    Clear hidden rows
+                  </button>
+                </div>
               </div>
             )}
             <div className="custom-scrollbar tx-module-list wallet-tx-list">
@@ -447,7 +488,7 @@ export function TransactionsPage({
                 { label: 'PLS Received', val: fmtCompact(plsSwapData.totalReceived), sub: 'Total inflow', color: 'var(--positive)' },
                 { label: 'PLS Spent', val: fmtCompact(plsSwapData.totalSpent), sub: 'Total outflow', color: 'var(--negative)' },
                 { label: 'Net PLS', val: `${plsSwapData.totalNet >= 0 ? '+' : ''}${Math.abs(plsSwapData.totalNet) >= 1e6 ? `${(plsSwapData.totalNet / 1e6).toFixed(2)}M` : plsSwapData.totalNet.toLocaleString('en-US', { maximumFractionDigits: 0 })}`, sub: 'Net balance', color: plsSwapData.totalNet >= 0 ? 'var(--positive)' : 'var(--negative)' },
-                { label: 'Net USD', val: `${plsSwapData.netUsd >= 0 ? '+' : ''}$${Math.abs(plsSwapData.netUsd).toLocaleString('en-US', { maximumFractionDigits: 0 })}`, sub: `@ $${(plsSwapData.plsPrice || 0).toFixed(6)}/PLS`, color: plsSwapData.netUsd >= 0 ? 'var(--positive)' : 'var(--negative)' },
+                { label: 'Net USD', val: formatSignedUsd(plsSwapData.netUsd), sub: `@ $${(plsSwapData.plsPrice || 0).toFixed(6)}/PLS`, color: plsSwapData.netUsd >= 0 ? 'var(--positive)' : 'var(--negative)' },
               ].map(({ label, val, sub, color }) => (
                 <div key={label} style={{ background: 'var(--bg-elevated)', borderRadius: 10, padding: '12px 14px' }}>
                   <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 6 }}>{label}</div>

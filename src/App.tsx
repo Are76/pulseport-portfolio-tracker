@@ -5234,11 +5234,13 @@ export default function App() {
                 ]);
                 exportCSV(`pulseport-transactions-${Date.now()}.csv`, hdrs, rows);
               }}
-              transactionsCollapsed={isCollapsed('holdings-txs')}
-              onToggleTransactionsCollapsed={() => toggleSection('holdings-txs')}
+              transactionsCollapsed={isCollapsed('history-ledger')}
+              onToggleTransactionsCollapsed={() => toggleSection('history-ledger')}
               hiddenTxIds={hiddenTxIds}
               onToggleHiddenTx={(id) => setHiddenTxIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
               showHiddenTxs={showHiddenTxs}
+              onToggleShowHiddenTxs={() => setShowHiddenTxs(v => !v)}
+              onClearHiddenTxs={() => setHiddenTxIds([])}
               tokenLogos={tokenLogos}
               getTokenLogoUrl={getTokenLogoUrl}
               plsSwapData={plsSwapData}

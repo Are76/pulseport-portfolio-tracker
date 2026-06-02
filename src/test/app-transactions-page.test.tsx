@@ -69,6 +69,8 @@ describe('Transactions Atlas surface', () => {
         hiddenTxIds={['hidden-1']}
         onToggleHiddenTx={vi.fn()}
         showHiddenTxs={false}
+        onToggleShowHiddenTxs={vi.fn()}
+        onClearHiddenTxs={vi.fn()}
         tokenLogos={{}}
         getTokenLogoUrl={() => ''}
         plsSwapData={{ rows: [], totalReceived: 0, totalSpent: 0, totalNet: 0, netUsd: 0, plsPrice: 0.00005 }}
@@ -88,5 +90,8 @@ describe('Transactions Atlas surface', () => {
     expect(screen.getByRole('button', { name: /^HEX x$/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^2026 x$/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^HEX\/eHEX x$/i })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /transaction type filter/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /show hidden rows/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /clear hidden rows/i })).toBeInTheDocument();
   });
 });

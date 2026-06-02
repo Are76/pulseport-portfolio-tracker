@@ -282,11 +282,11 @@ Do not mix implementation changes into this planning slice. The output of this s
 
 After this planning slice, the next best execution slice is:
 
-- `Wallets` as a **Product Surface Migration** branch
+- `Transactions` as a **Product Surface Migration** branch
 
 That branch should:
 
 - keep `pulseport-portfolio-tracker` as the execution repo
-- borrow `PulsePort` wallet page structure and information architecture where useful
+- borrow `PulsePort` transaction page structure and information architecture where useful
 - preserve Atlas visual direction
-- align wallet data surfaces more closely with `CoinPulse` backend DTO discipline
+- align transaction and PnL data surfaces more closely with `CoinPulse` backend DTO discipline
