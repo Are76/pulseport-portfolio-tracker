@@ -30,6 +30,7 @@ import {
 import { format, formatDistanceToNowStrict } from 'date-fns';
 import type { Transaction } from '../types';
 import type { Asset, Wallet } from '../types';
+import { normalizeAssetSymbol } from '../utils/assetSymbols';
 
 // -- Constants -----------------------------------------------------------------
 const EXPLORER: Record<string, string> = {
@@ -48,11 +49,6 @@ const CHAIN_LABEL: Record<string, string> = {
   pulsechain: 'PLS',
   ethereum:   'ETH',
   base:       'BASE',
-};
-
-const normalizeSymbol = (symbol: string, chain?: string): string => {
-  const upper = (symbol || '').toUpperCase();
-  return chain === 'pulsechain' && upper === 'WPLS' ? 'PLS' : upper;
 };
 
 // -- Helpers -------------------------------------------------------------------
@@ -214,7 +210,7 @@ export function TransactionList({
 
   const findAsset = useCallback(
     (symbol: string, chain: string): Asset | undefined =>
-      assets.find(a => normalizeSymbol(a.symbol, a.chain) === normalizeSymbol(symbol, chain) && a.chain === chain),
+      assets.find(a => normalizeAssetSymbol(a.symbol, a.chain) === normalizeAssetSymbol(symbol, chain) && a.chain === chain),
     [assets],
   );
 

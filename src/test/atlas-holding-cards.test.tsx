@@ -119,4 +119,108 @@ describe('HoldingsTable Atlas card layer', () => {
 
     expect(onSelectAsset).toHaveBeenCalledWith(expect.objectContaining({ id: 'plsx' }));
   });
+
+  it('keeps featured top holdings out of the table rows below', () => {
+    const displayAssets: HoldingDisplayAsset[] = [
+      {
+        ...assets[1],
+        priceUsd: assets[1].price,
+        pricePls: 2,
+        valueUsd: assets[1].value,
+        valuePls: 200,
+        leagueLabel: 'League',
+        leagueRank: null,
+        leagueSource: 'OpenPulseChain',
+      },
+      {
+        ...assets[2],
+        priceUsd: assets[2].price,
+        pricePls: 1,
+        valueUsd: assets[2].value,
+        valuePls: 40,
+        leagueLabel: 'League',
+        leagueRank: null,
+        leagueSource: 'OpenPulseChain',
+      },
+      {
+        ...assets[0],
+        priceUsd: assets[0].price,
+        pricePls: 0.2,
+        valueUsd: assets[0].value,
+        valuePls: 20,
+        leagueLabel: 'League',
+        leagueRank: null,
+        leagueSource: 'OpenPulseChain',
+      },
+      {
+        id: 'dai',
+        symbol: 'DAI',
+        name: 'DAI',
+        balance: 500,
+        price: 1,
+        value: 500,
+        chain: 'ethereum',
+        pnl24h: 0,
+        priceUsd: 1,
+        pricePls: 2000,
+        valueUsd: 500,
+        valuePls: 1_000_000,
+        leagueLabel: 'League',
+        leagueRank: null,
+        leagueSource: 'OpenPulseChain',
+      },
+      {
+        id: 'wpls',
+        symbol: 'WPLS',
+        name: 'Wrapped Pulse',
+        balance: 100000,
+        price: 0.00008,
+        value: 8,
+        chain: 'pulsechain',
+        pnl24h: 3,
+        priceUsd: 0.00008,
+        pricePls: 1.6,
+        valueUsd: 8,
+        valuePls: 16_000,
+        leagueLabel: 'League',
+        leagueRank: null,
+        leagueSource: 'OpenPulseChain',
+      },
+    ];
+
+    render(
+      <HoldingsTable
+        assets={displayAssets}
+        allAssets={displayAssets}
+        wallets={[]}
+        totalValueUsd={638}
+        plsUsdPrice={0.0005}
+        priceChangePeriod="24h"
+        sortField="value"
+        sortDir="desc"
+        expandedIds={new Set()}
+        tokenLogos={{}}
+        emptyMessage="No holdings"
+        currentTransactions={[]}
+        manualEntries={{}}
+        chainColors={{ pulsechain: '#37ff68', ethereum: '#627eea' }}
+        staticLogos={{}}
+        getTokenLogoUrl={() => ''}
+        explorerUrl={() => null}
+        dexScreenerUrl={() => null}
+        onSort={() => undefined}
+        onToggleExpanded={() => undefined}
+        onOpenPnl={() => undefined}
+        onSetEntry={() => undefined}
+        onClearEntry={() => undefined}
+      />,
+    );
+
+    const table = screen.getByRole('table');
+    expect(within(table).queryAllByText('DAI')).toHaveLength(0);
+    expect(within(table).queryAllByText('PulseX')).toHaveLength(0);
+    expect(within(table).queryAllByText('INC')).toHaveLength(0);
+    expect(within(table).queryAllByText('HEX')).toHaveLength(0);
+    expect(within(table).getByText('Wrapped Pulse')).toBeInTheDocument();
+  });
 });
