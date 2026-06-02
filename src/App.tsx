@@ -17,7 +17,7 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   ArrowRight,
-  History,
+  History as HistoryIcon,
   Filter,
   Download,
   LayoutDashboard,
@@ -62,7 +62,6 @@ import { CHAINS, HEX_ABI, TOKENS, PULSEX_LP_PAIRS, PHEX_YIELD_PER_TSHARE, EHEX_Y
 import { useHexDailyData, computeStakeYield } from './hooks/useHexDailyData';
 import type { Asset, Wallet, Chain, HexStake, LpPosition, FarmPosition, HistoryPoint, Transaction } from './types';
 import { LiquidityOverviewStrip, LiquiditySection } from './components/LiquiditySection';
-import { TokenPnLCard } from './components/TokenPnLCard';
 import { PnLModal } from './components/PnLModal';
 import { ProfitPlannerModal } from './components/ProfitPlannerModal';
 import { StakesSection } from './components/StakesSection';
@@ -71,6 +70,7 @@ import { TransactionList } from './components/TransactionList';
 import { HoldingsTable } from './components/HoldingsTable';
 import type { HoldingDisplayAsset, HoldingSortField } from './components/HoldingsTable';
 import { WalletsPage } from './pages/WalletsPage';
+import { TransactionsPage } from './pages/TransactionsPage';
 import { normalizeTransactions } from './utils/normalizeTransactions';
 import { scheduleLocalStorageWrite, resolveBlockscoutBase, resolveEtherscanCompatBase } from './utils/localStorageDebounce';
 import { buildPulsechainInsights } from './utils/pulsechainInsights';
@@ -3693,7 +3693,7 @@ export default function App() {
     { id: 'home', label: 'Dashboard', icon: Activity },
     { id: 'assets', label: 'Wallets', icon: Coins },
     { id: 'stakes', label: 'HEX Stakes', icon: Lock },
-    { id: 'history', label: 'Transactions', icon: History },
+    { id: 'history', label: 'Transactions', icon: HistoryIcon },
     { id: 'bridge', label: 'Bridges', icon: ArrowLeftRight },
     { id: 'defi', label: 'DeFi', icon: Droplets },
   ] as const;
@@ -4175,7 +4175,7 @@ export default function App() {
                       { eyebrow: 'Portfolio', title: 'Overview', detail: 'Allocation and top holdings.', icon: LayoutDashboard, action: () => setActiveTab('overview') },
                       { eyebrow: 'Wallets', title: 'Wallets', detail: 'Holdings and balances by wallet.', icon: WalletIcon, action: () => setActiveTab('assets') },
                       { eyebrow: 'HEX', title: 'HEX stakes', detail: 'pHEX and eHEX stake tracker.', icon: Lock, action: () => setActiveTab('stakes') },
-                      { eyebrow: 'Transactions', title: 'History', detail: 'Swaps, transfers, and filters.', icon: History, action: () => setActiveTab('history') },
+                      { eyebrow: 'Transactions', title: 'History', detail: 'Swaps, transfers, and filters.', icon: HistoryIcon, action: () => setActiveTab('history') },
                       { eyebrow: 'DeFi', title: 'Liquidity & farms', detail: 'LP and farm positions.', icon: Droplets, action: () => setActiveTab('defi') },
                       { eyebrow: 'Bridges', title: 'Bridges', detail: 'Bridge routes and references.', icon: ArrowLeftRight, action: () => setActiveTab('bridge') },
                     ].map(({ eyebrow, title, detail, icon: Icon, action }) => (
@@ -4294,7 +4294,7 @@ export default function App() {
                       {[
                         { label: 'HEX stakes', tab: 'stakes' as const, icon: Lock },
                         { label: 'DeFi positions', tab: 'defi' as const, icon: Droplets },
-                        { label: 'Transactions', tab: 'history' as const, icon: History },
+                        { label: 'Transactions', tab: 'history' as const, icon: HistoryIcon },
                         { label: 'Wallets', tab: 'assets' as const, icon: WalletIcon },
                       ].map(({ label, tab, icon: Icon }) => (
                         <button key={label} onClick={() => setActiveTab(tab)}>
@@ -5195,197 +5195,61 @@ export default function App() {
 
 
         {activeTab === 'history' && (
-            <motion.div key="history" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="transaction-page-shell space-y-4">
-
-            {/* Page header */}
-            <div className="transaction-page-head" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                <div>
-                  <div className="transaction-page-kicker">PulseChain activity</div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--fg)', marginBottom: 2 }}>Transaction</div>
-                  <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Swaps, received, and sent activity for tracked PulseChain wallets.</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="tx-module-card">
-              <div className="tx-module-header" style={{ borderBottom: isCollapsed('holdings-txs') ? 'none' : '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
-                  <History size={16} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-                  <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>Transaction</span>
-                  <span style={{ fontSize: 12, color: 'var(--accent)', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', padding: '2px 8px', borderRadius: 6, fontWeight: 700 }}>PulseChain</span>
-                  <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{filteredTransactions.length} tx</span>
-                </div>
-                <div className="transaction-toolbar">
-                  <button type="button" className={`filter-pill${viewAsYou ? ' active' : ''}`} onClick={() => setViewAsYou(v => !v)}>
-                    View as You
-                  </button>
-                  <button type="button" className={`filter-pill${txCompact ? ' active' : ''}`} onClick={() => setTxCompact(v => !v)}>
-                    Compact
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const hdrs = ['Date', 'Type', 'Asset', 'Amount', 'Counter Asset', 'Counter Amount', 'Value USD', 'Chain', 'Hash'];
-                      const rows = filteredTransactions.map(tx => [
-                        new Date(tx.timestamp).toISOString().slice(0, 10),
-                        tx.swapLegOnly ? 'swap' : tx.type,
-                        tx.asset,
-                        tx.amount,
-                        tx.counterAsset ?? '',
-                        tx.counterAmount ?? '',
-                        tx.valueUsd ?? '',
-                        tx.chain,
-                        tx.hash ?? '',
-                      ]);
-                      exportCSV(`pulseport-transactions-${Date.now()}.csv`, hdrs, rows);
-                    }}
-                    className="history-csv-btn"
-                    style={{ padding: '5px 10px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 6, cursor: 'pointer', color: 'var(--accent)', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}
-                  >
-                    <Download size={12} /> CSV
-                  </button>
-                  <button onClick={() => toggleSection('holdings-txs')}
-                    style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: t.textTertiary, flexShrink: 0 }}
-                    title={isCollapsed('holdings-txs') ? 'Expand' : 'Collapse'}>
-                    {isCollapsed('holdings-txs') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-                  </button>
-                </div>
-              </div>
-              {!isCollapsed('holdings-txs') && (
-                <>
-                  <div className="tx-filter-row history-filter-row" style={{ padding: '10px 18px', borderBottom: `1px solid ${t.border}`, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    {([
-                      { value: txTypeFilter, onChange: setTxTypeFilter, options: [['all','All Types'],['deposit','Received'],['withdraw','Sent'],['swap','Swaps']] as [string,string][] },
-                      { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Tokens'], ...Array.from(new Set(currentTransactions.filter(tx => tx.chain === 'pulsechain').flatMap(tx => [tx.asset, tx.counterAsset].filter(Boolean) as string[]))).sort().map(a => [a,a])] as [string,string][] },
-                      { value: txYearFilter, onChange: setTxYearFilter, options: [['all','All Years'],['2026','2026'],['2025','2025'],['2024','2024'],['2023','2023'],['2022','2022'],['2021','2021']] as [string,string][] },
-                      { value: txCoinCategory, onChange: setTxCoinCategory, options: [['all','All Coins'],['stablecoins','Stablecoins'],['eth_weth','ETH/WETH'],['hex','HEX/eHEX'],['pls_wpls','PLS/WPLS'],['bridged','Bridged']] as [string,string][] },
-                    ]).map(({ value, onChange, options }) => (
-                      <select key={options[0][1]} value={value} onChange={e => onChange(e.target.value)}
-                        className="history-filter-select"
-                        style={{ background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 6, color: 'var(--fg)', fontSize: 13, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
-                        {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                      </select>
-                    ))}
-                    <button onClick={() => { setTxTypeFilter('all'); setTxAssetFilter('all'); setTxYearFilter('all'); setTxCoinCategory('all'); }}
-                      style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg-subtle)', background: 'none', border: 'none', cursor: 'pointer', padding: '5px 8px', textDecoration: 'underline' }}>
-                      Clear all
-                    </button>
-                  </div>
-                  <div className="custom-scrollbar tx-module-list wallet-tx-list">
-                    <TransactionList
-                      transactions={filteredTransactions}
-                      viewAsYou={viewAsYou}
-                      wallets={wallets}
-                      compact={txCompact}
-                      assets={currentAssets}
-                      getTokenLogoUrl={getTokenLogoUrl}
-                      tokenLogos={tokenLogos}
-                      hideIds={hiddenTxIds}
-                      onToggleHide={id => setHiddenTxIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
-                      showHidden={showHiddenTxs}
-                      onFilterByAsset={symbol => setTxAssetFilter(symbol)}
-                      emptyMessage="No transactions found for these filters."
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* -- TOKEN P&L SUMMARY CARD - shown when a specific asset filter is active -- */}
-            {txAssetFilter !== 'all' && (() => {
-              const filteredAsset = currentAssets.find(a =>
-                sameAssetSymbol(a.symbol, txAssetFilter, a.chain)
-              );
-              const tokenPrice = filteredAsset?.price ?? 0;
-              const plsPrice   = prices['pulsechain']?.usd ?? 0;
-              const logoUrl    = filteredAsset ? getTokenLogoUrl(filteredAsset) : undefined;
-              // Collect ALL transactions for this symbol across type filters so the card
-              // always shows the full picture regardless of txTypeFilter
-              const allTokenTxs = currentTransactions.filter(tx =>
-                sameAssetSymbol(tx.asset, txAssetFilter, tx.chain) ||
-                sameAssetSymbol(tx.counterAsset ?? '', txAssetFilter, tx.chain)
-              );
-              return (
-                <>
-                  {/* "Filtering by X" banner - PLSFolio style */}
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '10px 16px', borderRadius: 10,
-                    background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.22)',
-                  }}>
-                    {logoUrl && (
-                      <img src={logoUrl} alt={txAssetFilter}
-                        style={{ width: 22, height: 22, borderRadius: '50%', flexShrink: 0 }}
-                        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                    )}
-                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>
-                      Filtering by <span style={{ color: '#a78bfa' }}>{txAssetFilter}</span>
-                    </span>
-                    {filteredAsset && (
-                      <span style={{ fontSize: 12, color: 'var(--fg-subtle)', marginLeft: 4 }}>
-                         -  {filteredAsset.chain === 'pulsechain' ? 'PulseChain' : filteredAsset.chain === 'ethereum' ? 'Ethereum' : 'Base'}
-                         -  ${tokenPrice < 0.001 ? tokenPrice.toExponential(2) : tokenPrice < 1 ? tokenPrice.toFixed(6) : tokenPrice.toFixed(2)} per token
-                      </span>
-                    )}
-                    <button
-                      onClick={() => setTxAssetFilter('all')}
-                      style={{
-                        marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5,
-                        padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                        background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.28)',
-                        color: '#a78bfa', transition: 'all .12s',
-                      }}
-                      onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(139,92,246,0.22)'; }}
-                      onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(139,92,246,0.12)'; }}>
-                      Clear filter <X size={11} />
-                    </button>
-                  </div>
-                  <TokenPnLCard
-                    symbol={txAssetFilter}
-                    transactions={allTokenTxs}
-                    asset={filteredAsset}
-                    priceUsd={tokenPrice}
-                    plsPriceUsd={plsPrice}
-                    logoUrl={logoUrl}
-                    onSyncSwaps={fetchPortfolio}
-                    isSyncing={isLoading}
-                  />
-                </>
-              );
-            })()}
-
-
-            {/* -- PLS Flow Summary (merged from former tracker tab) -- */}
-            {plsSwapData.rows.length > 0 && (
-              <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, overflow: 'hidden' }}>
-                <div style={{ padding: '14px 18px', borderBottom: isCollapsed('history-pls') ? 'none' : `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: t.text }}>PLS Flow</div>
-                    <div style={{ fontSize: 12, color: t.textSecondary, marginTop: 2 }}>Net PLS movement across all wallets</div>
-                  </div>
-                  <button onClick={() => toggleSection('history-pls')} style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: t.textTertiary }} onMouseOver={e => (e.currentTarget.style.color = t.text)} onMouseOut={e => (e.currentTarget.style.color = t.textMuted)}>
-                    {isCollapsed('history-pls') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-                  </button>
-                </div>
-                {!isCollapsed('history-pls') && (
-                  <div className="stat-grid-4" style={{ padding: '12px 18px' }}>
-                    {[
-                      { label: 'PLS Received', val: plsSwapData.totalReceived >= 1e6 ? `${(plsSwapData.totalReceived/1e6).toFixed(2)}M` : plsSwapData.totalReceived.toLocaleString('en-US',{maximumFractionDigits:0}), sub: 'Total inflow', color: t.green },
-                      { label: 'PLS Spent', val: plsSwapData.totalSpent >= 1e6 ? `${(plsSwapData.totalSpent/1e6).toFixed(2)}M` : plsSwapData.totalSpent.toLocaleString('en-US',{maximumFractionDigits:0}), sub: 'Total outflow', color: t.red },
-                      { label: 'Net PLS', val: `${plsSwapData.totalNet >= 0 ? '+' : ''}${Math.abs(plsSwapData.totalNet) >= 1e6 ? (plsSwapData.totalNet/1e6).toFixed(2)+'M' : plsSwapData.totalNet.toLocaleString('en-US',{maximumFractionDigits:0})}`, sub: 'Net balance', color: plsSwapData.totalNet >= 0 ? t.green : t.red },
-                      { label: 'Net USD', val: `${plsSwapData.netUsd >= 0 ? '+' : ''}$${Math.abs(plsSwapData.netUsd).toLocaleString('en-US',{maximumFractionDigits:0})}`, sub: `@ $${(plsSwapData.plsPrice||0).toFixed(6)}/PLS`, color: plsSwapData.netUsd >= 0 ? t.green : t.red },
-                    ].map(({ label, val, sub, color }) => (
-                      <div key={label} style={{ background: 'var(--bg-elevated)', borderRadius: 10, padding: '12px 14px' }}>
-                        <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 6 }}>{label}</div>
-                        <div style={{ fontSize: 16, fontWeight: 700, color }}>{val}</div>
-                        <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 2 }}>{sub}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+          <motion.div key="history" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <TransactionsPage
+              wallets={wallets}
+              currentAssets={currentAssets}
+              currentTransactions={currentTransactions}
+              filteredTransactions={filteredTransactions}
+              txTypeFilter={txTypeFilter}
+              setTxTypeFilter={setTxTypeFilter}
+              txAssetFilter={txAssetFilter}
+              setTxAssetFilter={setTxAssetFilter}
+              txYearFilter={txYearFilter}
+              setTxYearFilter={setTxYearFilter}
+              txCoinCategory={txCoinCategory}
+              setTxCoinCategory={setTxCoinCategory}
+              onClearFilters={() => {
+                setTxTypeFilter('all');
+                setTxAssetFilter('all');
+                setTxYearFilter('all');
+                setTxCoinCategory('all');
+              }}
+              viewAsYou={viewAsYou}
+              setViewAsYou={setViewAsYou}
+              txCompact={txCompact}
+              setTxCompact={setTxCompact}
+              onExportCsv={() => {
+                const hdrs = ['Date', 'Type', 'Asset', 'Amount', 'Counter Asset', 'Counter Amount', 'Value USD', 'Chain', 'Hash'];
+                const rows = filteredTransactions.map(tx => [
+                  new Date(tx.timestamp).toISOString().slice(0, 10),
+                  tx.swapLegOnly ? 'swap' : tx.type,
+                  tx.asset,
+                  tx.amount,
+                  tx.counterAsset ?? '',
+                  tx.counterAmount ?? '',
+                  tx.valueUsd ?? '',
+                  tx.chain,
+                  tx.hash ?? '',
+                ]);
+                exportCSV(`pulseport-transactions-${Date.now()}.csv`, hdrs, rows);
+              }}
+              transactionsCollapsed={isCollapsed('holdings-txs')}
+              onToggleTransactionsCollapsed={() => toggleSection('holdings-txs')}
+              hiddenTxIds={hiddenTxIds}
+              onToggleHiddenTx={(id) => setHiddenTxIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
+              showHiddenTxs={showHiddenTxs}
+              tokenLogos={tokenLogos}
+              getTokenLogoUrl={getTokenLogoUrl}
+              plsSwapData={plsSwapData}
+              plsFlowCollapsed={isCollapsed('history-pls')}
+              onTogglePlsFlowCollapsed={() => toggleSection('history-pls')}
+              pulseUsdPrice={prices['pulsechain']?.usd ?? 0}
+              isLoading={isLoading}
+              onSyncSwaps={fetchPortfolio}
+              onOpenOverview={() => setActiveTab('overview')}
+              onOpenWallets={() => setActiveTab('assets')}
+            />
           </motion.div>
         )}
 

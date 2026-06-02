@@ -113,17 +113,62 @@ Follow this sequence unless a production bug forces reprioritization:
 
 1. Dashboard / home intelligence surface
 2. Wallets
-3. Token detail / product page
-4. Transactions
-5. HEX stakes
-6. Bridges
-7. DeFi / LP
+3. Transactions
+4. Dashboard follow-up polish
+5. Token detail / product page
+6. HEX stakes
+7. Bridges
+8. DeFi / LP
 
 Why this order:
 
 - it starts with the highest-visibility surfaces
 - it keeps navigation and mental model stable
+- Wallets and Transactions form one user flow and should not drift apart after extraction
+- dashboard polish should follow the first two product-surface migrations so the home surface can be tuned against the new page system
 - it lets backend truth improvements land first where users notice them most
+
+## Current Post-Wallets Reality
+
+As of the Wallets Atlas merge:
+
+- the Wallets surface is the first completed product-surface migration
+- the next **major** surface should be `Transactions`
+- a small Wallets follow-up polish is still valuable before or during the Transactions cycle
+- dashboard design work is not finished and should return immediately after the first Transactions slice stabilizes
+
+## Near-Term Bounded Tasks
+
+These are the next recommended tasks in order of confidence:
+
+1. **Wallets follow-up polish**
+   - replace duplicated Wallets asset presentation with a "top 4 holdings" featured row and remove those same assets from the list below
+   - keep the behavior wallet-scope-aware and chain-filter-aware
+   - keep this as a small UI-only follow-up, not a broader Wallets rewrite
+
+2. **Transactions Atlas surface migration**
+   - turn `Transactions` into the next dedicated product page/surface
+   - preserve exact-asset ledger fidelity and existing filters
+   - apply the same Atlas framing and clearer section ownership used on Wallets
+
+3. **Dashboard polish pass**
+   - revisit the home/dashboard surface after Wallets and Transactions are aligned
+   - simplify density, remove awkward visual leftovers, and make the page feel like the same family as Wallets and token/product views
+
+## Target Product Goal
+
+The medium-term goal is not "make every page prettier." The goal is:
+
+- one coherent Atlas product language across shell, dashboard, Wallets, Transactions, token detail, and stake/bridge surfaces
+- one canonical repo (`pulseport-portfolio-tracker`)
+- one-way backend discipline that moves pricing, valuation, warnings, provenance, and unsupported states toward the `CoinPulse` model
+- one predictable page model where every major box is either clearly actionable or clearly informational
+
+When this phase is working, the product should feel:
+
+- easier to scan than the old tracker
+- deeper than a pure exchange-style portfolio clone
+- more trustworthy because UI presentation and backend truth are moving in the same direction
 
 ## Task 1: Align Existing Plans With Canonical Repo Strategy
 
