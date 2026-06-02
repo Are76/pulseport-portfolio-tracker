@@ -40,6 +40,15 @@ export type AtlasSignal = {
   value: string;
   tone?: AtlasTone;
   detailId: string;
+  description?: string;
+  iconKey?: 'holding' | 'stakes' | 'defi' | 'flow' | 'alert';
+};
+
+export type AtlasQuickAction = {
+  id: string;
+  label: string;
+  description: string;
+  target: string;
 };
 
 export type AtlasTokenCardData = {
@@ -60,13 +69,27 @@ export type AtlasAllocationItem = {
   detailId: string;
 };
 
+export type AtlasAllocationWeight = {
+  id: string;
+  label: string;
+  value: string;
+  percent: number;
+  detailId: string;
+};
+
+export type AtlasAllocationModel = {
+  segments: AtlasAllocationItem[];
+  topWeights: AtlasAllocationWeight[];
+};
+
 export type AtlasHomeSnapshot = {
   eyebrow: string;
   headlineValue: string;
   metrics: AtlasMetric[];
   signals: AtlasSignal[];
-  allocation: AtlasAllocationItem[];
+  allocation: AtlasAllocationModel;
   tokens: AtlasTokenCardData[];
+  quickActions: AtlasQuickAction[];
   details: Record<string, AtlasDetailContent>;
   emptyTokenMessage?: string;
 };

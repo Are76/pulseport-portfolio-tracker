@@ -2906,8 +2906,7 @@ export default function App() {
     stakes: currentStakes,
     lpPositions,
     farmPositions,
-    hiddenTokenCount: hiddenTokens.length,
-  }), [summary, wallets.length, currentAssets, currentStakes, lpPositions, farmPositions, hiddenTokens.length]);
+  }), [summary, wallets.length, currentAssets, currentStakes, lpPositions, farmPositions]);
 
   const stakeSummary = useMemo(() => {
     const stakes = wallets.length > 0 ? realStakes : MOCK_STAKES;
