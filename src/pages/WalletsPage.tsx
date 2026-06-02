@@ -224,12 +224,7 @@ export function WalletsPage({
       .sort((a, b) => b.currentValue - a.currentValue)
       .slice(0, 6);
 
-    const fallbackMix = allocationCalculatorRows.map((row) => ({
-      name: row.name,
-      currentValue: row.value,
-    }));
-
-    const plannerRows = visibleMix.length > 0 ? visibleMix : fallbackMix;
+    const plannerRows = visibleMix;
     const portfolioTotal = plannerRows.reduce((sum, row) => sum + row.currentValue, 0);
     const rawTargetTotal = plannerRows.reduce((sum, row) => {
       const currentPercent = portfolioTotal > 0 ? (row.currentValue / portfolioTotal) * 100 : 0;
@@ -492,11 +487,15 @@ export function WalletsPage({
               </div>
             )}
             <div className="wallets-atlas-allocation-grid">
-              {visibleAllocationRows.map(row => (
+              {visibleAllocationRows.length === 0 ? (
+                <div className="wallets-atlas-allocation-note">
+                  No visible holdings in this scope yet. Adjust wallet or chain filters to build a rebalance plan.
+                </div>
+              ) : visibleAllocationRows.map(row => (
                 <label key={row.name} className="wallets-atlas-allocation-row">
                   <div className="wallets-atlas-allocation-row__asset">
                     <strong>{row.name}</strong>
-                    <small>{fmtUsd(row.currentValue)} now · {fmtPercent(row.currentPercent)}</small>
+                    <small>{fmtUsd(row.currentValue)} now / {fmtPercent(row.currentPercent)}</small>
                   </div>
                   <div className="wallets-atlas-allocation-row__target">
                     <input
@@ -508,7 +507,7 @@ export function WalletsPage({
                       value={Number.isFinite(row.draftPercent) ? row.draftPercent : 0}
                       onChange={(event) => onSetAllocationDraftPercentage(row.name, Number(event.target.value))}
                     />
-                    <small>Target {fmtPercent(row.normalizedPercent)} · {fmtUsd(row.targetValue)}</small>
+                    <small>Target {fmtPercent(row.normalizedPercent)} / {fmtUsd(row.targetValue)}</small>
                   </div>
                   <strong className="wallets-atlas-allocation-row__guidance">{row.guidance}</strong>
                 </label>

@@ -20,6 +20,7 @@ type AtlasSnapshotInput = {
   walletCount: number;
   assets: Asset[];
   stakes: HexStake[];
+  getTokenIconUrl?: (asset: Asset) => string | undefined;
   lpPositions?: LpPosition[];
   farmPositions?: FarmPosition[];
   lpValueUsd?: number;
@@ -194,6 +195,7 @@ export function buildAtlasHomeSnapshot(input: AtlasSnapshotInput): AtlasHomeSnap
       ratio: formatUsd(asset.value),
       tone: toneForChange(change),
       detailId: tokenDetailId(asset),
+      iconUrl: asset.logoUrl || input.getTokenIconUrl?.(asset),
     };
   });
 

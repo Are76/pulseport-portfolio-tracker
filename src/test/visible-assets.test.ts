@@ -26,6 +26,16 @@ describe('filterVisibleAssets', () => {
         chain: 'pulsechain',
         pnl24h: 0,
       } as Asset,
+      {
+        id: 'pulsechain-spoofed',
+        symbol: 'PCOCK',
+        name: 'Copycat',
+        balance: 2500,
+        price: 0,
+        value: 125,
+        chain: 'pulsechain',
+        pnl24h: 0,
+      } as Asset,
     ];
 
     const visible = filterVisibleAssets(assets.map((asset) => ({
@@ -35,9 +45,9 @@ describe('filterVisibleAssets', () => {
       hiddenTokens: [],
       hideDust: true,
       hideSpam: true,
-      spamTokenIds: ['pulsechain-pcock', 'pulsechain-spam'],
+      spamTokenIds: ['pulsechain-pcock', 'pulsechain-spam', 'pulsechain-spoofed'],
     });
 
-    expect(visible.map((asset) => asset.symbol)).toEqual(['PCOCK']);
+    expect(visible.map((asset) => asset.id)).toEqual(['pulsechain-pcock']);
   });
 });

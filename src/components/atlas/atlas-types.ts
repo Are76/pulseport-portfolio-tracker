@@ -60,6 +60,7 @@ export type AtlasTokenCardData = {
   tone?: AtlasTone;
   detailId: string;
   icon?: ReactNode;
+  iconUrl?: string;
 };
 
 export type AtlasAllocationItem = {

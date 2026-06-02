@@ -74,6 +74,7 @@ describe('atlas portfolio snapshot', () => {
       walletCount: 2,
       assets: richerAssets,
       stakes: [],
+      getTokenIconUrl: (asset) => `/logos/${asset.symbol.toLowerCase()}.png`,
     });
 
     expect(snapshot.tokens).toHaveLength(6);
@@ -92,6 +93,7 @@ describe('atlas portfolio snapshot', () => {
     });
     expect(snapshot.allocation.topWeights[0].percent).toBeCloseTo(42.37, 2);
     expect(snapshot.metrics.some(metric => metric.label === 'Noise')).toBe(false);
+    expect(snapshot.tokens[0].iconUrl).toBe('/logos/pls.png');
   });
 
   it('keeps the empty wallet state honest instead of showing fake confidence', () => {

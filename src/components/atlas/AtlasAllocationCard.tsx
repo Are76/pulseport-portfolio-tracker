@@ -21,7 +21,7 @@ export function AtlasAllocationCard({ allocation, activeDetailId, onSelect }: Pr
             type="button"
             aria-label={`${item.label} allocation`}
             aria-pressed={activeDetailId === item.detailId}
-            style={{ width: `${Math.max(8, item.width)}%` }}
+            style={{ width: `${Math.max(0, item.width)}%` }}
             onClick={() => onSelect(item.detailId)}
           >
             {item.label}
