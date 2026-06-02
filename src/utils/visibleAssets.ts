@@ -1,18 +1,12 @@
 import type { Asset } from '../types';
 
 function isForcedVisibleCommunityAsset(asset: Asset) {
-  const address = asset.address?.toLowerCase?.() ?? '';
-  const name = asset.name?.toUpperCase?.() ?? '';
   const id = asset.id.toLowerCase();
   const symbol = asset.symbol.toUpperCase();
 
   if (asset.chain !== 'pulsechain' || symbol !== 'PCOCK') return false;
 
-  return (
-    name.includes('PEACOCK')
-    || id.includes('pcock')
-    || address.includes('pcock')
-  );
+  return id === 'pulsechain-pcock';
 }
 
 type Options = {

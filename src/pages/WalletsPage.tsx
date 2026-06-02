@@ -221,11 +221,19 @@ export function WalletsPage({
         name,
         currentValue,
       }))
-      .sort((a, b) => b.currentValue - a.currentValue)
-      .slice(0, 6);
+      .sort((a, b) => b.currentValue - a.currentValue);
 
-    const plannerRows = visibleMix;
-    const portfolioTotal = plannerRows.reduce((sum, row) => sum + row.currentValue, 0);
+    const maxPlannerRows = 6;
+    const plannerRows = visibleMix.length > maxPlannerRows
+      ? [
+          ...visibleMix.slice(0, maxPlannerRows - 1),
+          {
+            name: 'Other',
+            currentValue: visibleMix.slice(maxPlannerRows - 1).reduce((sum, row) => sum + row.currentValue, 0),
+          },
+        ]
+      : visibleMix;
+    const portfolioTotal = visibleMix.reduce((sum, row) => sum + row.currentValue, 0);
     const rawTargetTotal = plannerRows.reduce((sum, row) => {
       const currentPercent = portfolioTotal > 0 ? (row.currentValue / portfolioTotal) * 100 : 0;
       const draftPercent = Math.min(100, Math.max(0, draftByName.get(row.name) ?? currentPercent));
@@ -250,6 +258,10 @@ export function WalletsPage({
         guidance = `Keep about ${fmtPls(plsAmount)} available as funding buffer.`;
       } else if (rawTargetTotal > 0 && row.name === 'PLS' && deltaValue < 0) {
         guidance = `Use about ${fmtPls(plsAmount)} to fund the target buys.`;
+      } else if (rawTargetTotal > 0 && row.name === 'Other' && deltaValue > 0) {
+        guidance = `Keep about ${fmtUsd(absDeltaValue)} spread across the smaller visible positions.`;
+      } else if (rawTargetTotal > 0 && row.name === 'Other' && deltaValue < 0) {
+        guidance = `Trim about ${fmtUsd(absDeltaValue)} across the smaller visible positions into PLS.`;
       } else if (rawTargetTotal > 0 && deltaValue > 0) {
         guidance = `Swap about ${fmtPls(plsAmount)} to buy the needed ${row.name}.`;
       } else if (rawTargetTotal > 0 && deltaValue < 0) {
