@@ -75,4 +75,19 @@ describe('Wallets Atlas surface', () => {
 
     expect(screen.getByRole('spinbutton', { name: /target allocation for other/i })).toHaveValue(7.5);
   });
+
+  it('does not show the auto-normalized banner when every target is cleared to zero', () => {
+    stubMatchMedia();
+    window.localStorage.setItem('pulseport_active_tab', 'assets');
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: /open calculator/i }));
+
+    for (const input of screen.getAllByRole('spinbutton')) {
+      fireEvent.change(input, { target: { value: '0' } });
+    }
+
+    expect(screen.queryByText(/Target mix auto-normalized from/i)).not.toBeInTheDocument();
+  });
 });

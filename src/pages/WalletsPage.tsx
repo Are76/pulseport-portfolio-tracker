@@ -285,7 +285,9 @@ export function WalletsPage({
     });
   }, [allocationCalculatorRows, allocationDraftPercentages, chainDisplayAssets, plsUsdPrice]);
   const allocationPercentTotal = visibleAllocationRows.reduce((sum, row) => sum + row.draftPercent, 0);
-  const allocationAutoNormalized = visibleAllocationRows.length > 0 && Math.abs(allocationPercentTotal - 100) > 0.05;
+  const allocationAutoNormalized = visibleAllocationRows.length > 0
+    && allocationPercentTotal > 0.05
+    && Math.abs(allocationPercentTotal - 100) > 0.05;
 
   return (
     <div className="wallets-atlas-page">

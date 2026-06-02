@@ -10,12 +10,12 @@
 
 ---
 
-### Task 1: Extend the Atlas dashboard snapshot model
+## Task 1: Extend the Atlas dashboard snapshot model
 
 **Files:**
-- Modify: `C:\GitHub\pulseport-portfolio-tracker\src\components\atlas\atlas-types.ts`
-- Modify: `C:\GitHub\pulseport-portfolio-tracker\src\components\atlas\atlas-portfolio-snapshot.ts`
-- Test: `C:\GitHub\pulseport-portfolio-tracker\src\test\atlas-portfolio-snapshot.test.ts`
+- Modify: `src\components\atlas\atlas-types.ts`
+- Modify: `src\components\atlas\atlas-portfolio-snapshot.ts`
+- Test: `src\test\atlas-portfolio-snapshot.test.ts`
 
 - [ ] **Step 1: Write the failing snapshot test for live prices, action cluster, and richer allocation**
 
@@ -183,12 +183,12 @@ git commit -m "feat: enrich atlas dashboard snapshot model"
 ### Task 2: Build the new dashboard presentation modules
 
 **Files:**
-- Create: `C:\GitHub\pulseport-portfolio-tracker\src\components\atlas\AtlasQuickActionCard.tsx`
-- Create: `C:\GitHub\pulseport-portfolio-tracker\src\components\atlas\AtlasAllocationCard.tsx`
-- Modify: `C:\GitHub\pulseport-portfolio-tracker\src\components\atlas\AtlasTokenCard.tsx`
-- Modify: `C:\GitHub\pulseport-portfolio-tracker\src\components\atlas\AtlasSignalRow.tsx`
-- Modify: `C:\GitHub\pulseport-portfolio-tracker\src\components\atlas\AtlasHomeSurface.tsx`
-- Test: `C:\GitHub\pulseport-portfolio-tracker\src\test\atlas-components.test.tsx`
+- Create: `src\components\atlas\AtlasQuickActionCard.tsx`
+- Create: `src\components\atlas\AtlasAllocationCard.tsx`
+- Modify: `src\components\atlas\AtlasTokenCard.tsx`
+- Modify: `src\components\atlas\AtlasSignalRow.tsx`
+- Modify: `src\components\atlas\AtlasHomeSurface.tsx`
+- Test: `src\test\atlas-components.test.tsx`
 
 - [ ] **Step 1: Write the failing component tests for top-6 prices, action cards, and allocation hybrid**
 
@@ -346,10 +346,10 @@ git commit -m "feat: rebuild atlas dashboard presentation modules"
 ### Task 3: Replace the old overview boxes and wire the rebalance action path
 
 **Files:**
-- Modify: `C:\GitHub\pulseport-portfolio-tracker\src\App.tsx`
-- Modify: `C:\GitHub\pulseport-portfolio-tracker\src\components\atlas\atlas-detail-model.ts`
-- Test: `C:\GitHub\pulseport-portfolio-tracker\src\test\page-routing.test.tsx`
-- Test: `C:\GitHub\pulseport-portfolio-tracker\src\test\app-wallets-page.test.tsx`
+- Modify: `src\App.tsx`
+- Modify: `src\components\atlas\atlas-detail-model.ts`
+- Test: `src\test\page-routing.test.tsx`
+- Test: `src\test\app-wallets-page.test.tsx`
 
 - [ ] **Step 1: Write the failing routing test for dashboard quick actions**
 
@@ -424,11 +424,11 @@ git commit -m "feat: route dashboard atlas actions into product flows"
 ### Task 4: Make the rebalance helper relevant and fix `PCOCK` visibility
 
 **Files:**
-- Modify: `C:\GitHub\pulseport-portfolio-tracker\src\pages\WalletsPage.tsx`
-- Modify: `C:\GitHub\pulseport-portfolio-tracker\src\App.tsx`
-- Modify: `C:\GitHub\pulseport-portfolio-tracker\src\components\HoldingsTable.tsx`
-- Test: `C:\GitHub\pulseport-portfolio-tracker\src\test\app-wallets-page.test.tsx`
-- Test: `C:\GitHub\pulseport-portfolio-tracker\src\test\atlas-holding-cards.test.tsx`
+- Modify: `src\pages\WalletsPage.tsx`
+- Modify: `src\App.tsx`
+- Modify: `src\components\HoldingsTable.tsx`
+- Test: `src\test\app-wallets-page.test.tsx`
+- Test: `src\test\atlas-holding-cards.test.tsx`
 
 - [ ] **Step 1: Write the failing test for normalized rebalance targets and `PCOCK` visibility**
 
@@ -529,10 +529,10 @@ git commit -m "feat: add rebalance planner guidance to atlas surfaces"
 ### Task 5: Verify the full dashboard slice and prepare subagent execution handoff
 
 **Files:**
-- Verify: `C:\GitHub\pulseport-portfolio-tracker\src\App.tsx`
-- Verify: `C:\GitHub\pulseport-portfolio-tracker\src\components\atlas\AtlasHomeSurface.tsx`
-- Verify: `C:\GitHub\pulseport-portfolio-tracker\src\components\atlas\atlas-portfolio-snapshot.ts`
-- Verify: `C:\GitHub\pulseport-portfolio-tracker\src\pages\WalletsPage.tsx`
+- Verify: `src\App.tsx`
+- Verify: `src\components\atlas\AtlasHomeSurface.tsx`
+- Verify: `src\components\atlas\atlas-portfolio-snapshot.ts`
+- Verify: `src\pages\WalletsPage.tsx`
 
 - [ ] **Step 1: Run the focused Atlas and dashboard tests**
 
@@ -565,27 +565,16 @@ git add -A
 git commit -m "chore: verify dashboard atlas polish slice"
 ```
 
-- [ ] **Step 6: Push the branch**
+- [ ] **Step 6: Publish branch updates if this plan is being executed outside an open PR**
 
 ```bash
-git push -u origin feat/dashboard-atlas-polish
+# Only if the implementation is still local and no PR exists yet
+git push origin feat/dashboard-atlas-polish
+
+# If a PR has not been opened yet, create it here.
+# Skip this step when updating an existing PR review cycle.
 ```
 
-- [ ] **Step 7: Open the PR**
-
-```bash
-gh pr create --base master --head feat/dashboard-atlas-polish --title "feat: polish atlas dashboard surface" --body "## Summary
-- rebuild atlas dashboard scan path
-- add top-6 live prices and decision support cluster
-- introduce hybrid allocation + rebalance guidance
-- fix PCOCK dashboard visibility
-
-## Verification
-- npm run test -- src/test/atlas-portfolio-snapshot.test.ts src/test/atlas-components.test.tsx src/test/page-routing.test.tsx src/test/app-wallets-page.test.tsx
-- npm run test -- src/test/app-transactions-page.test.tsx src/test/atlas-holding-cards.test.tsx
-- npm run lint
-- npm run build"
-```
 
 ## Self-Review
 
@@ -600,3 +589,5 @@ Plan complete and saved to `docs/superpowers/plans/2026-06-03-dashboard-atlas-po
 **2. Inline Execution** - Execute tasks in this session using executing-plans, batch execution with checkpoints
 
 Which approach?
+
+
