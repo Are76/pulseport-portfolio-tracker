@@ -147,6 +147,11 @@ export function HoldingsTable({
       return staticLogos[addrLower] || asset.logoUrl || tokenLogos[addrLower] || getTokenLogoUrl(asset);
     },
   }), [getTokenLogoUrl, portfolioBase, priceChangePeriod, sortedAssets, staticLogos, tokenLogos]);
+  const featuredAssetIds = React.useMemo(() => new Set(atlasHoldingCards.map(card => card.id)), [atlasHoldingCards]);
+  const tableAssets = React.useMemo(
+    () => (showAtlasCards ? sortedAssets.filter(asset => !featuredAssetIds.has(asset.id)) : sortedAssets),
+    [featuredAssetIds, showAtlasCards, sortedAssets],
+  );
   const [isMobileLayout, setIsMobileLayout] = React.useState(() => typeof window !== 'undefined' && window.innerWidth <= 639);
   React.useEffect(() => {
     const handler = () => setIsMobileLayout(window.innerWidth <= 639);
@@ -235,13 +240,13 @@ export function HoldingsTable({
               ))}
             </tr>
           ))}
-          {sortedAssets.length === 0 && !showSkeleton ? (
+          {tableAssets.length === 0 && atlasHoldingCards.length === 0 && !showSkeleton ? (
             <tr>
               <td colSpan={9} style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 13 }}>
                 {emptyMessage}
               </td>
             </tr>
-          ) : sortedAssets.map((asset) => {
+          ) : tableAssets.map((asset) => {
             const addr = asset.address;
             const addrLower = addr?.toLowerCase?.() ?? '';
             const logo = staticLogos[addrLower] || asset.logoUrl || tokenLogos[addrLower] || getTokenLogoUrl(asset);
