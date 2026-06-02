@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+
 import type { AtlasTokenCardData } from './atlas-types';
 
 type Props = {
@@ -7,6 +9,12 @@ type Props = {
 };
 
 export function AtlasTokenCard({ token, active, onSelect }: Props) {
+  const [iconFailed, setIconFailed] = useState(false);
+
+  useEffect(() => {
+    setIconFailed(false);
+  }, [token.iconUrl]);
+
   return (
     <button
       type="button"
@@ -18,9 +26,9 @@ export function AtlasTokenCard({ token, active, onSelect }: Props) {
         <strong>{token.symbol}</strong>
         <span className="atlas-mono">{token.change}</span>
       </span>
-      {token.iconUrl ? (
+      {token.iconUrl && !iconFailed ? (
         <span className="atlas-token-card__icon" aria-hidden="true">
-          <img src={token.iconUrl} alt="" />
+          <img src={token.iconUrl} alt="" onError={() => setIconFailed(true)} />
         </span>
       ) : token.icon ? <span className="atlas-token-card__icon">{token.icon}</span> : null}
       <span className="atlas-token-card__price atlas-mono">{token.price}</span>

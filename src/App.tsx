@@ -4404,6 +4404,7 @@ export default function App() {
                   showHiddenCoins={showHiddenCoins}
                   allocationCalculatorOpen={allocationCalculatorOpen}
                   allocationCalculatorRows={allocationCalculatorRows}
+                  allocationDraftPercentages={allocationDraftPercentages}
                   onSelectWallet={(walletAddress) => {
                     if (!walletAddress) {
                       setSelectedWalletAddr('all');

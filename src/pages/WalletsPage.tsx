@@ -63,6 +63,7 @@ interface WalletsPageProps {
   showHiddenCoins: boolean;
   allocationCalculatorOpen: boolean;
   allocationCalculatorRows: Array<{ name: string; percent: number; value: number }>;
+  allocationDraftPercentages: Record<string, number>;
   onSelectWallet: (walletAddress: string | null) => void;
   onOpenAddWallet: () => void;
   onOpenRenameWallet: (walletAddress: string, name: string) => void;
@@ -149,6 +150,7 @@ export function WalletsPage({
   showHiddenCoins,
   allocationCalculatorOpen,
   allocationCalculatorRows,
+  allocationDraftPercentages,
   onSelectWallet,
   onOpenAddWallet,
   onOpenRenameWallet,
@@ -211,7 +213,10 @@ export function WalletsPage({
     ? walletPillData.filter(({ walletKey }) => walletKey === selectedScopeKey)
     : walletPillData;
   const visibleAllocationRows = useMemo(() => {
-    const draftByName = new Map(allocationCalculatorRows.map((row) => [row.name, row.percent]));
+    const draftByName = new Map<string, number>([
+      ...allocationCalculatorRows.map((row) => [row.name, row.percent] as const),
+      ...Object.entries(allocationDraftPercentages),
+    ]);
     const visibleMixMap = new Map<string, number>();
     chainDisplayAssets.forEach((asset) => {
       visibleMixMap.set(asset.symbol, (visibleMixMap.get(asset.symbol) ?? 0) + asset.valueUsd);
@@ -278,7 +283,7 @@ export function WalletsPage({
         guidance,
       };
     });
-  }, [allocationCalculatorRows, chainDisplayAssets, plsUsdPrice]);
+  }, [allocationCalculatorRows, allocationDraftPercentages, chainDisplayAssets, plsUsdPrice]);
   const allocationPercentTotal = visibleAllocationRows.reduce((sum, row) => sum + row.draftPercent, 0);
   const allocationAutoNormalized = visibleAllocationRows.length > 0 && Math.abs(allocationPercentTotal - 100) > 0.05;
 

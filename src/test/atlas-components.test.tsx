@@ -78,6 +78,31 @@ describe('atlas clickable components', () => {
     expect(screen.getByText('0.07 x Sac')).toBeInTheDocument();
     expect(screen.getByTestId('token-logo')).toBeInTheDocument();
   });
+
+  it('falls back to the icon slot when token iconUrl fails to load', () => {
+    const { container } = render(
+      <AtlasTokenCard
+        token={{
+          id: 'inc',
+          symbol: 'INC',
+          price: '$0.32',
+          change: '+0.00%',
+          tone: 'positive',
+          detailId: 'token-inc',
+          iconUrl: 'https://example.com/inc.png',
+          icon: <span data-testid="token-logo-fallback">I</span>,
+        }}
+        active={false}
+        onSelect={() => undefined}
+      />,
+    );
+
+    const image = container.querySelector('img');
+    expect(image).toBeTruthy();
+    fireEvent.error(image!);
+
+    expect(screen.getByTestId('token-logo-fallback')).toBeInTheDocument();
+  });
 });
 
 const sampleDetail = {

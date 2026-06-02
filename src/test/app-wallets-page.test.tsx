@@ -61,4 +61,18 @@ describe('Wallets Atlas surface', () => {
     expect(screen.getByText(/Target mix auto-normalized from/i)).toBeInTheDocument();
     expect(screen.getByText(/Swap about .* PLS to buy the needed USDC\./i)).toBeInTheDocument();
   });
+
+  it('keeps the synthetic Other rebalance row editable once it is created', () => {
+    stubMatchMedia();
+    window.localStorage.setItem('pulseport_active_tab', 'assets');
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: /open calculator/i }));
+
+    const otherInput = screen.getByRole('spinbutton', { name: /target allocation for other/i });
+    fireEvent.change(otherInput, { target: { value: '7.5' } });
+
+    expect(screen.getByRole('spinbutton', { name: /target allocation for other/i })).toHaveValue(7.5);
+  });
 });
