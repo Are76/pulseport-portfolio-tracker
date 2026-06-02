@@ -10,6 +10,7 @@ import {
   RefreshCcw,
 } from 'lucide-react';
 import type { Transaction, Asset } from '../types';
+import { normalizeAssetSymbol } from '../utils/assetSymbols';
 
 // --- Props --------------------------------------------------------------------
 export interface TokenPnLCardProps {
@@ -50,12 +51,8 @@ function formatSign(n: number): string { return n >= 0 ? '+' : '−'; }
 function getProfitLossColor(n: number): string {
   return n >= 0 ? 'var(--positive)' : 'var(--negative)';
 }
-function normalizeSymbol(symbol: string): string {
-  const upper = (symbol || '').toUpperCase();
-  return upper === 'WPLS' ? 'PLS' : upper;
-}
 function sameSymbol(left: string, right: string): boolean {
-  return normalizeSymbol(left) === normalizeSymbol(right);
+  return normalizeAssetSymbol(left) === normalizeAssetSymbol(right);
 }
 
 // --- Sub-components -----------------------------------------------------------

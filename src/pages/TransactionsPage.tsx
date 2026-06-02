@@ -13,6 +13,7 @@ import {
 import { TokenPnLCard } from '../components/TokenPnLCard';
 import { TransactionList } from '../components/TransactionList';
 import type { Asset, Transaction, Wallet } from '../types';
+import { sameAssetSymbol } from '../utils/assetSymbols';
 
 interface PlsFlowSummary {
   rows: Array<unknown>;
@@ -60,14 +61,6 @@ interface TransactionsPageProps {
   onOpenOverview: () => void;
   onOpenWallets: () => void;
 }
-
-const normalizeAssetSymbol = (symbol: string, chain?: string): string => {
-  const upper = (symbol || '').toUpperCase();
-  return chain === 'pulsechain' && upper === 'WPLS' ? 'PLS' : upper;
-};
-
-const sameAssetSymbol = (left: string, right: string, chain?: string): boolean =>
-  normalizeAssetSymbol(left, chain) === normalizeAssetSymbol(right, chain);
 
 const formatSignedUsd = (value: number) => `${value < 0 ? '-' : value > 0 ? '+' : ''}$${Math.abs(value).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 

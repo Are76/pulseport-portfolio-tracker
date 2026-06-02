@@ -74,6 +74,7 @@ import { TransactionsPage } from './pages/TransactionsPage';
 import { normalizeTransactions } from './utils/normalizeTransactions';
 import { scheduleLocalStorageWrite, resolveBlockscoutBase, resolveEtherscanCompatBase } from './utils/localStorageDebounce';
 import { buildPulsechainInsights } from './utils/pulsechainInsights';
+import { normalizeAssetSymbol, sameAssetSymbol } from './utils/assetSymbols';
 import { BRAND_ASSETS } from './branding/brand-assets';
 import { fetchPortfolioDashboard } from './lib/api/portfolio-client';
 import { fetchHexStakeDashboard } from './lib/api/hex-stake-client';
@@ -448,14 +449,6 @@ const STATIC_LOGOS: Record<string, string> = {
 // Bridged HEX (eHEX) on PulseChain - no on-chain WPLS LP, falls back to CoinGecko 'hex'
 const EHEX_PULSECHAIN_ADDR = '0x57fde0a71132198bbec939b98976993d8d89d225';
 const ETH_HEX_ADDR = '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39';
-
-const normalizeAssetSymbol = (symbol: string, chain?: string): string => {
-  const upper = (symbol || '').toUpperCase();
-  return chain === 'pulsechain' && upper === 'WPLS' ? 'PLS' : upper;
-};
-
-const sameAssetSymbol = (left: string, right: string, chain?: string): boolean =>
-  normalizeAssetSymbol(left, chain) === normalizeAssetSymbol(right, chain);
 
 // Below this threshold (USD) we consider netInvestment effectively zero and hide the P&L %.
 // PulseChain-only wallets have no ETH/stable inflows so netInvestment stays near 0.
