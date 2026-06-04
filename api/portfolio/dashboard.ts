@@ -1,5 +1,5 @@
 import { getPortfolioDashboard, PortfolioServiceError } from '../../src/server/portfolio/portfolio-service';
-import type { PortfolioDashboardResponse } from '../../src/server/portfolio/portfolio-types';
+import type { PortfolioDashboardDto, PortfolioDashboardResponse } from '../../src/server/portfolio/portfolio-types';
 
 type ApiRequest = {
   method?: string;
@@ -30,6 +30,29 @@ function parseChainId(chainIdInput: string | undefined): number | null {
 
   const parsed = Number(chainIdInput);
   return Number.isSafeInteger(parsed) ? parsed : null;
+}
+
+async function fetchFromCoinpulseBackend(
+  walletAddress: string,
+  chainId: number,
+): Promise<PortfolioDashboardDto> {
+  const backendUrl = process.env.COINPULSE_BACKEND_URL!;
+  const query = new URLSearchParams({ walletAddress, chainId: String(chainId) });
+  const res = await fetch(`${backendUrl}/api/portfolio/dashboard?${query}`);
+
+  if (!res.ok) {
+    let code = 'backend_unavailable';
+    let message = 'Portfolio backend returned an error.';
+    try {
+      const body = await res.json() as { error?: { code?: string; message?: string } };
+      if (body.error?.code) code = body.error.code;
+      if (body.error?.message) message = body.error.message;
+    } catch { /* ignore parse errors */ }
+    throw new PortfolioServiceError('backend_unavailable', message, { cause: { code } });
+  }
+
+  const body = await res.json() as { data: PortfolioDashboardDto };
+  return body.data;
 }
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
@@ -73,7 +96,10 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   }
 
   try {
-    const data = await getPortfolioDashboard(walletAddress, chainId);
+    const data = process.env.COINPULSE_BACKEND_URL
+      ? await fetchFromCoinpulseBackend(walletAddress, chainId)
+      : await getPortfolioDashboard(walletAddress, chainId);
+
     return res.status(200).json({ ok: true, data, error: null });
   } catch (error) {
     if (error instanceof PortfolioServiceError) {
