@@ -77,6 +77,9 @@ export async function ingestStakeActions(args: {
         : Number(left[0].blockNumber - right[0].blockNumber),
   );
   let processedCandidates = 0;
+  // Track stake indices already claimed this run to avoid assigning the same
+  // stakeId to two identical-principal/duration starts in the same block.
+  const claimedStakeIndices = new Set<number>();
 
   for (const transactionTransfers of candidateTransactions) {
     const txHash = transactionTransfers[0].txHash as `0x${string}`;
@@ -164,7 +167,9 @@ export async function ingestStakeActions(args: {
       // stakes start in the same block because stakeCount reflects end-of-block state.
       type StakeEntry = readonly [bigint, bigint, bigint, number, number, number, boolean];
       let matchedStake: StakeEntry | null = null;
+      let matchedStakeIndex = -1;
       for (let i = Number(stakeCount) - 1; i >= 0; i--) {
+        if (claimedStakeIndices.has(i)) continue;
         const candidate = (await args.publicClient.readContract({
           address: PHEX_ADDRESS_LOWER as `0x${string}`,
           abi: PHEX_STAKE_ABI,
@@ -175,8 +180,12 @@ export async function ingestStakeActions(args: {
         if (BigInt(candidate[1]).toString() === decodedCall.principalRaw &&
             Number(candidate[4]) === decodedCall.stakedDays) {
           matchedStake = candidate;
+          matchedStakeIndex = i;
           break;
         }
+      }
+      if (matchedStakeIndex >= 0) {
+        claimedStakeIndices.add(matchedStakeIndex);
       }
 
       if (!matchedStake) {
