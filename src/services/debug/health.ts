@@ -2,7 +2,6 @@ import "server-only";
 
 import { getDb } from "@/lib/db";
 import { getRedis } from "@/lib/redis";
-import { env } from "@/lib/env";
 import { serverEnv } from "@/lib/server-env";
 import { SUPPORTED_CHAINS } from "@/config/chains";
 import { getOperationStateReport, type OperationStateReport } from "@/services/debug/operation-state";
@@ -17,7 +16,7 @@ export type HealthReport = {
   status: "ok" | "degraded";
   timestamp: string;
   app: {
-    env: typeof env.NODE_ENV;
+    env: typeof serverEnv.NODE_ENV;
   };
   dependencies: {
     database: {
@@ -33,7 +32,7 @@ export type DebugStatusReport = {
   status: "ok";
   timestamp: string;
   app: {
-    env: typeof env.NODE_ENV;
+    env: typeof serverEnv.NODE_ENV;
   };
   supportedChains: Array<{
     chainId: number;
