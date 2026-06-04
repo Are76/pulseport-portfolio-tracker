@@ -89,8 +89,19 @@ export async function runWalletSync<TLog = unknown>(args: {
       ? async (input: Parameters<SyncRunStore["createRun"]>[0]) => runStore.createRun(input)
       : reserveOperationRun);
 
+  // TRANSFERS must run after protocol families (DEX, LP, STAKING) so that
+  // readWalletProtocolOperationTxHashes sees their raw rows and can filter
+  // out swap/protocol legs from transfer normalization.
+  const orderedFamilies = [...args.sourceFamilies].sort((a, b) => {
+    const isTransferA = a === "TRANSFERS";
+    const isTransferB = b === "TRANSFERS";
+    if (isTransferA && !isTransferB) return 1;
+    if (!isTransferA && isTransferB) return -1;
+    return 0;
+  });
+
   const syncPlans = await Promise.all(
-    args.sourceFamilies.map(async (sourceFamily) => {
+    orderedFamilies.map(async (sourceFamily) => {
       const cursor = await cursorStore.getCursor({
         walletId: args.wallet.id,
         chainId: args.wallet.chainId,
