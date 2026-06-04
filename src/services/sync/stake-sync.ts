@@ -242,6 +242,10 @@ export async function ingestStakeActions(args: {
       principalReturnedRaw = principalReturned.toString();
       yieldRaw = yieldAmount === 0n ? null : yieldAmount.toString();
       penaltyRaw = penaltyAmount === 0n ? null : penaltyAmount.toString();
+    } else if (BigInt(endShape.totalReturnedRaw) > 0n) {
+      // Start snapshot unavailable (wallet imported after stake began); record total as principal
+      // so the returned balance is not lost. Principal/yield split is indeterminate.
+      principalReturnedRaw = endShape.totalReturnedRaw;
     }
 
     processedCandidates += 1;
