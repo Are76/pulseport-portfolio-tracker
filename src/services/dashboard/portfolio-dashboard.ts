@@ -1,6 +1,6 @@
 import "server-only";
 
-import Decimal from "decimal.js";
+import { Decimal } from "@/lib/decimal";
 
 import { getDb } from "@/lib/db";
 import { calculateAverageCostPnl } from "@/services/pnl/average-cost";
