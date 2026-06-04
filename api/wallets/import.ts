@@ -1,4 +1,9 @@
+import { ZodError } from "zod";
 import { importTrackedWallet, WalletImportError } from "../../src/services/api/wallets";
+import {
+  walletImportRequestSchema,
+  buildInvalidInputResponse,
+} from "../../src/services/api/validation";
 
 type ApiRequest = { method?: string; body?: unknown };
 type ApiResponse = {
@@ -14,12 +19,19 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     return res.status(405).json({ error: { code: 'method_not_allowed', message: 'Method not allowed.' } });
   }
 
-  const body = req.body as { walletAddress?: unknown; chainId?: unknown; label?: unknown } | null;
-  if (!body || typeof body.walletAddress !== 'string' || typeof body.chainId !== 'number') {
-    return res.status(400).json({ error: { code: 'invalid_request', message: 'walletAddress (string) and chainId (number) are required.' } });
+  let parsed: ReturnType<typeof walletImportRequestSchema.parse>;
+  try {
+    parsed = walletImportRequestSchema.parse(req.body ?? {});
+  } catch (err) {
+    if (err instanceof ZodError) {
+      const resp = buildInvalidInputResponse(err);
+      const body = await resp.json();
+      return res.status(400).json(body);
+    }
+    return res.status(400).json({ error: { code: 'invalid_request', message: 'Invalid request body.' } });
   }
 
-  const label = typeof body.label === 'string' ? body.label : undefined;
+  const { walletAddress, chainId, label } = parsed;
 
   // Forward to remote backend if configured (best-effort; do not block the local write on failure)
   const backendUrl = process.env.COINPULSE_BACKEND_URL;
@@ -33,8 +45,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
 
   try {
     const wallet = await importTrackedWallet({
-      walletAddress: body.walletAddress,
-      chainId: body.chainId,
+      walletAddress,
+      chainId,
       label,
     });
     return res.status(200).json({ data: { schemaVersion: 'v1', wallet } });

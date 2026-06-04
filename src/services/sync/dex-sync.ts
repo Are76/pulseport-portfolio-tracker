@@ -68,9 +68,17 @@ export async function ingestDexSwaps(args: {
     let prefetchedTransaction: Awaited<ReturnType<typeof args.publicClient.getTransaction>> | null = null;
 
     if (!swapShape.ok && swapShape.reason === "ambiguous-sold-assets:0") {
-      const tx = await args.publicClient.getTransaction({
-        hash: transactionTransfers[0].txHash as `0x${string}`,
-      });
+      let tx: Awaited<ReturnType<typeof args.publicClient.getTransaction>>;
+      try {
+        tx = await args.publicClient.getTransaction({
+          hash: transactionTransfers[0].txHash as `0x${string}`,
+        });
+      } catch {
+        warnings.push(
+          `skip-dex:${transactionTransfers[0]?.txHash ?? "unknown"}:tx-fetch-failed`,
+        );
+        continue;
+      }
       prefetchedTransaction = tx;
       if (tx.value > 0n && tx.from.toLowerCase() === walletAddress) {
         swapShape = summarizeWalletSwapTransfers({
