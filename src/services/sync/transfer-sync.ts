@@ -294,12 +294,12 @@ export function buildTransferNormalizationSnapshots(args: {
   for (const txHash of inferInlineProtocolTransferTxHashes(args)) {
     protocolOperationTxHashes.add(txHash);
   }
-  const snapshots: PersistedTransferNormalizationSnapshot[] = args.rawTransfers.map(
-    (transfer) => ({
+  const snapshots: PersistedTransferNormalizationSnapshot[] = args.rawTransfers
+    .filter((transfer) => !protocolOperationTxHashes.has(transfer.txHash.toLowerCase()))
+    .map((transfer) => ({
       snapshotType: "token_transfer",
       ...transfer,
-    }),
-  );
+    }));
 
   for (const transaction of args.rawTransactions) {
     const txHash = transaction.txHash.toLowerCase();
