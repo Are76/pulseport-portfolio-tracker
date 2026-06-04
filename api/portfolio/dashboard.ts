@@ -1,126 +1,57 @@
-import { getPortfolioDashboard, PortfolioServiceError } from '../../src/server/portfolio/portfolio-service';
-import type { PortfolioDashboardDto, PortfolioDashboardResponse } from '../../src/server/portfolio/portfolio-types';
+import { ZodError } from "zod";
 
-type ApiRequest = {
-  method?: string;
-  query?: Record<string, string | string[] | undefined>;
-};
+import { assemblePortfolioDashboard } from "../../src/services/dashboard";
+import { dashboardRequestSchema } from "../../src/services/api/validation";
+import { resolveTrackedWalletByAddress } from "../../src/services/api/wallets";
 
-type ApiResponse = {
-  status: (code: number) => ApiResponse;
-  json: (payload: PortfolioDashboardResponse) => void;
-  setHeader: (name: string, value: string) => void;
-};
+type Req = { method?: string; query?: Record<string, string | string[] | undefined> };
+type Res = { status: (code: number) => Res; json: (body: unknown) => void; setHeader: (name: string, value: string) => void };
 
-const CHAIN_ID_DEFAULT = 369;
-
-function asSingleValue(value: string | string[] | undefined): string | undefined {
-  if (Array.isArray(value)) return value[0];
-  return value;
+function asSingle(v: string | string[] | undefined): string | undefined {
+  return Array.isArray(v) ? v[0] : v;
 }
 
-function parseChainId(chainIdInput: string | undefined): number | null {
-  if (chainIdInput === undefined) {
-    return CHAIN_ID_DEFAULT;
-  }
+export default async function handler(req: Req, res: Res) {
+  res.setHeader("Cache-Control", "no-store");
 
-  if (!/^[1-9]\d*$/.test(chainIdInput)) {
-    return null;
-  }
-
-  const parsed = Number(chainIdInput);
-  return Number.isSafeInteger(parsed) ? parsed : null;
-}
-
-async function fetchFromCoinpulseBackend(
-  walletAddress: string,
-  chainId: number,
-): Promise<PortfolioDashboardDto> {
-  const backendUrl = process.env.COINPULSE_BACKEND_URL!;
-  const query = new URLSearchParams({ walletAddress, chainId: String(chainId) });
-  const res = await fetch(`${backendUrl}/api/portfolio/dashboard?${query}`);
-
-  if (!res.ok) {
-    let code = 'backend_unavailable';
-    let message = 'Portfolio backend returned an error.';
-    try {
-      const body = await res.json() as { error?: { code?: string; message?: string } };
-      if (body.error?.code) code = body.error.code;
-      if (body.error?.message) message = body.error.message;
-    } catch { /* ignore parse errors */ }
-    throw new PortfolioServiceError('backend_unavailable', message, { cause: { code } });
-  }
-
-  const body = await res.json() as { data: PortfolioDashboardDto };
-  return body.data;
-}
-
-export default async function handler(req: ApiRequest, res: ApiResponse) {
-  res.setHeader('Cache-Control', 'no-store');
-
-  if (req.method !== 'GET') {
-    return res.status(405).json({
-      ok: false,
-      data: null,
-      error: {
-        code: 'method_not_allowed',
-        message: 'Method not allowed.',
-      },
-    });
-  }
-
-  const walletAddress = asSingleValue(req.query?.walletAddress);
-  const chainIdInput = asSingleValue(req.query?.chainId);
-  const chainId = parseChainId(chainIdInput);
-
-  if (!walletAddress) {
-    return res.status(400).json({
-      ok: false,
-      data: null,
-      error: {
-        code: 'invalid_wallet',
-        message: 'walletAddress query parameter is required.',
-      },
-    });
-  }
-
-  if (chainId === null) {
-    return res.status(400).json({
-      ok: false,
-      data: null,
-      error: {
-        code: 'invalid_chain_id',
-        message: 'chainId must be an integer.',
-      },
-    });
+  if (req.method !== "GET") {
+    return res.status(405).json({ error: { code: "method_not_allowed", message: "Method not allowed." } });
   }
 
   try {
-    const data = process.env.COINPULSE_BACKEND_URL
-      ? await fetchFromCoinpulseBackend(walletAddress, chainId)
-      : await getPortfolioDashboard(walletAddress, chainId);
+    const input = dashboardRequestSchema.parse({
+      walletAddress: asSingle(req.query?.walletAddress),
+      chainId: asSingle(req.query?.chainId),
+      quoteAsset: asSingle(req.query?.quoteAsset),
+      asOf: asSingle(req.query?.asOf),
+    });
 
-    return res.status(200).json({ ok: true, data, error: null });
+    const wallet = await resolveTrackedWalletByAddress({
+      walletAddress: input.walletAddress,
+      chainId: input.chainId,
+    });
+
+    if (!wallet) {
+      return res.status(404).json({ error: { code: "WALLET_NOT_FOUND", message: "Wallet not found for the requested chain." } });
+    }
+
+    const dashboard = await assemblePortfolioDashboard({
+      wallet,
+      quoteAsset: input.quoteAsset,
+      asOf: input.asOf ?? new Date(),
+    });
+
+    return res.status(200).json({ ok: true, data: dashboard, error: null });
   } catch (error) {
-    if (error instanceof PortfolioServiceError) {
-      const code = error.code === 'backend_unavailable' ? 503 : 400;
-      return res.status(code).json({
-        ok: false,
-        data: null,
+    if (error instanceof ZodError) {
+      return res.status(400).json({
         error: {
-          code: error.code,
-          message: error.message,
+          code: "INVALID_INPUT",
+          message: "Invalid request input.",
+          details: error.issues.map((i) => ({ path: i.path.join("."), message: i.message, code: i.code })),
         },
       });
     }
-
-    return res.status(503).json({
-      ok: false,
-      data: null,
-      error: {
-        code: 'backend_unavailable',
-        message: 'Portfolio backend is currently unavailable.',
-      },
-    });
+    return res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error." } });
   }
 }

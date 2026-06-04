@@ -1,3 +1,4 @@
+import "server-only";
 
 import Decimal from "decimal.js";
 

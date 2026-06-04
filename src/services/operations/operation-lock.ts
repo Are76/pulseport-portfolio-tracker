@@ -1,3 +1,4 @@
+import "server-only";
 
 import { Prisma } from "@prisma/client";
 import type { PrismaClient, SourceFamily, SyncRunStatus, SyncTrigger } from "@prisma/client";

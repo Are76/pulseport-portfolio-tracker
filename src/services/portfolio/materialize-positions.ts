@@ -1,3 +1,4 @@
+import "server-only";
 
 import { getDb } from "@/lib/db";
 import {

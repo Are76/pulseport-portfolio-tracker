@@ -1,3 +1,4 @@
+import "server-only";
 
 import { CORE_PROTOCOLS } from "@/config/protocols";
 import {

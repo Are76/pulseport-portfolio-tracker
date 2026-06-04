@@ -1,3 +1,4 @@
+import "server-only";
 
 import { listPriceObservations } from "@/services/pricing/price-store";
 import type {

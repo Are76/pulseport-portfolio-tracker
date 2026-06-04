@@ -1,3 +1,4 @@
+import "server-only";
 
 import { createPublicClient, fallback, http, type PublicClient } from "viem";
 

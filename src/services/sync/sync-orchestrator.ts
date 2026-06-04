@@ -1,3 +1,4 @@
+import "server-only";
 
 import { type SourceFamily, type SyncTrigger } from "@prisma/client";
 

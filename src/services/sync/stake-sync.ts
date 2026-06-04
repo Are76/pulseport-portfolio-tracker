@@ -1,3 +1,4 @@
+import "server-only";
 
 import { decodeFunctionData, parseAbi } from "viem";
 
