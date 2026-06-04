@@ -52,6 +52,11 @@ export function resolveBestPriceObservation(args: {
       continue;
     }
 
+    if (observation.observedAt.getTime() > args.observedAt.getTime()) {
+      rejected.push({ id: observation.id, reason: "FUTURE" });
+      continue;
+    }
+
     const staleAt =
       observation.observedAt.getTime() + observation.staleAfterSeconds * 1000;
     if (staleAt < args.observedAt.getTime()) {

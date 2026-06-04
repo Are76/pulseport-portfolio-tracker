@@ -60,10 +60,26 @@ export async function ingestDexSwaps(args: {
   let processedSwapCandidates = 0;
 
   for (const transactionTransfers of candidateTransactions) {
-    const swapShape = summarizeWalletSwapTransfers({
+    let swapShape = summarizeWalletSwapTransfers({
       walletAddress,
       transfers: transactionTransfers,
     });
+
+    let prefetchedTransaction: Awaited<ReturnType<typeof args.publicClient.getTransaction>> | null = null;
+
+    if (!swapShape.ok && swapShape.reason === "ambiguous-sold-assets:0") {
+      const tx = await args.publicClient.getTransaction({
+        hash: transactionTransfers[0].txHash as `0x${string}`,
+      });
+      prefetchedTransaction = tx;
+      if (tx.value > 0n && tx.from.toLowerCase() === walletAddress) {
+        swapShape = summarizeWalletSwapTransfers({
+          walletAddress,
+          transfers: transactionTransfers,
+          nativeOutRaw: tx.value,
+        });
+      }
+    }
 
     if (!swapShape.ok) {
       warnings.push(
@@ -72,7 +88,7 @@ export async function ingestDexSwaps(args: {
       continue;
     }
 
-    const transaction = await args.publicClient.getTransaction({
+    const transaction = prefetchedTransaction ?? await args.publicClient.getTransaction({
       hash: transactionTransfers[0].txHash as `0x${string}`,
     });
     const receipt = await args.publicClient.getTransactionReceipt({
@@ -291,6 +307,7 @@ function groupTransfersByTransaction(
 function summarizeWalletSwapTransfers(args: {
   walletAddress: string;
   transfers: readonly WalletTransferSnapshot[];
+  nativeOutRaw?: bigint;
 }) {
   const outbound = new Map<
     string,
@@ -318,6 +335,15 @@ function summarizeWalletSwapTransfers(args: {
     if (transfer.toAddress === args.walletAddress) {
       accumulateTransfer(inbound, transfer);
     }
+  }
+
+  if (args.nativeOutRaw !== undefined && args.nativeOutRaw > 0n && !outbound.has(PULSECHAIN_NATIVE_ASSET_ID)) {
+    outbound.set(PULSECHAIN_NATIVE_ASSET_ID, {
+      tokenAddress: PULSECHAIN_NATIVE_TOKEN_ADDRESS,
+      assetIdSnapshot: PULSECHAIN_NATIVE_ASSET_ID,
+      decimalsSnapshot: 18,
+      amountRaw: args.nativeOutRaw,
+    });
   }
 
   if (outbound.size !== 1) {

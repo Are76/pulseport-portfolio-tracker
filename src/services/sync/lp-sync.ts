@@ -15,6 +15,10 @@ import {
   NATIVE_SWAP_FEE_ASSET,
 } from "@/services/sync/dex-sync";
 import {
+  PULSECHAIN_NATIVE_ASSET_ID,
+  PULSECHAIN_NATIVE_TOKEN_ADDRESS,
+} from "@/config/assets";
+import {
   getOccurredAtForLpAction,
   type SyncDbClient,
   type SyncPublicClient,
@@ -51,10 +55,26 @@ export async function ingestLpActions(args: {
   let processedLpCandidates = 0;
 
   for (const transactionTransfers of candidateTransactions) {
-    const lpShape = summarizeWalletLpTransfers({
+    let lpShape = summarizeWalletLpTransfers({
       walletAddress,
       transfers: transactionTransfers,
     });
+
+    let prefetchedTransaction: Awaited<ReturnType<typeof args.publicClient.getTransaction>> | null = null;
+
+    if (!lpShape.ok && lpShape.reason === "ambiguous-transfer-shape:1:1") {
+      const tx = await args.publicClient.getTransaction({
+        hash: transactionTransfers[0].txHash as `0x${string}`,
+      });
+      prefetchedTransaction = tx;
+      if (tx.value > 0n && tx.from.toLowerCase() === walletAddress) {
+        lpShape = summarizeWalletLpTransfers({
+          walletAddress,
+          transfers: transactionTransfers,
+          nativeOutRaw: tx.value,
+        });
+      }
+    }
 
     if (!lpShape.ok) {
       warnings.push(
@@ -63,7 +83,7 @@ export async function ingestLpActions(args: {
       continue;
     }
 
-    const transaction = await args.publicClient.getTransaction({
+    const transaction = prefetchedTransaction ?? await args.publicClient.getTransaction({
       hash: transactionTransfers[0].txHash as `0x${string}`,
     });
     const receipt = await args.publicClient.getTransactionReceipt({
@@ -282,6 +302,7 @@ function groupTransfersByTransaction(
 function summarizeWalletLpTransfers(args: {
   walletAddress: string;
   transfers: readonly WalletTransferSnapshot[];
+  nativeOutRaw?: bigint;
 }): LpShape {
   const outbound = aggregateTransfers(
     args.transfers.filter((transfer) => transfer.fromAddress === args.walletAddress),
@@ -289,6 +310,20 @@ function summarizeWalletLpTransfers(args: {
   const inbound = aggregateTransfers(
     args.transfers.filter((transfer) => transfer.toAddress === args.walletAddress),
   );
+
+  if (
+    args.nativeOutRaw !== undefined &&
+    args.nativeOutRaw > 0n &&
+    !outbound.some((t) => t.assetIdSnapshot === PULSECHAIN_NATIVE_ASSET_ID)
+  ) {
+    outbound.push({
+      tokenAddress: PULSECHAIN_NATIVE_TOKEN_ADDRESS,
+      assetIdSnapshot: PULSECHAIN_NATIVE_ASSET_ID,
+      decimalsSnapshot: 18,
+      amountRaw: args.nativeOutRaw.toString(),
+      logIndex: 0,
+    });
+  }
 
   if (outbound.length === 2 && inbound.length === 1) {
     const [token0, token1] = sortPairAssets(outbound);
