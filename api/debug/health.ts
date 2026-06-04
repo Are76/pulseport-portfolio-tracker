@@ -19,7 +19,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
 
   try {
     const upstream = await fetch(`${backendUrl}/api/debug/health`);
-    const body = await upstream.json();
+    const contentType = upstream.headers.get('content-type') ?? '';
+    const body = contentType.includes('application/json') ? await upstream.json() : null;
     return res.status(upstream.status).json(body);
   } catch {
     return res.status(503).json({ error: { code: 'backend_unavailable', message: 'Could not reach coinpulse-backend.' } });

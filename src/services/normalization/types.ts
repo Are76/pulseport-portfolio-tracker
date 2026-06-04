@@ -64,8 +64,8 @@ export function toCanonicalQuantity(args: {
     throw new Error("amountRaw must be an unsigned integer string");
   }
 
-  if (args.decimals < 0) {
-    throw new Error("decimals cannot be negative");
+  if (!Number.isFinite(args.decimals) || !Number.isInteger(args.decimals) || args.decimals < 0) {
+    throw new Error("decimals must be a non-negative integer");
   }
 
   if (args.decimals === 0) {

@@ -70,7 +70,7 @@ export function normalizeSwap(
       normalizerVersion: args.normalizerVersion,
       sourceRef: `${args.sourceRef}:in`,
     }),
-    createLedgerEntryDraft({
+    ...(args.feeAmountRaw !== "0" ? [createLedgerEntryDraft({
       chainId: args.chainId,
       walletId: args.walletId,
       walletAddress: args.walletAddress,
@@ -86,6 +86,6 @@ export function normalizeSwap(
       occurredAt: args.occurredAt,
       normalizerVersion: args.normalizerVersion,
       sourceRef: `${args.sourceRef}:fee`,
-    }),
+    })] : []),
   ];
 }

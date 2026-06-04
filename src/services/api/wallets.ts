@@ -1,3 +1,4 @@
+import "server-only";
 
 import { getDb } from "@/lib/db";
 import { SUPPORTED_CHAINS } from "@/config/chains";
@@ -54,7 +55,7 @@ export async function importTrackedWallet(args: {
     throw new WalletImportError("Chain is not supported for wallet import.");
   }
 
-  const walletAddress = args.walletAddress.toLowerCase();
+  const walletAddress = args.walletAddress.trim().toLowerCase();
 
   return getDb().wallet.upsert({
     where: {

@@ -9,6 +9,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   res.setHeader('Cache-Control', 'no-store');
 
   if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: { code: 'method_not_allowed', message: 'Method not allowed.' } });
   }
 
@@ -23,7 +24,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(req.body),
     });
-    const body = await upstream.json();
+    const contentType = upstream.headers.get('content-type') ?? '';
+    const body = contentType.includes('application/json') ? await upstream.json() : null;
     return res.status(upstream.status).json(body);
   } catch {
     return res.status(503).json({ error: { code: 'backend_unavailable', message: 'Could not reach coinpulse-backend.' } });

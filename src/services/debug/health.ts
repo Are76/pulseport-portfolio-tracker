@@ -1,3 +1,4 @@
+import "server-only";
 
 import { getDb } from "@/lib/db";
 import { getRedis } from "@/lib/redis";
@@ -103,8 +104,13 @@ export async function getDebugStatusReport(): Promise<DebugStatusReport> {
       persistedObservationsOnly: true,
       liveAdaptersEnabled: false,
     },
-    operationState: await getOperationStateReport(),
-    materializationDiagnostics: await getMaterializationDiagnosticsReport(),
+    ...await (async () => {
+      const [operationState, materializationDiagnostics] = await Promise.all([
+        getOperationStateReport(),
+        getMaterializationDiagnosticsReport(),
+      ]);
+      return { operationState, materializationDiagnostics };
+    })(),
   };
 }
 
