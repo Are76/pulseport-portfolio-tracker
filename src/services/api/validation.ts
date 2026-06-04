@@ -1,5 +1,3 @@
-import "server-only";
-
 import { z, ZodError } from "zod";
 
 const SOURCE_FAMILY_VALUES = ["TRANSFERS", "DEX", "LP", "STAKING", "NATIVE"] as const;

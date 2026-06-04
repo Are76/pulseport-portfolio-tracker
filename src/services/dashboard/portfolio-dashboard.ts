@@ -196,7 +196,7 @@ export async function assemblePortfolioDashboard(args: {
       return {
         assetId: row.assetId,
         assetAddress: row.assetAddress,
-        balanceQuantity: toStringValue(row.balanceQuantity),
+        balanceQuantity: pnlResult.holdingsQuantity,
         decimals: row.decimals,
         metadataProvenance: toTokenMetadataProvenanceDto(tokenMetadataByAssetId.get(row.assetId) ?? null),
         updatedFromBlock: bigintToString(row.updatedFromBlock),
