@@ -176,7 +176,7 @@ export function normalizeStakeEnd(
         assetId: args.assetId,
         amountRaw: args.penaltyRaw,
         decimals: args.decimals,
-        direction: "OUT",
+        direction: "INTERNAL",
         occurredAt: args.occurredAt,
         normalizerVersion: args.normalizerVersion,
         sourceRef: `${args.sourceRef}:penalty`,
