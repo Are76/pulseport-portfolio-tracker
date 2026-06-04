@@ -15,7 +15,8 @@ export default async function handler(req: Req, res: Res) {
   res.setHeader("Cache-Control", "no-store");
 
   if (req.method !== "GET") {
-    return res.status(405).json({ error: { code: "method_not_allowed", message: "Method not allowed." } });
+    res.setHeader("Allow", "GET");
+    return res.status(405).json({ ok: false, data: null, error: { code: "method_not_allowed", message: "Method not allowed." } });
   }
 
   try {
@@ -32,7 +33,7 @@ export default async function handler(req: Req, res: Res) {
     });
 
     if (!wallet) {
-      return res.status(404).json({ error: { code: "WALLET_NOT_FOUND", message: "Wallet not found for the requested chain." } });
+      return res.status(404).json({ ok: false, data: null, error: { code: "WALLET_NOT_FOUND", message: "Wallet not found for the requested chain." } });
     }
 
     const dashboard = await assemblePortfolioDashboard({
@@ -45,6 +46,8 @@ export default async function handler(req: Req, res: Res) {
   } catch (error) {
     if (error instanceof ZodError) {
       return res.status(400).json({
+        ok: false,
+        data: null,
         error: {
           code: "INVALID_INPUT",
           message: "Invalid request input.",
@@ -52,6 +55,6 @@ export default async function handler(req: Req, res: Res) {
         },
       });
     }
-    return res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error." } });
+    return res.status(500).json({ ok: false, data: null, error: { code: "INTERNAL_ERROR", message: "Internal server error." } });
   }
 }

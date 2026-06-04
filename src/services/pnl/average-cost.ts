@@ -230,6 +230,14 @@ export async function calculateAverageCostPnl(
 
     if (targetInEntries.length === 0 && targetOutEntries.length === 0 && targetFeeEntries.length > 0) {
       const feeQuantity = sumQuantities(targetFeeEntries);
+      if (feeQuantity.gt(holdingsQuantity)) {
+        warnings.push({
+          code: "INSUFFICIENT_COST_BASIS",
+          actionGroupId: groupEntries[0].actionGroupId,
+          assetId: args.assetId,
+          detail: "Fee spend exceeds tracked holdings and was clamped.",
+        });
+      }
       const clampedFee = feeQuantity.gt(holdingsQuantity) ? holdingsQuantity : feeQuantity;
       const averageCostPerUnit = holdingsQuantity.eq(ZERO) ? ZERO : carryingCost.div(holdingsQuantity);
       const costOfFee = averageCostPerUnit.mul(clampedFee);

@@ -16,6 +16,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   res.setHeader('Cache-Control', 'no-store');
 
   if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: { code: 'method_not_allowed', message: 'Method not allowed.' } });
   }
 
@@ -33,22 +34,23 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
 
   const { walletAddress, chainId, label } = parsed;
 
-  // Forward to remote backend if configured (best-effort; do not block the local write on failure)
-  const backendUrl = process.env.COINPULSE_BACKEND_URL;
-  if (backendUrl) {
-    fetch(`${backendUrl}/api/wallets/import`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(req.body),
-    }).catch(() => {/* ignore */});
-  }
-
   try {
     const wallet = await importTrackedWallet({
       walletAddress,
       chainId,
       label,
     });
+
+    // Forward to remote backend if configured (best-effort; local write already succeeded)
+    const backendUrl = process.env.COINPULSE_BACKEND_URL;
+    if (backendUrl) {
+      fetch(`${backendUrl}/api/wallets/import`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req.body),
+      }).catch(() => {/* ignore */});
+    }
+
     return res.status(200).json({ data: { schemaVersion: 'v1', wallet } });
   } catch (err) {
     if (err instanceof WalletImportError) {

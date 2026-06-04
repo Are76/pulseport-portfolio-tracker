@@ -9,6 +9,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   res.setHeader('Cache-Control', 'no-store');
 
   if (req.method !== 'GET') {
+    res.setHeader('Allow', 'GET');
     return res.status(405).json({ error: { code: 'method_not_allowed', message: 'Method not allowed.' } });
   }
 

@@ -38,6 +38,7 @@ export type RebuildRequest = {
 
 export async function fetchTrackedWallets(signal?: AbortSignal): Promise<TrackedWalletsResponse> {
   const res = await fetch('/api/wallets/tracked', { signal });
+  if (!res.ok) throw new Error(`fetchTrackedWallets failed: ${res.status}`);
   return res.json() as Promise<TrackedWalletsResponse>;
 }
 
