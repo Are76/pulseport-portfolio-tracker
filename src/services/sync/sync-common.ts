@@ -446,12 +446,13 @@ export async function resolveTokenMetadata(args: {
     };
   }
 
-  const [decimals, symbol, name] = await Promise.all([
-    args.publicClient.readContract({
-      address: addressLower as `0x${string}`,
-      abi: ERC20_METADATA_ABI,
-      functionName: "decimals",
-    }),
+  const decimals = await args.publicClient.readContract({
+    address: addressLower as `0x${string}`,
+    abi: ERC20_METADATA_ABI,
+    functionName: "decimals",
+  });
+
+  const [symbolResult, nameResult] = await Promise.allSettled([
     args.publicClient.readContract({
       address: addressLower as `0x${string}`,
       abi: ERC20_METADATA_ABI,
@@ -463,6 +464,12 @@ export async function resolveTokenMetadata(args: {
       functionName: "name",
     }),
   ]);
+
+  const symbol =
+    symbolResult.status === "fulfilled" ? String(symbolResult.value) : addressLower.slice(0, 8);
+  const name =
+    nameResult.status === "fulfilled" ? String(nameResult.value) : addressLower.slice(0, 8);
+
   const assetId = `chain:${args.chainId}:erc20:${addressLower}`;
 
   const token = await args.db.token.upsert({
@@ -478,15 +485,15 @@ export async function resolveTokenMetadata(args: {
       address: addressLower,
       addressLower,
       assetId,
-      symbol: String(symbol),
-      name: String(name),
+      symbol,
+      name,
       decimals: Number(decimals),
       decimalsSource: "RPC",
       isNative: false,
     },
     update: {
-      symbol: String(symbol),
-      name: String(name),
+      symbol,
+      name,
       decimals: Number(decimals),
       decimalsSource: "RPC",
     },

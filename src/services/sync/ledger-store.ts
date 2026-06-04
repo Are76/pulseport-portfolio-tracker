@@ -244,6 +244,16 @@ export async function deleteScopedLedgerEntries(
     };
   }
 
+  const hasTxScope = args.txHashes && args.txHashes.length > 0;
+  const hasRangeScope = args.occurredAtRange !== undefined;
+
+  if (!hasTxScope && !hasRangeScope) {
+    return {
+      actionGroupCount: 0,
+      entryCount: 0,
+    };
+  }
+
   const run = async (transactionClient: ScopedLedgerDeleteClient) => {
     const where = {
       chainId: args.chainId,

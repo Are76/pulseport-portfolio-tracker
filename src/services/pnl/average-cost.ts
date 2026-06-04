@@ -228,6 +228,18 @@ export async function calculateAverageCostPnl(
       continue;
     }
 
+    if (targetInEntries.length === 0 && targetOutEntries.length === 0 && targetFeeEntries.length > 0) {
+      const feeQuantity = sumQuantities(targetFeeEntries);
+      const clampedFee = feeQuantity.gt(holdingsQuantity) ? holdingsQuantity : feeQuantity;
+      const averageCostPerUnit = holdingsQuantity.eq(ZERO) ? ZERO : carryingCost.div(holdingsQuantity);
+      const costOfFee = averageCostPerUnit.mul(clampedFee);
+      holdingsQuantity = holdingsQuantity.sub(clampedFee);
+      carryingCost = carryingCost.sub(costOfFee);
+      realizedPnl = realizedPnl.sub(costOfFee);
+      totalDisposedQuantity = totalDisposedQuantity.add(clampedFee);
+      continue;
+    }
+
     warnings.push({
       code: "UNSUPPORTED_ACTION_GROUP",
       actionGroupId: groupEntries[0].actionGroupId,

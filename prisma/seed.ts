@@ -1,6 +1,7 @@
 import "dotenv/config";
 
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
 import {
   CORE_ASSETS,
@@ -10,10 +11,13 @@ import {
 } from "@/config/assets";
 import { PULSECHAIN_CHAIN, PULSECHAIN_REFERENCE } from "@/config/chains";
 import { CORE_PROTOCOLS } from "@/config/protocols";
-import { createPrismaAdapter } from "@/lib/prisma-adapter";
+
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL is required for seeding");
+}
 
 const prisma = new PrismaClient({
-  adapter: createPrismaAdapter(),
+  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
 });
 
 async function main() {
