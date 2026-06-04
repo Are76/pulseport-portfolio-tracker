@@ -1,5 +1,3 @@
-import "server-only";
-
 import { getDb } from "@/lib/db";
 import { SUPPORTED_CHAINS } from "@/config/chains";
 
