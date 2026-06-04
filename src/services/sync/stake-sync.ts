@@ -159,23 +159,34 @@ export async function ingestStakeActions(args: {
         continue;
       }
 
-      const stakeIndex = Number(stakeCount - 1n);
-      const stake = (await args.publicClient.readContract({
-        address: PHEX_ADDRESS_LOWER as `0x${string}`,
-        abi: PHEX_STAKE_ABI,
-        functionName: "stakeLists",
-        args: [walletAddress as `0x${string}`, BigInt(stakeIndex)],
-        blockNumber: transaction.blockNumber,
-      })) as readonly [bigint, bigint, bigint, number, number, number, boolean];
+      // Scan backward through all stakes at this block to find the one matching
+      // this transaction's principal. Using only stakeCount-1 fails when multiple
+      // stakes start in the same block because stakeCount reflects end-of-block state.
+      type StakeEntry = readonly [bigint, bigint, bigint, number, number, number, boolean];
+      let matchedStake: StakeEntry | null = null;
+      for (let i = Number(stakeCount) - 1; i >= 0; i--) {
+        const candidate = (await args.publicClient.readContract({
+          address: PHEX_ADDRESS_LOWER as `0x${string}`,
+          abi: PHEX_STAKE_ABI,
+          functionName: "stakeLists",
+          args: [walletAddress as `0x${string}`, BigInt(i)],
+          blockNumber: transaction.blockNumber,
+        })) as StakeEntry;
+        if (BigInt(candidate[1]).toString() === decodedCall.principalRaw &&
+            Number(candidate[4]) === decodedCall.stakedDays) {
+          matchedStake = candidate;
+          break;
+        }
+      }
 
-      const stakeId = BigInt(stake[0]);
-      const stakedHearts = BigInt(stake[1]);
-      const stakedDays = Number(stake[4]);
-
-      if (stakedHearts.toString() !== decodedCall.principalRaw) {
+      if (!matchedStake) {
         warnings.push(`skip-stake:${transaction.hash.toLowerCase()}:principal-mismatch`);
         continue;
       }
+
+      const stakeId = BigInt(matchedStake[0]);
+      const stakedHearts = BigInt(matchedStake[1]);
+      const stakedDays = Number(matchedStake[4]);
 
       processedCandidates += 1;
 
@@ -192,7 +203,6 @@ export async function ingestStakeActions(args: {
             contractAddress: PHEX_ADDRESS_LOWER,
             initiatorAddress: transaction.from,
             stakeId,
-            stakeIndex,
             stakedDays,
             tokenAddress: PHEX_ADDRESS_LOWER,
             assetIdSnapshot: CORE_ASSETS.phex.assetId,
