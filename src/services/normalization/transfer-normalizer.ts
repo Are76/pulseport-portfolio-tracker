@@ -164,10 +164,7 @@ export function normalizeNativeTransaction(
   });
   const entries: CanonicalLedgerEntryDraft[] = [];
 
-  if (
-    args.valueRaw !== "0" &&
-    !args.hasTrackedTokenTransfersInTransaction
-  ) {
+  if (args.valueRaw !== "0") {
     if (senderTracked && recipientTracked) {
       entries.push(
         createLedgerEntryDraft({

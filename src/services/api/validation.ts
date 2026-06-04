@@ -32,7 +32,7 @@ const optionalAsOfSchema = z
 
 export const dashboardRequestSchema = z.object({
   walletAddress: walletAddressSchema,
-  chainId: chainIdSchema,
+  chainId: chainIdSchema.default(369),
   quoteAsset: quoteAssetSchema,
   asOf: optionalAsOfSchema,
 });

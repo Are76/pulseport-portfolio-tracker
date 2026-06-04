@@ -25,7 +25,10 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       body: JSON.stringify(req.body),
     });
     const contentType = upstream.headers.get('content-type') ?? '';
-    const body = contentType.includes('application/json') ? await upstream.json() : null;
+    let body: unknown = null;
+    if (contentType.includes('application/json')) {
+      try { body = await upstream.json(); } catch { /* empty body */ }
+    }
     return res.status(upstream.status).json(body);
   } catch {
     return res.status(503).json({ error: { code: 'backend_unavailable', message: 'Could not reach coinpulse-backend.' } });
