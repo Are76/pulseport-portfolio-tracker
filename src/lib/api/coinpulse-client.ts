@@ -48,7 +48,10 @@ export async function importWallet(body: WalletImportRequest): Promise<unknown> 
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  return res.json();
+  const contentType = res.headers.get('content-type') ?? '';
+  const data = contentType.includes('application/json') ? await res.json() : null;
+  if (!res.ok) throw new Error(`importWallet failed: ${res.status}`);
+  return data;
 }
 
 export async function triggerManualSync(body: SyncRequest): Promise<unknown> {
@@ -57,7 +60,10 @@ export async function triggerManualSync(body: SyncRequest): Promise<unknown> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  return res.json();
+  const contentType = res.headers.get('content-type') ?? '';
+  const data = contentType.includes('application/json') ? await res.json() : null;
+  if (!res.ok) throw new Error(`triggerManualSync failed: ${res.status}`);
+  return data;
 }
 
 export async function triggerRebuild(body: RebuildRequest): Promise<unknown> {
@@ -66,10 +72,14 @@ export async function triggerRebuild(body: RebuildRequest): Promise<unknown> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  return res.json();
+  const contentType = res.headers.get('content-type') ?? '';
+  const data = contentType.includes('application/json') ? await res.json() : null;
+  if (!res.ok) throw new Error(`triggerRebuild failed: ${res.status}`);
+  return data;
 }
 
 export async function fetchBackendHealth(signal?: AbortSignal): Promise<unknown> {
   const res = await fetch('/api/debug/health', { signal });
+  if (!res.ok) throw new Error(`fetchBackendHealth failed: ${res.status}`);
   return res.json();
 }
