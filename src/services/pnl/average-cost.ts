@@ -33,7 +33,12 @@ export async function calculateAverageCostPnl(
   let totalDisposedQuantity = ZERO;
 
   const relevantEntries = args.entries
-    .filter((entry) => entry.walletId === args.walletId && entry.chainId === args.chainId)
+    .filter(
+      (entry) =>
+        entry.walletId === args.walletId &&
+        entry.chainId === args.chainId &&
+        entry.occurredAt.getTime() <= args.asOf.getTime(),
+    )
     .sort((left, right) => {
       const occurredDelta = left.occurredAt.getTime() - right.occurredAt.getTime();
       if (occurredDelta !== 0) {
