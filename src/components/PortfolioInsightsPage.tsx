@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, ExternalLink, LayoutDashboard, Wallet } from 'lucide-react';
+import { ArrowRight, ExternalLink, LayoutDashboard, Wallet, ShieldCheck, TrendingUp, TrendingDown, BarChart3 } from 'lucide-react';
 import type { Asset, Chain, PortfolioSummary, Transaction, Wallet as WalletType } from '../types';
 import { PageHeader, StatGrid } from './DashboardPrimitives';
 
@@ -18,6 +18,10 @@ function fmtUsd(value: number): string {
 function fmtPct(value: number | null): string {
   if (value == null || !Number.isFinite(value)) return '-';
   return `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`;
+}
+
+function fmtSignedUsd(value: number): string {
+  return `${value >= 0 ? '+' : '-'}${fmtUsd(Math.abs(value))}`;
 }
 
 function shortenAddress(address?: string): string {
@@ -139,92 +143,174 @@ export function PortfolioInsightsPage({
   );
 
   const topPositions = positionInsights.slice(0, 8);
+  const coveredPositions = React.useMemo(
+    () => positionInsights.filter((row) => row.txCount > 0),
+    [positionInsights],
+  );
+  const bestPosition = React.useMemo(
+    () => coveredPositions.filter((row) => row.deltaPct != null).sort((a, b) => (b.deltaPct ?? Number.NEGATIVE_INFINITY) - (a.deltaPct ?? Number.NEGATIVE_INFINITY))[0] ?? null,
+    [coveredPositions],
+  );
+  const worstPosition = React.useMemo(
+    () => coveredPositions.filter((row) => row.deltaPct != null).sort((a, b) => (a.deltaPct ?? Number.POSITIVE_INFINITY) - (b.deltaPct ?? Number.POSITIVE_INFINITY))[0] ?? null,
+    [coveredPositions],
+  );
+  const topPosition = topPositions[0] ?? null;
+  const trackedCapital = summary.netInvestment > 0 ? summary.netInvestment : 0;
+  const coverageLabel = `${coveredPositions.length}/${trackedAssets.length}`;
+  const coverageSubtext = transactions.length > 0
+    ? `${transactions.length.toLocaleString('en-US')} synced tx rows in current wallet scope`
+    : 'No synced transaction rows in current wallet scope';
+  const coverageTone = coveredPositions.length === trackedAssets.length && trackedAssets.length > 0
+    ? 'var(--accent)'
+    : 'var(--fg-primary)';
 
   return (
     <div className="space-y-4">
       <PageHeader
         title="Portfolio Insights"
-        subtitle="Per-coin invested, current value, and performance from synced transaction history."
+        subtitle="Transaction-backed coin analytics for invested basis, current value, and where your book is winning or bleeding."
       />
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1.8fr) minmax(320px, 0.9fr)',
-          gap: 16,
-          alignItems: 'start',
-        }}
-      >
-        <div className="overview-section-card">
-          <div className="overview-section-title" style={{ marginBottom: 14 }}>Action Summary</div>
-          <StatGrid
-            cols={4}
-            items={[
-              {
-                label: 'Tracked value',
-                value: fmtUsd(summary.totalValue),
-                sub: `${wallets.length} wallet${wallets.length === 1 ? '' : 's'}`,
-              },
-              {
-                label: 'Tracked capital',
-                value: summary.netInvestment > 0 ? fmtUsd(summary.netInvestment) : '-',
-                sub: summary.netInvestment > 0 ? 'ETH + stablecoin inflows' : 'Needs synced tx history',
-              },
-              {
-                label: 'Net P&L',
-                value: summary.netInvestment > 0 ? `${summary.unifiedPnl >= 0 ? '+' : '-'}${fmtUsd(Math.abs(summary.unifiedPnl))}` : '-',
-                sub: summary.netInvestment > 0 ? fmtPct((summary.unifiedPnl / summary.netInvestment) * 100) : 'No investable baseline',
-                color: summary.unifiedPnl >= 0 ? 'var(--accent)' : 'var(--negative)',
-              },
-              {
-                label: 'Dominant chain',
-                value: dominantChain ? CHAIN_LABELS[dominantChain.chain] : '-',
-                sub: dominantChain ? fmtUsd(dominantChain.value) : 'No chain allocation yet',
-              },
-            ]}
-          />
+      <div className="portfolio-insights-summary-grid">
+        <div className="portfolio-insights-hero-card">
+          <div className="portfolio-insights-card-label">Total current value</div>
+          <div className="portfolio-insights-hero-value">{fmtUsd(summary.totalValue)}</div>
+          <div className="portfolio-insights-card-sub">
+            {wallets.length} wallet{wallets.length === 1 ? '' : 's'} in view
+            {dominantChain ? ` - dominant ${CHAIN_LABELS[dominantChain.chain]}` : ''}
+          </div>
+        </div>
+        <StatGrid
+          cols={3}
+          items={[
+            {
+              label: 'Remaining cost basis',
+              value: trackedCapital > 0 ? fmtUsd(trackedCapital) : '-',
+              sub: trackedCapital > 0 ? 'Transaction-backed invested capital still in the book' : 'Needs synced transaction baseline',
+            },
+            {
+              label: 'Total P&L',
+              value: trackedCapital > 0 ? fmtSignedUsd(summary.unifiedPnl) : '-',
+              sub: trackedCapital > 0 ? fmtPct((summary.unifiedPnl / trackedCapital) * 100) : 'No investable baseline yet',
+              color: summary.unifiedPnl >= 0 ? 'var(--accent)' : 'var(--negative)',
+            },
+            {
+              label: 'Coverage status',
+              value: coverageLabel,
+              sub: coverageSubtext,
+              color: coverageTone,
+            },
+          ]}
+        />
+      </div>
+
+      <div className="portfolio-insights-secondary-grid">
+        <div className="overview-section-card portfolio-insights-feature-card">
+          <div className="portfolio-insights-feature-head">
+            <div>
+              <div className="overview-section-title">Top position</div>
+              <div className="portfolio-insights-card-sub">Largest coin by current value</div>
+            </div>
+            <BarChart3 size={16} color="var(--accent)" />
+          </div>
+          {topPosition ? (
+            <>
+              <div className="portfolio-insights-feature-value">{topPosition.asset.symbol}</div>
+              <div className="portfolio-insights-card-sub">
+                {fmtUsd(topPosition.currentUsd)} current value · {CHAIN_LABELS[topPosition.asset.chain]}
+              </div>
+            </>
+          ) : (
+            <div className="portfolio-insights-card-sub">Add wallets and sync transactions to surface position analytics.</div>
+          )}
         </div>
 
-        <div className="overview-section-card" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div className="overview-section-title">Quick Actions</div>
-          <button className="btn-ghost" onClick={onOpenHistory} style={{ justifyContent: 'space-between' }}>
+        <div className="overview-section-card portfolio-insights-feature-card">
+          <div className="portfolio-insights-feature-head">
+            <div>
+              <div className="overview-section-title">Best P&amp;L</div>
+              <div className="portfolio-insights-card-sub">Strongest covered winner</div>
+            </div>
+            <TrendingUp size={16} color="var(--accent)" />
+          </div>
+          {bestPosition ? (
+            <>
+              <div className="portfolio-insights-feature-value">{bestPosition.asset.symbol}</div>
+              <div className="portfolio-insights-card-sub" style={{ color: 'var(--accent)' }}>
+                {fmtSignedUsd(bestPosition.deltaUsd)} · {fmtPct(bestPosition.deltaPct)}
+              </div>
+            </>
+          ) : (
+            <div className="portfolio-insights-card-sub">No positions with enough transaction context yet.</div>
+          )}
+        </div>
+
+        <div className="overview-section-card portfolio-insights-feature-card">
+          <div className="portfolio-insights-feature-head">
+            <div>
+              <div className="overview-section-title">Worst P&amp;L</div>
+              <div className="portfolio-insights-card-sub">Biggest covered drawdown</div>
+            </div>
+            <TrendingDown size={16} color="var(--negative)" />
+          </div>
+          {worstPosition ? (
+            <>
+              <div className="portfolio-insights-feature-value">{worstPosition.asset.symbol}</div>
+              <div className="portfolio-insights-card-sub" style={{ color: 'var(--negative)' }}>
+                {fmtSignedUsd(worstPosition.deltaUsd)} · {fmtPct(worstPosition.deltaPct)}
+              </div>
+            </>
+          ) : (
+            <div className="portfolio-insights-card-sub">No losing position is measurable yet from the synced scope.</div>
+          )}
+        </div>
+
+        <div className="overview-section-card portfolio-insights-actions-card">
+          <div className="portfolio-insights-feature-head">
+            <div>
+              <div className="overview-section-title">Next actions</div>
+              <div className="portfolio-insights-card-sub">Jump straight to the surfaces that explain the book.</div>
+            </div>
+            <ShieldCheck size={16} color="var(--fg-subtle)" />
+          </div>
+          <button className="btn-ghost portfolio-insights-action-button" onClick={onOpenHistory}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
               <LayoutDashboard size={14} />
               Review transactions
             </span>
             <ArrowRight size={14} />
           </button>
-          <button className="btn-ghost" onClick={onOpenWallets} style={{ justifyContent: 'space-between' }}>
+          <button className="btn-ghost portfolio-insights-action-button" onClick={onOpenWallets}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
               <Wallet size={14} />
               Inspect wallet balances
             </span>
             <ArrowRight size={14} />
           </button>
-          {topPositions[0] && (
+          {topPosition && (
             <button
-              className="btn-ghost"
-              onClick={() => onOpenProduct(topPositions[0].asset)}
-              style={{ justifyContent: 'space-between' }}
+              className="btn-ghost portfolio-insights-action-button"
+              onClick={() => onOpenProduct(topPosition.asset)}
             >
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 <ExternalLink size={14} />
-                Inspect {topPositions[0].asset.symbol}
+                Inspect {topPosition.asset.symbol}
               </span>
               <ArrowRight size={14} />
             </button>
           )}
-          <div style={{ fontSize: 12, color: 'var(--fg-subtle)', lineHeight: 1.5 }}>
-            Invested values here come from synced transaction history and current wallet scope. This surface is per coin, but not yet contract-perfect for every historical token movement.
-          </div>
         </div>
       </div>
 
       <div className="overview-section-card">
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
-          <div className="overview-section-title">Top Positions</div>
+          <div>
+            <div className="overview-section-title">Top Positions</div>
+            <div className="portfolio-insights-card-sub">Current value vs remaining invested basis by coin</div>
+          </div>
           <div style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>
-            Current value vs remaining invested basis by coin
+            {topPositions.length} of {trackedAssets.length} visible positions
           </div>
         </div>
 
@@ -234,67 +320,72 @@ export function PortfolioInsightsPage({
               Add wallets and sync transactions to build coin-level insights.
             </div>
           ) : (
-            topPositions.map((row) => (
-              <div
-                key={row.asset.id}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'minmax(0, 1.4fr) repeat(4, minmax(0, 1fr)) auto',
-                  gap: 12,
-                  alignItems: 'center',
-                  padding: '14px 16px',
-                  borderRadius: 12,
-                  border: '1px solid var(--border)',
-                  background: 'var(--bg-elevated)',
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => onOpenProduct(row.asset)}
-                  style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}
-                >
-                  <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--fg)' }}>
-                    {row.asset.symbol}
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>
-                    {row.asset.name} - {CHAIN_LABELS[row.asset.chain]} - {shortenAddress(row.asset.address)}
-                  </div>
-                </button>
-
-                <div>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Invested</div>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--fg)' }}>
-                    {row.investedUsd > 0 ? fmtUsd(row.investedUsd) : '-'}
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Current</div>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--fg)' }}>
-                    {fmtUsd(row.currentUsd)}
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Delta</div>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: row.deltaUsd >= 0 ? 'var(--accent)' : 'var(--negative)' }}>
-                    {row.deltaUsd >= 0 ? '+' : '-'}{fmtUsd(Math.abs(row.deltaUsd))}
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Txs</div>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--fg)' }}>
-                    {row.txCount.toLocaleString('en-US')}
-                  </div>
-                  <div style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>{fmtPct(row.deltaPct)}</div>
-                </div>
-
-                <button className="btn-ghost" onClick={() => onOpenPnl(row.asset)} style={{ whiteSpace: 'nowrap' }}>
-                  Open P&amp;L
-                </button>
+            <>
+              <div className="portfolio-insights-table-head">
+                <span>Position</span>
+                <span>Invested</span>
+                <span>Current</span>
+                <span>P&amp;L</span>
+                <span>Coverage</span>
+                <span />
               </div>
-            ))
+              {topPositions.map((row) => (
+                <div
+                  key={row.asset.id}
+                  className="portfolio-insights-row"
+                >
+                  <button
+                    type="button"
+                    onClick={() => onOpenProduct(row.asset)}
+                    style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}
+                  >
+                    <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--fg)' }}>
+                      {row.asset.symbol}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--fg-subtle)' }}>
+                      {row.asset.name} · {CHAIN_LABELS[row.asset.chain]} · {shortenAddress(row.asset.address)}
+                    </div>
+                  </button>
+
+                  <div>
+                    <div className="portfolio-insights-cell-value">
+                      {row.investedUsd > 0 ? fmtUsd(row.investedUsd) : '-'}
+                    </div>
+                    <div className="portfolio-insights-card-sub">remaining basis</div>
+                  </div>
+
+                  <div>
+                    <div className="portfolio-insights-cell-value">
+                      {fmtUsd(row.currentUsd)}
+                    </div>
+                    <div className="portfolio-insights-card-sub">spot value</div>
+                  </div>
+
+                  <div>
+                    <div
+                      className="portfolio-insights-cell-value"
+                      style={{ color: row.deltaUsd >= 0 ? 'var(--accent)' : 'var(--negative)' }}
+                    >
+                      {fmtSignedUsd(row.deltaUsd)}
+                    </div>
+                    <div className="portfolio-insights-card-sub">{fmtPct(row.deltaPct)}</div>
+                  </div>
+
+                  <div>
+                    <div className="portfolio-insights-cell-value">
+                      {row.txCount.toLocaleString('en-US')}
+                    </div>
+                    <div className="portfolio-insights-card-sub">
+                      {row.txCount > 0 ? 'tx-backed' : 'needs coverage'}
+                    </div>
+                  </div>
+
+                  <button className="btn-ghost" onClick={() => onOpenPnl(row.asset)} style={{ whiteSpace: 'nowrap' }}>
+                    Open P&amp;L
+                  </button>
+                </div>
+              ))}
+            </>
           )}
         </div>
       </div>
