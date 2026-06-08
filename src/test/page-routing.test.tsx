@@ -10,7 +10,12 @@ afterEach(() => {
 });
 
 function getDashboardNavButton() {
-  return screen.getAllByRole('button', { name: /Dashboard/i })[0];
+  return screen
+    .getAllByRole('button', { name: /^Dashboard$/i })
+    .find((button) => {
+      const className = typeof button.className === 'string' ? button.className : '';
+      return className.includes('app-nav-item') || className.includes('app-top-nav-btn') || className.includes('mobile-nav-tab-btn');
+    })!;
 }
 
 function Harness() {
@@ -34,7 +39,7 @@ describe('shell navigation', () => {
 });
 
 describe('Atlas product navigation', () => {
-  it('routes the dashboard quick actions into overview, history, assets, and planner flows', async () => {
+  function stubMedia() {
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({
       matches: false,
       media: '',
@@ -45,23 +50,53 @@ describe('Atlas product navigation', () => {
       removeEventListener: vi.fn(),
       dispatchEvent: vi.fn(),
     }));
+  }
+
+  it('normalizes legacy overview state to the dashboard surface', async () => {
+    stubMedia();
+
+    window.localStorage.setItem('pulseport_active_tab', 'overview');
 
     render(<App />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Portfolio insights/i }));
-    expect(await screen.findByText('Holdings, allocation, and performance by exact asset identity.')).toBeInTheDocument();
+    expect(await screen.findByText('Live Prices')).toBeInTheDocument();
+    expect(screen.queryByText('Portfolio Overview')).not.toBeInTheDocument();
+  });
 
-    fireEvent.click(screen.getByRole('button', { name: /Review transactions/i }));
+  it('opens Portfolio Insights from the dashboard quick action', async () => {
+    stubMedia();
+
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Portfolio insights Open the portfolio narrative and context\./i }));
+    expect(await screen.findByText('Total current value')).toBeInTheDocument();
+  });
+
+  it('opens Transactions from the dashboard quick action', async () => {
+    stubMedia();
+
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Review transactions/i }));
     expect(await screen.findByText('Full ledger for bridges, swaps, and cost-basis drill-down.')).toBeInTheDocument();
+  });
 
-    fireEvent.click(getDashboardNavButton());
-    fireEvent.click(screen.getByRole('button', { name: /Rebalance planner/i }));
+  it('preserves the rebalance planner jump from the dashboard quick action', async () => {
+    stubMedia();
+
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Rebalance planner Set target allocation and see the best path via PLS\./i }));
     expect(await screen.findByText('Coin visibility')).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: /Close Calculator/i })).toBeInTheDocument();
+  });
 
-    fireEvent.click(getDashboardNavButton());
-    expect(await screen.findByText('Live Prices')).toBeInTheDocument();
-    fireEvent.click(await screen.findByRole('button', { name: /Exit plan/i }));
+  it('opens the profit planner from the dashboard quick action', async () => {
+    stubMedia();
+
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Exit plan Open the profit planner for phased exits\./i }));
     expect(await screen.findByText('Profit Planner')).toBeInTheDocument();
   });
 

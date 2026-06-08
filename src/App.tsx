@@ -84,6 +84,7 @@ import { BackendDashboardTransitionPanel } from './components/BackendDashboardTr
 import { BackendHexStakeTransitionPanel } from './components/BackendHexStakeTransitionPanel';
 import { AtlasHomeSurface } from './components/atlas/AtlasHomeSurface';
 import { buildAtlasHomeSnapshot } from './components/atlas/atlas-portfolio-snapshot';
+import { PortfolioInsightsPage } from './components/PortfolioInsightsPage';
 
 const ERC20_ABI = [
   {
@@ -149,6 +150,10 @@ const MOCK_TRANSACTIONS: Transaction[] = [
   { id: 'm6', hash: '0x000...', timestamp: Date.now() - 86400000 * 1, type: 'deposit', from: '0x000...', to: MOCK_WALLET, asset: 'USDC', amount: 1000, chain: 'ethereum', valueUsd: 1000 },
   { id: 'm7', hash: '0x999...', timestamp: Date.now() - 86400000 * 0.5, type: 'deposit', from: '0x123...', to: MOCK_WALLET, asset: 'USDC', amount: 25000, chain: 'ethereum', valueUsd: 25000 },
 ];
+
+const PULSECHAIN_NATIVE_TX_MAX_PAGES = 300;
+const PULSECHAIN_TOKEN_TX_MAX_PAGES = 300;
+const PULSECHAIN_ETHERSCAN_TOKEN_OFFSET = 200;
 
 const PriceDisplay = ({ price, className }: { price: number, className?: string }) => {
   if (price === 0) return <span className={className}>$0.00</span>;
@@ -476,8 +481,8 @@ function decodeLibertySwapInput(input: string): { dstChainId: number; orderId: s
   }
 }
 
-type ActiveTab = 'home' | 'overview' | 'assets' | 'stakes' | 'history' | 'tracker' | 'defi' | 'bridge' | 'product';
-const ACTIVE_TABS: ActiveTab[] = ['home', 'overview', 'assets', 'stakes', 'history', 'tracker', 'defi', 'bridge'];
+type ActiveTab = 'home' | 'assets' | 'stakes' | 'history' | 'tracker' | 'defi' | 'bridge' | 'product';
+const ACTIVE_TABS: ActiveTab[] = ['home', 'assets', 'stakes', 'history', 'tracker', 'defi', 'bridge'];
 const ACTIVE_TAB_STORAGE_KEY = 'pulseport_active_tab';
 type FrontMarketPeriod = '5m' | '1h' | '6h' | '24h' | '7d';
 const FRONT_MARKET_PERIODS: FrontMarketPeriod[] = ['5m', '1h', '6h', '24h', '7d'];
@@ -485,7 +490,7 @@ const FRONT_MARKET_PERIODS: FrontMarketPeriod[] = ['5m', '1h', '6h', '24h', '7d'
 const readStoredActiveTab = (): ActiveTab => {
   if (typeof window === 'undefined') return 'home';
   const saved = window.localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
-  if (saved === 'product') return 'home';
+  if (saved === 'product' || saved === 'overview') return 'home';
   return ACTIVE_TABS.includes(saved as ActiveTab) ? (saved as ActiveTab) : 'home';
 };
 
@@ -1286,16 +1291,15 @@ export default function App() {
               // Etherscan-compat base - same proxy logic as above
               const esBase = resolveEtherscanCompatBase();
 
-              // Fetch per-token transfers in parallel using Etherscan-compat API.
-              // Per-token queries use a contract index and are ~instant even for active wallets,
-              // unlike the V2 /token-transfers endpoint which times out for busy addresses.
+              // Fetch broad token transfer history first, then supplement with per-token
+              // Etherscan-compat queries for contracts Blockscout may miss or delay.
               const pcTokenContracts = (TOKENS['pulsechain'] as any[]).filter(t => t.address !== 'native');
 
               const fetchEsTokenTx = async (contractAddress: string): Promise<any[]> => {
                 const controller = new AbortController();
                 const timeout = setTimeout(() => controller.abort(), 15000);
                 try {
-                  const url = `${esBase}?module=account&action=tokentx&address=${address}&contractaddress=${contractAddress}&page=1&offset=50&sort=desc`;
+                  const url = `${esBase}?module=account&action=tokentx&address=${address}&contractaddress=${contractAddress}&page=1&offset=${PULSECHAIN_ETHERSCAN_TOKEN_OFFSET}&sort=desc`;
                   const res = await fetch(url, { signal: controller.signal });
                   if (!res.ok) return [];
                   const data = await res.json();
@@ -1308,28 +1312,47 @@ export default function App() {
                 }
               };
 
-              const [bsTxs, bsTokenBalances, esTokenArrays] = await Promise.all([
-                fetchPcV2Pages(`/addresses/${address}/transactions`),
+              const [bsTxs, bsTokenBalances, blockscoutTokenTransfers, esTokenArrays] = await Promise.all([
+                fetchPcV2Pages(`/addresses/${address}/transactions`, PULSECHAIN_NATIVE_TX_MAX_PAGES),
                 fetchPcTokenBalances(),
+                fetchPcV2Pages(`/addresses/${address}/token-transfers?type=ERC-20`, PULSECHAIN_TOKEN_TX_MAX_PAGES).catch(() => []),
                 Promise.all(pcTokenContracts.map(t => fetchEsTokenTx(t.address)))
               ]);
 
-              // Normalise Etherscan-compat records to the V2 shape the processing loop expects,
-              // then deduplicate by txHash+logIndex (same tx may appear across token queries).
+              // Normalize Blockscout + Etherscan-compat records to the V2 shape the processing
+              // loop expects, then deduplicate by txHash+logIndex.
               const seen = new Set<string>();
-              const bsTokenTxs = esTokenArrays.flat().reduce<any[]>((acc, tx) => {
-                const key = `${tx.hash}-${tx.logIndex ?? tx.transactionIndex ?? Math.random()}`;
+              const normalizeBlockscoutTokenTx = (tx: any) => ({
+                from: { hash: tx.from?.hash || '' },
+                to: { hash: tx.to?.hash || '' },
+                token: {
+                  symbol: tx.token?.symbol,
+                  decimals: tx.token?.decimals,
+                  address: tx.token?.address,
+                },
+                total: { value: tx.total?.value },
+                transaction_hash: tx.transaction_hash || tx.hash,
+                timestamp: tx.timestamp,
+                log_index: tx.log_index,
+                method: tx.method ?? null,
+              });
+              const bsTokenTxs = [...blockscoutTokenTransfers.map(normalizeBlockscoutTokenTx), ...esTokenArrays.flat()].reduce<any[]>((acc, tx) => {
+                const key = `${tx.transaction_hash || tx.hash}-${tx.log_index ?? tx.logIndex ?? tx.transactionIndex ?? Math.random()}`;
                 if (seen.has(key)) return acc;
                 seen.add(key);
                 acc.push({
-                  from: { hash: tx.from },
-                  to: { hash: tx.to },
-                  token: { symbol: tx.tokenSymbol, decimals: tx.tokenDecimal, address: tx.contractAddress },
-                  total: { value: tx.value },
-                  transaction_hash: tx.hash,
-                  timestamp: tx.timeStamp ? new Date(Number(tx.timeStamp) * 1000).toISOString() : null,
-                  log_index: tx.logIndex,
-                  method: null,
+                  from: { hash: tx.from?.hash || tx.from },
+                  to: { hash: tx.to?.hash || tx.to },
+                  token: {
+                    symbol: tx.token?.symbol || tx.tokenSymbol,
+                    decimals: tx.token?.decimals || tx.tokenDecimal,
+                    address: tx.token?.address || tx.contractAddress,
+                  },
+                  total: { value: tx.total?.value || tx.value },
+                  transaction_hash: tx.transaction_hash || tx.hash,
+                  timestamp: tx.timeStamp ? new Date(Number(tx.timeStamp) * 1000).toISOString() : tx.timestamp ?? null,
+                  log_index: tx.log_index ?? tx.logIndex,
+                  method: tx.method ?? null,
                 });
                 return acc;
               }, []);
@@ -3256,7 +3279,7 @@ export default function App() {
             ...(holders != null ? { holders } : {}),
           },
         }));
-        // Cache DexScreener image into tokenLogos (helps overview cards)
+        // Cache DexScreener image into tokenLogos (helps dashboard cards)
         const dsImg = top?.info?.imageUrl;
         if (dsImg && !isNativePls && !STATIC_LOGOS[addr.toLowerCase()]) setTokenLogos(prev => ({ ...prev, [addr.toLowerCase()]: dsImg }));
       } catch { /* ignore */ }
@@ -3264,11 +3287,11 @@ export default function App() {
     })();
   }, [selectedProductAsset?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // -- Auto-fetch market data for top 9 overview assets when Overview tab is active --
+  // -- Auto-fetch market data for top 9 dashboard assets when Dashboard is active --
   // This ensures all cards show live market data (mcap, liquidity, vol) without requiring
   // the user to click each card individually.
   useEffect(() => {
-    if (activeTab !== 'overview' || currentAssets.length === 0) return;
+    if (activeTab !== 'home' || currentAssets.length === 0) return;
     const topAssets = [...currentAssets].sort((a, b) => b.value - a.value).slice(0, 9);
     const toFetch = topAssets.filter(a => {
       const addr = (a as any).address;
@@ -3449,7 +3472,7 @@ export default function App() {
   ]), []);
 
   useEffect(() => {
-    if (activeTab !== 'overview' && activeTab !== 'home') return;
+    if (activeTab !== 'home') return;
     const missing = coreLiveTokens.filter(token => !tokenMarketData[`live:${token.id}`]);
     if (missing.length === 0) return;
     const WPLS = '0xa1077a294dde1b09bb078844df40758a5d0f9a27';
@@ -3665,7 +3688,12 @@ export default function App() {
   };
 
   const handleAtlasNavigate = (target: string) => {
-    const atlasTabs: ActiveTab[] = ['overview', 'assets', 'stakes', 'history', 'defi', 'bridge'];
+    if (target === 'overview') {
+      setActiveTab('home');
+      return;
+    }
+
+    const atlasTabs: ActiveTab[] = ['home', 'assets', 'stakes', 'history', 'tracker', 'defi', 'bridge'];
     if (atlasTabs.includes(target as ActiveTab)) {
       setActiveTab(target as ActiveTab);
       return;
@@ -3710,6 +3738,7 @@ export default function App() {
 
   const navItems = [
     { id: 'home', label: 'Dashboard', icon: Activity },
+    { id: 'tracker', label: 'Portfolio Insights', icon: LayoutDashboard },
     { id: 'assets', label: 'Wallets', icon: Coins },
     { id: 'stakes', label: 'HEX Stakes', icon: Lock },
     { id: 'history', label: 'Transactions', icon: HistoryIcon },
@@ -3721,9 +3750,9 @@ export default function App() {
       title: 'Dashboard',
       subtitle: 'Current portfolio state across PulseChain, Ethereum, and Base.',
     },
-    overview: {
+    tracker: {
       title: 'Portfolio Insights',
-      subtitle: 'Holdings, allocation, and performance by exact asset identity.',
+      subtitle: 'Per-coin invested basis, current value, and performance from synced transaction history.',
     },
     stakes: {
       title: 'HEX Staking',
@@ -3751,7 +3780,7 @@ export default function App() {
     : pageMeta[activeTab as keyof typeof pageMeta]?.title || 'Pulseport';
   const pageSubtitle = activeTab === 'product'
     ? (activeProductAsset
-        ? `${activeProductAsset.name || activeProductAsset.symbol} across your wallet, overview, and holdings data surfaces.`
+        ? `${activeProductAsset.name || activeProductAsset.symbol} across your dashboard, portfolio insights, and holdings data surfaces.`
         : 'Token-level wallet detail.')
     : pageMeta[activeTab as keyof typeof pageMeta]?.subtitle || '';
   const mobilePrimaryNavItems = navItems.filter(item => ['home', 'assets', 'stakes'].includes(item.id));
@@ -4072,7 +4101,7 @@ export default function App() {
                       backendHexStakeResponse={backendHexStakeResponse}
                     />
                     <div className="front-actions">
-                      <button className="btn-primary front-primary-action" onClick={() => wallets.length > 0 ? setActiveTab('overview') : setIsAddingWallet(true)}>
+                      <button className="btn-primary front-primary-action" onClick={() => wallets.length > 0 ? setActiveTab('tracker') : setIsAddingWallet(true)}>
                         {wallets.length > 0 ? 'Portfolio Insights' : 'Add Wallet'} <ArrowRight size={15} />
                       </button>
                       <button className="btn-ghost front-secondary-action" onClick={() => setActiveTab('assets')}>
@@ -4191,7 +4220,7 @@ export default function App() {
                   </div>
                   <div className="front-info-grid">
                     {[
-                      { eyebrow: 'Portfolio', title: 'Overview', detail: 'Allocation and top holdings.', icon: LayoutDashboard, action: () => setActiveTab('overview') },
+                      { eyebrow: 'Portfolio', title: 'Insights', detail: 'Per-coin invested basis and current value.', icon: LayoutDashboard, action: () => setActiveTab('tracker') },
                       { eyebrow: 'Wallets', title: 'Wallets', detail: 'Holdings and balances by wallet.', icon: WalletIcon, action: () => setActiveTab('assets') },
                       { eyebrow: 'HEX', title: 'HEX stakes', detail: 'pHEX and eHEX stake tracker.', icon: Lock, action: () => setActiveTab('stakes') },
                       { eyebrow: 'Transactions', title: 'History', detail: 'Swaps, transfers, and filters.', icon: HistoryIcon, action: () => setActiveTab('history') },
@@ -4283,8 +4312,8 @@ export default function App() {
                         );
                       })}
                     </div>
-                    <button className="front-inline-link" onClick={() => wallets.length > 0 ? setActiveTab('overview') : setIsAddingWallet(true)}>
-                      {wallets.length > 0 ? 'Open the full portfolio' : 'Add your first wallet'} <ChevronRight size={14} />
+                    <button className="front-inline-link" onClick={() => wallets.length > 0 ? setActiveTab('tracker') : setIsAddingWallet(true)}>
+                      {wallets.length > 0 ? 'Open portfolio insights' : 'Add your first wallet'} <ChevronRight size={14} />
                     </button>
                   </div>
 
@@ -4355,9 +4384,22 @@ export default function App() {
               </motion.div>
             )}
 
-            {activeTab === 'overview' && (
-              <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="front-page">
-                <AtlasHomeSurface snapshot={atlasHomeSnapshot} onNavigate={handleDashboardAtlasNavigate} />
+            {activeTab === 'tracker' && (
+              <motion.div key="tracker" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <PortfolioInsightsPage
+                  wallets={wallets}
+                  assets={currentAssets}
+                  transactions={currentTransactions}
+                  summary={summary}
+                  onOpenProduct={(asset) => {
+                    setSelectedProductAsset(asset);
+                    setProductReturnTab('tracker');
+                    setActiveTab('product');
+                  }}
+                  onOpenPnl={(asset) => setPnlAsset(asset)}
+                  onOpenHistory={() => setActiveTab('history')}
+                  onOpenWallets={() => setActiveTab('assets')}
+                />
               </motion.div>
             )}
 
@@ -4419,7 +4461,7 @@ export default function App() {
                     setEditingWalletAddress(walletAddress);
                     setEditWalletName(name);
                   }}
-                  onOpenOverview={() => setActiveTab('overview')}
+                  onOpenOverview={() => setActiveTab('tracker')}
                   onOpenTransactions={() => setActiveTab('history')}
                   onToggleHiddenCoins={() => setShowHiddenCoins(v => !v)}
                   onToggleAllocationCalculator={() => setAllocationCalculatorOpen(v => !v)}
@@ -4687,7 +4729,7 @@ export default function App() {
               pulseUsdPrice={prices['pulsechain']?.usd ?? 0}
               isLoading={isLoading}
               onSyncSwaps={fetchPortfolio}
-              onOpenOverview={() => setActiveTab('overview')}
+              onOpenOverview={() => setActiveTab('tracker')}
               onOpenWallets={() => setActiveTab('assets')}
             />
           </motion.div>

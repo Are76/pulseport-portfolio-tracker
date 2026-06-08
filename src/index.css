@@ -3406,6 +3406,144 @@ textarea:focus-visible,
   border-radius: 14px 14px 0 0;
 }
 
+.portfolio-insights-summary-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.85fr);
+  gap: 16px;
+}
+
+.portfolio-insights-hero-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 16%, transparent), transparent 48%),
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 8%, var(--bg-elevated)), var(--bg-elevated));
+  padding: 22px;
+  min-height: 168px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.portfolio-insights-hero-value {
+  margin: 10px 0 12px;
+  font-size: clamp(42px, 7vw, 68px);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  font-weight: 900;
+  color: var(--fg);
+}
+
+.portfolio-insights-card-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fg-subtle);
+}
+
+.portfolio-insights-card-sub {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--fg-subtle);
+}
+
+.portfolio-insights-secondary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.portfolio-insights-feature-card,
+.portfolio-insights-actions-card {
+  min-height: 170px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+}
+
+.portfolio-insights-feature-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.portfolio-insights-feature-value {
+  font-size: 30px;
+  line-height: 1.05;
+  font-weight: 900;
+  color: var(--fg);
+}
+
+.portfolio-insights-action-button {
+  width: 100%;
+  justify-content: space-between;
+  min-height: 42px;
+}
+
+.portfolio-insights-table-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) repeat(4, minmax(0, 1fr)) auto;
+  gap: 12px;
+  padding: 0 16px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-subtle);
+}
+
+.portfolio-insights-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) repeat(4, minmax(0, 1fr)) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-elevated) 82%, transparent);
+}
+
+.portfolio-insights-cell-value {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--fg);
+}
+
+@media (max-width: 1100px) {
+  .portfolio-insights-summary-grid,
+  .portfolio-insights-secondary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .portfolio-insights-table-head {
+    display: none;
+  }
+
+  .portfolio-insights-row {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+@media (max-width: 640px) {
+  .portfolio-insights-row {
+    grid-template-columns: 1fr;
+  }
+
+  .portfolio-insights-feature-card,
+  .portfolio-insights-actions-card,
+  .portfolio-insights-hero-card {
+    min-height: auto;
+  }
+}
+
 /* -- PROGRESS BAR ------------------------------------------------------ */
 .progress-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
 .progress-bar-fill {
