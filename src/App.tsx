@@ -4414,6 +4414,7 @@ export default function App() {
                   walletAssets={walletAssets}
                   hiddenAssetRows={hiddenAssetRows}
                   hiddenTokens={hiddenTokens}
+                  spamTokenIds={spamTokenIds}
                   customCoinsCount={customCoins.length}
                   hideDust={hideDust}
                   hideSpam={hideSpam}

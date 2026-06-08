@@ -16,6 +16,7 @@ import {
 import { HoldingsTable } from '../components/HoldingsTable';
 import type { Asset, Chain, HexStake, Transaction, Wallet } from '../types';
 import type { HoldingDisplayAsset, HoldingSortField } from '../components/HoldingsTable';
+import { filterVisibleAssets } from '../utils/visibleAssets';
 
 type WalletChainFilter = 'all' | 'pulsechain' | 'ethereum' | 'base';
 type WalletViewMode = 'combined' | 'per-wallet';
@@ -31,6 +32,7 @@ interface WalletsPageProps {
   walletAssets: Record<string, Asset[]>;
   hiddenAssetRows: HiddenAssetRow[];
   hiddenTokens: string[];
+  spamTokenIds: string[];
   customCoinsCount: number;
   hideDust: boolean;
   hideSpam: boolean;
@@ -118,6 +120,7 @@ export function WalletsPage({
   walletAssets,
   hiddenAssetRows,
   hiddenTokens,
+  spamTokenIds,
   customCoinsCount,
   hideDust,
   hideSpam,
@@ -180,12 +183,20 @@ export function WalletsPage({
     ? null
     : wallets.find(wallet => wallet.address.toLowerCase() === selectedWalletAddr) ?? null;
   const selectedScopeKey = selectedScope?.address.toLowerCase() ?? null;
+  const applyVisibilityFilters = useMemo(() => (
+    (assets: Asset[]) => filterVisibleAssets(assets, {
+      hiddenTokens,
+      hideDust,
+      hideSpam,
+      spamTokenIds,
+    })
+  ), [hiddenTokens, hideDust, hideSpam, spamTokenIds]);
 
   const visibleWalletAssets = selectedScope
-    ? (walletAssets[selectedWalletAddr] || [])
+    ? applyVisibilityFilters(walletAssets[selectedWalletAddr] || [])
     : currentAssets;
   const scopedTransactions = selectedScopeKey
-    ? currentTransactions.filter(tx => tx.from === selectedScopeKey || tx.to === selectedScopeKey)
+    ? currentTransactions.filter(tx => tx.from?.toLowerCase() === selectedScopeKey || tx.to?.toLowerCase() === selectedScopeKey)
     : currentTransactions;
 
   const selectedLiquidUsd = visibleWalletAssets.reduce((sum, asset) => sum + asset.value, 0);
@@ -201,14 +212,14 @@ export function WalletsPage({
 
   const walletPillData = useMemo(() => wallets.map(wallet => {
     const walletKey = wallet.address.toLowerCase();
-    const assets = walletAssets[walletKey] || [];
+    const assets = applyVisibilityFilters(walletAssets[walletKey] || []);
     return {
       wallet,
       walletKey,
       totalUsd: assets.reduce((sum, asset) => sum + asset.value, 0),
       tokenCount: assets.length,
     };
-  }), [walletAssets, wallets]);
+  }), [applyVisibilityFilters, walletAssets, wallets]);
   const visibleWalletPills = selectedScope
     ? walletPillData.filter(({ walletKey }) => walletKey === selectedScopeKey)
     : walletPillData;
@@ -585,9 +596,10 @@ export function WalletsPage({
         ) : (
           <div className="wallets-atlas-wallet-groups">
             {visibleWalletPills.map(({ wallet, walletKey, totalUsd, tokenCount }) => {
-              const walletChainAssets = filterByChain(walletAssets[walletKey] || [], walletChainFilter);
+              const walletVisibleAssets = applyVisibilityFilters(walletAssets[walletKey] || []);
+              const walletChainAssets = filterByChain(walletVisibleAssets, walletChainFilter);
               const walletDisplayAssets = normalizeHoldingAssets(walletChainAssets);
-              const walletTransactions = currentTransactions.filter(tx => tx.from === walletKey || tx.to === walletKey);
+              const walletTransactions = currentTransactions.filter(tx => tx.from?.toLowerCase() === walletKey || tx.to?.toLowerCase() === walletKey);
 
               if (walletDisplayAssets.length === 0) return null;
 
@@ -606,7 +618,7 @@ export function WalletsPage({
 
                   <HoldingsTable
                     assets={walletDisplayAssets}
-                    allAssets={walletAssets[walletKey] || []}
+                    allAssets={walletVisibleAssets}
                     wallets={[wallet]}
                     totalValueUsd={totalPortfolioUsd}
                     plsUsdPrice={plsUsdPrice}
