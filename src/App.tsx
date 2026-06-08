@@ -84,6 +84,7 @@ import { BackendDashboardTransitionPanel } from './components/BackendDashboardTr
 import { BackendHexStakeTransitionPanel } from './components/BackendHexStakeTransitionPanel';
 import { AtlasHomeSurface } from './components/atlas/AtlasHomeSurface';
 import { buildAtlasHomeSnapshot } from './components/atlas/atlas-portfolio-snapshot';
+import { PortfolioInsightsPage } from './components/PortfolioInsightsPage';
 
 const ERC20_ABI = [
   {
@@ -149,6 +150,10 @@ const MOCK_TRANSACTIONS: Transaction[] = [
   { id: 'm6', hash: '0x000...', timestamp: Date.now() - 86400000 * 1, type: 'deposit', from: '0x000...', to: MOCK_WALLET, asset: 'USDC', amount: 1000, chain: 'ethereum', valueUsd: 1000 },
   { id: 'm7', hash: '0x999...', timestamp: Date.now() - 86400000 * 0.5, type: 'deposit', from: '0x123...', to: MOCK_WALLET, asset: 'USDC', amount: 25000, chain: 'ethereum', valueUsd: 25000 },
 ];
+
+const PULSECHAIN_NATIVE_TX_MAX_PAGES = 300;
+const PULSECHAIN_TOKEN_TX_MAX_PAGES = 300;
+const PULSECHAIN_ETHERSCAN_TOKEN_OFFSET = 200;
 
 const PriceDisplay = ({ price, className }: { price: number, className?: string }) => {
   if (price === 0) return <span className={className}>$0.00</span>;
@@ -1286,16 +1291,15 @@ export default function App() {
               // Etherscan-compat base - same proxy logic as above
               const esBase = resolveEtherscanCompatBase();
 
-              // Fetch per-token transfers in parallel using Etherscan-compat API.
-              // Per-token queries use a contract index and are ~instant even for active wallets,
-              // unlike the V2 /token-transfers endpoint which times out for busy addresses.
+              // Fetch broad token transfer history first, then supplement with per-token
+              // Etherscan-compat queries for contracts Blockscout may miss or delay.
               const pcTokenContracts = (TOKENS['pulsechain'] as any[]).filter(t => t.address !== 'native');
 
               const fetchEsTokenTx = async (contractAddress: string): Promise<any[]> => {
                 const controller = new AbortController();
                 const timeout = setTimeout(() => controller.abort(), 15000);
                 try {
-                  const url = `${esBase}?module=account&action=tokentx&address=${address}&contractaddress=${contractAddress}&page=1&offset=50&sort=desc`;
+                  const url = `${esBase}?module=account&action=tokentx&address=${address}&contractaddress=${contractAddress}&page=1&offset=${PULSECHAIN_ETHERSCAN_TOKEN_OFFSET}&sort=desc`;
                   const res = await fetch(url, { signal: controller.signal });
                   if (!res.ok) return [];
                   const data = await res.json();
@@ -1308,28 +1312,47 @@ export default function App() {
                 }
               };
 
-              const [bsTxs, bsTokenBalances, esTokenArrays] = await Promise.all([
-                fetchPcV2Pages(`/addresses/${address}/transactions`),
+              const [bsTxs, bsTokenBalances, blockscoutTokenTransfers, esTokenArrays] = await Promise.all([
+                fetchPcV2Pages(`/addresses/${address}/transactions`, PULSECHAIN_NATIVE_TX_MAX_PAGES),
                 fetchPcTokenBalances(),
+                fetchPcV2Pages(`/addresses/${address}/token-transfers?type=ERC-20`, PULSECHAIN_TOKEN_TX_MAX_PAGES).catch(() => []),
                 Promise.all(pcTokenContracts.map(t => fetchEsTokenTx(t.address)))
               ]);
 
-              // Normalise Etherscan-compat records to the V2 shape the processing loop expects,
-              // then deduplicate by txHash+logIndex (same tx may appear across token queries).
+              // Normalize Blockscout + Etherscan-compat records to the V2 shape the processing
+              // loop expects, then deduplicate by txHash+logIndex.
               const seen = new Set<string>();
-              const bsTokenTxs = esTokenArrays.flat().reduce<any[]>((acc, tx) => {
-                const key = `${tx.hash}-${tx.logIndex ?? tx.transactionIndex ?? Math.random()}`;
+              const normalizeBlockscoutTokenTx = (tx: any) => ({
+                from: { hash: tx.from?.hash || '' },
+                to: { hash: tx.to?.hash || '' },
+                token: {
+                  symbol: tx.token?.symbol,
+                  decimals: tx.token?.decimals,
+                  address: tx.token?.address,
+                },
+                total: { value: tx.total?.value },
+                transaction_hash: tx.transaction_hash || tx.hash,
+                timestamp: tx.timestamp,
+                log_index: tx.log_index,
+                method: tx.method ?? null,
+              });
+              const bsTokenTxs = [...blockscoutTokenTransfers.map(normalizeBlockscoutTokenTx), ...esTokenArrays.flat()].reduce<any[]>((acc, tx) => {
+                const key = `${tx.transaction_hash || tx.hash}-${tx.log_index ?? tx.logIndex ?? tx.transactionIndex ?? Math.random()}`;
                 if (seen.has(key)) return acc;
                 seen.add(key);
                 acc.push({
-                  from: { hash: tx.from },
-                  to: { hash: tx.to },
-                  token: { symbol: tx.tokenSymbol, decimals: tx.tokenDecimal, address: tx.contractAddress },
-                  total: { value: tx.value },
-                  transaction_hash: tx.hash,
-                  timestamp: tx.timeStamp ? new Date(Number(tx.timeStamp) * 1000).toISOString() : null,
-                  log_index: tx.logIndex,
-                  method: null,
+                  from: { hash: tx.from?.hash || tx.from },
+                  to: { hash: tx.to?.hash || tx.to },
+                  token: {
+                    symbol: tx.token?.symbol || tx.tokenSymbol,
+                    decimals: tx.token?.decimals || tx.tokenDecimal,
+                    address: tx.token?.address || tx.contractAddress,
+                  },
+                  total: { value: tx.total?.value || tx.value },
+                  transaction_hash: tx.transaction_hash || tx.hash,
+                  timestamp: tx.timeStamp ? new Date(Number(tx.timeStamp) * 1000).toISOString() : tx.timestamp ?? null,
+                  log_index: tx.log_index ?? tx.logIndex,
+                  method: tx.method ?? null,
                 });
                 return acc;
               }, []);
@@ -3665,7 +3688,7 @@ export default function App() {
   };
 
   const handleAtlasNavigate = (target: string) => {
-    const atlasTabs: ActiveTab[] = ['overview', 'assets', 'stakes', 'history', 'defi', 'bridge'];
+    const atlasTabs: ActiveTab[] = ['overview', 'assets', 'stakes', 'history', 'tracker', 'defi', 'bridge'];
     if (atlasTabs.includes(target as ActiveTab)) {
       setActiveTab(target as ActiveTab);
       return;
@@ -3722,8 +3745,12 @@ export default function App() {
       subtitle: 'Current portfolio state across PulseChain, Ethereum, and Base.',
     },
     overview: {
+      title: 'Portfolio Overview',
+      subtitle: 'Holdings, allocation, and performance across tracked wallets.',
+    },
+    tracker: {
       title: 'Portfolio Insights',
-      subtitle: 'Holdings, allocation, and performance by exact asset identity.',
+      subtitle: 'Per-coin invested basis, current value, and performance from synced transaction history.',
     },
     stakes: {
       title: 'HEX Staking',
@@ -4072,7 +4099,7 @@ export default function App() {
                       backendHexStakeResponse={backendHexStakeResponse}
                     />
                     <div className="front-actions">
-                      <button className="btn-primary front-primary-action" onClick={() => wallets.length > 0 ? setActiveTab('overview') : setIsAddingWallet(true)}>
+                      <button className="btn-primary front-primary-action" onClick={() => wallets.length > 0 ? setActiveTab('tracker') : setIsAddingWallet(true)}>
                         {wallets.length > 0 ? 'Portfolio Insights' : 'Add Wallet'} <ArrowRight size={15} />
                       </button>
                       <button className="btn-ghost front-secondary-action" onClick={() => setActiveTab('assets')}>
@@ -4191,7 +4218,7 @@ export default function App() {
                   </div>
                   <div className="front-info-grid">
                     {[
-                      { eyebrow: 'Portfolio', title: 'Overview', detail: 'Allocation and top holdings.', icon: LayoutDashboard, action: () => setActiveTab('overview') },
+                      { eyebrow: 'Portfolio', title: 'Insights', detail: 'Per-coin invested basis and current value.', icon: LayoutDashboard, action: () => setActiveTab('tracker') },
                       { eyebrow: 'Wallets', title: 'Wallets', detail: 'Holdings and balances by wallet.', icon: WalletIcon, action: () => setActiveTab('assets') },
                       { eyebrow: 'HEX', title: 'HEX stakes', detail: 'pHEX and eHEX stake tracker.', icon: Lock, action: () => setActiveTab('stakes') },
                       { eyebrow: 'Transactions', title: 'History', detail: 'Swaps, transfers, and filters.', icon: HistoryIcon, action: () => setActiveTab('history') },
@@ -4283,8 +4310,8 @@ export default function App() {
                         );
                       })}
                     </div>
-                    <button className="front-inline-link" onClick={() => wallets.length > 0 ? setActiveTab('overview') : setIsAddingWallet(true)}>
-                      {wallets.length > 0 ? 'Open the full portfolio' : 'Add your first wallet'} <ChevronRight size={14} />
+                    <button className="front-inline-link" onClick={() => wallets.length > 0 ? setActiveTab('tracker') : setIsAddingWallet(true)}>
+                      {wallets.length > 0 ? 'Open portfolio insights' : 'Add your first wallet'} <ChevronRight size={14} />
                     </button>
                   </div>
 
@@ -4361,6 +4388,25 @@ export default function App() {
               </motion.div>
             )}
 
+            {activeTab === 'tracker' && (
+              <motion.div key="tracker" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <PortfolioInsightsPage
+                  wallets={wallets}
+                  assets={currentAssets}
+                  transactions={currentTransactions}
+                  summary={summary}
+                  onOpenProduct={(asset) => {
+                    setSelectedProductAsset(asset);
+                    setProductReturnTab('tracker');
+                    setActiveTab('product');
+                  }}
+                  onOpenPnl={(asset) => setPnlAsset(asset)}
+                  onOpenHistory={() => setActiveTab('history')}
+                  onOpenWallets={() => setActiveTab('assets')}
+                />
+              </motion.div>
+            )}
+
             {activeTab === 'assets' && (
               <motion.div key="assets" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <WalletsPage
@@ -4419,7 +4465,7 @@ export default function App() {
                     setEditingWalletAddress(walletAddress);
                     setEditWalletName(name);
                   }}
-                  onOpenOverview={() => setActiveTab('overview')}
+                  onOpenOverview={() => setActiveTab('tracker')}
                   onOpenTransactions={() => setActiveTab('history')}
                   onToggleHiddenCoins={() => setShowHiddenCoins(v => !v)}
                   onToggleAllocationCalculator={() => setAllocationCalculatorOpen(v => !v)}
@@ -4687,7 +4733,7 @@ export default function App() {
               pulseUsdPrice={prices['pulsechain']?.usd ?? 0}
               isLoading={isLoading}
               onSyncSwaps={fetchPortfolio}
-              onOpenOverview={() => setActiveTab('overview')}
+              onOpenOverview={() => setActiveTab('tracker')}
               onOpenWallets={() => setActiveTab('assets')}
             />
           </motion.div>

@@ -163,7 +163,7 @@ export function buildAtlasHomeSnapshot(input: AtlasSnapshotInput): AtlasHomeSnap
       id: 'insights',
       label: 'Portfolio insights',
       description: 'Open the portfolio narrative and context.',
-      target: 'overview',
+      target: 'tracker',
     },
     {
       id: 'transactions',

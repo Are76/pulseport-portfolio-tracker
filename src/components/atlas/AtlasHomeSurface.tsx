@@ -97,7 +97,7 @@ const DEFAULT_SNAPSHOT: AtlasHomeSnapshot = {
     { id: 'hex', symbol: 'HEX', price: '$0.00115', change: '-5.77%', ratio: '165 PLS', tone: 'negative', detailId: 'token:hex' },
   ],
   quickActions: [
-    { id: 'insights', label: 'Portfolio insights', description: 'Open the portfolio narrative and context.', target: 'overview' },
+    { id: 'insights', label: 'Portfolio insights', description: 'Open the portfolio narrative and context.', target: 'tracker' },
     { id: 'transactions', label: 'Review transactions', description: 'Go to the ledger with your current portfolio context.', target: 'history' },
     { id: 'rebalance', label: 'Rebalance planner', description: 'Set target allocation and see the best path via PLS.', target: 'overview:rebalance' },
     { id: 'exit-plan', label: 'Exit plan', description: 'Open the profit planner for phased exits.', target: 'planner' },

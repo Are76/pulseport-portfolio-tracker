@@ -10,7 +10,12 @@ afterEach(() => {
 });
 
 function getDashboardNavButton() {
-  return screen.getAllByRole('button', { name: /Dashboard/i })[0];
+  return screen
+    .getAllByRole('button', { name: /^Dashboard$/i })
+    .find((button) => {
+      const className = typeof button.className === 'string' ? button.className : '';
+      return className.includes('app-nav-item') || className.includes('app-top-nav-btn') || className.includes('mobile-nav-tab-btn');
+    })!;
 }
 
 function Harness() {
@@ -48,20 +53,20 @@ describe('Atlas product navigation', () => {
 
     render(<App />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Portfolio insights/i }));
-    expect(await screen.findByText('Holdings, allocation, and performance by exact asset identity.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Portfolio insights Open the portfolio narrative and context\./i }));
+    expect(await screen.findByText('Action Summary')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /Review transactions/i }));
     expect(await screen.findByText('Full ledger for bridges, swaps, and cost-basis drill-down.')).toBeInTheDocument();
 
     fireEvent.click(getDashboardNavButton());
-    fireEvent.click(screen.getByRole('button', { name: /Rebalance planner/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Rebalance planner Set target allocation and see the best path via PLS\./i }));
     expect(await screen.findByText('Coin visibility')).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: /Close Calculator/i })).toBeInTheDocument();
 
     fireEvent.click(getDashboardNavButton());
     expect(await screen.findByText('Live Prices')).toBeInTheDocument();
-    fireEvent.click(await screen.findByRole('button', { name: /Exit plan/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Exit plan Open the profit planner for phased exits\./i }));
     expect(await screen.findByText('Profit Planner')).toBeInTheDocument();
   });
 
