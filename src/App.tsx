@@ -3738,6 +3738,7 @@ export default function App() {
 
   const navItems = [
     { id: 'home', label: 'Dashboard', icon: Activity },
+    { id: 'tracker', label: 'Portfolio Insights', icon: LayoutDashboard },
     { id: 'assets', label: 'Wallets', icon: Coins },
     { id: 'stakes', label: 'HEX Stakes', icon: Lock },
     { id: 'history', label: 'Transactions', icon: HistoryIcon },

@@ -68,7 +68,7 @@ describe('Atlas product navigation', () => {
 
     render(<App />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Portfolio insights Open the portfolio narrative and context\./i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Portfolio insights Open the portfolio narrative and context\./i }));
     expect(await screen.findByText('Total current value')).toBeInTheDocument();
   });
 
@@ -77,7 +77,7 @@ describe('Atlas product navigation', () => {
 
     render(<App />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Review transactions/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Review transactions/i }));
     expect(await screen.findByText('Full ledger for bridges, swaps, and cost-basis drill-down.')).toBeInTheDocument();
   });
 

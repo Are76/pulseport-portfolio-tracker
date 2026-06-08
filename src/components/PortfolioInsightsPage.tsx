@@ -133,6 +133,7 @@ export function PortfolioInsightsPage({
   const dominantChain = React.useMemo(() => {
     const rows = Object.entries(summary.chainDistribution)
       .map(([chain, value]) => ({ chain: chain as Chain, value }))
+      .filter((row) => row.value > 0)
       .sort((a, b) => b.value - a.value);
     return rows[0];
   }, [summary.chainDistribution]);
@@ -147,16 +148,42 @@ export function PortfolioInsightsPage({
     () => positionInsights.filter((row) => row.txCount > 0),
     [positionInsights],
   );
-  const bestPosition = React.useMemo(
-    () => coveredPositions.filter((row) => row.deltaPct != null).sort((a, b) => (b.deltaPct ?? Number.NEGATIVE_INFINITY) - (a.deltaPct ?? Number.NEGATIVE_INFINITY))[0] ?? null,
+  const scoredPositions = React.useMemo(
+    () => coveredPositions.filter((row) => row.deltaPct != null),
     [coveredPositions],
   );
+  const positivePositions = React.useMemo(
+    () => scoredPositions.filter((row) => row.deltaUsd > 0),
+    [scoredPositions],
+  );
+  const negativePositions = React.useMemo(
+    () => scoredPositions.filter((row) => row.deltaUsd < 0),
+    [scoredPositions],
+  );
+  const bestPosition = React.useMemo(
+    () => [...(positivePositions.length > 0 ? positivePositions : scoredPositions)]
+      .sort((a, b) => (b.deltaPct ?? Number.NEGATIVE_INFINITY) - (a.deltaPct ?? Number.NEGATIVE_INFINITY))[0] ?? null,
+    [positivePositions, scoredPositions],
+  );
   const worstPosition = React.useMemo(
-    () => coveredPositions.filter((row) => row.deltaPct != null).sort((a, b) => (a.deltaPct ?? Number.POSITIVE_INFINITY) - (b.deltaPct ?? Number.POSITIVE_INFINITY))[0] ?? null,
-    [coveredPositions],
+    () => [...(negativePositions.length > 0 ? negativePositions : scoredPositions)]
+      .sort((a, b) => (a.deltaPct ?? Number.POSITIVE_INFINITY) - (b.deltaPct ?? Number.POSITIVE_INFINITY))[0] ?? null,
+    [negativePositions, scoredPositions],
   );
   const topPosition = topPositions[0] ?? null;
   const trackedCapital = summary.netInvestment > 0 ? summary.netInvestment : 0;
+  const trackedCapitalLabel = 'Tracked net investment';
+  const trackedCapitalSub = trackedCapital > 0
+    ? 'Net funded capital observed in the synced wallet scope'
+    : 'Needs synced transaction baseline';
+  const bestPositionLabel = positivePositions.length > 0 ? 'Best P&L' : 'Least negative P&L';
+  const bestPositionSub = positivePositions.length > 0
+    ? 'Strongest covered winner'
+    : 'Closest covered position to break-even';
+  const worstPositionLabel = negativePositions.length > 0 ? 'Worst P&L' : 'Smallest gain';
+  const worstPositionSub = negativePositions.length > 0
+    ? 'Biggest covered drawdown'
+    : 'Weakest covered winner still in profit';
   const coverageLabel = `${coveredPositions.length}/${trackedAssets.length}`;
   const coverageSubtext = transactions.length > 0
     ? `${transactions.length.toLocaleString('en-US')} synced tx rows in current wallet scope`
@@ -185,9 +212,9 @@ export function PortfolioInsightsPage({
           cols={3}
           items={[
             {
-              label: 'Remaining cost basis',
+              label: trackedCapitalLabel,
               value: trackedCapital > 0 ? fmtUsd(trackedCapital) : '-',
-              sub: trackedCapital > 0 ? 'Transaction-backed invested capital still in the book' : 'Needs synced transaction baseline',
+              sub: trackedCapitalSub,
             },
             {
               label: 'Total P&L',
@@ -229,8 +256,8 @@ export function PortfolioInsightsPage({
         <div className="overview-section-card portfolio-insights-feature-card">
           <div className="portfolio-insights-feature-head">
             <div>
-              <div className="overview-section-title">Best P&amp;L</div>
-              <div className="portfolio-insights-card-sub">Strongest covered winner</div>
+              <div className="overview-section-title">{bestPositionLabel}</div>
+              <div className="portfolio-insights-card-sub">{bestPositionSub}</div>
             </div>
             <TrendingUp size={16} color="var(--accent)" />
           </div>
@@ -249,8 +276,8 @@ export function PortfolioInsightsPage({
         <div className="overview-section-card portfolio-insights-feature-card">
           <div className="portfolio-insights-feature-head">
             <div>
-              <div className="overview-section-title">Worst P&amp;L</div>
-              <div className="portfolio-insights-card-sub">Biggest covered drawdown</div>
+              <div className="overview-section-title">{worstPositionLabel}</div>
+              <div className="portfolio-insights-card-sub">{worstPositionSub}</div>
             </div>
             <TrendingDown size={16} color="var(--negative)" />
           </div>
