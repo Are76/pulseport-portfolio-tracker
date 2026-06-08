@@ -481,8 +481,8 @@ function decodeLibertySwapInput(input: string): { dstChainId: number; orderId: s
   }
 }
 
-type ActiveTab = 'home' | 'overview' | 'assets' | 'stakes' | 'history' | 'tracker' | 'defi' | 'bridge' | 'product';
-const ACTIVE_TABS: ActiveTab[] = ['home', 'overview', 'assets', 'stakes', 'history', 'tracker', 'defi', 'bridge'];
+type ActiveTab = 'home' | 'assets' | 'stakes' | 'history' | 'tracker' | 'defi' | 'bridge' | 'product';
+const ACTIVE_TABS: ActiveTab[] = ['home', 'assets', 'stakes', 'history', 'tracker', 'defi', 'bridge'];
 const ACTIVE_TAB_STORAGE_KEY = 'pulseport_active_tab';
 type FrontMarketPeriod = '5m' | '1h' | '6h' | '24h' | '7d';
 const FRONT_MARKET_PERIODS: FrontMarketPeriod[] = ['5m', '1h', '6h', '24h', '7d'];
@@ -490,7 +490,7 @@ const FRONT_MARKET_PERIODS: FrontMarketPeriod[] = ['5m', '1h', '6h', '24h', '7d'
 const readStoredActiveTab = (): ActiveTab => {
   if (typeof window === 'undefined') return 'home';
   const saved = window.localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
-  if (saved === 'product') return 'home';
+  if (saved === 'product' || saved === 'overview') return 'home';
   return ACTIVE_TABS.includes(saved as ActiveTab) ? (saved as ActiveTab) : 'home';
 };
 
@@ -3279,7 +3279,7 @@ export default function App() {
             ...(holders != null ? { holders } : {}),
           },
         }));
-        // Cache DexScreener image into tokenLogos (helps overview cards)
+        // Cache DexScreener image into tokenLogos (helps dashboard cards)
         const dsImg = top?.info?.imageUrl;
         if (dsImg && !isNativePls && !STATIC_LOGOS[addr.toLowerCase()]) setTokenLogos(prev => ({ ...prev, [addr.toLowerCase()]: dsImg }));
       } catch { /* ignore */ }
@@ -3287,11 +3287,11 @@ export default function App() {
     })();
   }, [selectedProductAsset?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // -- Auto-fetch market data for top 9 overview assets when Overview tab is active --
+  // -- Auto-fetch market data for top 9 dashboard assets when Dashboard is active --
   // This ensures all cards show live market data (mcap, liquidity, vol) without requiring
   // the user to click each card individually.
   useEffect(() => {
-    if (activeTab !== 'overview' || currentAssets.length === 0) return;
+    if (activeTab !== 'home' || currentAssets.length === 0) return;
     const topAssets = [...currentAssets].sort((a, b) => b.value - a.value).slice(0, 9);
     const toFetch = topAssets.filter(a => {
       const addr = (a as any).address;
@@ -3472,7 +3472,7 @@ export default function App() {
   ]), []);
 
   useEffect(() => {
-    if (activeTab !== 'overview' && activeTab !== 'home') return;
+    if (activeTab !== 'home') return;
     const missing = coreLiveTokens.filter(token => !tokenMarketData[`live:${token.id}`]);
     if (missing.length === 0) return;
     const WPLS = '0xa1077a294dde1b09bb078844df40758a5d0f9a27';
@@ -3688,7 +3688,12 @@ export default function App() {
   };
 
   const handleAtlasNavigate = (target: string) => {
-    const atlasTabs: ActiveTab[] = ['overview', 'assets', 'stakes', 'history', 'tracker', 'defi', 'bridge'];
+    if (target === 'overview') {
+      setActiveTab('home');
+      return;
+    }
+
+    const atlasTabs: ActiveTab[] = ['home', 'assets', 'stakes', 'history', 'tracker', 'defi', 'bridge'];
     if (atlasTabs.includes(target as ActiveTab)) {
       setActiveTab(target as ActiveTab);
       return;
@@ -3744,10 +3749,6 @@ export default function App() {
       title: 'Dashboard',
       subtitle: 'Current portfolio state across PulseChain, Ethereum, and Base.',
     },
-    overview: {
-      title: 'Portfolio Overview',
-      subtitle: 'Holdings, allocation, and performance across tracked wallets.',
-    },
     tracker: {
       title: 'Portfolio Insights',
       subtitle: 'Per-coin invested basis, current value, and performance from synced transaction history.',
@@ -3778,7 +3779,7 @@ export default function App() {
     : pageMeta[activeTab as keyof typeof pageMeta]?.title || 'Pulseport';
   const pageSubtitle = activeTab === 'product'
     ? (activeProductAsset
-        ? `${activeProductAsset.name || activeProductAsset.symbol} across your wallet, overview, and holdings data surfaces.`
+        ? `${activeProductAsset.name || activeProductAsset.symbol} across your dashboard, portfolio insights, and holdings data surfaces.`
         : 'Token-level wallet detail.')
     : pageMeta[activeTab as keyof typeof pageMeta]?.subtitle || '';
   const mobilePrimaryNavItems = navItems.filter(item => ['home', 'assets', 'stakes'].includes(item.id));
@@ -4379,12 +4380,6 @@ export default function App() {
                   }}
                   onOpenPnl={asset => setPnlAsset(asset)}
                 />
-              </motion.div>
-            )}
-
-            {activeTab === 'overview' && (
-              <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="front-page">
-                <AtlasHomeSurface snapshot={atlasHomeSnapshot} onNavigate={handleDashboardAtlasNavigate} />
               </motion.div>
             )}
 

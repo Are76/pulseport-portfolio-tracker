@@ -21,7 +21,7 @@ const DETAILS: Record<AtlasDetailId, AtlasDetailContent> = {
       { label: 'Wallet', value: 'Main vault' },
     ],
     actions: [
-      { label: 'Value chart', target: 'overview', variant: 'primary' },
+      { label: 'Value chart', target: 'home', variant: 'primary' },
       { label: 'Transactions', target: 'history' },
     ],
   },
@@ -86,7 +86,7 @@ const DETAILS: Record<AtlasDetailId, AtlasDetailContent> = {
     ],
     actions: [
       { label: 'Open PLSX', target: 'product', variant: 'primary' },
-      { label: 'Evidence', target: 'overview' },
+      { label: 'Evidence', target: 'home' },
     ],
   },
   'token-pls': {
