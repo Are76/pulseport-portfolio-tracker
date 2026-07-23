@@ -581,13 +581,7 @@ export default function App() {
   const [timeSinceLastUpdate, setTimeSinceLastUpdate] = useState<number>(0);
   const [manualEntries, setManualEntries] = useState<Record<string, number>>(() => readStoredJSON<Record<string, number>>('pulseport_manual_entries', {}));
   const [prices, setPrices] = useState<Record<string, any>>(() => tryReadCache<Record<string, any>>('pulseport_cache_prices') ?? {});
-  const [etherscanApiKey, setEtherscanApiKey] = useState<string>(() => {
-    try {
-      return sessionStorage.getItem('pulseport_etherscan_key') || '';
-    } catch {
-      return '';
-    }
-  });
+  const [etherscanApiKey, setEtherscanApiKey] = useState<string>('');
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
 
@@ -598,12 +592,6 @@ export default function App() {
     setIsApiKeyModalOpen(true);
   };
   const removeEtherscanApiKey = () => {
-    try {
-      sessionStorage.removeItem('pulseport_etherscan_key');
-      localStorage.removeItem('pulseport_etherscan_key');
-    } catch {
-      // Browser storage may be unavailable in some contexts
-    }
     setEtherscanApiKey('');
     setApiKeyInput('');
   };
@@ -5214,15 +5202,6 @@ export default function App() {
                 </button>
                 <button type="button" onClick={() => {
                   const ethKey = apiKeyInput.trim();
-                  try {
-                    if (ethKey) {
-                      sessionStorage.setItem('pulseport_etherscan_key', ethKey);
-                    } else {
-                      sessionStorage.removeItem('pulseport_etherscan_key');
-                    }
-                  } catch {
-                    // Browser storage may be unavailable in some contexts
-                  }
                   setEtherscanApiKey(ethKey);
                   setIsApiKeyModalOpen(false);
                   setTimeout(() => fetchPortfolio(ethKey), 100);
