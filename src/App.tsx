@@ -1,5242 +1,890 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react'
 import {
-  Wallet as WalletIcon,
-  Coins,
-  Lock,
-  TrendingUp,
-  Plus,
-  Trash2,
-  Copy,
-  ExternalLink,
-  RefreshCcw,
-  PieChart as PieChartIcon,
-  Activity,
-  Layers,
-  ChevronRight,
-  Search,
-  ArrowUpRight,
-  ArrowDownLeft,
-  ArrowRight,
-  History as HistoryIcon,
-  Filter,
-  Download,
-  LayoutDashboard,
-  ArrowLeftRight,
-  Settings,
-  Eye,
-  EyeOff,
-  Calculator,
-  X,
-  ChevronDown,
-  ChevronUp,
-  Sun,
-  Moon,
-  Pencil,
-  Check,
-  KeyRound,
-  Zap,
-  BarChart2,
-  Droplets,
-  Shield
-} from 'lucide-react';
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip as RechartsTooltip,
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid
-} from 'recharts';
-import { motion, AnimatePresence } from 'motion/react';
-import BridgeDashboardPage from './components/BridgeDashboardPage';
-import { format } from 'date-fns';
-import { createPublicClient, http, fallback, formatUnits, getAddress } from 'viem';
-import { cn } from './lib/utils';
-import { CHAINS, HEX_ABI, TOKENS, PULSEX_LP_PAIRS, PHEX_YIELD_PER_TSHARE, EHEX_YIELD_PER_TSHARE, FALLBACK_DESCRIPTIONS } from './constants';
-import { useHexDailyData, computeStakeYield } from './hooks/useHexDailyData';
-import type { Asset, Wallet, Chain, HexStake, LpPosition, FarmPosition, HistoryPoint, Transaction } from './types';
-import { LiquidityOverviewStrip, LiquiditySection } from './components/LiquiditySection';
-import { PnLModal } from './components/PnLModal';
-import { ProfitPlannerModal } from './components/ProfitPlannerModal';
-import { StakesSection } from './components/StakesSection';
-import { TokenProductPage } from './components/TokenProductPage';
-import { TransactionList } from './components/TransactionList';
-import { HoldingsTable } from './components/HoldingsTable';
-import type { HoldingDisplayAsset, HoldingSortField } from './components/HoldingsTable';
-import { WalletsPage } from './pages/WalletsPage';
-import { TransactionsPage } from './pages/TransactionsPage';
-import { normalizeTransactions } from './utils/normalizeTransactions';
-import { filterVisibleAssets } from './utils/visibleAssets';
-import { scheduleLocalStorageWrite, resolveBlockscoutBase, resolveEtherscanCompatBase } from './utils/localStorageDebounce';
-import { buildPulsechainInsights } from './utils/pulsechainInsights';
-import { normalizeAssetSymbol, sameAssetSymbol } from './utils/assetSymbols';
-import { BRAND_ASSETS } from './branding/brand-assets';
-import { fetchPortfolioDashboard } from './lib/api/portfolio-client';
-import { fetchHexStakeDashboard } from './lib/api/hex-stake-client';
-import { resolveBackendWalletAddress } from './lib/backend-dashboard-transition';
-import { BackendDashboardTransitionPanel } from './components/BackendDashboardTransitionPanel';
-import { BackendHexStakeTransitionPanel } from './components/BackendHexStakeTransitionPanel';
-import { AtlasHomeSurface } from './components/atlas/AtlasHomeSurface';
-import { buildAtlasHomeSnapshot } from './components/atlas/atlas-portfolio-snapshot';
-import { PortfolioInsightsPage } from './components/PortfolioInsightsPage';
+  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, BarChart, Bar,
+} from 'recharts'
 
-const ERC20_ABI = [
-  {
-    "constant": true,
-    "inputs": [{ "name": "_owner", "type": "address" }],
-    "name": "balanceOf",
-    "outputs": [{ "name": "balance", "type": "uint256" }],
-    "type": "function"
-  }
-] as const;
+// ─── Types ──────────────────────────────────────────────────────────────────
 
-// Mock data for demonstration when no wallets are added
-const MOCK_ASSETS: Asset[] = [
-  { id: 'pls', symbol: 'PLS', name: 'PulseChain', balance: 1250000, price: 0.000065, value: 81.25, chain: 'pulsechain', pnl24h: 5.4 },
-  { id: 'plsx', symbol: 'PLSX', name: 'PulseX', balance: 5000000, price: 0.000032, value: 160, chain: 'pulsechain', pnl24h: -2.1 },
-  { id: 'ehex', symbol: 'eHEX', name: 'HEX (from Ethereum)', balance: 250000, price: 0.004, value: 1000, chain: 'pulsechain', pnl24h: 8.2 },
-  { id: 'pdai', symbol: 'pDAI', name: 'DAI (System Copy)', balance: 10000, price: 0.00189, value: 18.9, chain: 'pulsechain', pnl24h: -1.5 },
-  { id: 'inc', symbol: 'INC', name: 'Incentive', balance: 50, price: 5.20, value: 260, chain: 'pulsechain', pnl24h: 12.4 },
-  { id: 'prvx', symbol: 'PRVX', name: 'PrivacyX', balance: 1000, price: 0.15, value: 150, chain: 'pulsechain', pnl24h: 0 },
-  { id: 'eth', symbol: 'ETH', name: 'Ethereum', balance: 1.5, price: 3450, value: 5175, chain: 'ethereum', pnl24h: 1.2 },
-  { id: 'hex-p', symbol: 'HEX', name: 'HEX (PulseChain)', balance: 100000, price: 0.004, value: 400, chain: 'pulsechain', pnl24h: 12.5 },
-  { id: 'hex-e', symbol: 'HEX', name: 'HEX (Ethereum)', balance: 50000, price: 0.0035, value: 175, chain: 'ethereum', pnl24h: -0.5 },
-  { id: 'usdc-b', symbol: 'USDC', name: 'USD Coin (Base)', balance: 2500, price: 1, value: 2500, chain: 'base', pnl24h: 0.01 },
-];
+type NavPage = 'dashboard' | 'holdings' | 'stakes' | 'liquidity' | 'transactions' | 'bridge' | 'insights'
+type TimeRange = '1D' | '7D' | '30D' | '90D' | '1Y'
 
-const MOCK_STAKES: HexStake[] = [
-  { id: 'mock-1', stakeId: 1, stakedHearts: 100000000000n, stakeShares: 5000000000000n, lockedDay: 1500, stakedDays: 365, unlockedDay: 1865, isAutoStake: false, progress: 45, estimatedValueUsd: 1200, chain: 'pulsechain' },
-  { id: 'mock-2', stakeId: 2, stakedHearts: 500000000000n, stakeShares: 25000000000000n, lockedDay: 1200, stakedDays: 5555, unlockedDay: 6755, isAutoStake: false, progress: 12, estimatedValueUsd: 8500, chain: 'ethereum' },
-];
+// ─── Mock Data ───────────────────────────────────────────────────────────────
 
-const MOCK_HISTORY: HistoryPoint[] = Array.from({ length: 30 }, (_, i) => {
-  const date = new Date();
-  date.setDate(date.getDate() - (29 - i));
-  const baseValue = 8000;
-  const randomFluc = Math.sin(i * 0.5) * 500 + (Math.random() * 200);
-  const value = baseValue + randomFluc + (i * 50);
+const portfolioHistory: Record<TimeRange, { t: string; v: number }[]> = {
+  '1D': Array.from({ length: 24 }, (_, i) => ({
+    t: `${i}:00`,
+    v: 84200 + Math.sin(i * 0.5) * 3000 + Math.random() * 1500,
+  })),
+  '7D': Array.from({ length: 7 }, (_, i) => ({
+    t: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i],
+    v: 72000 + i * 2100 + Math.random() * 2000,
+  })),
+  '30D': Array.from({ length: 30 }, (_, i) => ({
+    t: `${i + 1}`,
+    v: 60000 + i * 900 + Math.random() * 3000,
+  })),
+  '90D': Array.from({ length: 12 }, (_, i) => ({
+    t: `W${i + 1}`,
+    v: 45000 + i * 3500 + Math.random() * 4000,
+  })),
+  '1Y': Array.from({ length: 12 }, (_, i) => ({
+    t: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i],
+    v: 28000 + i * 5200 + Math.random() * 5000,
+  })),
+}
 
-  // Mock chain PNLs
-  const chainPnl: Record<Chain, number> = {
-    pulsechain: randomFluc * 0.6 + (Math.random() * 100 - 50),
-    ethereum: randomFluc * 0.3 + (Math.random() * 100 - 50),
-    base: randomFluc * 0.1 + (Math.random() * 50 - 25)
-  };
+const holdings = [
+  { symbol: 'PLS', name: 'PulseChain', balance: 4_820_000, price: 0.0000472, value: 227.50, pnl: 12.4, pnlAmt: 25.10, chain: 'PLS', color: '#7c3aed' },
+  { symbol: 'PLSX', name: 'PulseX', balance: 1_240_000, price: 0.0000158, value: 19.59, pnl: -3.2, pnlAmt: -0.65, chain: 'PLS', color: '#8b5cf6' },
+  { symbol: 'HEX', name: 'HEX', balance: 382_000, price: 0.00831, value: 3_174.42, pnl: 5.7, pnlAmt: 171.10, chain: 'PLS', color: '#06b6d4' },
+  { symbol: 'EHEX', name: 'ETH HEX', balance: 124_500, price: 0.00912, value: 1_135.44, pnl: 2.1, pnlAmt: 23.39, chain: 'ETH', color: '#0ea5e9' },
+  { symbol: 'INC', name: 'Incentive', balance: 8_760, price: 0.1840, value: 1_611.84, pnl: 8.9, pnlAmt: 132.06, chain: 'PLS', color: '#a78bfa' },
+  { symbol: 'WETH', name: 'Wrapped ETH', balance: 0.412, price: 3_204.80, value: 1_320.38, pnl: -1.4, pnlAmt: -18.76, chain: 'ETH', color: '#64748b' },
+  { symbol: 'DAI', name: 'Dai Stablecoin', balance: 2_840, price: 1.0001, value: 2_840.28, pnl: 0.01, pnlAmt: 0.28, chain: 'ETH', color: '#f59e0b' },
+  { symbol: 'USDC', name: 'USD Coin', balance: 1_500, price: 1.0000, value: 1_500.00, pnl: 0.0, pnlAmt: 0.00, chain: 'PLS', color: '#3b82f6' },
+]
 
-  return {
-    timestamp: date.getTime(),
-    value: value,
-    nativeValue: value / 0.000065,
-    pnl: randomFluc,
-    chainPnl: chainPnl
-  };
-});
+const stakes = [
+  { id: 'stake-001', token: 'HEX', principal: 180_000, shares: 4_820_000, start: '2023-01-15', end: '2026-01-15', progress: 71, interest: 42_800, pnl: 23.8 },
+  { id: 'stake-002', token: 'HEX', principal: 202_000, shares: 6_140_000, start: '2023-06-01', end: '2028-06-01', progress: 34, interest: 28_400, pnl: 14.1 },
+  { id: 'stake-003', token: 'PHEX', principal: 95_000, shares: 1_900_000, start: '2024-03-10', end: '2025-03-10', progress: 91, interest: 18_200, pnl: 19.2 },
+]
 
-const MOCK_WALLET = '0xdemo0000000000000000000000000000000001';
-const MOCK_TRANSACTIONS: Transaction[] = [
-  { id: 'm1', hash: '0x123...', timestamp: Date.now() - 86400000 * 2, type: 'deposit', from: '0xabc...', to: MOCK_WALLET, asset: 'ETH', amount: 1.5, chain: 'ethereum', valueUsd: 5175 },
-  { id: 'm2', hash: '0x456...', timestamp: Date.now() - 86400000 * 5, type: 'deposit', from: '0xdef...', to: MOCK_WALLET, asset: 'USDC', amount: 2500, chain: 'base', valueUsd: 2500 },
-  { id: 'm-bridge-1', hash: '0xb1d9e001...', timestamp: Date.now() - 86400000 * 1.25, type: 'deposit', from: '0xbridge...', to: MOCK_WALLET, asset: 'DAI (from Ethereum)', amount: 1250, chain: 'pulsechain', valueUsd: 1248.5, bridged: true, status: 'Confirmed' },
-  { id: 'm-bridge-2', hash: '0xb1d9e002...', timestamp: Date.now() - 86400000 * 6.5, type: 'deposit', from: '0xbridge...', to: MOCK_WALLET, asset: 'WETH (from Ethereum)', amount: 0.42, chain: 'pulsechain', valueUsd: 1449, bridged: true, status: 'Confirmed' },
-  { id: 'm3', hash: '0x789...', timestamp: Date.now() - 86400000 * 10, type: 'swap', from: MOCK_WALLET, to: MOCK_WALLET, asset: 'ETH', amount: 0.5, chain: 'ethereum', valueUsd: 1725, counterAsset: 'USDC', counterAmount: 1725 },
-  { id: 'm4', hash: '0xabc...', timestamp: Date.now() - 86400000 * 15, type: 'deposit', from: '0xghi...', to: MOCK_WALLET, asset: 'ETH', amount: 2.0, chain: 'ethereum', valueUsd: 6800 },
-  { id: 'm5', hash: '0xdef...', timestamp: Date.now() - 86400000 * 20, type: 'deposit', from: '0xjkl...', to: MOCK_WALLET, asset: 'USDC', amount: 5000, chain: 'ethereum', valueUsd: 5000 },
-  { id: 'm6', hash: '0x000...', timestamp: Date.now() - 86400000 * 1, type: 'deposit', from: '0x000...', to: MOCK_WALLET, asset: 'USDC', amount: 1000, chain: 'ethereum', valueUsd: 1000 },
-  { id: 'm7', hash: '0x999...', timestamp: Date.now() - 86400000 * 0.5, type: 'deposit', from: '0x123...', to: MOCK_WALLET, asset: 'USDC', amount: 25000, chain: 'ethereum', valueUsd: 25000 },
-];
+const liquidityPositions = [
+  { pair: 'PLS / DAI', dex: 'PulseX V2', value: 4_820.40, share: 0.0012, fees24h: 12.40, apr: 24.8, range: [0.0000410, 0.0000530] as [number,number] },
+  { pair: 'HEX / PLS', dex: 'PulseX V2', value: 2_140.80, share: 0.0004, fees24h: 8.20, apr: 31.2, range: [0.1720, 0.2100] as [number,number] },
+  { pair: 'PLSX / HEX', dex: 'PulseX V1', value: 980.20, share: 0.0002, fees24h: 3.10, apr: 18.6, range: null },
+]
 
-const PULSECHAIN_NATIVE_TX_MAX_PAGES = 300;
-const PULSECHAIN_TOKEN_TX_MAX_PAGES = 300;
-const PULSECHAIN_ETHERSCAN_TOKEN_OFFSET = 200;
+const transactions = [
+  { hash: '0x4a2f...c81d', type: 'Swap', from: 'PLS', to: 'HEX', amount: '$428.20', time: '2m ago', status: 'confirmed', chain: 'PLS' },
+  { hash: '0x8b3e...f42a', type: 'Add Liquidity', from: 'PLS', to: 'DAI', amount: '$840.00', time: '18m ago', status: 'confirmed', chain: 'PLS' },
+  { hash: '0x1d7c...291b', type: 'Stake', from: 'HEX', to: '—', amount: '$1,240.50', time: '2h ago', status: 'confirmed', chain: 'PLS' },
+  { hash: '0x9f2a...b83e', type: 'Bridge', from: 'ETH', to: 'PLS', amount: '$2,100.00', time: '4h ago', status: 'confirmed', chain: 'ETH' },
+  { hash: '0x3c8d...a41f', type: 'Swap', from: 'WETH', to: 'DAI', amount: '$310.80', time: '6h ago', status: 'confirmed', chain: 'ETH' },
+  { hash: '0x7e1b...d92c', type: 'Unstake', from: 'HEX', to: '—', amount: '$580.20', time: '1d ago', status: 'confirmed', chain: 'PLS' },
+]
 
-const PriceDisplay = ({ price, className }: { price: number, className?: string }) => {
-  if (price === 0) return <span className={className}>$0.00</span>;
+const CHAIN_COLORS: Record<string, string> = {
+  PLS: '#7c3aed',
+  ETH: '#627eea',
+  BNB: '#f0b90b',
+}
 
-  // Handle very small prices with subscript for zeros
-  if (price < 0.0001 && price > 0) {
-    const priceStr = price.toFixed(12);
-    const match = priceStr.match(/^0\.0+(?=[1-9])/);
-    if (match) {
-      const zerosCount = match[0].length - 2;
-      const remaining = priceStr.slice(match[0].length);
-      return (
-        <span className={cn("font-mono", className)}>
-          $0.0<sub className="price-sub">{zerosCount}</sub>{remaining.slice(0, 4)}
-        </span>
-      );
-    }
-  }
+const pieData = [
+  { name: 'HEX', value: 3174.42, color: '#06b6d4' },
+  { name: 'DAI', value: 2840.28, color: '#f59e0b' },
+  { name: 'INC', value: 1611.84, color: '#a78bfa' },
+  { name: 'USDC', value: 1500.00, color: '#3b82f6' },
+  { name: 'WETH', value: 1320.38, color: '#64748b' },
+  { name: 'EHEX', value: 1135.44, color: '#0ea5e9' },
+  { name: 'Other', value: 247.09, color: '#374151' },
+]
 
+const gainersData = [
+  { symbol: 'INC', change: 8.9 },
+  { symbol: 'HEX', change: 5.7 },
+  { symbol: 'EHEX', change: 2.1 },
+  { symbol: 'DAI', change: 0.01 },
+  { symbol: 'USDC', change: 0.0 },
+  { symbol: 'WETH', change: -1.4 },
+  { symbol: 'PLSX', change: -3.2 },
+]
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function fmt(n: number, decimals = 2) {
+  return n.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
+}
+
+function fmtUsd(n: number) {
+  return '$' + fmt(n)
+}
+
+function fmtCompact(n: number) {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + 'M'
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K'
+  return fmt(n)
+}
+
+// ─── Sub-components ──────────────────────────────────────────────────────────
+
+function LiveDot() {
   return (
-    <span className={cn("font-mono", className)}>
-      ${price.toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: price < 1 ? 6 : 2
-      })}
+    <span className="relative inline-flex">
+      <span className="w-2 h-2 rounded-full bg-emerald-500 relative z-10" />
+      <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-60" />
     </span>
-  );
-};
-
-// -- localStorage cache helpers (BigInt-safe) ----------------------------------
-const bigIntReplacer = (_key: string, value: unknown) =>
-  typeof value === 'bigint' ? `__bi__${value.toString()}` : value;
-const bigIntReviver = (_key: string, value: unknown) =>
-  typeof value === 'string' && value.startsWith('__bi__')
-    ? BigInt(value.slice(6))
-    : value;
-
-function tryReadCache<T>(key: string, withBigInt = false): T | null {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    return withBigInt ? JSON.parse(raw, bigIntReviver) : JSON.parse(raw);
-  } catch {
-    return null;
-  }
+  )
 }
 
-function readStoredJSON<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
-}
-
-function isNoContractDataError(error: unknown): boolean {
-  const err = error as { shortMessage?: string; message?: string; details?: string; name?: string; cause?: unknown };
-  const cause = err?.cause as { shortMessage?: string; message?: string; details?: string; name?: string } | undefined;
-  const text = [
-    err?.name,
-    err?.shortMessage,
-    err?.message,
-    err?.details,
-    cause?.name,
-    cause?.shortMessage,
-    cause?.message,
-    cause?.details,
-  ].filter(Boolean).join(' ').toLowerCase();
-
-  return text.includes('returned no data')
-    || text.includes('contractfunctionzerodataerror')
-    || text.includes('abidecodingzerodataerror')
-    || text.includes('function may not exist');
-}
-
-// -- StakingLadder -------------------------------------------------------------
-// Bar chart showing stake distribution by 30-day end-date buckets (from pulsechain-dashboard)
-function StakingLadder({ stakes }: { stakes: HexStake[] }) {
-  if (!stakes || stakes.length === 0) return null;
-  const bucketSize = 30;
-  const buckets: Record<number, { totalShares: number; stakeCount: number; bucketRange: string }> = {};
-
-  stakes.forEach(stake => {
-    const days = Math.max(0, Math.min(5555, Math.floor(stake.daysRemaining ?? 0)));
-    const bucketIdx = Math.floor(days / bucketSize);
-    if (!buckets[bucketIdx]) {
-      const start = bucketIdx * bucketSize;
-      buckets[bucketIdx] = { totalShares: 0.001, stakeCount: 0, bucketRange: `${start}-${start + bucketSize - 1}` };
-    }
-    buckets[bucketIdx].totalShares = (buckets[bucketIdx].totalShares === 0.001 ? 0 : buckets[bucketIdx].totalShares) + (stake.tShares ?? 0);
-    buckets[bucketIdx].stakeCount += 1;
-  });
-
-  const chartData = Object.entries(buckets)
-    .sort(([a], [b]) => Number(a) - Number(b))
-    .map(([idx, d]) => ({ daysRemaining: Number(idx) * bucketSize + bucketSize / 2, ...d }));
-
-  const CustomTip = ({ active, payload }: any) => {
-    if (!active || !payload?.length) return null;
-    const d = payload[0].payload;
-    return (
-      <div className="chart-tooltip" style={{ fontSize: 13 }}>
-        <div style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: 6 }}>Days: {d.bucketRange}</div>
-        <div>T-Shares: {d.totalShares.toFixed(2)}</div>
-        <div>Stakes: {d.stakeCount}</div>
-      </div>
-    );
-  };
-
+function StatCard({ label, value, sub, up }: { label: string; value: string; sub?: string; up?: boolean }) {
   return (
-    <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 18px 10px' }}>
-      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.6px' }}>Staking Ladder</div>
-      <ResponsiveContainer width="100%" height={220} minWidth={1} minHeight={1}>
-        <BarChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 24 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-          <XAxis dataKey="daysRemaining" tick={{ fill: 'var(--fg-subtle)', fontSize: 13 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false}
-            label={{ value: 'Days Remaining', position: 'insideBottom', offset: -10, fill: 'var(--fg-subtle)', fontSize: 13 }} />
-          <YAxis tick={{ fill: 'var(--fg-subtle)', fontSize: 13 }} axisLine={false} tickLine={false} scale="log" domain={['auto', 'auto']} allowDataOverflow={false} />
-          <RechartsTooltip content={<CustomTip />} />
-          <Bar dataKey="totalShares" fill="var(--accent)" radius={[3, 3, 0, 0]} />
-        </BarChart>
-      </ResponsiveContainer>
+    <div className="rounded-xl border p-4 flex flex-col gap-1 transition-all duration-200 hover:border-purple-700/40 group"
+      style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+      <span className="text-xs font-medium tracking-wide" style={{ color: 'var(--muted-foreground)', fontFamily: 'var(--font-family-mono)' }}>{label}</span>
+      <span className="text-2xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-family-mono)' }}>{value}</span>
+      {sub && (
+        <span className="text-xs font-medium" style={{
+          color: up === undefined ? 'var(--muted-foreground)' : up ? 'var(--gain)' : 'var(--loss)',
+          fontFamily: 'var(--font-family-mono)',
+        }}>{sub}</span>
+      )}
     </div>
-  );
+  )
 }
 
-// -- StakingPie -----------------------------------------------------------------
-// Donut chart showing HEX stake distribution grouped by wallet (from pulsechain-dashboard)
-function StakingPie({ stakes, hexUsdPrice }: { stakes: HexStake[]; hexUsdPrice: number }) {
-  if (!stakes || stakes.length === 0) return null;
+function ChainBadge({ chain }: { chain: string }) {
+  const color = CHAIN_COLORS[chain] ?? '#6b7280'
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+      style={{ background: color + '22', color, border: `1px solid ${color}44`, fontFamily: 'var(--font-family-mono)' }}>
+      {chain}
+    </span>
+  )
+}
 
-  const byWallet: Record<string, { label: string; tShares: number; stakedHex: number; yieldHex: number; totalHex: number; totalUsd: number; count: number }> = {};
-  stakes.forEach(s => {
-    const key = s.walletAddress ?? s.id;
-    const label = s.walletLabel ?? key.slice(0, 8) + '...';
-    if (!byWallet[key]) byWallet[key] = { label, tShares: 0, stakedHex: 0, yieldHex: 0, totalHex: 0, totalUsd: 0, count: 0 };
-    const tsh = s.tShares ?? 0;
-    const staked = s.stakedHex ?? 0;
-    const yld = s.stakeHexYield ?? 0;
-    byWallet[key].tShares += tsh;
-    byWallet[key].stakedHex += staked;
-    byWallet[key].yieldHex += yld;
-    byWallet[key].totalHex += staked + yld;
-    byWallet[key].totalUsd += (staked + yld) * hexUsdPrice;
-    byWallet[key].count += 1;
-  });
+function ProgressBar({ value, color = '#7c3aed' }: { value: number; color?: string }) {
+  return (
+    <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--secondary)' }}>
+      <div className="h-full rounded-full transition-all duration-700" style={{ width: `${value}%`, background: color }} />
+    </div>
+  )
+}
 
-  const totalTShares = Object.values(byWallet).reduce((a, b) => a + b.tShares, 0);
-  const totalUsd = Object.values(byWallet).reduce((a, b) => a + b.totalUsd, 0);
-  const totalHex = Object.values(byWallet).reduce((a, b) => a + b.totalHex, 0);
+// ─── Pages ───────────────────────────────────────────────────────────────────
 
-  const sorted = Object.values(byWallet).sort((a, b) => b.tShares - a.tShares);
-  const threshold = 0.02;
-  const large = sorted.filter(w => w.tShares / totalTShares >= threshold);
-  const small = sorted.filter(w => w.tShares / totalTShares < threshold);
-  const chartData = small.length > 0
-    ? [...large, { label: 'Others', tShares: small.reduce((a, b) => a + b.tShares, 0), totalUsd: small.reduce((a, b) => a + b.totalUsd, 0), count: small.reduce((a, b) => a + b.count, 0) }]
-    : large;
+function DashboardPage() {
+  const [range, setRange] = useState<TimeRange>('7D')
+  const data = portfolioHistory[range]
+  const totalValue = holdings.reduce((s, h) => s + h.value, 0)
+  const totalPnlAmt = holdings.reduce((s, h) => s + h.pnlAmt, 0)
+  const pnlPct = (totalPnlAmt / (totalValue - totalPnlAmt)) * 100
 
-  const GRADIENT = ['#4263EB', '#627EEA', '#f739ff', '#fb923c', '#3b82f6', '#a855f7'];
-  const getColor = (i: number) => GRADIENT[i % GRADIENT.length];
+  const chartMin = Math.min(...data.map(d => d.v)) * 0.995
+  const chartMax = Math.max(...data.map(d => d.v)) * 1.005
 
-  const fmtK = (n: number) => n >= 1e9 ? (n / 1e9).toFixed(1) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : n.toFixed(0);
-
-  const renderActiveShape = (props: any) => {
-    const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload } = props;
+  const customTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null
     return (
-      <g>
-        <text x={cx} y={cy - 14} textAnchor="middle" fill="var(--fg-subtle)" fontSize="12">{payload.label}</text>
-        <text x={cx} y={cy + 8} textAnchor="middle" fill="var(--fg)" fontSize="18" fontWeight="700">{fmtK(payload.tShares)}</text>
-        <text x={cx} y={cy + 24} textAnchor="middle" fill="var(--fg-subtle)" fontSize="11">T-Shares</text>
-        <Pie data={[]} cx={cx} cy={cy} innerRadius={innerRadius} outerRadius={outerRadius + 6} startAngle={startAngle} endAngle={endAngle} fill={fill} dataKey="value" />
-      </g>
-    );
-  };
+      <div className="rounded-lg px-3 py-2 text-xs border" style={{ background: 'var(--card)', borderColor: 'var(--border)', fontFamily: 'var(--font-family-mono)' }}>
+        <div style={{ color: 'var(--muted-foreground)' }}>{label}</div>
+        <div className="font-semibold text-sm">{fmtUsd(payload[0].value)}</div>
+      </div>
+    )
+  }
 
   return (
-    <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 18px 10px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.6px' }}>Stake Distribution</div>
-        <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>
-          <span style={{ color: 'var(--fg)', fontWeight: 700 }}>${fmtK(totalUsd)}</span>
-          {'  -  '}<span style={{ color: '#fb923c' }}>{fmtK(totalHex)} HEX</span>
-          {'  -  '}<span style={{ color: 'var(--accent)' }}>{fmtK(totalTShares)} T-Shares</span>
+    <div className="flex flex-col gap-6">
+      {/* Stats row */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard label="TOTAL VALUE" value={fmtUsd(totalValue)} sub={`${pnlPct >= 0 ? '+' : ''}${fmt(pnlPct)}% all time`} up={pnlPct >= 0} />
+        <StatCard label="24H PNL" value={`${totalPnlAmt >= 0 ? '+' : ''}${fmtUsd(Math.abs(totalPnlAmt))}`} sub={`${pnlPct >= 0 ? '+' : ''}${fmt(pnlPct)}%`} up={totalPnlAmt >= 0} />
+        <StatCard label="STAKED VALUE" value={fmtUsd(6840.20)} sub="3 active stakes" />
+        <StatCard label="LP VALUE" value={fmtUsd(7941.40)} sub="3 positions" />
+      </div>
+
+      {/* Chart + Allocation */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2 rounded-xl border p-5" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <div className="flex items-center gap-2">
+                <LiveDot />
+                <span className="text-sm font-medium" style={{ color: 'var(--muted-foreground)' }}>Portfolio Value</span>
+              </div>
+              <div className="text-3xl font-semibold tracking-tight mt-1" style={{ fontFamily: 'var(--font-family-mono)' }}>
+                {fmtUsd(data[data.length - 1]?.v ?? totalValue)}
+              </div>
+            </div>
+            <div className="flex gap-1">
+              {(['1D', '7D', '30D', '90D', '1Y'] as TimeRange[]).map(r => (
+                <button key={r} onClick={() => setRange(r)}
+                  className="px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150"
+                  style={{
+                    fontFamily: 'var(--font-family-mono)',
+                    background: range === r ? 'var(--primary)' : 'var(--secondary)',
+                    color: range === r ? '#fff' : 'var(--muted-foreground)',
+                  }}>
+                  {r}
+                </button>
+              ))}
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart data={data} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+              <defs>
+                <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#7c3aed" stopOpacity={0.25} />
+                  <stop offset="100%" stopColor="#7c3aed" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="t" tick={{ fill: 'var(--muted-foreground)', fontSize: 11, fontFamily: 'var(--font-family-mono)' }} axisLine={false} tickLine={false} />
+              <YAxis domain={[chartMin, chartMax]} hide />
+              <Tooltip content={customTooltip} />
+              <Area type="monotone" dataKey="v" stroke="#7c3aed" strokeWidth={2} fill="url(#areaGrad)" dot={false} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="rounded-xl border p-5" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+          <div className="text-sm font-medium mb-4" style={{ color: 'var(--muted-foreground)' }}>Allocation</div>
+          <ResponsiveContainer width="100%" height={160}>
+            <PieChart>
+              <Pie data={pieData} cx="50%" cy="50%" innerRadius={48} outerRadius={72} dataKey="value" strokeWidth={0}>
+                {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+              </Pie>
+              <Tooltip formatter={(v: number) => fmtUsd(v)} contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontFamily: 'var(--font-family-mono)', fontSize: 12 }} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="flex flex-col gap-1.5 mt-3">
+            {pieData.slice(0, 5).map(d => (
+              <div key={d.name} className="flex items-center justify-between text-xs" style={{ fontFamily: 'var(--font-family-mono)' }}>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: d.color }} />
+                  <span style={{ color: 'var(--foreground)' }}>{d.name}</span>
+                </div>
+                <span style={{ color: 'var(--muted-foreground)' }}>{((d.value / totalValue) * 100).toFixed(1)}%</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={240} minWidth={1} minHeight={1}>
-        <PieChart>
-          <Pie data={chartData} cx="50%" cy="50%" innerRadius={60} outerRadius={85} dataKey="tShares"
-            activeShape={renderActiveShape}>
-            {chartData.map((_, i) => <Cell key={i} fill={getColor(i)} />)}
-          </Pie>
-          <RechartsTooltip formatter={(val: any, _: any, entry: any) => [`${fmtK(Number(val))} T-Shares  -  $${fmtK(entry.payload.totalUsd)}`, entry.payload.label]} />
-        </PieChart>
-      </ResponsiveContainer>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px', marginTop: 4 }}>
-        {chartData.map((w, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--fg-muted)' }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: getColor(i), flexShrink: 0 }} />
-            <span>{w.label}</span>
-            <span style={{ color: 'var(--fg-subtle)' }}>({w.count})</span>
+
+      {/* Gainers / Losers bar */}
+      <div className="rounded-xl border p-5" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+        <div className="text-sm font-medium mb-4" style={{ color: 'var(--muted-foreground)' }}>24h Performance</div>
+        <ResponsiveContainer width="100%" height={100}>
+          <BarChart data={gainersData} barCategoryGap="30%">
+            <XAxis dataKey="symbol" tick={{ fill: 'var(--muted-foreground)', fontSize: 11, fontFamily: 'var(--font-family-mono)' }} axisLine={false} tickLine={false} />
+            <YAxis hide />
+            <Tooltip formatter={(v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`} contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontFamily: 'var(--font-family-mono)', fontSize: 12 }} />
+            <Bar dataKey="change" radius={[4, 4, 0, 0]}>
+              {gainersData.map((entry, i) => <Cell key={i} fill={entry.change >= 0 ? '#10b981' : '#f43f5e'} fillOpacity={0.85} />)}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Recent transactions preview */}
+      <div className="rounded-xl border" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+        <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
+          <span className="text-sm font-medium">Recent Activity</span>
+          <span className="text-xs" style={{ color: 'var(--muted-foreground)', fontFamily: 'var(--font-family-mono)' }}>last 24h</span>
+        </div>
+        {transactions.slice(0, 4).map((tx) => (
+          <div key={tx.hash} className="flex items-center justify-between px-5 py-3 border-b last:border-0 hover:bg-white/[0.02] transition-colors" style={{ borderColor: 'var(--border)' }}>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
+                style={{ background: 'var(--secondary)', color: 'var(--primary)', fontFamily: 'var(--font-family-mono)' }}>
+                {tx.type[0]}
+              </div>
+              <div>
+                <div className="text-sm font-medium">{tx.type}</div>
+                <div className="text-xs" style={{ color: 'var(--muted-foreground)', fontFamily: 'var(--font-family-mono)' }}>{tx.from}{tx.to !== '—' ? ` → ${tx.to}` : ''}</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <ChainBadge chain={tx.chain} />
+              <div className="text-right">
+                <div className="text-sm font-semibold" style={{ fontFamily: 'var(--font-family-mono)' }}>{tx.amount}</div>
+                <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>{tx.time}</div>
+              </div>
+            </div>
           </div>
         ))}
       </div>
     </div>
-  );
+  )
 }
 
-// -- Wallet Selector ---------------------------------------------------------
-function shortenAddr(addr: string): string {
-  if (!addr || addr.length < 10) return addr;
-  return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-}
-
-interface WalletSelectorProps {
-  wallets: string[];
-  activeWallet: string | null;
-  onSelect: (addr: string | null) => void;
-  onAdd: () => void;
-  onRemove?: (addr: string) => void;
-  walletLabels?: Record<string, string>;
-}
-
-const WALLET_DOT_COLORS = ['#4263EB','#f739ff','#627EEA','#f97316','#a855f7','#f59e0b','#06b6d4','#ec4899'];
-
-function WalletSelector({ wallets, activeWallet, onSelect, onAdd, onRemove, walletLabels = {} }: WalletSelectorProps) {
-  if (wallets.length === 0) {
-    return (
-      <button onClick={onAdd} className="btn-ghost" style={{ fontSize: 12, gap: 6 }}>
-        <span style={{ fontSize: 14 }}>+</span> Add Wallet
-      </button>
-    );
-  }
-  return (
-    <div className="wallet-selector-bar">
-      <button className={`wallet-pill${activeWallet === null ? ' active' : ''}`} onClick={() => onSelect(null)}>
-        <span className="wallet-dot wallet-dot-multi" />
-        All
-      </button>
-      {wallets.map((addr, idx) => {
-        const label = walletLabels[addr] ?? shortenAddr(addr);
-        const dotColor = WALLET_DOT_COLORS[idx % WALLET_DOT_COLORS.length];
-        const isActive = activeWallet === addr;
-        return (
-          <span
-            key={addr}
-            className={`wallet-pill${isActive ? ' active' : ''}`}
-            title={addr}
-            style={isActive ? {
-              background: `${dotColor}1a`,
-              borderColor: `${dotColor}55`,
-              color: dotColor,
-            } : undefined}
-          >
-            <span
-              onClick={() => onSelect(addr)}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
-            >
-              <span className="wallet-dot" style={{ background: dotColor, boxShadow: `0 0 5px ${dotColor}bb` }} />
-              {label}
-            </span>
-            {onRemove && (
-              <button
-                className="wallet-pill-x"
-                onClick={e => { e.stopPropagation(); onRemove(addr); }}
-                title={`Remove ${label}`}
-                aria-label={`Remove ${label}`}
-              >
-                x
-              </button>
-            )}
-          </span>
-        );
-      })}
-      <button
-        className="wallet-pill-add"
-        onClick={onAdd}
-        title="Add wallet"
-        aria-label="Add wallet"
-      >
-        +
-      </button>
-    </div>
-  );
-}
-
-// -- Module-level logo overrides - these always win over CoinGecko / DexScreener -
-// Keyed by lowercase contract address on PulseChain.
-// Nothing may ever overwrite these entries in tokenLogos or asset.logoUrl.
-const STATIC_LOGOS: Record<string, string> = {
-  '0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d': 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png', // INC
-  '0xf6f8db0aba00007681f8faf16a0fda1c9b030b11': 'https://cdn.dexscreener.com/cms/images/ODHYYN7yppDHnd6u?width=64&height=64&fit=crop&quality=95&format=auto', // PRVX
-  '0xefd766ccb38eaf1dfd701853bfce31359239f305': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png', // pDAI (bridged DAI) - never use golden CoinGecko DAI coin here
-  '0x6b175474e89094c44da98b954eedeac495271d0f': 'https://tokens.app.pulsex.com/images/tokens/0x6B175474E89094C44Da98b954EedeAC495271d0F.png', // pDAI system copy (fork of Ethereum DAI) - prevents CoinGecko golden-coin from replacing this on reload
-};
-
-// Bridged HEX (eHEX) on PulseChain - no on-chain WPLS LP, falls back to CoinGecko 'hex'
-const EHEX_PULSECHAIN_ADDR = '0x57fde0a71132198bbec939b98976993d8d89d225';
-const ETH_HEX_ADDR = '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39';
-
-// Below this threshold (USD) we consider netInvestment effectively zero and hide the P&L %.
-// PulseChain-only wallets have no ETH/stable inflows so netInvestment stays near 0.
-const MIN_INVESTMENT_THRESHOLD = 100;
-
-// Liberty Swap cross-chain bridge detection
-const LIBERTY_SWAP_ROUTERS: Record<string, string> = {
-  base: '0xcf3d89aedd07ee94e5c45037581744e2d9f0b9fc',
-};
-const LIBERTY_SWAP_SELECTOR = 'dc655e26';
-
-function decodeLibertySwapInput(input: string): { dstChainId: number; orderId: string } | null {
-  try {
-    const hex = input.startsWith('0x') ? input.slice(2) : input;
-    if (!hex.startsWith(LIBERTY_SWAP_SELECTOR)) return null;
-    if (hex.length < 8 + 13 * 64) return null;
-    const word = (n: number) => hex.slice(8 + n * 64, 8 + (n + 1) * 64);
-    const dstChainId = parseInt(word(12), 16);
-    const orderId = '0x' + word(11);
-    if (!dstChainId || isNaN(dstChainId)) return null;
-    return { dstChainId, orderId };
-  } catch {
-    return null;
-  }
-}
-
-type ActiveTab = 'home' | 'assets' | 'stakes' | 'history' | 'tracker' | 'defi' | 'bridge' | 'product';
-const ACTIVE_TABS: ActiveTab[] = ['home', 'assets', 'stakes', 'history', 'tracker', 'defi', 'bridge'];
-const ACTIVE_TAB_STORAGE_KEY = 'pulseport_active_tab';
-type FrontMarketPeriod = '5m' | '1h' | '6h' | '24h' | '7d';
-const FRONT_MARKET_PERIODS: FrontMarketPeriod[] = ['5m', '1h', '6h', '24h', '7d'];
-
-const readStoredActiveTab = (): ActiveTab => {
-  if (typeof window === 'undefined') return 'home';
-  const saved = window.localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
-  if (saved === 'product' || saved === 'overview') return 'home';
-  return ACTIVE_TABS.includes(saved as ActiveTab) ? (saved as ActiveTab) : 'home';
-};
-
-export default function App() {
-  // -- Formatting helpers (defined once here, used throughout) ----------------
-  const fmtBigNum = (n: number) => Math.round(n).toLocaleString('en-US').replace(/,/g, ' ');
-  const fmtDec = (n: number, dp = 2) => n.toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp });
-  const fmtTok = (n: number) => n > 1e6 ? `${(n/1e6).toFixed(2)}M` : n > 1000 ? `${(n/1000).toFixed(2)}K` : n.toLocaleString('en-US', { maximumFractionDigits: 4 });
-  const fmtCompact = (n: number) => n >= 1e9 ? `${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : n.toLocaleString('en-US', { maximumFractionDigits: 0 });
-
-  // -- CSV Export helper ------------------------------------------------------
-  const exportCSV = (filename: string, headers: string[], rows: (string | number)[][]) => {
-    const escCell = (c: string | number) => {
-      const s = String(c);
-      return s.includes(',') || s.includes('"') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s;
-    };
-    const csv = [headers, ...rows].map(r => r.map(escCell).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const [wallets, setWallets] = useState<Wallet[]>(() => {
-    return readStoredJSON<Wallet[]>('pulseport_wallets', []);
-  });
-  const [realAssets, setRealAssets] = useState<Asset[]>(() => tryReadCache<Asset[]>('pulseport_cache_assets') ?? []);
-  const [realStakes, setRealStakes] = useState<HexStake[]>(() => tryReadCache<HexStake[]>('pulseport_cache_stakes', true) ?? []);
-  const [lpPositions, setLpPositions] = useState<LpPosition[]>(() => tryReadCache<LpPosition[]>('pulseport_cache_lp') ?? []);
-  const [farmPositions, setFarmPositions] = useState<FarmPosition[]>(() => tryReadCache<FarmPosition[]>('pulseport_cache_farms') ?? []);
-  const [transactions, setTransactions] = useState<Transaction[]>(() => tryReadCache<Transaction[]>('pulseport_cache_txs') ?? []);
-  const [history, setHistory] = useState<HistoryPoint[]>(() => readStoredJSON<HistoryPoint[]>('pulseport_history', []));
-  const [newWalletAddress, setNewWalletAddress] = useState('');
-  const [newWalletName, setNewWalletName] = useState('');
-  const [walletFormError, setWalletFormError] = useState('');
-  const [isAddingWallet, setIsAddingWallet] = useState(false);
-  const [editingWalletAddress, setEditingWalletAddress] = useState<string | null>(null);
-  const [editWalletName, setEditWalletName] = useState('');
-  const [isCustomCoinsModalOpen, setIsCustomCoinsModalOpen] = useState(false);
-  const [customCoins, setCustomCoins] = useState<any[]>(() => readStoredJSON<any[]>('custom_coins', []));
-  const [customCoinDraft, setCustomCoinDraft] = useState({ symbol: '', name: '', balance: '', price: '' });
-
-  useEffect(() => {
-    localStorage.setItem('custom_coins', JSON.stringify(customCoins));
-  }, [customCoins]);
-
-  const addCustomCoin = (coin: any) => {
-    setCustomCoins([...customCoins, { ...coin, id: Math.random().toString(36).substr(2, 9) }]);
-  };
-
-  const removeCustomCoin = (id: string) => {
-    setCustomCoins(customCoins.filter(c => c.id !== id));
-  };
-
-  const submitCustomCoin = () => {
-    const symbol = customCoinDraft.symbol.trim().toUpperCase();
-    const name = customCoinDraft.name.trim() || symbol;
-    const balance = Number(customCoinDraft.balance);
-    const price = Number(customCoinDraft.price || 0);
-    if (!symbol || !Number.isFinite(balance) || balance <= 0 || !Number.isFinite(price) || price < 0) return;
-    addCustomCoin({ symbol, name, balance, price });
-    setCustomCoinDraft({ symbol: '', name: '', balance: '', price: '' });
-    setIsCustomCoinsModalOpen(false);
-    setActiveTab('assets');
-  };
-  const [sidebarWalletsOpen, setSidebarWalletsOpen] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [activeWallet, setActiveWallet] = useState<string | null>(null);
-  const isFetchingRef = useRef(false);
-  const [activeTab, setActiveTab] = useState<ActiveTab>(readStoredActiveTab);
-  const [selectedWalletAddr, setSelectedWalletAddr] = useState<string>('all');
-  const [walletAssets, setWalletAssets] = useState<Record<string, Asset[]>>(() => tryReadCache<Record<string, Asset[]>>('pulseport_cache_wallet_assets') ?? {});
-  const [walletChainFilter, setWalletChainFilter] = useState<'all' | 'pulsechain' | 'ethereum' | 'base'>('all');
-  const [overviewChainFilter, setOverviewChainFilter] = useState<'all' | 'pulsechain' | 'ethereum' | 'base'>('all');
-  const [overviewTokenSearch, setOverviewTokenSearch] = useState<string>('');
-  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
-  const [historyRange, setHistoryRange] = useState<'1D' | '1W' | '1M'>('1M');
-  const [txTypeFilter, setTxTypeFilter] = useState<string>('all');
-  const [txAssetFilter, setTxAssetFilter] = useState<string>('all');
-  const [txYearFilter, setTxYearFilter] = useState<string>('all');
-  const [txCoinCategory, setTxCoinCategory] = useState<string>('all');
-  const [viewAsYou, setViewAsYou] = useState(false);
-  const [txCompact, setTxCompact] = useState(false);
-  const [receivedCoinFilter, setReceivedCoinFilter] = useState<string>('all');
-  const [receivedChainFilter, setReceivedChainFilter] = useState<string>('all');
-  const [timeSinceLastUpdate, setTimeSinceLastUpdate] = useState<number>(0);
-  const [manualEntries, setManualEntries] = useState<Record<string, number>>(() => readStoredJSON<Record<string, number>>('pulseport_manual_entries', {}));
-  const [prices, setPrices] = useState<Record<string, any>>(() => tryReadCache<Record<string, any>>('pulseport_cache_prices') ?? {});
-  const [etherscanApiKey, setEtherscanApiKey] = useState<string>(() => {
-    try {
-      return sessionStorage.getItem('pulseport_etherscan_key') || '';
-    } catch {
-      return '';
-    }
-  });
-  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState('');
-
-  const openApiKeyModal = (event?: React.MouseEvent) => {
-    event?.preventDefault();
-    event?.stopPropagation();
-    setApiKeyInput(etherscanApiKey);
-    setIsApiKeyModalOpen(true);
-  };
-  const removeEtherscanApiKey = () => {
-    try {
-      sessionStorage.removeItem('pulseport_etherscan_key');
-      localStorage.removeItem('pulseport_etherscan_key');
-    } catch {
-      // Browser storage may be unavailable in some contexts
-    }
-    setEtherscanApiKey('');
-    setApiKeyInput('');
-  };
-  const [hideDust, setHideDust] = useState<boolean>(() => readStoredJSON<boolean>('pulseport_hide_dust', false));
-  const [hiddenTokens, setHiddenTokens] = useState<string[]>(() => {
-    return readStoredJSON<string[]>('pulseport_hidden_tokens', []);
-  });
-  const [showHiddenCoins, setShowHiddenCoins] = useState(false);
-  const [coinVisibilityMenuOpen, setCoinVisibilityMenuOpen] = useState(false);
-  const [frontMarketPeriod, setFrontMarketPeriod] = useState<FrontMarketPeriod>('24h');
-  const [priceChangePeriod, setPriceChangePeriod] = useState<'1h' | '6h' | '24h' | '7d'>('24h');
-  const [assetSortField, setAssetSortField] = useState<'value' | 'change'>('value');
-  const [assetSortDir, setAssetSortDir] = useState<'desc' | 'asc'>('desc');
-  // tokenLogos is seeded from the module-level STATIC_LOGOS map so overrides are
-  // available before any remote fetch completes.
-  const [tokenLogos, setTokenLogos] = useState<Record<string, string>>(STATIC_LOGOS);
-  const [stakeChainFilter, setStakeChainFilter] = useState<'all' | 'pulsechain' | 'ethereum'>('all');
-  const [yieldUnit, setYieldUnit] = useState<'hex' | 'usd'>(() => {
-    return (localStorage.getItem('pulseport_yield_unit') as 'hex' | 'usd') || 'usd';
-  });
-  const [expandedStakeIds, setExpandedStakeIds] = useState<Set<string>>(new Set());
-  const [expandedAssetIds, setExpandedAssetIds] = useState<Set<string>>(new Set());
-  const [priceDisplayCurrency, setPriceDisplayCurrency] = useState<'usd' | 'pls'>('usd');
-  const [pnlAsset, setPnlAsset] = useState<Asset | null>(null);
-  const [selectedBridgeTxId, setSelectedBridgeTxId] = useState<string | null>(null);
-  const [profitPlannerOpen, setProfitPlannerOpen] = useState(false);
-  const [allocWheelOpen, setAllocWheelOpen] = useState(true);
-  const [allocationCalculatorOpen, setAllocationCalculatorOpen] = useState(false);
-  const [allocationDraftPercentages, setAllocationDraftPercentages] = useState<Record<string, number>>({});
-  const [perfPeriod, setPerfPeriod] = useState<'1w' | '1m' | '1y' | 'all'>('all');
-  const fmtLabel = (ts: number) => {
-    if (perfPeriod === '1w') return format(ts, 'EEE d');
-    if (perfPeriod === '1m') return format(ts, 'MMM d');
-    if (perfPeriod === '1y') return format(ts, 'MMM yy');
-    return format(ts, 'MMM yy');
-  };
-  const [hiddenTxIds, setHiddenTxIds] = useState<string[]>(() => {
-    return readStoredJSON<string[]>('pulseport_hidden_txs', []);
-  });
-  const [showHiddenTxs, setShowHiddenTxs] = useState(false);
-  const [showReceivedAssets, setShowReceivedAssets] = useState(true);
-  const [showRecentActivity, setShowRecentActivity] = useState(true);
-  const [hideSpam, setHideSpam] = useState<boolean>(() => readStoredJSON<boolean>('pulseport_hide_spam', true));
-  const [spamTokenIds, setSpamTokenIds] = useState<string[]>(() => {
-    return readStoredJSON<string[]>('pulseport_spam_tokens', []);
-  });
-  const [isScanning, setIsScanning] = useState(false);
-  const [scanResult, setScanResult] = useState<number | null>(null);
-  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => readStoredJSON<Record<string, boolean>>('pulseport_collapsed', {}));
-  const [tokenMarketData, setTokenMarketData] = useState<Record<string, any>>({});
-  const [selectedProductAsset, setSelectedProductAsset] = useState<Asset | null>(null);
-  const [productPageLoading, setProductPageLoading] = useState(false);
-  const [productReturnTab, setProductReturnTab] = useState<ActiveTab>('home');
-  const [homeSearch, setHomeSearch] = useState('');
-  const [expandedWalletAssetIds, setExpandedWalletAssetIds] = useState<Set<string>>(new Set());
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    const saved = localStorage.getItem('pulseport_theme');
-    return (saved === 'light') ? 'light' : 'dark';
-  });
-
-  const [backendDashboardResponse, setBackendDashboardResponse] = useState<Awaited<ReturnType<typeof fetchPortfolioDashboard>> | null>(null);
-  const [backendDashboardLoading, setBackendDashboardLoading] = useState(false);
-  const [backendDashboardError, setBackendDashboardError] = useState<string | null>(null);
-  const [backendHexStakeResponse, setBackendHexStakeResponse] = useState<Awaited<ReturnType<typeof fetchHexStakeDashboard>> | null>(null);
-  const [backendHexStakeLoading, setBackendHexStakeLoading] = useState(false);
-  const [backendHexStakeError, setBackendHexStakeError] = useState<string | null>(null);
-
-  // Real on-chain HEX daily payout data; used to replace hardcoded yield constants.
-  const hexDailyData = useHexDailyData();
-  // Ref so fetchPortfolio (async) always reads the latest values without stale closures.
-  const hexDailyDataRef = useRef(hexDailyData);
-  hexDailyDataRef.current = hexDailyData;
-  const etherscanApiKeyRef = useRef(etherscanApiKey);
-  etherscanApiKeyRef.current = etherscanApiKey;
-
-  useEffect(() => {
-    localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, activeTab === 'product' ? productReturnTab : activeTab);
-  }, [activeTab, productReturnTab]);
-
-  useEffect(() => {
-    try {
-      localStorage.removeItem('pulseport_basescan_key');
-      localStorage.removeItem('pulseport_etherscan_key');
-    } catch {
-      // localStorage may be unavailable in some contexts
-    }
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === 'product' && !selectedProductAsset) {
-      setActiveTab(productReturnTab === 'product' ? 'home' : productReturnTab);
-    }
-  }, [activeTab, productReturnTab, selectedProductAsset]);
-
-  useEffect(() => {
-    if (selectedWalletAddr === 'all') return;
-    const stillExists = wallets.some(w => w.address.toLowerCase() === selectedWalletAddr);
-    if (!stillExists) {
-      setSelectedWalletAddr('all');
-      setActiveWallet(null);
-    }
-  }, [selectedWalletAddr, wallets]);
-
-  useEffect(() => {
-    if (activeTab !== 'history') return;
-    setTxTypeFilter('all');
-    setTxAssetFilter('all');
-    setTxYearFilter('all');
-    setTxCoinCategory('all');
-  }, [activeTab]);
-
-  const backendWalletAddress = useMemo(() => resolveBackendWalletAddress(wallets, activeWallet), [activeWallet, wallets]);
-
-  useEffect(() => {
-    if (!backendWalletAddress) {
-      setBackendDashboardResponse(null);
-      setBackendDashboardError(null);
-      setBackendDashboardLoading(false);
-      return;
-    }
-
-    const controller = new AbortController();
-    let isActive = true;
-
-    const loadBackendDashboard = async () => {
-      setBackendDashboardLoading(true);
-      setBackendDashboardError(null);
-      try {
-        const response = await fetchPortfolioDashboard({ walletAddress: backendWalletAddress, chainId: 369 });
-        if (!isActive || controller.signal.aborted) return;
-        setBackendDashboardResponse(response);
-      } catch (error) {
-        if (!isActive || controller.signal.aborted) return;
-        setBackendDashboardError(error instanceof Error ? error.message : 'Failed to load backend dashboard DTO');
-        setBackendDashboardResponse(null);
-      } finally {
-        if (isActive && !controller.signal.aborted) setBackendDashboardLoading(false);
-      }
-    };
-
-    loadBackendDashboard();
-
-    return () => {
-      isActive = false;
-      controller.abort();
-    };
-  }, [backendWalletAddress]);
-
-  useEffect(() => {
-    if (!backendWalletAddress) {
-      setBackendHexStakeResponse(null);
-      setBackendHexStakeError(null);
-      setBackendHexStakeLoading(false);
-      return;
-    }
-
-    const controller = new AbortController();
-    let isActive = true;
-
-    const loadBackendHexStakes = async () => {
-      setBackendHexStakeLoading(true);
-      setBackendHexStakeError(null);
-      try {
-        const response = await fetchHexStakeDashboard({ walletAddress: backendWalletAddress, chainId: 369, signal: controller.signal });
-        if (!isActive || controller.signal.aborted) return;
-        setBackendHexStakeResponse(response);
-      } catch (error) {
-        if (!isActive || controller.signal.aborted) return;
-        setBackendHexStakeError(error instanceof Error ? error.message : 'Failed to load backend HEX stakes DTO');
-        setBackendHexStakeResponse(null);
-      } finally {
-        if (isActive && !controller.signal.aborted) setBackendHexStakeLoading(false);
-      }
-    };
-
-    loadBackendHexStakes();
-
-    return () => {
-      isActive = false;
-      controller.abort();
-    };
-  }, [backendWalletAddress]);
-
-  // Apply theme to document
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('pulseport_theme', theme);
-  }, [theme]);
-
-  // Prevent background scroll when the mobile sidebar drawer is open.
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!window.matchMedia('(max-width: 767px)').matches) return;
-
-    const previousOverflow = document.body.style.overflow;
-    if (sidebarOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = previousOverflow || '';
-    }
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [sidebarOpen]);
-
-  useEffect(() => {
-    setMobileMoreOpen(false);
-  }, [activeTab]);
-
-  // Theme-aware color helpers - CSS variable-backed for automatic light/dark theming
-  const t = useMemo(() => ({
-    surface: 'var(--bg-void)',
-    card: 'var(--bg-surface)',
-    cardHigh: 'var(--bg-elevated)',
-    cardHighest: 'var(--bg-elevated)',
-    border: 'var(--border)',
-    borderLight: 'var(--border)',
-    text: 'var(--fg)',
-    textSecondary: 'var(--fg-muted)',    /* labels, prices, percent values - strong contrast */
-    textMuted: 'var(--fg-subtle)',       /* icons and separators - strong contrast */
-    textTertiary: 'var(--fg-subtle)',    /* helper text - strong contrast */
-    sidebar: 'var(--bg-sidebar)',
-    header: 'var(--bg-header)',
-    hoverBg: 'var(--bg-elevated)',
-    expandedBg: 'var(--bg-elevated)',
-    green: theme === 'dark' ? '#34D399' : '#059669',
-    red: theme === 'dark' ? '#F87171' : '#DC2626',
-    purple: '#818CF8',
-    orange: '#f97316',
-    blue: 'var(--chain-eth)',
-    pink: 'var(--chain-pulse)',
-    gradientHero: theme === 'dark'
-      ? 'linear-gradient(135deg, #0F172A 0%, #1E293B 40%, #0F172A 100%)'
-      : 'linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 40%, #E2E8F0 100%)',
-  }), [theme]);
-
-  useEffect(() => {
-    scheduleLocalStorageWrite('pulseport_collapsed', JSON.stringify(collapsedSections));
-  }, [collapsedSections]);
-
-  const toggleSection = (id: string) => setCollapsedSections(prev => ({ ...prev, [id]: !prev[id] }));
-  const isCollapsed = (id: string) => !!collapsedSections[id];
-
-  // -- Portfolio cache persistence (prevents blank screen on reload) ----------
-  // Writes are debounced (500ms) so rapid price/asset updates don't block the main thread
-  // with large JSON.stringify + localStorage.setItem calls on every tick.
-  useEffect(() => {
-    if (realAssets.length > 0) {
-      scheduleLocalStorageWrite('pulseport_cache_assets', JSON.stringify(realAssets));
-    }
-  }, [realAssets]);
-
-  useEffect(() => {
-    if (realStakes.length > 0) {
-      scheduleLocalStorageWrite('pulseport_cache_stakes', JSON.stringify(realStakes, bigIntReplacer));
-    }
-  }, [realStakes]);
-
-  useEffect(() => {
-    scheduleLocalStorageWrite('pulseport_cache_lp', JSON.stringify(lpPositions));
-  }, [lpPositions]);
-
-  useEffect(() => {
-    scheduleLocalStorageWrite('pulseport_cache_farms', JSON.stringify(farmPositions));
-  }, [farmPositions]);
-
-  useEffect(() => {
-    if (transactions.length > 0) {
-      scheduleLocalStorageWrite('pulseport_cache_txs', JSON.stringify(transactions.slice(0, 200)));
-    }
-  }, [transactions]);
-
-  useEffect(() => {
-    if (Object.keys(walletAssets).length > 0) {
-      scheduleLocalStorageWrite('pulseport_cache_wallet_assets', JSON.stringify(walletAssets));
-    }
-  }, [walletAssets]);
-
-  useEffect(() => {
-    if (Object.keys(prices).length > 0) {
-      scheduleLocalStorageWrite('pulseport_cache_prices', JSON.stringify(prices));
-    }
-  }, [prices]);
-
-  useEffect(() => {
-    scheduleLocalStorageWrite('pulseport_hide_dust', JSON.stringify(hideDust));
-  }, [hideDust]);
-
-  useEffect(() => {
-    scheduleLocalStorageWrite('pulseport_hide_spam', JSON.stringify(hideSpam));
-  }, [hideSpam]);
-
-  useEffect(() => {
-    scheduleLocalStorageWrite('pulseport_spam_tokens', JSON.stringify(spamTokenIds));
-  }, [spamTokenIds]);
-
-  useEffect(() => {
-    scheduleLocalStorageWrite('pulseport_hidden_tokens', JSON.stringify(hiddenTokens));
-  }, [hiddenTokens]);
-
-  useEffect(() => {
-    scheduleLocalStorageWrite('pulseport_hidden_txs', JSON.stringify(hiddenTxIds));
-  }, [hiddenTxIds]);
-
-  useEffect(() => {
-    scheduleLocalStorageWrite('pulseport_yield_unit', yieldUnit);
-  }, [yieldUnit]);
-
-  useEffect(() => {
-    scheduleLocalStorageWrite('pulseport_manual_entries', JSON.stringify(manualEntries));
-  }, [manualEntries]);
-
-  useEffect(() => {
-    if (wallets.length > 0) {
-      fetchPortfolio();
-
-      // Auto-refresh every 30 seconds
-      const interval = setInterval(() => {
-        fetchPortfolio();
-      }, 30000);
-
-      return () => clearInterval(interval);
-    }
-  }, [wallets]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('pulseport_wallets', JSON.stringify(wallets));
-    } catch {}
-  }, [wallets]);
-
-  useEffect(() => {
-    if (isAddingWallet) setWalletFormError('');
-  }, [isAddingWallet]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (lastUpdated) {
-        setTimeSinceLastUpdate(Math.floor((Date.now() - lastUpdated) / 1000));
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [lastUpdated]);
-
-  useEffect(() => {
-    localStorage.setItem('pulseport_history', JSON.stringify(history));
-  }, [history]);
-
-  const fetchPortfolio = async (apiKeyOverride?: string) => {
-    if (isFetchingRef.current) return; // prevent concurrent fetches
-    isFetchingRef.current = true;
-    setIsLoading(true);
-    try {
-      // 1. Fetch Prices with 1h, 24h, 7d changes
-      const coinIds = Array.from(new Set(Object.values(TOKENS).flat().map(t => t.coinGeckoId))).join(',');
-      const fetchedPrices: Record<string, any> = {};
-      try {
-        const priceRes = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${coinIds}&price_change_percentage=1h,24h,7d&per_page=250&order=market_cap_desc`);
-        const priceArray = await priceRes.json();
-        if (Array.isArray(priceArray) && priceArray.length > 0) {
-          const newLogos: Record<string, string> = {};
-          priceArray.forEach((coin: any) => {
-            fetchedPrices[coin.id] = {
-              usd: coin.current_price,
-              usd_24h_change: coin.price_change_percentage_24h_in_currency,
-              usd_1h_change: coin.price_change_percentage_1h_in_currency,
-              usd_7d_change: coin.price_change_percentage_7d_in_currency,
-              image: coin.image
-            };
-            if (coin.image) newLogos[coin.id] = coin.image;
-          });
-          setTokenLogos(prev => ({ ...prev, ...newLogos }));
-        }
-      } catch (e) {
-        console.warn('coins/markets failed, will try simple/price fallback');
-      }
-      // Fallback: if markets API returned nothing (rate limit etc), use simple/price
-      if (Object.keys(fetchedPrices).length === 0) {
-        try {
-          const simpleRes = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coinIds}&vs_currencies=usd&include_24hr_change=true`);
-          const simpleData = await simpleRes.json();
-          Object.entries(simpleData).forEach(([id, data]: [string, any]) => {
-            fetchedPrices[id] = { usd: data.usd, usd_24h_change: data.usd_24h_change };
-          });
-        } catch (e) {
-          console.warn('simple/price fallback also failed');
-        }
-      }
-
-      // 1b-eHEX. DexScreener eHEX price (Uniswap on Ethereum) — more responsive than CoinGecko.
-      // CoinGecko 'hex' price can lag during volatile periods; DexScreener reflects live DEX trades.
-      try {
-        const EHEX_ADDR = '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39';
-        const dsRes = await fetch(
-          `https://api.dexscreener.com/tokens/v1/ethereum/${EHEX_ADDR}`,
-          { signal: AbortSignal.timeout(8_000) },
-        );
-        const dsPairs: any[] = await dsRes.json();
-        if (Array.isArray(dsPairs) && dsPairs.length > 0) {
-          // Restrict to Uniswap on Ethereum (any version: v2/v3).
-          // DexScreener dexId can be 'uniswap', 'uniswap-v2', 'uniswap-v3' etc.
-          const best = dsPairs
-            .filter(p => p.priceUsd && Number(p.priceUsd) > 0 && (p.dexId as string)?.toLowerCase().includes('uniswap'))
-            .sort((a, b) => (b.liquidity?.usd ?? 0) - (a.liquidity?.usd ?? 0))[0];
-          if (best) {
-            const dsPrice   = Number(best.priceUsd);
-            const ds24hChg  = best.priceChange?.h24 ?? null;
-            const ds1hChg   = best.priceChange?.h1  ?? null;
-            fetchedPrices['hex'] = {
-              ...(fetchedPrices['hex'] ?? {}),
-              usd: dsPrice,
-              ...(ds24hChg != null ? { usd_24h_change: ds24hChg } : {}),
-              ...(ds1hChg  != null ? { usd_1h_change:  ds1hChg  } : {}),
-            };
-          }
-        }
-      } catch {
-        // DexScreener unavailable — CoinGecko value (if any) stays in fetchedPrices['hex']
-      }
-
-      // 1c. Fetch PulseChain prices from on-chain LP reserves (authoritative source per skill doc)
-      // Uses getReserves() on PulseX V2 LP pairs - more reliable than subgraph which can lag/rate-limit
-      try {
-        const GET_RESERVES = '0x0902f1ac';
-        const pcRpc = CHAINS.pulsechain.rpc;
-
-        const lpKeys = Object.keys(PULSEX_LP_PAIRS) as (keyof typeof PULSEX_LP_PAIRS)[];
-        const batchReq = lpKeys.map((key, i) => ({
-          jsonrpc: '2.0',
-          id: i,
-          method: 'eth_call',
-          params: [{ to: PULSEX_LP_PAIRS[key], data: GET_RESERVES }, 'latest']
-        }));
-
-        const batchRes = await fetch(pcRpc, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(batchReq)
-        });
-        const batchData: any[] = await batchRes.json();
-        batchData.sort((a, b) => a.id - b.id);
-
-        const parseRes = (hex: string): [number, number] => {
-          if (!hex || hex === '0x') return [0, 0];
-          const d = hex.replace('0x', '').padStart(192, '0');
-          // parseInt loses precision above 2^53; reserves routinely exceed this (1e24 for 18-dec tokens).
-          // BigInt parses exactly, Number() then gives a safe float approximation for ratio math.
-          const r0 = Number(BigInt('0x' + d.slice(0, 64)));
-          const r1 = Number(BigInt('0x' + d.slice(64, 128)));
-          return [r0, r1];
-        };
-        const reserveResult = (key: keyof typeof PULSEX_LP_PAIRS): string => {
-          const idx = lpKeys.indexOf(key);
-          return idx >= 0 ? (batchData[idx]?.result ?? '0x') : '0x';
-        };
-
-        // --- WPLS price from 3 stablecoin pairs; pick max (highest = most liquidity) ---
-        const [daiR0, daiR1]   = parseRes(reserveResult('WPLS_DAI'));
-        const [usdcR0, usdcR1] = parseRes(reserveResult('WPLS_USDC'));
-        const [usdtR0, usdtR1] = parseRes(reserveResult('WPLS_USDT'));
-
-        // WPLS/USDC: token0=pUSDC(6dec), token1=WPLS(18dec) -> plsPrice = (usdcR0/1e6) / (usdcR1/1e18)
-        const plsFromUSDC = usdcR0 > 0 && usdcR1 > 0 ? (usdcR0 / 1e6) / (usdcR1 / 1e18)    : 0;
-        // WPLS/USDT: same layout as USDC
-        const plsFromUSDT = usdtR0 > 0 && usdtR1 > 0 ? (usdtR0 / 1e6) / (usdtR1 / 1e18)    : 0;
-
-        // DO NOT use the DAI pair for WPLS oracle - pDAI trades far below $1 on PulseChain.
-        // plsFromDAI would be "pDAI per WPLS" (not USD per WPLS), which is much larger than
-        // the true USD price and would dominate Math.max(), inflating wplsUSD ~35x.
-        // Use only USDC + USDT which stay close to $1.
-        const wplsUSD = Math.max(plsFromUSDC, plsFromUSDT);
-
-        if (wplsUSD > 0) {
-          if (!fetchedPrices.pulsechain) fetchedPrices.pulsechain = {};
-          fetchedPrices.pulsechain.usd = wplsUSD;
-          fetchedPrices['pulsechain:native'] = { usd: wplsUSD };
-
-          const setTokenPrice = (addrLower: string, priceUSD: number, cgId?: string) => {
-            if (priceUSD <= 0) return;
-            const existing = cgId ? (fetchedPrices[cgId] || {}) : {};
-            const change24h = existing.usd_24h_change;
-            fetchedPrices[`pulsechain:${addrLower}`] = { ...existing, usd: priceUSD, ...(change24h != null ? { usd_24h_change: change24h } : {}) };
-          };
-
-          // PLSX/WPLS - token0=PLSX(18), token1=WPLS(18)
-          const [plsxR0, plsxR1] = parseRes(reserveResult('PLSX_WPLS'));
-          if (plsxR0 > 0 && plsxR1 > 0)
-            setTokenPrice('0x95b303987a60c71504d99aa1b13b4da07b0790ab', (plsxR1 / plsxR0) * wplsUSD, 'pulsex');
-
-          // INC/WPLS - token0=INC(18), token1=WPLS(18)
-          const [incR0, incR1] = parseRes(reserveResult('INC_WPLS'));
-          if (incR0 > 0 && incR1 > 0)
-            setTokenPrice('0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d', (incR1 / incR0) * wplsUSD, 'incentive');
-
-          // pHEX/WPLS - token0=pHEX(8dec), token1=WPLS(18dec)
-          const [hexR0, hexR1] = parseRes(reserveResult('PHEX_WPLS'));
-          if (hexR0 > 0 && hexR1 > 0) {
-            const pHexUSD = ((hexR1 / 1e18) / (hexR0 / 1e8)) * wplsUSD;
-            setTokenPrice(ETH_HEX_ADDR, pHexUSD, 'hex');
-            fetchedPrices['pulsechain:hex'] = { usd: pHexUSD };
-            // eHEX must stay tied to the Ethereum HEX market. Do not fall back to
-            // pHEX here, otherwise the first render shows the PulseChain HEX price
-            // until the Ethereum/CoinGecko price corrects it.
-            const ehexPriceData = fetchedPrices['hex'] || prices['hex'];
-            if (ehexPriceData?.usd) {
-              const ehexUsd = ehexPriceData.usd;
-              fetchedPrices[`pulsechain:${EHEX_PULSECHAIN_ADDR}`] = {
-                usd: ehexUsd,
-                usd_24h_change: ehexPriceData.usd_24h_change,
-                usd_1h_change: ehexPriceData.usd_1h_change,
-                usd_7d_change: ehexPriceData.usd_7d_change,
-              };
-              fetchedPrices[`ethereum:${ETH_HEX_ADDR}`] = {
-                usd: ehexUsd,
-                usd_24h_change: ehexPriceData.usd_24h_change,
-                usd_1h_change: ehexPriceData.usd_1h_change,
-                usd_7d_change: ehexPriceData.usd_7d_change,
-              };
-            }
-          } else {
-            // On-chain LP failed - fall back to CoinGecko for both HEX variants
-            const cgHex = fetchedPrices['hex']?.usd;
-            if (cgHex) {
-              fetchedPrices[`pulsechain:${ETH_HEX_ADDR}`] = { usd: cgHex, usd_24h_change: fetchedPrices['hex']?.usd_24h_change };
-              fetchedPrices['pulsechain:hex'] = { usd: cgHex };
-              fetchedPrices[`pulsechain:${EHEX_PULSECHAIN_ADDR}`] = { usd: cgHex, usd_24h_change: fetchedPrices['hex']?.usd_24h_change };
-              fetchedPrices[`ethereum:${ETH_HEX_ADDR}`] = { usd: cgHex, usd_24h_change: fetchedPrices['hex']?.usd_24h_change };
-            }
-          }
-
-          // pWETH/WPLS - token0=pWETH(18), token1=WPLS(18)
-          const [wethR0, wethR1] = parseRes(reserveResult('PWETH_WPLS'));
-          if (wethR0 > 0 && wethR1 > 0) {
-            const ethFromLp = (wethR1 / wethR0) * wplsUSD;
-            setTokenPrice('0x02dcdd04e3f455d838cd1249292c58f3b79e3c3c', ethFromLp, 'ethereum');
-            // Propagate ETH price to the native-token keys used by ETH balance valuation and
-            // transaction valueUsd fallback.  CoinGecko covers these when available; this ensures
-            // they are never $0 when CoinGecko is rate-limited, so netInvestment stays correct.
-            if (!fetchedPrices['ethereum']?.usd) {
-              fetchedPrices['ethereum'] = { usd: ethFromLp };
-            }
-            if (!fetchedPrices['ethereum:native']?.usd) {
-              fetchedPrices['ethereum:native'] = { usd: ethFromLp };
-            }
-            if (!fetchedPrices['base:native']?.usd) {
-              fetchedPrices['base:native'] = { usd: ethFromLp };
-            }
-          }
-
-          // pWBTC/WPLS - REVERSED: token0=WPLS(18), token1=pWBTC(8)
-          const [wbtcR0, wbtcR1] = parseRes(reserveResult('PWBTC_WPLS'));
-          if (wbtcR0 > 0 && wbtcR1 > 0)
-            setTokenPrice('0xb17d901469b9208b17d916112988a3fed19b5ca1', ((wbtcR0 / 1e18) / (wbtcR1 / 1e8)) * wplsUSD, 'wrapped-bitcoin');
-
-          // Bridged stablecoin prices derived from LP - these do NOT trade at $1 on PulseChain
-          // WPLS/DAI: token0=WPLS(18), token1=pDAI(18) -> pDAI_USD = (daiR0/daiR1) * wplsUSD
-          if (daiR0 > 0 && daiR1 > 0)
-            setTokenPrice('0xefd766ccb38eaf1dfd701853bfce31359239f305', (daiR0 / daiR1) * wplsUSD);
-          // WPLS/USDC: token0=pUSDC(6dec), token1=WPLS(18dec) -> pUSDC_USD = (usdcR1/1e18)/(usdcR0/1e6) * wplsUSD
-          if (usdcR0 > 0 && usdcR1 > 0)
-            setTokenPrice('0x15d38573d2feeb82e7ad5187ab8c1d52810b1f07', (usdcR1 / 1e18) / (usdcR0 / 1e6) * wplsUSD);
-          // WPLS/USDT: token0=pUSDT(6dec), token1=WPLS(18dec) -> pUSDT_USD = (usdtR1/1e18)/(usdtR0/1e6) * wplsUSD
-          if (usdtR0 > 0 && usdtR1 > 0)
-            setTokenPrice('0x0cb6f5a34ad42ec934882a05265a7d5f59b51a2f', (usdtR1 / 1e18) / (usdtR0 / 1e6) * wplsUSD);
-          // System copy pDAI (0x6b175474... - Ethereum's DAI address, fork-copied)
-          // token0=pDAI_sys(18dec), token1=WPLS(18dec) -> pDAI_sys_USD = (sysR1/sysR0) * wplsUSD
-          const [sysR0, sysR1] = parseRes(reserveResult('PDAI_SYS_WPLS'));
-          if (sysR0 > 0 && sysR1 > 0)
-            setTokenPrice('0x6b175474e89094c44da98b954eedeac495271d0f', (sysR1 / sysR0) * wplsUSD);
-          // PRVX: use high-liquidity USDC pair ($1M) - token0=pUSDC(6dec), token1=PRVX(18dec)
-          // Direct stablecoin price - no WPLS conversion needed
-          const [prvxR0, prvxR1] = parseRes(reserveResult('PRVX_USDC'));
-          if (prvxR0 > 0 && prvxR1 > 0)
-            setTokenPrice('0xf6f8db0aba00007681f8faf16a0fda1c9b030b11', (prvxR0 / 1e6) / (prvxR1 / 1e18));
-        }
-      } catch (e) {
-        console.warn('Could not fetch PulseChain on-chain LP prices:', e);
-      }
-
-      setPrices(prev => ({ ...prev, ...fetchedPrices }));
-
-      const assetMap: Record<string, Asset> = {};
-      const walletAssetMap: Record<string, Record<string, Asset>> = {};
-      const allStakes: HexStake[] = [];
-      const allTransactions: Transaction[] = [];
-
-      // Helper for retrying RPC calls
-      const withRetry = async <T,>(fn: () => Promise<T>, retries = 5, delay = 1000): Promise<T> => {
-        try {
-          return await fn();
-        } catch (e: any) {
-          const errMsg = e.message?.toLowerCase() || '';
-          const shouldRetry =
-            retries > 0 && (
-              errMsg.includes('rate limit') ||
-              errMsg.includes('429') ||
-              errMsg.includes('request failed') ||
-              errMsg.includes('internal error') ||
-              errMsg.includes('timeout') ||
-              errMsg.includes('retry')
-            );
-
-          if (shouldRetry) {
-            console.warn(`RPC call failed, retrying... (${retries} left). Error: ${errMsg.slice(0, 100)}`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-            return withRetry(fn, retries - 1, delay * 1.5);
-          }
-          throw e;
-        }
-      };
-
-      // 2. Fetch Balances and Transactions for each chain
-      for (const chainKey of Object.keys(CHAINS) as Chain[]) {
-        const chainConfig = CHAINS[chainKey];
-        if (!chainConfig) continue;
-
-        const transports = [http(chainConfig.rpc)];
-        if ((chainConfig as any).fallbackRpcs) {
-          (chainConfig as any).fallbackRpcs.forEach((rpc: string) => {
-            transports.push(http(rpc));
-          });
-        }
-
-        const client = createPublicClient({
-          transport: fallback(transports, { rank: true })
-        });
-
-        // Parallelize wallet processing for each chain
-        await Promise.all(wallets.map(async (wallet) => {
-          const address = wallet.address as `0x${string}`;
-          const discoveredTokens: any[] = [];
-
-          // 1. Fetch Transactions and discovered tokens in parallel
-          try {
-            if (chainKey === 'pulsechain') {
-              // Vite dev + Vercel production rewrite /proxy/pulsechain/* to api.scan.pulsechain.com.
-              // Electron and non-proxy hosts (custom domains, mobile PWAs, GitHub Pages) hit direct.
-              const bsBase = resolveBlockscoutBase();
-              const nativePrice = fetchedPrices['pulsechain']?.usd || 0;
-
-              const fetchPcV2Pages = async (endpoint: string, maxPages = 50): Promise<any[]> => {
-                const results: any[] = [];
-                let nextParams: Record<string, string> | null = {};
-                let page = 0;
-                while (nextParams !== null && page < maxPages) {
-                  const hasExistingQuery = endpoint.includes('?');
-                  const paramStr = Object.keys(nextParams).length
-                    ? (hasExistingQuery ? '&' : '?') + new URLSearchParams(nextParams).toString()
-                    : '';
-                  const controller = new AbortController();
-                  const timeout = setTimeout(() => controller.abort(), 58000);
-                  let res: Response;
-                  try {
-                    res = await fetch(`${bsBase}${endpoint}${paramStr}`, { signal: controller.signal });
-                  } catch {
-                    console.warn(`[pulsechain] ${endpoint} -> timeout/network error`);
-                    break;
-                  } finally {
-                    clearTimeout(timeout);
-                  }
-                  if (!res.ok) { console.warn(`[pulsechain] ${endpoint} -> HTTP ${res.status}`); break; }
-                  const data = await res.json();
-                  if (data.items && Array.isArray(data.items)) {
-                    results.push(...data.items);
-                    nextParams = data.next_page_params || null;
-                    if (!data.next_page_params || data.items.length === 0) break;
-                  } else {
-                    break;
-                  }
-                  page++;
-                }
-                return results;
-              };
-
-              const fetchPcTokenBalances = async (): Promise<any[]> => {
-                try {
-                  return await fetchPcV2Pages(`/addresses/${address}/tokens?type=ERC-20`, 20);
-                } catch (e) {
-                  console.warn(`[pulsechain] token balance discovery failed for ${address}:`, e);
-                  return [];
-                }
-              };
-
-              // Etherscan-compat base - same proxy logic as above
-              const esBase = resolveEtherscanCompatBase();
-
-              // Fetch broad token transfer history first, then supplement with per-token
-              // Etherscan-compat queries for contracts Blockscout may miss or delay.
-              const pcTokenContracts = (TOKENS['pulsechain'] as any[]).filter(t => t.address !== 'native');
-
-              const fetchEsTokenTx = async (contractAddress: string): Promise<any[]> => {
-                const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), 15000);
-                try {
-                  const url = `${esBase}?module=account&action=tokentx&address=${address}&contractaddress=${contractAddress}&page=1&offset=${PULSECHAIN_ETHERSCAN_TOKEN_OFFSET}&sort=desc`;
-                  const res = await fetch(url, { signal: controller.signal });
-                  if (!res.ok) return [];
-                  const data = await res.json();
-                  if (data.status === '1' && Array.isArray(data.result)) return data.result;
-                  return [];
-                } catch {
-                  return [];
-                } finally {
-                  clearTimeout(timeout);
-                }
-              };
-
-              const [bsTxs, bsTokenBalances, blockscoutTokenTransfers, esTokenArrays] = await Promise.all([
-                fetchPcV2Pages(`/addresses/${address}/transactions`, PULSECHAIN_NATIVE_TX_MAX_PAGES),
-                fetchPcTokenBalances(),
-                fetchPcV2Pages(`/addresses/${address}/token-transfers?type=ERC-20`, PULSECHAIN_TOKEN_TX_MAX_PAGES).catch(() => []),
-                Promise.all(pcTokenContracts.map(t => fetchEsTokenTx(t.address)))
-              ]);
-
-              // Normalize Blockscout + Etherscan-compat records to the V2 shape the processing
-              // loop expects, then deduplicate by txHash+logIndex.
-              const seen = new Set<string>();
-              const normalizeBlockscoutTokenTx = (tx: any) => ({
-                from: { hash: tx.from?.hash || '' },
-                to: { hash: tx.to?.hash || '' },
-                token: {
-                  symbol: tx.token?.symbol,
-                  decimals: tx.token?.decimals,
-                  address: tx.token?.address,
-                },
-                total: { value: tx.total?.value },
-                transaction_hash: tx.transaction_hash || tx.hash,
-                timestamp: tx.timestamp,
-                log_index: tx.log_index,
-                method: tx.method ?? null,
-              });
-              const bsTokenTxs = [...blockscoutTokenTransfers.map(normalizeBlockscoutTokenTx), ...esTokenArrays.flat()].reduce<any[]>((acc, tx) => {
-                const key = `${tx.transaction_hash || tx.hash}-${tx.log_index ?? tx.logIndex ?? tx.transactionIndex ?? Math.random()}`;
-                if (seen.has(key)) return acc;
-                seen.add(key);
-                acc.push({
-                  from: { hash: tx.from?.hash || tx.from },
-                  to: { hash: tx.to?.hash || tx.to },
-                  token: {
-                    symbol: tx.token?.symbol || tx.tokenSymbol,
-                    decimals: tx.token?.decimals || tx.tokenDecimal,
-                    address: tx.token?.address || tx.contractAddress,
-                  },
-                  total: { value: tx.total?.value || tx.value },
-                  transaction_hash: tx.transaction_hash || tx.hash,
-                  timestamp: tx.timeStamp ? new Date(Number(tx.timeStamp) * 1000).toISOString() : tx.timestamp ?? null,
-                  log_index: tx.log_index ?? tx.logIndex,
-                  method: tx.method ?? null,
-                });
-                return acc;
-              }, []);
-
-              // Native PLS transactions
-              bsTxs.forEach((tx: any) => {
-                const isOut = (tx.from?.hash || '').toLowerCase() === address.toLowerCase();
-                const amount = Number(formatUnits(BigInt(tx.value || '0'), 18));
-                const valueUsd = amount * nativePrice;
-                const ts = tx.timestamp ? new Date(tx.timestamp).getTime() : 0;
-                allTransactions.push({
-                  id: tx.hash,
-                  hash: tx.hash,
-                  timestamp: ts,
-                  type: isOut ? 'withdraw' : 'deposit',
-                  from: tx.from?.hash || '',
-                  to: tx.to?.hash || '',
-                  asset: 'PLS',
-                  amount,
-                  chain: 'pulsechain',
-                  valueUsd,
-                  fee: tx.gas_used && tx.gas_price
-                    ? Number(formatUnits(BigInt(tx.gas_used) * BigInt(tx.gas_price), 18))
-                    : 0
-                });
-              });
-
-              // PulseChain token transfers
-              const pulseBridgeMap: Record<string, { name: string, id: string }> = {
-                '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48': { name: 'USDC (fork copy)', id: 'usd-coin' },
-                '0x6b175474e89094c44da98b954eedeac495271d0f': { name: 'DAI (fork copy)', id: 'dai' },
-                '0x15d38573d2feeb82e7ad5187ab8c1d52810b1f07': { name: 'USDC (from ETH)', id: 'usd-coin' },
-                '0x02dcdd04e3f455d838cd1249292c58f3b79e3c3c': { name: 'WETH (from ETH)', id: 'ethereum' },
-                '0xefd766ccb38eaf1dfd701853bfce31359239f305': { name: 'DAI (from ETH)', id: 'dai' },
-                '0x0cb6f5a34ad42ec934882a05265a7d5f59b51a2f': { name: 'USDT (from ETH)', id: 'tether' },
-                '0x57fde0a71132198bbec939b98976993d8d89d225': { name: 'HEX (from ETH)', id: 'hex' },
-                '0xb17d901469b9208b17d916112988a3fed19b5ca1': { name: 'WBTC (from ETH)', id: 'wrapped-bitcoin' },
-                '0x80316335349e52643527c6986816e6c483478248': { name: 'USDC (Liberty Bridge)', id: 'usd-coin' },
-                '0x41527c4d9d47ef03f00f77d794c87ba94832700b': { name: 'USDC (from Base)', id: 'usd-coin' }
-              };
-
-              const addDiscoveredPulseToken = (tokenInfo: any, markNoMarketAsSpam = false) => {
-                const contractAddr = (tokenInfo?.address || '').toLowerCase();
-                if (!contractAddr) return;
-
-                const chainTokens = TOKENS['pulsechain'] || [];
-                const isHardcoded = chainTokens.some((t: any) => t.address !== 'native' && t.address.toLowerCase() === contractAddr);
-                const isAlreadyDiscovered = discoveredTokens.some(t => t.address.toLowerCase() === contractAddr);
-                if (isHardcoded || isAlreadyDiscovered) return;
-
-                const symbol = String(tokenInfo?.symbol || 'TOKEN');
-                const mapped = pulseBridgeMap[contractAddr];
-                const name = mapped?.name || String(tokenInfo?.name || symbol);
-                const decimals = Number(tokenInfo?.decimals) || 18;
-                const exchangeRate = Number(tokenInfo?.exchange_rate ?? tokenInfo?.exchangeRate ?? NaN);
-                const priceKey = `pulsechain:${contractAddr}`;
-                if (Number.isFinite(exchangeRate) && exchangeRate > 0 && !fetchedPrices[priceKey]?.usd) {
-                  fetchedPrices[priceKey] = { ...(fetchedPrices[priceKey] || {}), usd: exchangeRate };
-                }
-
-                const hasUrlPattern = /\.(io|com|net|org|xyz|finance|app|pro|gg|gd)\b/i.test(`${name} ${symbol}`);
-                const hasNoMarket = !tokenInfo?.exchange_rate && !tokenInfo?.circulating_market_cap && !tokenInfo?.volume_24h;
-                const isSpam = hasUrlPattern || (markNoMarketAsSpam && hasNoMarket && !mapped);
-
-                discoveredTokens.push({
-                  symbol,
-                  name,
-                  address: tokenInfo.address || contractAddr,
-                  decimals,
-                  coinGeckoId: mapped?.id || symbol.toLowerCase(),
-                  bridged: !!mapped,
-                  isSpam,
-                  isDiscovered: true
-                });
-              };
-
-              bsTokenBalances.forEach((item: any) => {
-                const tokenInfo = item?.token || item;
-                const rawValue = BigInt(item?.value || '0');
-                if (rawValue > 0n) addDiscoveredPulseToken(tokenInfo);
-              });
-
-              bsTokenTxs.forEach((tx: any) => {
-                const isOut = (tx.from?.hash || '').toLowerCase() === address.toLowerCase();
-                const symbol = tx.token?.symbol || 'TOKEN';
-                const decimals = Number(tx.token?.decimals) || 18;
-                const contractAddr = (tx.token?.address || '').toLowerCase();
-                const amount = Number(formatUnits(BigInt(tx.total?.value || '0'), decimals));
-                const ts = tx.timestamp ? new Date(tx.timestamp).getTime() : 0;
-
-                const mapped = pulseBridgeMap[contractAddr];
-                const assetName = mapped ? mapped.name : symbol;
-                const coinGeckoId = mapped ? mapped.id : symbol.toLowerCase();
-                const priceKey = `pulsechain:${contractAddr}`;
-                const price = fetchedPrices[priceKey]?.usd ||
-                              fetchedPrices[contractAddr]?.usd ||
-                              fetchedPrices[coinGeckoId]?.usd || 0;
-                const valueUsd = amount * price;
-
-                allTransactions.push({
-                  id: `${tx.transaction_hash}-${tx.log_index || Math.random()}`,
-                  hash: tx.transaction_hash || tx.hash || '',
-                  timestamp: ts,
-                  type: isOut ? 'withdraw' : 'deposit',
-                  from: tx.from?.hash || '',
-                  to: tx.to?.hash || '',
-                  asset: assetName,
-                  amount,
-                  chain: 'pulsechain',
-                  valueUsd,
-                  fee: 0
-                });
-
-                addDiscoveredPulseToken(tx.token, !isOut);
-              });
-
-            } else if (chainKey === 'base') {
-              // Base uses Blockscout V2 API
-              const bsBase = 'https://base.blockscout.com/api/v2';
-
-              const fetchBlockscoutPages = async (endpoint: string): Promise<any[]> => {
-                const results: any[] = [];
-                let nextParams: Record<string, string> | null = {};
-                while (nextParams !== null) {
-                  const hasExistingQuery = endpoint.includes('?');
-                  const paramStr: string = Object.keys(nextParams).length
-                    ? (hasExistingQuery ? '&' : '?') + new URLSearchParams(nextParams).toString()
-                    : '';
-                  const res: Response = await fetch(`${bsBase}${endpoint}${paramStr}`);
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const data: any = await res.json();
-                  if (data.items && Array.isArray(data.items)) {
-                    results.push(...data.items);
-                    const np = data.next_page_params as Record<string, string> | null | undefined;
-                    // null, undefined, or empty {} all signal last page
-                    if (!np || Object.keys(np).length === 0 || data.items.length === 0) break;
-                    nextParams = np;
-                  } else {
-                    break;
-                  }
-                }
-                return results;
-              };
-
-              const [bsTxs, bsTokenTxs] = await Promise.all([
-                fetchBlockscoutPages(`/addresses/${address}/transactions`),
-                fetchBlockscoutPages(`/addresses/${address}/token-transfers?type=ERC-20`)
-              ]);
-
-              const nativePrice = fetchedPrices['ethereum']?.usd || 0;
-
-              // Build Liberty Swap metadata map: tx hash -> bridge data
-              const libertySwapMap = new Map<string, { dstChainId: number; orderId: string }>();
-
-              bsTxs.forEach((tx: any) => {
-                const isOut = (tx.from?.hash || '').toLowerCase() === address.toLowerCase();
-                const amount = Number(formatUnits(BigInt(tx.value || '0'), 18));
-                const valueUsd = amount * nativePrice;
-                const ts = tx.timestamp ? new Date(tx.timestamp).getTime() : 0;
-                const toAddr = (tx.to?.hash || '').toLowerCase();
-
-                // Detect Liberty Swap: outbound tx to the Liberty Swap Router on Base
-                if (isOut && toAddr === LIBERTY_SWAP_ROUTERS.base) {
-                  const rawInput = tx.raw_input || tx.input || '';
-                  const lsData = decodeLibertySwapInput(rawInput);
-                  if (lsData) libertySwapMap.set(tx.hash.toLowerCase(), lsData);
-                }
-
-                allTransactions.push({
-                  id: tx.hash,
-                  hash: tx.hash,
-                  timestamp: ts,
-                  type: isOut ? 'withdraw' : 'deposit',
-                  from: tx.from?.hash || '',
-                  to: tx.to?.hash || '',
-                  asset: 'ETH',
-                  amount,
-                  chain: 'base',
-                  valueUsd,
-                  fee: tx.gas_used && tx.gas_price
-                    ? Number(formatUnits(BigInt(tx.gas_used) * BigInt(tx.gas_price), 18))
-                    : 0
-                });
-              });
-
-              const baseBridgeMap: Record<string, { name: string, id: string }> = {
-                '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913': { name: 'USDC', id: 'usd-coin' },
-                '0x4200000000000000000000000000000000000006': { name: 'WETH', id: 'ethereum' },
-                '0x50c5725949a6f0c72e6c4a641f24049a917db0cb': { name: 'DAI', id: 'dai' },
-              };
-
-              bsTokenTxs.forEach((tx: any) => {
-                const isOut = (tx.from?.hash || '').toLowerCase() === address.toLowerCase();
-                const symbol = tx.token?.symbol || 'TOKEN';
-                const decimals = Number(tx.token?.decimals) || 18;
-                const contractAddr = (tx.token?.address || '').toLowerCase();
-                const amount = Number(formatUnits(BigInt(tx.total?.value || '0'), decimals));
-                const ts = tx.timestamp ? new Date(tx.timestamp).getTime() : 0;
-                const txHash = (tx.transaction_hash || tx.hash || '').toLowerCase();
-
-                const mapped = baseBridgeMap[contractAddr];
-                const assetName = mapped ? mapped.name : symbol;
-                const coinGeckoId = mapped ? mapped.id : symbol.toLowerCase();
-                const price = fetchedPrices[coinGeckoId]?.usd ||
-                              fetchedPrices[contractAddr]?.usd || 0;
-                const valueUsd = amount * price;
-
-                const lsData = libertySwapMap.get(txHash);
-
-                allTransactions.push({
-                  id: `${tx.transaction_hash}-${tx.log_index || Math.random()}`,
-                  hash: tx.transaction_hash || tx.hash || '',
-                  timestamp: ts,
-                  type: isOut ? 'withdraw' : 'deposit',
-                  from: tx.from?.hash || '',
-                  to: tx.to?.hash || '',
-                  asset: assetName,
-                  amount,
-                  chain: 'base',
-                  valueUsd,
-                  fee: 0,
-                  ...(lsData ? { libertySwap: lsData } : {}),
-                });
-
-                const chainTokens = TOKENS['base'] || [];
-                const isHardcoded = chainTokens.some((t: any) => t.address.toLowerCase() === contractAddr);
-                const isAlreadyDiscovered = discoveredTokens.some(t => t.address.toLowerCase() === contractAddr);
-                if (!isHardcoded && !isAlreadyDiscovered && contractAddr) {
-                  const isBatchAirdrop = tx.method === 'batchTransfer' || tx.method === 'multiSend';
-                  const hasNoMarket = !tx.token?.exchange_rate && !tx.token?.circulating_market_cap && !tx.token?.volume_24h;
-                  const isSpam = !isOut && (isBatchAirdrop || (hasNoMarket && !mapped));
-                  discoveredTokens.push({
-                    symbol,
-                    name: assetName,
-                    address: tx.token?.address || contractAddr,
-                    decimals,
-                    coinGeckoId,
-                    bridged: !!mapped,
-                    isSpam
-                  });
-                }
-              });
-            } else {
-            // Etherscan V2 path for Ethereum
-            const apiBase = 'https://api.etherscan.io/v2/api?chainid=1';
-
-            // ETH block ~11565019 = Jan 1 2021
-            const startBlock = '11565019';
-            const pageSize = 10000;
-            const sortDir = 'asc';
-
-            const apiKey = (apiKeyOverride ?? etherscanApiKeyRef.current) || import.meta.env.VITE_ETHERSCAN_API_KEY || '';
-
-            const fetchAllTxPages = async (action: string): Promise<any[]> => {
-              const results: any[] = [];
-              let page = 1;
-              let retries = 0;
-              while (true) {
-                const apiKeyParam = apiKey ? `&apikey=${apiKey}` : '';
-                const sep = apiBase.includes('?') ? '&' : '?';
-                const url = `${apiBase}${sep}module=account&action=${action}&address=${address}` +
-                  `&startblock=${startBlock}&endblock=99999999&sort=${sortDir}&page=${page}&offset=${pageSize}${apiKeyParam}`;
-                const res = await fetch(url);
-                const data = await res.json();
-                if (data.status === '1' && Array.isArray(data.result)) {
-                  results.push(...data.result);
-                  if (data.result.length < pageSize) break;
-                  page++;
-                  retries = 0;
-                } else {
-                  const msg = (data.result || data.message || '').toString().toLowerCase();
-                  if ((msg.includes('rate limit') || msg.includes('max rate')) && retries < 3) {
-                    retries++;
-                    await new Promise(r => setTimeout(r, 1500 * retries));
-                    continue;
-                  }
-                  if (data.status !== '0' || (data.message !== 'No transactions found' && !msg.includes('no transactions'))) {
-                    console.warn(`[${chainKey}] ${action} API response:`, data.status, data.message, msg.slice(0, 100));
-                  }
-                  break;
-                }
-              }
-              return results;
-            };
-
-            const [txResults, tokenTxResults, internalTxResults] = await Promise.all([
-              fetchAllTxPages('txlist'),
-              fetchAllTxPages('tokentx'),
-              fetchAllTxPages('txlistinternal')
-            ]);
-
-            const txData = { status: txResults.length ? '1' : '0', result: txResults };
-            const tokenTxData = { status: tokenTxResults.length ? '1' : '0', result: tokenTxResults };
-
-            if (txData.status === '1' && Array.isArray(txData.result)) {
-              txData.result.forEach((tx: any) => {
-                const isOut = tx.from.toLowerCase() === address.toLowerCase();
-                const amount = Number(formatUnits(BigInt(tx.value), 18));
-                const price = fetchedPrices['ethereum']?.usd || 0;
-                const valueUsd = amount * price;
-
-                allTransactions.push({
-                  id: tx.hash,
-                  hash: tx.hash,
-                  timestamp: Number(tx.timeStamp) * 1000,
-                  type: isOut ? 'withdraw' : 'deposit',
-                  from: tx.from,
-                  to: tx.to,
-                  asset: 'ETH',
-                  amount: amount,
-                  chain: chainKey,
-                  valueUsd: valueUsd,
-                  fee: Number(formatUnits(BigInt(tx.gasUsed) * BigInt(tx.gasPrice), 18))
-                });
-              });
-            }
-
-            if (tokenTxData.status === '1' && Array.isArray(tokenTxData.result)) {
-              tokenTxData.result.forEach((tx: any) => {
-                const isOut = tx.from.toLowerCase() === address.toLowerCase();
-                const symbol = tx.tokenSymbol || 'TOKEN';
-                const decimals = Number(tx.tokenDecimal) || 18;
-                const contractAddr = tx.contractAddress.toLowerCase();
-
-                const assetName = symbol;
-                const isBridged = false;
-                // Look up coinGeckoId from the hardcoded TOKENS list first (e.g. USDC -> 'usd-coin',
-                // USDT -> 'tether') instead of blindly lowercasing the symbol which gives wrong keys.
-                const knownEthToken = TOKENS['ethereum'].find((t: any) => t.address.toLowerCase() === contractAddr);
-                const coinGeckoId = knownEthToken?.coinGeckoId || symbol.toLowerCase();
-
-                const amount = Number(formatUnits(BigInt(tx.value), decimals));
-                const price = fetchedPrices[contractAddr]?.usd ||
-                             fetchedPrices[coinGeckoId]?.usd || 0;
-                const valueUsd = amount * price;
-
-                allTransactions.push({
-                  id: `${tx.hash}-${tx.logIndex}`,
-                  hash: tx.hash,
-                  timestamp: Number(tx.timeStamp) * 1000,
-                  type: isOut ? 'withdraw' : 'deposit',
-                  from: tx.from,
-                  to: tx.to,
-                  asset: assetName,
-                  amount: amount,
-                  chain: chainKey,
-                  valueUsd: valueUsd,
-                  fee: tx.gasUsed ? Number(formatUnits(BigInt(tx.gasUsed) * BigInt(tx.gasPrice), 18)) : 0
-                });
-
-                const isHardcoded = TOKENS[chainKey].some(t => t.address.toLowerCase() === contractAddr);
-                const isAlreadyDiscovered = discoveredTokens.some(t => t.address.toLowerCase() === contractAddr);
-
-                if (!isHardcoded && !isAlreadyDiscovered) {
-                  // Spam: URL in name/symbol, or tiny airdrop amount (~10 tokens) with no price
-                  const hasUrlPattern = /\.(io|com|net|org|xyz|finance|app|pro|gg)\b/i.test(assetName + ' ' + symbol);
-                  const isTinyAirdrop = !isOut && price === 0 && amount <= 10;
-                  const isEthSpam = !isOut && (hasUrlPattern || isTinyAirdrop);
-                  discoveredTokens.push({
-                    symbol,
-                    name: assetName,
-                    address: tx.contractAddress,
-                    decimals,
-                    coinGeckoId,
-                    bridged: isBridged,
-                    isSpam: isEthSpam
-                  });
-                }
-              });
-            }
-
-            // Internal ETH transfers - captures the ETH received/sent leg of token-to-ETH swaps
-            // (e.g. selling USDC for ETH: the ETH comes back via an internal call from the router)
-            internalTxResults.forEach((tx: any, i: number) => {
-              const isOut = (tx.from || '').toLowerCase() === address.toLowerCase();
-              const isIn  = (tx.to  || '').toLowerCase() === address.toLowerCase();
-              if (!isOut && !isIn) return;
-              const amount = Number(formatUnits(BigInt(tx.value || '0'), 18));
-              if (amount <= 0) return;
-              const price = fetchedPrices['ethereum']?.usd || 0;
-              allTransactions.push({
-                id: `${tx.hash}-internal-${i}`,
-                hash: tx.hash,
-                timestamp: Number(tx.timeStamp) * 1000,
-                type: isOut ? 'withdraw' : 'deposit',
-                from: tx.from || '',
-                to: tx.to || '',
-                asset: 'ETH',
-                amount,
-                chain: chainKey,
-                valueUsd: amount * price,
-                fee: 0
-              });
-            });
-            } // end else (ethereum/base)
-          } catch (e) {
-            console.warn(`Could not fetch transactions for ${address} on ${chainKey}:`, e);
-          }
-
-          // 2a. Fetch DexScreener metadata for discovered PulseChain wallet tokens.
-          // Per pricing rules, DexScreener is not used as a USD price source here.
-          if (chainKey === 'pulsechain' && discoveredTokens.length > 0) {
-            try {
-              const discoveredByAddr = new Map(
-                discoveredTokens
-                  .filter(t => t.address && t.address !== 'native')
-                  .map(t => [t.address.toLowerCase(), t])
-              );
-              const unpricedAddrs = Array.from(discoveredByAddr.keys())
-                .filter(addr => !fetchedPrices[`pulsechain:${addr}`]?.usd);
-
-              const chunks: string[][] = [];
-              for (let i = 0; i < unpricedAddrs.length; i += 30) {
-                chunks.push(unpricedAddrs.slice(i, i + 30));
-              }
-
-              const bestPairs = new Map<string, any>();
-              await Promise.all(chunks.map(async (chunk) => {
-                const res = await fetch(`https://api.dexscreener.com/tokens/v1/pulsechain/${chunk.join(',')}`);
-                if (!res.ok) return;
-                const pairs = await res.json();
-                if (!Array.isArray(pairs)) return;
-
-                pairs.forEach((pair: any) => {
-                  const baseAddr = pair?.baseToken?.address?.toLowerCase?.();
-                  const quoteAddr = pair?.quoteToken?.address?.toLowerCase?.();
-                  const matchedAddr = discoveredByAddr.has(baseAddr) ? baseAddr : discoveredByAddr.has(quoteAddr) ? quoteAddr : null;
-                  if (!matchedAddr) return;
-
-                  const current = bestPairs.get(matchedAddr);
-                  const currentLiquidity = Number(current?.liquidity?.usd ?? 0);
-                  const nextLiquidity = Number(pair?.liquidity?.usd ?? 0);
-                  if (!current || nextLiquidity > currentLiquidity) bestPairs.set(matchedAddr, pair);
-                });
-              }));
-
-              const newLogos: Record<string, string> = {};
-              bestPairs.forEach((pair, addr) => {
-                const token = discoveredByAddr.get(addr);
-                if (!token) return;
-
-                const baseAddr = pair?.baseToken?.address?.toLowerCase?.();
-
-                const pairToken = baseAddr === addr ? pair?.baseToken : pair?.quoteToken;
-                if (pairToken?.symbol && token.symbol === 'TOKEN') token.symbol = pairToken.symbol;
-                if (pairToken?.name && (!token.name || token.name === token.symbol)) token.name = pairToken.name;
-                if (pair?.info?.imageUrl) newLogos[addr] = pair.info.imageUrl;
-              });
-
-              if (Object.keys(newLogos).length > 0) {
-                setTokenLogos(prev => ({ ...prev, ...newLogos }));
-              }
-            } catch (e) {
-              console.warn('DexScreener PulseChain token lookup failed:', e);
-            }
-          }
-
-          // 2a. Fetch DeFi Llama prices for discovered Ethereum tokens without a known price
-          if (chainKey === 'ethereum' && discoveredTokens.length > 0) {
-            try {
-              const unpricedAddrs = discoveredTokens
-                .filter(t => t.address && t.address !== 'native' && !fetchedPrices[t.address.toLowerCase()])
-                .map(t => `ethereum:${t.address.toLowerCase()}`);
-              if (unpricedAddrs.length > 0) {
-                const llamaRes = await fetch(`https://coins.llama.fi/prices/current/${unpricedAddrs.join(',')}`);
-                if (llamaRes.ok) {
-                  const llamaData = await llamaRes.json();
-                  const newLogos: Record<string, string> = {};
-                  Object.entries(llamaData.coins || {}).forEach(([key, val]: [string, any]) => {
-                    const addr = key.replace('ethereum:', '');
-                    fetchedPrices[addr] = { usd: val.price, image: val.logo };
-                    fetchedPrices[key] = { usd: val.price, image: val.logo };
-                    if (val.logo) newLogos[addr] = val.logo;
-                  });
-                  if (Object.keys(newLogos).length > 0) setTokenLogos(prev => ({ ...prev, ...newLogos }));
-                }
-              }
-            } catch { /* ignore */ }
-          }
-
-          // 2. Fetch all token balances in parallel
-          const tokensToFetch = [...TOKENS[chainKey], ...discoveredTokens];
-          await Promise.all(tokensToFetch.map(async (token) => {
-            let balance = 0n;
-            try {
-              if (token.address === 'native') {
-                balance = await withRetry(() => client.getBalance({ address }));
-              } else {
-                let checksummedAddr: `0x${string}`;
-                try {
-                  checksummedAddr = getAddress(token.address);
-                } catch {
-                  console.warn(`Skipping ${token.symbol} on ${chainKey}: invalid address ${token.address}`);
-                  return;
-                }
-                const data = await withRetry(() => client.readContract({
-                  address: checksummedAddr,
-                  abi: ERC20_ABI,
-                  functionName: 'balanceOf',
-                  args: [address]
-                } as any));
-                balance = BigInt(data as any);
-              }
-            } catch (e) {
-              if (isNoContractDataError(e)) return;
-              if (import.meta.env.DEV) console.debug(`Could not fetch balance for ${token.symbol} on ${chainKey}:`, e);
-              return;
-            }
-
-            const balanceNum = Number(formatUnits(balance, token.decimals));
-            if (balanceNum > 0) {
-              const priceKey = `${chainKey}:${token.address.toLowerCase()}`;
-              const priceData = fetchedPrices[priceKey] || fetchedPrices[token.address.toLowerCase()] || fetchedPrices[token.coinGeckoId];
-              const price = priceData?.usd || 0;
-              const priceChange24h = priceData?.usd_24h_change ?? fetchedPrices[token.coinGeckoId]?.usd_24h_change ?? 0;
-              const priceChange1h = priceData?.usd_1h_change ?? fetchedPrices[token.coinGeckoId]?.usd_1h_change ?? 0;
-              const priceChange7d = priceData?.usd_7d_change ?? fetchedPrices[token.coinGeckoId]?.usd_7d_change ?? 0;
-              // WPLS (wrapped native PLS) is economically equivalent to PLS.
-              // Merge it into the 'pulsechain-PLS' bucket so users see one unified PLS entry.
-              // LP pair internals still reference WPLS by address - only wallet holdings are merged.
-              const isWplsMerge = chainKey === 'pulsechain' && token.symbol === 'WPLS';
-              const isAddressKeyedDiscovery = Boolean((token as any).isDiscovered && token.address !== 'native');
-              const assetKey = isWplsMerge
-                ? 'pulsechain-PLS'
-                : isAddressKeyedDiscovery
-                  ? `${chainKey}-${token.address.toLowerCase()}`
-                  : `${chainKey}-${token.symbol}`;
-
-              if (assetMap[assetKey]) {
-                assetMap[assetKey].balance += balanceNum;
-                assetMap[assetKey].value += balanceNum * price;
-                if (isWplsMerge) (assetMap[assetKey] as any).wrappedBalance = ((assetMap[assetKey] as any).wrappedBalance || 0) + balanceNum;
-              } else {
-                // Logo priority: STATIC_LOGOS (highest) -> CoinGecko/chain-CDN -> PulseX CDN
-                // All CDN paths require EIP-55 checksummed addresses - use getAddress() to ensure that.
-                // For WPLS merge: use the PLS/WPLS logo (same icon on PulseX CDN).
-                const effectiveAddress = isWplsMerge ? 'native' : token.address;
-                const addrLower = effectiveAddress === 'native' ? null : effectiveAddress.toLowerCase();
-                // STATIC_LOGOS always wins - prevents CoinGecko golden-coin from replacing hand-curated logos
-                const staticLogoOverride = addrLower ? STATIC_LOGOS[addrLower] : null;
-                // Only fetch CoinGecko image if there's no static override (don't let coinGeckoId image pollute bridged tokens)
-                const cgLogo = staticLogoOverride ? null : (priceData?.image ?? null);
-                const twChain = chainKey === 'ethereum' ? 'ethereum' : chainKey === 'base' ? 'base' : null;
-                let twLogo: string | null = null;
-                if (!staticLogoOverride && twChain && effectiveAddress !== 'native') {
-                  try { twLogo = `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${twChain}/assets/${getAddress(effectiveAddress)}/logo.png`; } catch { /* invalid address */ }
-                }
-                let pulsexLogo: string | null = null;
-                if (!staticLogoOverride && chainKey === 'pulsechain' && token.address !== 'native') {
-                  try { pulsexLogo = `https://tokens.app.pulsex.com/images/tokens/${getAddress(token.address)}.png`; } catch { /* invalid address */ }
-                }
-                const logoUrl = staticLogoOverride || cgLogo || twLogo || pulsexLogo || null;
-
-                assetMap[assetKey] = {
-                  id: assetKey,
-                  symbol: isWplsMerge ? 'PLS' : token.symbol,
-                  name: isWplsMerge ? 'PulseChain' : ((token as any).name || (token.symbol === 'eHEX' ? 'HEX (from Ethereum)' : `${token.symbol} (${chainConfig.name})`)),
-                  balance: balanceNum,
-                  price: price,
-                  priceChange24h: priceChange24h,
-                  priceChange1h: priceChange1h,
-                  priceChange7d: priceChange7d,
-                  value: balanceNum * price,
-                  chain: chainKey,
-                  pnl24h: priceChange24h,
-                  isCore: true,
-                  isBridged: false,
-                  address: effectiveAddress,
-                  isSpam: false,
-                  logoUrl,
-                  wrappedBalance: isWplsMerge ? balanceNum : 0,
-                } as any;
-              }
-
-              // Per-wallet asset tracking
-              const wAddr = wallet.address.toLowerCase();
-              if (!walletAssetMap[wAddr]) walletAssetMap[wAddr] = {};
-              if (walletAssetMap[wAddr][assetKey]) {
-                walletAssetMap[wAddr][assetKey].balance += balanceNum;
-                walletAssetMap[wAddr][assetKey].value += balanceNum * price;
-              } else {
-                walletAssetMap[wAddr][assetKey] = {
-                  ...assetMap[assetKey],
-                  balance: balanceNum,
-                  value: balanceNum * price,
-                  id: `${wAddr}-${assetKey}`,
-                } as any;
-              }
-            }
-          }));
-
-          // 3. Fetch HEX Stakes if on PulseChain or Ethereum
-          if ((chainKey === 'pulsechain' || chainKey === 'ethereum') && 'hexAddress' in chainConfig) {
-            // Each chain is fully isolated: a failure on Ethereum never blocks PulseChain.
-            let hexStakeCount = 0n;
-            let hexCurrentDay = 0n;
-
-            try {
-              const hexAddr = getAddress(chainConfig.hexAddress);
-              // PulseChain stake reads are critical for the HEX dashboard. Use the
-              // primary RPC directly here so fallback ranking never lands on a
-              // partially-compatible endpoint for HEX contract reads.
-              const stakeClient = chainKey === 'pulsechain'
-                ? createPublicClient({ transport: http(chainConfig.rpc) })
-                : client;
-
-              // Fetch stakeCount and currentDay in separate try/catch so one bad RPC
-              // call cannot kill the other - they are independent contract reads.
-              try {
-                hexStakeCount = await withRetry(() => stakeClient.readContract({
-                  address: hexAddr, abi: HEX_ABI, functionName: 'stakeCount', args: [address],
-                } as any)) as bigint;
-              } catch (e: any) {
-                console.error(`[HEX stakes] stakeCount failed on ${chainKey} (${address.slice(0, 8)}...): ${e?.shortMessage ?? e?.message ?? String(e)}`);
-              }
-
-              try {
-                hexCurrentDay = await withRetry(() => stakeClient.readContract({
-                  address: hexAddr, abi: HEX_ABI, functionName: 'currentDay',
-                } as any)) as bigint;
-              } catch (e: any) {
-                console.error(`[HEX stakes] currentDay failed on ${chainKey}: ${e?.shortMessage ?? e?.message ?? String(e)}`);
-              }
-
-              if (Number(hexStakeCount) > 0) {
-                // Use Promise.allSettled so a single bad index never aborts the whole batch
-                const stakeResults = await Promise.allSettled(
-                  Array.from({ length: Number(hexStakeCount) }, (_, i) =>
-                    withRetry(() => stakeClient.readContract({
-                      address: hexAddr, abi: HEX_ABI, functionName: 'stakeLists',
-                      args: [address, BigInt(i)],
-                    } as any))
-                  )
-                );
-
-                stakeResults.forEach((settled, i) => {
-                  if (settled.status === 'rejected') {
-                    console.warn(`[HEX stakes] index ${i} rejected on ${chainKey}: ${settled.reason?.message ?? settled.reason}`);
-                    return;
-                  }
-                  const stakeResult: any = settled.value;
-                  if (!stakeResult) return;
-
-                  let stakeId: any, stakedHearts: any, stakeShares: any,
-                      lockedDay: any, stakedDays: any, unlockedDay: any, isAutoStake: any;
-
-                  if (Array.isArray(stakeResult)) {
-                    [stakeId, stakedHearts, stakeShares, lockedDay, stakedDays, unlockedDay, isAutoStake] = stakeResult;
-                  } else {
-                    ({ stakeId, stakedHearts, stakeShares, lockedDay, stakedDays, unlockedDay, isAutoStake } = stakeResult);
-                  }
-
-                  if (stakeId === undefined) return;
-
-                  // Always coerce to BigInt - the ABI returns uint72 which viem gives as bigint,
-                  // but defensive casting prevents precision loss if a non-bigint sneaks in.
-                  const sharesBI     = BigInt(stakeShares  ?? 0);
-                  const heartsBI     = BigInt(stakedHearts ?? 0);
-                  const lockedDayN   = Number(lockedDay  ?? 0);
-                  const stakedDaysN  = Number(stakedDays ?? 0);
-                  const currentDayN  = Number(hexCurrentDay);
-
-                  const progress     = Math.min(100, Math.max(0, ((currentDayN - lockedDayN) / Math.max(1, stakedDaysN)) * 100));
-                  const daysStakedN  = Math.max(0, currentDayN - lockedDayN);
-                  const daysRemaining = Math.max(0, (lockedDayN + stakedDaysN) - currentDayN);
-
-                  const tShares    = Number(sharesBI) / 1e12;
-                  const stakedHex  = Number(heartsBI) / 1e8;
-
-                  // Yield: use real on-chain daily payout data; fall back to hardcoded
-                  // rate constant when the daily map doesn't cover this stake's days yet.
-                  const { dailyMapPulse, dailyMapEth, avgPayoutPulse, avgPayoutEth } = hexDailyDataRef.current;
-                  const chainDailyMap = chainKey === 'pulsechain' ? dailyMapPulse : dailyMapEth;
-                  const fallbackRate  = chainKey === 'pulsechain'
-                    ? (avgPayoutPulse || PHEX_YIELD_PER_TSHARE)
-                    : (avgPayoutEth   || EHEX_YIELD_PER_TSHARE);
-
-                  const accruedHex     = computeStakeYield(tShares, lockedDayN, daysStakedN, chainDailyMap, fallbackRate);
-                  const stakeHexYield  = computeStakeYield(tShares, lockedDayN, stakedDaysN, chainDailyMap, fallbackRate);
-                  const interestHearts = BigInt(Math.round(accruedHex    * 1e8));
-                  const fullYieldHearts = BigInt(Math.round(stakeHexYield * 1e8));
-
-                  const hexPriceChainKey = `${chainKey}:${hexAddr.toLowerCase()}`;
-                  const hexChainFallback = chainKey === 'pulsechain' ? fetchedPrices['pulsechain:hex']?.usd : fetchedPrices['hex']?.usd;
-                  const hexPrice   = fetchedPrices[hexPriceChainKey]?.usd || hexChainFallback || 0;
-
-                  const valueUsd       = stakedHex * hexPrice;
-                  const totalValueUsd  = (stakedHex + stakeHexYield) * hexPrice;
-
-                  // Late-end penalty: HEX grants a 14-day grace period after the end day.
-                  // After that, a fraction of the stake is forfeited; grows until ~100%.
-                  const daysOverdue = Math.max(0, currentDayN - (lockedDayN + stakedDaysN));
-                  const penaltyPct = daysOverdue > 14
-                    ? ((daysOverdue - 14) / (daysOverdue - 14 + 2 * stakedDaysN)) * 100
-                    : undefined;
-
-                  // Cost basis: record principal value (in USD) the first time we see the stake.
-                  // Stored per-stake so it survives refreshes. Never overwritten after initial set.
-                  const stakeIdN = Number(stakeId);
-                  const cbKey = `hex_cb_${chainKey}_${stakeIdN}`;
-                  let costBasisUsd: number | undefined;
-                  let unrealizedPnlUsd: number | undefined;
-                  try {
-                    const stored = localStorage.getItem(cbKey);
-                    if (stored !== null) {
-                      costBasisUsd = Number(stored);
-                    } else if (hexPrice > 0) {
-                      costBasisUsd = stakedHex * hexPrice;
-                      localStorage.setItem(cbKey, String(costBasisUsd));
-                    }
-                    if (costBasisUsd != null && hexPrice > 0) {
-                      unrealizedPnlUsd = (stakedHex + accruedHex) * hexPrice - costBasisUsd;
-                    }
-                  } catch { /* localStorage may be unavailable */ }
-
-                  allStakes.push({
-                    id: `${chainKey}-${address}-${stakeIdN}`,
-                    stakeId:           stakeIdN,
-                    stakedHearts:      heartsBI,
-                    stakeShares:       sharesBI,
-                    lockedDay:         lockedDayN,
-                    stakedDays:        stakedDaysN,
-                    unlockedDay:       Number(unlockedDay ?? 0),
-                    isAutoStake:       Boolean(isAutoStake),
-                    progress:          Math.round(progress),
-                    estimatedValueUsd: valueUsd,
-                    interestHearts,
-                    totalValueUsd,
-                    chain:             chainKey,
-                    walletLabel:       wallet.name,
-                    walletAddress:     address.toLowerCase(),
-                    daysRemaining,
-                    tShares,
-                    stakedHex,
-                    stakeHexYield,
-                    costBasisUsd,
-                    unrealizedPnlUsd,
-                    penaltyPct,
-                  });
-                });
-              }
-            } catch (e: any) {
-              console.error(`[HEX stakes] Unexpected error on ${chainKey} for ${address.slice(0, 8)}...: ${e?.shortMessage ?? e?.message ?? String(e)}`);
-            }
-          }
-        }));
-      }
-
-      // Aggregate HEX stakes into HEX assets for total balance visibility.
-      // Only active stakes (daysRemaining > 0) contribute; ended stakes are sitting in the wallet already.
-      allStakes.filter(stake => (stake.daysRemaining ?? 0) > 0).forEach(stake => {
-        const assetKey = `${stake.chain}-HEX`;
-        if (assetMap[assetKey]) {
-          const stakedHeartsNum = Number(stake.stakedHearts) / 1e8;
-          const interestHeartsNum = Number(stake.interestHearts || 0n) / 1e8;
-          const totalHeartsNum = stakedHeartsNum + interestHeartsNum;
-
-          assetMap[assetKey].stakedBalance = (assetMap[assetKey].stakedBalance || 0) + totalHeartsNum;
-          assetMap[assetKey].stakedValue = (assetMap[assetKey].stakedValue || 0) + (stake.totalValueUsd || stake.estimatedValueUsd);
-        }
-      });
-
-      // Auto-clear tokens from spamTokenIds if they now have a real price
-      const pricedIds = Object.values(assetMap).filter(a => a.price > 0).map(a => a.id);
-      if (pricedIds.length > 0) {
-        setSpamTokenIds(prev => prev.filter(id => !pricedIds.includes(id)));
-      }
-
-      // Merge WPLS balance/value into the PLS entry (same economic asset on PulseChain).
-      // The inline merge during balance fetching handles the common case; this pass catches
-      // any residual standalone WPLS entry that might appear if the inline path was skipped.
-      const wplsEntry = assetMap['pulsechain-WPLS'];
-      if (wplsEntry) {
-        const plsEntry = assetMap['pulsechain-PLS'];
-        if (plsEntry) {
-          plsEntry.balance += wplsEntry.balance;
-          plsEntry.value   += wplsEntry.value;
-        } else {
-          // No native PLS entry at all - promote WPLS to a PLS row
-          assetMap['pulsechain-PLS'] = { ...wplsEntry, id: 'pulsechain-PLS', symbol: 'PLS' };
-        }
-        delete assetMap['pulsechain-WPLS'];
-      }
-
-      setRealAssets(Object.values(assetMap).sort((a, b) => b.value - a.value));
-      setRealStakes(prev => {
-        if (allStakes.length > 0) return allStakes;
-        if (wallets.length === 0) return allStakes;
-        const walletSet = new Set(wallets.map(w => w.address.toLowerCase()));
-        const cachedForCurrentWallets = prev.filter(stake => walletSet.has((stake.walletAddress || '').toLowerCase()));
-        return cachedForCurrentWallets.length > 0 ? cachedForCurrentWallets : allStakes;
-      });
-
-      // Build per-wallet asset arrays
-      const newWalletAssets: Record<string, Asset[]> = {};
-      Object.entries(walletAssetMap).forEach(([addr, map]) => {
-        newWalletAssets[addr] = Object.values(map).sort((a, b) => b.value - a.value);
-      });
-      setWalletAssets(newWalletAssets);
-
-      // -- LP Position Tracking ----------------------------------------------
-      // Fetch LP token balances, reserves, and totalSupply for tracked PulseX pairs
-      try {
-        const pcRpc = CHAINS.pulsechain.rpc;
-        const walletAddrs = wallets.map(w => w.address.toLowerCase());
-        const LP_PAIR_META: Record<string, { name: string; token0: string; token0Sym: string; token0Dec: number; token1: string; token1Sym: string; token1Dec: number }> = {
-          '0x1b45b9148791d3a104184cd5dfe5ce57193a3ee9': { name: 'PLSX/WPLS', token0: '0x95b303987a60c71504d99aa1b13b4da07b0790ab', token0Sym: 'PLSX', token0Dec: 18, token1: '0xa1077a294dde1b09bb078844df40758a5d0f9a27', token1Sym: 'WPLS', token1Dec: 18 },
-          '0xf808bb6265e9ca27002c0a04562bf50d4fe37eaa': { name: 'INC/WPLS',  token0: '0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d', token0Sym: 'INC',  token0Dec: 18, token1: '0xa1077a294dde1b09bb078844df40758a5d0f9a27', token1Sym: 'WPLS', token1Dec: 18 },
-          '0xf1f4ee610b2babb05c635f726ef8b0c568c8dc65': { name: 'pHEX/WPLS', token0: '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39', token0Sym: 'HEX',  token0Dec: 8,  token1: '0xa1077a294dde1b09bb078844df40758a5d0f9a27', token1Sym: 'WPLS', token1Dec: 18 },
-          '0x42abdfdb63f3282033c766e72cc4810738571609': { name: 'WETH/WPLS', token0: '0x02dcdd04e3f455d838cd1249292c58f3b79e3c3c', token0Sym: 'WETH', token0Dec: 18, token1: '0xa1077a294dde1b09bb078844df40758a5d0f9a27', token1Sym: 'WPLS', token1Dec: 18 },
-          '0xdb82b0919584124a0eb176ab136a0cc9f148b2d1': { name: 'WPLS/WBTC', token0: '0xa1077a294dde1b09bb078844df40758a5d0f9a27', token0Sym: 'WPLS', token0Dec: 18, token1: '0xb17d901469b9208b17d916112988a3fed19b5ca1', token1Sym: 'WBTC', token1Dec: 8  },
-          '0xe56043671df55de5cdf8459710433c10324de0ae': { name: 'WPLS/DAI',  token0: '0xa1077a294dde1b09bb078844df40758a5d0f9a27', token0Sym: 'WPLS', token0Dec: 18, token1: '0xefd766ccb38eaf1dfd701853bfce31359239f305', token1Sym: 'DAI',  token1Dec: 18 },
-          '0x6753560538eca67617a9ce605178f788be7e524e': { name: 'USDC/WPLS', token0: '0x15d38573d2feeb82e7ad5187ab8c1d52810b1f07', token0Sym: 'USDC', token0Dec: 6,  token1: '0xa1077a294dde1b09bb078844df40758a5d0f9a27', token1Sym: 'WPLS', token1Dec: 18 },
-          '0x322df7921f28f1146cdf62afdac0d6bc0ab80711': { name: 'USDT/WPLS', token0: '0x0cb6f5a34ad42ec934882a05265a7d5f59b51a2f', token0Sym: 'USDT', token0Dec: 6,  token1: '0xa1077a294dde1b09bb078844df40758a5d0f9a27', token1Sym: 'WPLS', token1Dec: 18 },
-        };
-        const lpAddrs = Object.keys(LP_PAIR_META);
-
-        // Selectors
-        const SEL_RESERVES   = '0x0902f1ac'; // getReserves()
-        const SEL_TOTAL_SUP  = '0x18160ddd'; // totalSupply()
-        const SEL_BAL_OF     = '0x70a08231'; // balanceOf(address)
-        const padAddr = (a: string) => '000000000000000000000000' + a.replace('0x', '').toLowerCase();
-
-        // Build batch: for each LP pair: getReserves + totalSupply + balanceOf(wallet)*n
-        const lpBatch: any[] = [];
-        let batchId = 0;
-        const lpBatchMeta: { pairAddr: string; type: 'reserves' | 'supply' | 'balance'; walletAddr?: string; id: number }[] = [];
-
-        lpAddrs.forEach(pairAddr => {
-          lpBatch.push({ jsonrpc: '2.0', id: batchId, method: 'eth_call', params: [{ to: pairAddr, data: SEL_RESERVES }, 'latest'] });
-          lpBatchMeta.push({ pairAddr, type: 'reserves', id: batchId++ });
-          lpBatch.push({ jsonrpc: '2.0', id: batchId, method: 'eth_call', params: [{ to: pairAddr, data: SEL_TOTAL_SUP }, 'latest'] });
-          lpBatchMeta.push({ pairAddr, type: 'supply', id: batchId++ });
-          walletAddrs.forEach(wa => {
-            lpBatch.push({ jsonrpc: '2.0', id: batchId, method: 'eth_call', params: [{ to: pairAddr, data: SEL_BAL_OF + padAddr(wa) }, 'latest'] });
-            lpBatchMeta.push({ pairAddr, type: 'balance', walletAddr: wa, id: batchId++ });
-          });
-        });
-
-        if (lpBatch.length > 0) {
-          const lpRes = await fetch(pcRpc, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(lpBatch) });
-          const lpResults: any[] = await lpRes.json();
-          lpResults.sort((a, b) => a.id - b.id);
-
-          const lpData: Record<string, { reserve0: bigint; reserve1: bigint; totalSupply: bigint; balances: Record<string, bigint> }> = {};
-          lpAddrs.forEach(a => { lpData[a] = { reserve0: 0n, reserve1: 0n, totalSupply: 0n, balances: {} }; });
-
-          lpResults.forEach(r => {
-            const meta = lpBatchMeta[r.id];
-            if (!meta || !r.result || r.result === '0x') return;
-            const hex = r.result.replace('0x', '').padStart(192, '0');
-            if (meta.type === 'reserves') {
-              lpData[meta.pairAddr].reserve0 = BigInt('0x' + hex.slice(0, 64));
-              lpData[meta.pairAddr].reserve1 = BigInt('0x' + hex.slice(64, 128));
-            } else if (meta.type === 'supply') {
-              lpData[meta.pairAddr].totalSupply = BigInt('0x' + r.result.replace('0x', '').padStart(64, '0'));
-            } else if (meta.type === 'balance' && meta.walletAddr) {
-              lpData[meta.pairAddr].balances[meta.walletAddr] = BigInt('0x' + r.result.replace('0x', '').padStart(64, '0'));
-            }
-          });
-
-          const wplsUSD = fetchedPrices['pulsechain']?.usd || fetchedPrices['pulsechain:native']?.usd || 0;
-          const newLpPositions: LpPosition[] = [];
-
-          lpAddrs.forEach(pairAddr => {
-            const d = lpData[pairAddr];
-            const meta = LP_PAIR_META[pairAddr];
-            if (!d || d.totalSupply === 0n) return;
-
-            const totalUserBal = walletAddrs.reduce((acc, wa) => acc + (d.balances[wa] ?? 0n), 0n);
-            if (totalUserBal === 0n) return;
-
-            const userShare = (totalUserBal * BigInt(1e18)) / d.totalSupply;
-            const tok0Raw = (d.reserve0 * userShare) / BigInt(1e18);
-            const tok1Raw = (d.reserve1 * userShare) / BigInt(1e18);
-            const tok0Amount = Number(tok0Raw) / Math.pow(10, meta.token0Dec);
-            const tok1Amount = Number(tok1Raw) / Math.pow(10, meta.token1Dec);
-
-            const tok0PriceKey = `pulsechain:${meta.token0}`;
-            const tok1PriceKey = `pulsechain:${meta.token1}`;
-            const tok0Usd = tok0Amount * (fetchedPrices[tok0PriceKey]?.usd || fetchedPrices[meta.token0]?.usd || (meta.token0Sym === 'WPLS' ? wplsUSD : 0));
-            const tok1Usd = tok1Amount * (fetchedPrices[tok1PriceKey]?.usd || fetchedPrices[meta.token1]?.usd || (meta.token1Sym === 'WPLS' ? wplsUSD : 0));
-
-            newLpPositions.push({
-              pairAddress: pairAddr,
-              pairName: meta.name,
-              token0Address: meta.token0,
-              token1Address: meta.token1,
-              token0Symbol: meta.token0Sym,
-              token1Symbol: meta.token1Sym,
-              token0Decimals: meta.token0Dec,
-              token1Decimals: meta.token1Dec,
-              token0Amount: tok0Amount,
-              token1Amount: tok1Amount,
-              token0Usd: tok0Usd,
-              token1Usd: tok1Usd,
-              totalUsd: tok0Usd + tok1Usd,
-              lpBalance: Number(totalUserBal) / 1e18
-            });
-          });
-
-          setLpPositions(newLpPositions.sort((a, b) => b.totalUsd - a.totalUsd));
-        }
-      } catch (e) {
-        console.warn('LP position fetch failed:', e);
-      }
-
-      // -- Farm Position Tracking (MasterChef / INC Rewards) -----------------
-      try {
-        const pcRpc = CHAINS.pulsechain.rpc;
-        const MASTERCHEF = '0xb2ca4a66d3e57a5a9a12043b6bad28249fe302d4';
-        const walletAddrs = wallets.map(w => w.address.toLowerCase());
-
-        // Get pool count
-        const poolLenRes = await fetch(pcRpc, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ jsonrpc: '2.0', id: 0, method: 'eth_call', params: [{ to: MASTERCHEF, data: '0x081e3eda' }, 'latest'] })
-        });
-        const poolLenData = await poolLenRes.json();
-        const poolLength = parseInt(poolLenData.result, 16);
-        if (!poolLength || poolLength === 0) throw new Error('No pools');
-
-        const SEL_POOL_INFO = '0x1526fe27';
-        const SEL_USER_INFO = '0x93f1a40b';
-        const SEL_PENDING   = '0xf40f0f52';
-        const padN = (n: number) => n.toString(16).padStart(64, '0');
-        const padA = (a: string) => '000000000000000000000000' + a.replace('0x', '').toLowerCase();
-
-        // Batch: poolInfo for each pool + userInfo + pendingInc for each wallet/pool
-        const farmBatch: any[] = [];
-        let fId = 0;
-        type FarmMeta = { type: 'pool'; poolIdx: number; id: number } | { type: 'user' | 'pending'; poolIdx: number; wallet: string; id: number };
-        const farmMeta: FarmMeta[] = [];
-
-        for (let p = 0; p < poolLength; p++) {
-          farmBatch.push({ jsonrpc: '2.0', id: fId, method: 'eth_call', params: [{ to: MASTERCHEF, data: SEL_POOL_INFO + padN(p) }, 'latest'] });
-          farmMeta.push({ type: 'pool', poolIdx: p, id: fId++ });
-          walletAddrs.forEach(wa => {
-            farmBatch.push({ jsonrpc: '2.0', id: fId, method: 'eth_call', params: [{ to: MASTERCHEF, data: SEL_USER_INFO + padN(p) + padA(wa) }, 'latest'] });
-            farmMeta.push({ type: 'user', poolIdx: p, wallet: wa, id: fId++ });
-            farmBatch.push({ jsonrpc: '2.0', id: fId, method: 'eth_call', params: [{ to: MASTERCHEF, data: SEL_PENDING + padN(p) + padA(wa) }, 'latest'] });
-            farmMeta.push({ type: 'pending', poolIdx: p, wallet: wa, id: fId++ });
-          });
-        }
-
-        // Split into batches of 50 to avoid RPC limits
-        const CHUNK = 50;
-        const farmResults: any[] = [];
-        for (let i = 0; i < farmBatch.length; i += CHUNK) {
-          const chunk = farmBatch.slice(i, i + CHUNK);
-          const r = await fetch(pcRpc, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(chunk) });
-          const d: any[] = await r.json();
-          farmResults.push(...d);
-        }
-        farmResults.sort((a, b) => a.id - b.id);
-
-        const poolLpAddresses: Record<number, string> = {};
-        const userStaked: Record<number, Record<string, bigint>> = {};
-        const userPending: Record<number, Record<string, bigint>> = {};
-
-        farmResults.forEach(r => {
-          const meta = farmMeta[r.id];
-          if (!meta || !r.result || r.result === '0x') return;
-          const hex = r.result.replace('0x', '');
-          if (meta.type === 'pool') {
-            // poolInfo returns: lpToken(address), allocPoint, lastRewardTime, accIncPerShare
-            const lpAddr = '0x' + hex.slice(24, 64);
-            poolLpAddresses[meta.poolIdx] = lpAddr.toLowerCase();
-          } else if (meta.type === 'user') {
-            if (!userStaked[meta.poolIdx]) userStaked[meta.poolIdx] = {};
-            userStaked[meta.poolIdx][meta.wallet] = BigInt('0x' + hex.slice(0, 64));
-          } else if (meta.type === 'pending') {
-            if (!userPending[meta.poolIdx]) userPending[meta.poolIdx] = {};
-            userPending[meta.poolIdx][meta.wallet] = BigInt('0x' + hex.slice(0, 64));
-          }
-        });
-
-        const incPriceUsd = fetchedPrices['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd || 0;
-        const wplsUSD = fetchedPrices['pulsechain']?.usd || 0;
-        const LP_PAIR_META_FARM: Record<string, { name: string; token0: string; token0Sym: string; token0Dec: number; token1: string; token1Sym: string; token1Dec: number }> = {
-          '0x1b45b9148791d3a104184cd5dfe5ce57193a3ee9': { name: 'PLSX/WPLS', token0: '0x95b303987a60c71504d99aa1b13b4da07b0790ab', token0Sym: 'PLSX', token0Dec: 18, token1: '0xa1077a294dde1b09bb078844df40758a5d0f9a27', token1Sym: 'WPLS', token1Dec: 18 },
-          '0xf808bb6265e9ca27002c0a04562bf50d4fe37eaa': { name: 'INC/WPLS',  token0: '0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d', token0Sym: 'INC',  token0Dec: 18, token1: '0xa1077a294dde1b09bb078844df40758a5d0f9a27', token1Sym: 'WPLS', token1Dec: 18 },
-          '0xf1f4ee610b2babb05c635f726ef8b0c568c8dc65': { name: 'pHEX/WPLS', token0: '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39', token0Sym: 'HEX',  token0Dec: 8,  token1: '0xa1077a294dde1b09bb078844df40758a5d0f9a27', token1Sym: 'WPLS', token1Dec: 18 },
-          '0x42abdfdb63f3282033c766e72cc4810738571609': { name: 'WETH/WPLS', token0: '0x02dcdd04e3f455d838cd1249292c58f3b79e3c3c', token0Sym: 'WETH', token0Dec: 18, token1: '0xa1077a294dde1b09bb078844df40758a5d0f9a27', token1Sym: 'WPLS', token1Dec: 18 },
-          '0xdb82b0919584124a0eb176ab136a0cc9f148b2d1': { name: 'WPLS/WBTC', token0: '0xa1077a294dde1b09bb078844df40758a5d0f9a27', token0Sym: 'WPLS', token0Dec: 18, token1: '0xb17d901469b9208b17d916112988a3fed19b5ca1', token1Sym: 'WBTC', token1Dec: 8  },
-        };
-
-        const newFarmPositions: FarmPosition[] = [];
-        Object.entries(poolLpAddresses).forEach(([poolIdxStr, lpAddr]) => {
-          const poolIdx = Number(poolIdxStr);
-          const pairMeta = LP_PAIR_META_FARM[lpAddr];
-          if (!pairMeta) return;
-
-          const totalStaked = walletAddrs.reduce((acc, wa) => acc + (userStaked[poolIdx]?.[wa] ?? 0n), 0n);
-          const totalPending = walletAddrs.reduce((acc, wa) => acc + (userPending[poolIdx]?.[wa] ?? 0n), 0n);
-          if (totalStaked === 0n) return;
-
-          const stakedLp = Number(totalStaked) / 1e18;
-          const pendingInc = Number(totalPending) / 1e18;
-          const pendingIncUsd = pendingInc * incPriceUsd;
-
-          const tok0PriceKey = `pulsechain:${pairMeta.token0}`;
-          const tok1PriceKey = `pulsechain:${pairMeta.token1}`;
-          const tok0Usd = fetchedPrices[tok0PriceKey]?.usd || (pairMeta.token0Sym === 'WPLS' ? wplsUSD : 0);
-          const tok1Usd = fetchedPrices[tok1PriceKey]?.usd || (pairMeta.token1Sym === 'WPLS' ? wplsUSD : 0);
-          // Estimate token amounts from staked LP (simplified: assume 50/50 split by value)
-          const totalLpUsd = stakedLp * 2 * Math.min(tok0Usd, tok1Usd || tok0Usd); // rough estimate
-
-          newFarmPositions.push({
-            poolId: poolIdx,
-            lpAddress: lpAddr,
-            pairName: pairMeta.name,
-            token0Symbol: pairMeta.token0Sym,
-            token1Symbol: pairMeta.token1Sym,
-            token0Address: pairMeta.token0,
-            token1Address: pairMeta.token1,
-            stakedLp,
-            token0Amount: 0,
-            token1Amount: 0,
-            token0Usd: 0,
-            token1Usd: 0,
-            totalUsd: totalLpUsd,
-            pendingInc,
-            pendingIncUsd
-          });
-        });
-
-        setFarmPositions(newFarmPositions.sort((a, b) => b.totalUsd - a.totalUsd));
-      } catch (e) {
-        console.warn('Farm position fetch failed:', e);
-      }
-
-      // Normalize raw transactions: group by hash, collapse in+out pairs into swaps.
-      const walletAddrs = new Set<string>(wallets.map(w => w.address.toLowerCase()));
-      const processedTransactions = normalizeTransactions(allTransactions, walletAddrs);
-
-      setTransactions(processedTransactions);
-      setLastUpdated(Date.now());
-
-      // Save a history point
-      const totalValue = Object.values(assetMap).reduce((acc, curr) => acc + curr.value, 0);
-      const plsPrice = fetchedPrices['pulsechain']?.usd || 0.00005;
-      const nativeValue = totalValue / plsPrice;
-
-      // Calculate chain-specific PNL for the history point
-      const chainPnl: Record<Chain, number> = { pulsechain: 0, ethereum: 0, base: 0 };
-      Object.values(assetMap).forEach(asset => {
-        chainPnl[asset.chain] += (asset.value * (asset.pnl24h || 0) / 100);
-      });
-
-      setHistory(prev => {
-        const lastPoint = prev[prev.length - 1];
-        const pnl = lastPoint ? totalValue - lastPoint.value : 0;
-        const newPoint: HistoryPoint = {
-          timestamp: Date.now(),
-          value: totalValue,
-          nativeValue: nativeValue,
-          pnl: pnl,
-          chainPnl: chainPnl
-        };
-        return [...prev.slice(-99), newPoint];
-      });
-
-    } catch (error) {
-      console.error("Error fetching portfolio:", error);
-    } finally {
-      setIsLoading(false);
-      isFetchingRef.current = false;
-    }
-  };
-
-  const addWallet = () => {
-    const normalizedInput = newWalletAddress.trim();
-    let checksummedAddress = '';
-
-    try {
-      checksummedAddress = getAddress(normalizedInput);
-    } catch {
-      setWalletFormError('Enter a valid EVM wallet address (0x...).');
-      return;
-    }
-
-    // Prevent duplicate wallets
-    if (wallets.some(w => w.address.toLowerCase() === checksummedAddress.toLowerCase())) {
-      setWalletFormError('This wallet has already been added.');
-      return;
-    }
-
-    const trimmedName = newWalletName.trim();
-    const newWallet: Wallet = {
-      address: checksummedAddress,
-      name: trimmedName || `Wallet ${wallets.length + 1}`
-    };
-    setWallets([...wallets, newWallet]);
-    setNewWalletAddress('');
-    setNewWalletName('');
-    setWalletFormError('');
-    setIsAddingWallet(false);
-  };
-
-  const removeWallet = (address: string) => {
-    setWallets(wallets.filter(w => w.address !== address));
-  };
-
-  const renameWallet = (address: string, name: string) => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    setWallets(wallets.map(w => w.address === address ? { ...w, name: trimmed } : w));
-    setEditingWalletAddress(null);
-  };
-
-  const scanForSpam = async () => {
-    const baseAssets = wallets.length > 0 ? realAssets : [];
-    const unpriced = baseAssets.filter(a => a.price === 0 && (a as any).address && (a as any).address !== 'native');
-    if (unpriced.length === 0) { setScanResult(0); return; }
-    setIsScanning(true);
-    setScanResult(null);
-    const newSpamIds: string[] = [...spamTokenIds];
-    let detected = 0;
-
-    // For Ethereum tokens use DeFi Llama (most comprehensive price coverage)
-    const ethAssets = unpriced.filter(a => a.chain === 'ethereum');
-    const otherAssets = unpriced.filter(a => a.chain !== 'ethereum');
-
-    if (ethAssets.length > 0) {
-      try {
-        const keys = ethAssets.map(a => `ethereum:${(a as any).address.toLowerCase()}`);
-        const r = await fetch(`https://coins.llama.fi/prices/current/${keys.join(',')}`);
-        if (r.ok) {
-          const data = await r.json();
-          ethAssets.forEach(asset => {
-            const key = `ethereum:${(asset as any).address.toLowerCase()}`;
-            const hasPrice = data.coins?.[key]?.price != null;
-            if (!hasPrice && !newSpamIds.includes(asset.id)) {
-              newSpamIds.push(asset.id);
-              detected++;
-            }
-          });
-        }
-      } catch { /* ignore */ }
-    }
-
-    // For PulseChain/Base tokens use Blockscout
-    await Promise.allSettled(otherAssets.map(async (asset) => {
-      try {
-        const addr = (asset as any).address;
-        const host = asset.chain === 'base' ? 'base.blockscout.com' : 'scan.pulsechain.com';
-        const r = await fetch(`https://${host}/api/v2/tokens/${addr}`);
-        if (!r.ok) return;
-        const data = await r.json();
-        const hasMarket = data.exchange_rate || data.circulating_market_cap || data.volume_24h;
-        if (!hasMarket && !newSpamIds.includes(asset.id)) {
-          newSpamIds.push(asset.id);
-          detected++;
-        }
-      } catch { /* ignore */ }
-    }));
-
-    setSpamTokenIds(newSpamIds);
-    setIsScanning(false);
-    setScanResult(detected);
-  };
-
-  const assetUniverse = useMemo(() => {
-    const activeWalletKey = activeWallet?.toLowerCase() ?? null;
-    const baseAssets = wallets.length > 0
-      ? (activeWalletKey ? (walletAssets[activeWalletKey] || []) : realAssets)
-      : MOCK_ASSETS;
-    const assetsWithCustom = [...baseAssets];
-
-    customCoins.forEach(coin => {
-      assetsWithCustom.push({
-        id: coin.id,
-        symbol: coin.symbol,
-        name: coin.name,
-        balance: coin.balance,
-        price: coin.price,
-        value: coin.balance * coin.price,
-        chain: 'custom' as any,
-        pnl24h: 0
-      });
-    });
-
-    return assetsWithCustom;
-  }, [wallets.length, realAssets, walletAssets, activeWallet, customCoins]);
-
-  const hiddenAssetRows = useMemo(() => {
-    const byId = new Map(assetUniverse.map(asset => [asset.id, asset]));
-    return hiddenTokens.map(id => byId.get(id) ?? {
-      id,
-      symbol: id.split(':').pop()?.slice(0, 12).toUpperCase() || 'TOKEN',
-      name: 'Hidden token',
-      balance: 0,
-      price: 0,
-      value: 0,
-      chain: 'pulsechain' as Chain,
-      pnl24h: 0,
-    });
-  }, [assetUniverse, hiddenTokens]);
-
-  const hideToken = (id: string) => {
-    setHiddenTokens(prev => prev.includes(id) ? prev : [...prev, id]);
-  };
-
-  const unhideToken = (id: string) => {
-    setHiddenTokens(prev => prev.filter(tokenId => tokenId !== id));
-  };
-
-  const currentAssets = useMemo(() => {
-    return filterVisibleAssets(assetUniverse, {
-      hiddenTokens,
-      hideDust,
-      hideSpam,
-      spamTokenIds,
+function HoldingsPage() {
+  const [sortBy, setSortBy] = useState<'value' | 'pnl' | 'symbol'>('value')
+  const [filterChain, setFilterChain] = useState<'ALL' | 'PLS' | 'ETH'>('ALL')
+
+  const sorted = [...holdings]
+    .filter(h => filterChain === 'ALL' || h.chain === filterChain)
+    .sort((a, b) => {
+      if (sortBy === 'value') return b.value - a.value
+      if (sortBy === 'pnl') return b.pnl - a.pnl
+      return a.symbol.localeCompare(b.symbol)
     })
-      .map(a => {
-        const addr = (a as any).address?.toLowerCase?.();
-        const isEHex = (a.chain === 'ethereum' && addr === ETH_HEX_ADDR) || (a.chain === 'pulsechain' && addr === EHEX_PULSECHAIN_ADDR);
-        if (isEHex) {
-          const ehexPriceData = prices['hex'] || prices[`ethereum:${ETH_HEX_ADDR}`];
-          if (ehexPriceData?.usd) {
-            const price = ehexPriceData.usd;
-            return {
-              ...a,
-              price,
-              value: a.balance * price,
-              priceChange24h: ehexPriceData.usd_24h_change ?? a.priceChange24h,
-              priceChange1h: ehexPriceData.usd_1h_change ?? a.priceChange1h,
-              priceChange7d: ehexPriceData.usd_7d_change ?? a.priceChange7d,
-              pnl24h: ehexPriceData.usd_24h_change ?? a.pnl24h,
-              entryPls: manualEntries[a.id] || 0
-            };
-          }
-        }
-        return {
-          ...a,
-          entryPls: manualEntries[a.id] || 0
-        };
-      });
-  }, [assetUniverse, manualEntries, hiddenTokens, hideDust, hideSpam, spamTokenIds, prices]);
 
-  const currentStakes = useMemo(() => {
-    if (wallets.length === 0) return MOCK_STAKES;
-    const key = activeWallet?.toLowerCase() ?? null;
-    return key ? realStakes.filter(s => s.walletAddress === key) : realStakes;
-  }, [wallets.length, realStakes, activeWallet]);
-
-  const normalizeHoldingAssets = useMemo(() => {
-    const plsUsdPrice = prices['pulsechain']?.usd || 0;
-    const leagueSymbols = new Set(['PLS', 'PLSX', 'HEX', 'EHEX', 'INC', 'PRVX']);
-    return (assets: Asset[]): HoldingDisplayAsset[] =>
-      assets.map(asset => {
-        const symbolUpper = asset.symbol.toUpperCase();
-        const isLeagueSupported = leagueSymbols.has(symbolUpper);
-        return {
-          ...asset,
-          priceUsd: asset.price,
-          pricePls: plsUsdPrice > 0 ? asset.price / plsUsdPrice : 0,
-          valueUsd: asset.value,
-          valuePls: plsUsdPrice > 0 ? asset.value / plsUsdPrice : 0,
-          leagueLabel: isLeagueSupported ? 'League' : '-',
-          leagueRank: null,
-          leagueSource: isLeagueSupported ? 'OpenPulseChain' : null,
-          entryPls: manualEntries[asset.id] || 0,
-        };
-      });
-  }, [manualEntries, prices]);
-
-  const currentHistory = wallets.length > 0 ? history : MOCK_HISTORY;
-  const currentTransactions = useMemo(() => {
-    const baseTransactions = wallets.length > 0 ? transactions : MOCK_TRANSACTIONS;
-    return baseTransactions.map(tx => ({
-      ...tx,
-      asset: normalizeAssetSymbol(tx.asset, tx.chain),
-      counterAsset: tx.counterAsset ? normalizeAssetSymbol(tx.counterAsset, tx.chain) : tx.counterAsset,
-    }));
-  }, [wallets.length, transactions]);
-
-  const unpricedCount = useMemo(() => {
-    return currentAssets.filter(a => a.price === 0).length;
-  }, [currentAssets]);
-
-  const filteredTransactions = useMemo(() => {
-    return currentTransactions.filter(tx => {
-      if (tx.chain !== 'pulsechain') return false;
-      const walletKey = selectedWalletAddr.toLowerCase();
-      const matchesWallet = walletKey === 'all' ||
-        tx.from?.toLowerCase() === walletKey ||
-        tx.to?.toLowerCase() === walletKey ||
-        (tx as any).walletAddress?.toLowerCase?.() === walletKey;
-      const matchesType = txTypeFilter === 'all' ||
-        (txTypeFilter === 'swap'
-          ? tx.type === 'swap' || tx.swapLegOnly
-          : txTypeFilter === 'withdraw'
-            ? tx.type === 'withdraw' && !tx.swapLegOnly
-            : tx.type === txTypeFilter);
-      const matchesAsset = txAssetFilter === 'all' ||
-        sameAssetSymbol(tx.asset, txAssetFilter, tx.chain) ||
-        sameAssetSymbol(tx.counterAsset ?? '', txAssetFilter, tx.chain);
-      // Year filter
-      const txYear = new Date(tx.timestamp).getFullYear().toString();
-      const matchesYear = txYearFilter === 'all' || txYear === txYearFilter;
-      // Coin category filter
-      const au = tx.asset.toUpperCase();
-      let matchesCoin = true;
-      if (txCoinCategory === 'stablecoins') {
-        matchesCoin = au.includes('USDC') || au.includes('USDT') || au.includes('DAI') ||
-                      au.includes('TETHER') || au.includes('USD COIN') || au.includes('USDBC');
-      } else if (txCoinCategory === 'eth_weth') {
-        matchesCoin = au === 'ETH' || au === 'WETH';
-      } else if (txCoinCategory === 'hex') {
-        matchesCoin = au === 'HEX' || au === 'EHEX' || au.includes('HEX');
-      } else if (txCoinCategory === 'pls_wpls') {
-        matchesCoin = au === 'PLS' || au === 'WPLS';
-      } else if (txCoinCategory === 'bridged') {
-        matchesCoin = !!(tx as any).bridged;
-      }
-      return matchesWallet && matchesType && matchesAsset && matchesYear && matchesCoin;
-    });
-  }, [currentTransactions, selectedWalletAddr, txTypeFilter, txAssetFilter, txYearFilter, txCoinCategory]);
-
-  const holdingsPulsechainTransactions = useMemo(() => {
-    return currentTransactions.filter(tx => {
-      if (tx.chain !== 'pulsechain') return false;
-      const walletKey = selectedWalletAddr.toLowerCase();
-      const matchesWallet = walletKey === 'all' ||
-        tx.from?.toLowerCase() === walletKey ||
-        tx.to?.toLowerCase() === walletKey ||
-        (tx as any).walletAddress?.toLowerCase?.() === walletKey;
-      const matchesType = txTypeFilter === 'all' ||
-        (txTypeFilter === 'swap'
-          ? tx.type === 'swap' || tx.swapLegOnly
-          : txTypeFilter === 'withdraw'
-            ? tx.type === 'withdraw' && !tx.swapLegOnly
-            : tx.type === txTypeFilter);
-      const matchesAsset = txAssetFilter === 'all' ||
-        sameAssetSymbol(tx.asset, txAssetFilter, tx.chain) ||
-        sameAssetSymbol(tx.counterAsset ?? '', txAssetFilter, tx.chain);
-      const txYear = new Date(tx.timestamp).getFullYear().toString();
-      const matchesYear = txYearFilter === 'all' || txYear === txYearFilter;
-      const au = tx.asset.toUpperCase();
-      let matchesCoin = true;
-      if (txCoinCategory === 'stablecoins') {
-        matchesCoin = au.includes('USDC') || au.includes('USDT') || au.includes('DAI') ||
-                      au.includes('TETHER') || au.includes('USD COIN') || au.includes('USDBC');
-      } else if (txCoinCategory === 'eth_weth') {
-        matchesCoin = au === 'ETH' || au === 'WETH';
-      } else if (txCoinCategory === 'hex') {
-        matchesCoin = au === 'HEX' || au === 'EHEX' || au.includes('HEX');
-      } else if (txCoinCategory === 'pls_wpls') {
-        matchesCoin = au === 'PLS' || au === 'WPLS';
-      } else if (txCoinCategory === 'bridged') {
-        matchesCoin = !!(tx as any).bridged;
-      }
-      return matchesWallet && matchesType && matchesAsset && matchesYear && matchesCoin;
-    });
-  }, [currentTransactions, selectedWalletAddr, txTypeFilter, txAssetFilter, txYearFilter, txCoinCategory]);
-
-  const stakeValuation = useMemo(() => {
-    const byWallet: Record<string, number> = {};
-    const { avgPayoutPulse, avgPayoutEth, dailyMapPulse, dailyMapEth } = hexDailyData;
-    const total = currentStakes.reduce((acc, s) => {
-      if ((s.daysRemaining ?? 0) <= 0) return acc; // exclude ended stakes
-      const hexPriceKey = `${s.chain}:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39`;
-      const chainHexFallback = s.chain === 'pulsechain' ? prices['pulsechain:hex']?.usd : prices['hex']?.usd;
-      const hexPrice = prices[hexPriceKey]?.usd || chainHexFallback || 0;
-      const stakedHex  = Number(s.stakedHearts ?? 0n) / 1e8;
-      const tShares    = Number(s.stakeShares  ?? 0n) / 1e12;
-      const lockedDay  = s.lockedDay ?? 0;
-      const daysStaked = Math.max(0, (s.stakedDays ?? 0) - (s.daysRemaining ?? 0));
-      const chainMap  = s.chain === 'pulsechain' ? dailyMapPulse : dailyMapEth;
-      const fallback  = s.chain === 'pulsechain' ? (avgPayoutPulse || PHEX_YIELD_PER_TSHARE) : (avgPayoutEth || EHEX_YIELD_PER_TSHARE);
-      const interestHex = computeStakeYield(tShares, lockedDay, daysStaked, chainMap, fallback);
-      const stakeUsd = (stakedHex + interestHex) * hexPrice;
-      const walletKey = s.walletAddress?.toLowerCase();
-      if (walletKey) byWallet[walletKey] = (byWallet[walletKey] || 0) + stakeUsd;
-      return acc + stakeUsd;
-    }, 0);
-    return { total, byWallet };
-  }, [currentStakes, hexDailyData, prices]);
-
-  const summary = useMemo(() => {
-    const assets = currentAssets;
-    const liquidValue = assets.reduce((acc, curr) => acc + curr.value, 0);
-    const stakingValueUsd = stakeValuation.total;
-
-    const totalValue = liquidValue + stakingValueUsd;
-    const totalPnl = assets.reduce((acc, curr) => acc + (curr.value * (curr.pnl24h || 0) / 100), 0);
-
-    const distribution: Record<Chain, number> = { pulsechain: 0, ethereum: 0, base: 0 };
-    const chainPnlUsd: Record<Chain, number> = { pulsechain: 0, ethereum: 0, base: 0 };
-    const chainPnlPercent: Record<Chain, number> = { pulsechain: 0, ethereum: 0, base: 0 };
-
-    assets.forEach(a => {
-      if (a.chain in distribution) {
-        distribution[a.chain] += a.value;
-        chainPnlUsd[a.chain] += (a.value * (a.pnl24h || 0) / 100);
-      }
-    });
-
-    Object.keys(chainPnlUsd).forEach(chain => {
-      const c = chain as Chain;
-      if (distribution[c] > 0) {
-        chainPnlPercent[c] = (chainPnlUsd[c] / distribution[c]) * 100;
-      }
-    });
-
-    // Native Value (Portfolio Value in PLS terms)
-    const plsPrice = assets.find(a => a.symbol === 'PLS')?.price || 0.00005;
-    const nativeValue = totalValue / plsPrice;
-
-    const nativePlsBalance = assets.find(a => a.symbol === 'PLS' && a.chain === 'pulsechain')?.balance || 0;
-    const stakedPlsValue = currentStakes.reduce((acc, curr) => (
-      (curr.daysRemaining ?? 0) > 0 ? acc + (curr.estimatedValueUsd / plsPrice) : acc
-    ), 0);
-    const tokenPlsValue = nativeValue - nativePlsBalance - stakedPlsValue;
-
-    // Net Investment = total stablecoin + ETH received from external addresses into own wallets
-    // Matches what's shown in Received Assets History: only ETH and stables, from external sources
-    const ownAddrs = new Set(wallets.map(w => w.address.toLowerCase()));
-    const isStableAsset = (asset: string) => {
-      const u = asset.toUpperCase();
-      return u.includes('USDC') || u.includes('USD COIN') || u.includes('USDBC') ||
-             u.includes('USDT') || u.includes('TETHER') ||
-             u.includes('DAI');
-    };
-    // Normalise asset name to a canonical category for bridge-echo matching
-    const assetCategory = (asset: string) => {
-      const u = asset.toUpperCase();
-      if (u.includes('USDC') || u.includes('USD COIN') || u.includes('USDBC')) return 'USDC';
-      if (u.includes('USDT') || u.includes('TETHER')) return 'USDT';
-      if (u.includes('DAI')) return 'DAI';
-      if (u === 'ETH') return 'ETH';
-      return u;
-    };
-    // Collect all qualifying inflows first
-    const qualifiedInflows = currentTransactions.filter(tx => {
-      if (tx.type !== 'deposit') return false;
-      if (tx.chain === 'pulsechain') return false; // always exclude; already counted via ETH/Base
-      const assetUpper = tx.asset.toUpperCase();
-      const isEth = assetUpper === 'ETH';
-      const isStable = isStableAsset(tx.asset);
-      if (!isEth && !isStable) return false;
-      const fromOwn = ownAddrs.has(tx.from.toLowerCase());
-      const toOwn = ownAddrs.has(tx.to.toLowerCase());
-      if (fromOwn || !toOwn) return false;
-      return true;
-    }).sort((a, b) => a.timestamp - b.timestamp); // oldest first
-
-    // Use the live prices state as a fallback for ETH valueUsd - this handles the case where
-    // transactions were fetched before CoinGecko prices loaded (valueUsd would be 0 at that point).
-    // Also try the pWETH LP-derived price (stored under 'ethereum:native') so the fallback
-    // works even when CoinGecko is rate-limited.
-    const ethPriceFallback = prices['ethereum']?.usd
-      || prices['ethereum:native']?.usd
-      || prices['pulsechain:0x02dcdd04e3f455d838cd1249292c58f3b79e3c3c']?.usd
-      || 0;
-    // Helper: derive a consistent USD value for a tx (handles stale-zero valueUsd for ETH)
-    const txUsdValue = (tx: { asset: string; valueUsd?: number; amount: number }) => {
-      const usd = tx.valueUsd ?? 0;
-      if (usd > 0) return usd;
-      if (tx.asset.toUpperCase() === 'ETH') return tx.amount * ethPriceFallback;
-      return tx.amount; // stablecoins: amount is approximately USD
-    };
-
-    // Bridge-echo deduplication:
-    // If the same asset+amount (within 1%) is received on a different chain within 12h,
-    // treat the later one as a bridge echo and exclude it from netInvestment.
-    // 1% tolerance for matching bridge echo amounts across chains
-    const BRIDGE_AMOUNT_TOLERANCE = 0.01;
-    const BRIDGE_WINDOW_MS = 12 * 60 * 60 * 1000; // 12 hours
-    const deduped = new Set<string>();
-    qualifiedInflows.forEach((tx, i) => {
-      if (deduped.has(tx.id)) return; // already marked as echo
-      const cat = assetCategory(tx.asset);
-      const usd = txUsdValue(tx);
-      for (let j = i + 1; j < qualifiedInflows.length; j++) {
-        const other = qualifiedInflows[j];
-        if (deduped.has(other.id)) continue;
-        if (other.chain === tx.chain) continue; // same chain: not a bridge
-        if (other.timestamp - tx.timestamp > BRIDGE_WINDOW_MS) break; // time window exceeded
-        const otherCat = assetCategory(other.asset);
-        if (otherCat !== cat) continue;
-        const otherUsd = txUsdValue(other);
-        const maxVal = Math.max(usd, otherUsd, 1);
-        if (Math.abs(usd - otherUsd) / maxVal <= BRIDGE_AMOUNT_TOLERANCE) {
-          deduped.add(other.id); // mark later occurrence as bridge echo
-        }
-      }
-    });
-
-    const netInvestment = qualifiedInflows.reduce((acc, tx) => {
-      if (deduped.has(tx.id)) return acc; // skip bridge echoes
-      const assetUpper = tx.asset.toUpperCase();
-      const isEth = assetUpper === 'ETH';
-      if (isStableAsset(tx.asset)) return acc + tx.amount;
-      if (isEth) return acc + txUsdValue(tx);
-      return acc;
-    }, 0);
-
-    const unifiedPnl = totalValue - netInvestment;
-
-    // Realized PNL Calculation with basic cost basis tracking
-    const costBasisMap: Record<string, { amount: number, totalCost: number }> = {};
-    let realizedPnl = 0;
-
-    // Sort transactions by date to track cost basis chronologically
-    const sortedTxs = [...currentTransactions].sort((a, b) =>
-      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    );
-
-    sortedTxs.forEach(tx => {
-      const addCost = (symbol: string, amount: number, value: number) => {
-        const assetKey = `${tx.chain}:${symbol}`;
-        if (!costBasisMap[assetKey]) costBasisMap[assetKey] = { amount: 0, totalCost: 0 };
-        costBasisMap[assetKey].amount += amount;
-        costBasisMap[assetKey].totalCost += value;
-      };
-
-      const realizeSale = (symbol: string, amount: number, value: number, countProfit: boolean) => {
-        const assetKey = `${tx.chain}:${symbol}`;
-        if (!costBasisMap[assetKey] || costBasisMap[assetKey].amount <= 0) return;
-        const avgCost = costBasisMap[assetKey].totalCost / costBasisMap[assetKey].amount;
-        const costOfSold = Math.min(costBasisMap[assetKey].totalCost, amount * avgCost);
-        if (countProfit) realizedPnl += value - costOfSold;
-        costBasisMap[assetKey].amount = Math.max(0, costBasisMap[assetKey].amount - amount);
-        costBasisMap[assetKey].totalCost = Math.max(0, costBasisMap[assetKey].totalCost - costOfSold);
-      };
-
-      if (tx.type === 'deposit') {
-        addCost(tx.asset, tx.amount, tx.valueUsd || 0);
-      } else if (tx.type === 'withdraw') {
-        realizeSale(tx.asset, tx.amount, tx.valueUsd || 0, false);
-      } else if (tx.type === 'swap') {
-        if (tx.counterAsset && tx.counterAmount) {
-          realizeSale(tx.counterAsset, tx.counterAmount, tx.valueUsd || 0, true);
-        }
-        addCost(tx.asset, tx.amount, tx.valueUsd || 0);
-      }
-    });
-
-    return {
-      totalValue,
-      liquidValue,
-      stakingValueUsd,
-      pnl24h: totalPnl,
-      pnl24hPercent: totalValue > 0 ? (totalPnl / totalValue) * 100 : 0,
-      chainDistribution: distribution,
-      nativeValue,
-      nativePlsBalance,
-      stakedPlsValue,
-      tokenPlsValue,
-      netInvestment,
-      unifiedPnl,
-      realizedPnl,
-      chainPnlUsd,
-      chainPnlPercent
-    };
-  }, [currentAssets, currentTransactions, currentStakes, hexDailyData, prices, stakeValuation.total, wallets]);
-
-  const pieData = Object.entries(summary.chainDistribution).map(([name, value]) => ({
-    name: name.charAt(0).toUpperCase() + name.slice(1),
-    value: value as number
-  })).filter(d => (d.value as number) > 0);
-
-  const COLORS = [CHAINS.pulsechain.color, CHAINS.ethereum.color, CHAINS.base.color];
-
-  const pulsechainInsights = useMemo(
-    () => buildPulsechainInsights(currentAssets, currentTransactions),
-    [currentAssets, currentTransactions],
-  );
-
-  const atlasHomeSnapshot = useMemo(() => buildAtlasHomeSnapshot({
-    summary,
-    walletCount: wallets.length,
-    assets: currentAssets,
-    stakes: currentStakes,
-    getTokenIconUrl: (asset) => {
-      const addressKey = (asset as any).address?.toLowerCase?.() as string | undefined;
-      return (
-        asset.logoUrl
-        || (addressKey ? STATIC_LOGOS[addressKey] : undefined)
-        || (addressKey ? tokenLogos[addressKey] : undefined)
-      );
-    },
-    lpPositions,
-    farmPositions,
-  }), [summary, wallets.length, currentAssets, currentStakes, lpPositions, farmPositions, tokenLogos]);
-
-  const stakeSummary = useMemo(() => {
-    const stakes = wallets.length > 0 ? realStakes : MOCK_STAKES;
-    const activeStakes = stakes.filter(s => (s.daysRemaining ?? 0) > 0);
-    let totalStakedHex = 0;
-    let totalTShares = 0;
-    let totalValueUsd = 0;
-    let totalInterestHex = 0;
-
-    const { avgPayoutPulse: dAvgPulse, avgPayoutEth: dAvgEth, dailyMapPulse: dMapPulse, dailyMapEth: dMapEth } = hexDailyData;
-    activeStakes.forEach(s => {
-      const stakedHex  = Number(s.stakedHearts ?? 0n) / 1e8;
-      const tShares    = Number(s.stakeShares  ?? 0n) / 1e12;
-      const lockedDay  = s.lockedDay ?? 0;
-      const daysStaked  = Math.max(0, (s.stakedDays ?? 0) - (s.daysRemaining ?? 0));
-      const chainMap   = s.chain === 'pulsechain' ? dMapPulse : dMapEth;
-      const fallback   = s.chain === 'pulsechain' ? (dAvgPulse || PHEX_YIELD_PER_TSHARE) : (dAvgEth || EHEX_YIELD_PER_TSHARE);
-      const interestHex = computeStakeYield(tShares, lockedDay, daysStaked, chainMap, fallback);
-
-      const hexPriceKey = `${s.chain}:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39`;
-      const chainHexFallback = s.chain === 'pulsechain' ? prices['pulsechain:hex']?.usd : prices['hex']?.usd;
-      const hexPrice = prices[hexPriceKey]?.usd || chainHexFallback || 0;
-
-      totalStakedHex  += stakedHex;
-      totalTShares    += tShares;
-      totalValueUsd   += (stakedHex + interestHex) * hexPrice;
-      totalInterestHex += interestHex;
-    });
-
-    const phexPrice = prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0;
-    const estimatedDailyPayoutHex = activeStakes.reduce((sum, s) => {
-      const tS = Number(s.stakeShares ?? 0n) / 1e12;
-      const fallback = s.chain === 'pulsechain' ? (dAvgPulse || PHEX_YIELD_PER_TSHARE) : (dAvgEth || EHEX_YIELD_PER_TSHARE);
-      return sum + tS * fallback;
-    }, 0);
-    const estimatedDailyPayoutUsd = estimatedDailyPayoutHex * phexPrice;
-
-    return {
-      totalStakedHex,
-      totalTShares,
-      totalValueUsd,
-      totalInterestHex,
-      totalHexWithRewards: totalStakedHex + totalInterestHex,
-      estimatedDailyPayoutHex,
-      estimatedDailyPayoutUsd
-    };
-  }, [wallets.length, realStakes, prices, hexDailyData]);
-
-  const assetAllocation = useMemo(() => {
-    // Aggregate by symbol across chains (e.g. ETH on Ethereum + ETH on Base)
-    const allocationSource = wallets.length > 0 ? realAssets : MOCK_ASSETS;
-    const agg: Record<string, number> = {};
-    allocationSource.filter(a => a.value > 0).forEach(a => {
-      agg[a.symbol] = (agg[a.symbol] || 0) + a.value;
-    });
-    return Object.entries(agg)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 5);
-  }, [realAssets, wallets.length]);
-
-  useEffect(() => {
-    const total = assetAllocation.reduce((sum, a) => sum + a.value, 0);
-    if (total <= 0) {
-      setAllocationDraftPercentages({});
-      return;
-    }
-    setAllocationDraftPercentages(prev => {
-      const next: Record<string, number> = {};
-      assetAllocation.forEach(a => {
-        next[a.name] = prev[a.name] ?? ((a.value / total) * 100);
-      });
-      return next;
-    });
-  }, [assetAllocation]);
-
-  const allocationCalculatorRows = useMemo(() => {
-    const portfolioTotal = summary.totalValue || 0;
-    return assetAllocation.map(a => {
-      const pct = Math.min(100, Math.max(0, allocationDraftPercentages[a.name] ?? 0));
-      return {
-        name: a.name,
-        percent: pct,
-        value: (portfolioTotal * pct) / 100
-      };
-    });
-  }, [assetAllocation, allocationDraftPercentages, summary.totalValue]);
-
-  const rotationSummary = useMemo(() => {
-    let totalRotationPnlPls = 0;
-    let totalRotationPnlUsd = 0;
-    const plsPrice = prices['pulsechain']?.usd || 0.00005;
-
-    realAssets.forEach(asset => {
-      const entryPls = manualEntries[asset.id];
-      if (entryPls && entryPls > 0) {
-        const currentPlsValue = asset.value / plsPrice;
-        const pnlPls = currentPlsValue - entryPls;
-        totalRotationPnlPls += pnlPls;
-        totalRotationPnlUsd += pnlPls * plsPrice;
-      }
-    });
-
-    return {
-      totalRotationPnlPls,
-      totalRotationPnlUsd
-    };
-  }, [realAssets, manualEntries, prices]);
-
-  const monthlyPnlData = useMemo(() => {
-    const pts = wallets.length > 0 ? history : MOCK_HISTORY;
-    const byMonth: Record<string, { month: string; pnl: number }> = {};
-    pts.forEach(p => {
-      const key = format(p.timestamp, 'MMM yy');
-      if (!byMonth[key]) byMonth[key] = { month: key, pnl: 0 };
-      byMonth[key].pnl += p.pnl;
-    });
-    return Object.values(byMonth).slice(-12);
-  }, [wallets.length, history]);
-
-  const receivedAssetsData = useMemo(() => {
-    const START_2021 = new Date('2021-01-01').getTime();
-    const ethPrice = prices['ethereum']?.usd || 3400;
-    const effectiveReceivedChainFilter = receivedChainFilter === 'pulsechain' ? 'all' : receivedChainFilter;
-
-    const filtered = currentTransactions.filter(tx => {
-      const typeMatch = tx.type === 'deposit' || (tx.type as string) === 'receive';
-      const allowedBridgeChain = tx.chain === 'ethereum' || tx.chain === 'base';
-      const chainMatch = allowedBridgeChain && (effectiveReceivedChainFilter === 'all' || tx.chain === effectiveReceivedChainFilter);
-      const dateMatch = tx.timestamp >= START_2021;
-      const assetUpper = tx.asset.toUpperCase();
-      const assetMatch = assetUpper === 'ETH' ||
-                         assetUpper === 'PLS' ||
-                         assetUpper.includes('USDC') ||
-                         assetUpper.includes('USD COIN') ||
-                         assetUpper.includes('USDBC') ||
-                         assetUpper.includes('USDT') ||
-                         assetUpper.includes('TETHER') ||
-                         assetUpper.includes('DAI');
-      // Exclude dust (gas refunds, tiny transfers)
-      const notDust = tx.valueUsd ? tx.valueUsd >= 1 : (tx.amount > 0.0001 || (assetUpper !== 'ETH' && assetUpper !== 'PLS' && tx.amount > 0.01));
-      return typeMatch && chainMatch && dateMatch && assetMatch && notDust;
-    });
-
-    // Apply coin filter
-    const coinFiltered = receivedCoinFilter === 'all' ? filtered : filtered.filter(tx => {
-      const assetUpper = tx.asset.toUpperCase();
-      if (receivedCoinFilter === 'ETH') return assetUpper === 'ETH';
-      if (receivedCoinFilter === 'PLS') return assetUpper === 'PLS';
-      if (receivedCoinFilter === 'USDC') return assetUpper.includes('USDC') || assetUpper.includes('USD COIN') || assetUpper.includes('USDBC');
-      if (receivedCoinFilter === 'USDT') return assetUpper.includes('USDT') || assetUpper.includes('TETHER');
-      if (receivedCoinFilter === 'DAI') return assetUpper.includes('DAI');
-      return true;
-    });
-
-    // Sort oldest first - shows the full history chronologically
-    const list = [...coinFiltered].sort((a, b) => a.timestamp - b.timestamp);
-
-    // Per-asset totals
-    const plsPrice = prices['pulsechain']?.usd || 0.00005;
-    const getStablePrice = (tx: typeof list[0], stable: 'USDC' | 'USDT' | 'DAI') => {
-      if (tx.chain === 'pulsechain') {
-        if (stable === 'DAI') {
-          return prices['pulsechain:0xefd766ccb38eaf1dfd701853bfce31359239f305']?.usd
-            ?? prices['pulsechain:0x6b175474e89094c44da98b954eedeac495271d0f']?.usd
-            ?? prices['pulsechain:dai']?.usd
-            ?? 0;
-        }
-        if (stable === 'USDT') return prices['pulsechain:0x0cb6f5a34ad42ec934882a05265a7d5f59b51a2f']?.usd ?? 0;
-        return prices['pulsechain:0x15d38573d2feeb82e7ad5187ab8c1d52810b1f07']?.usd ?? 0;
-      }
-      if (stable === 'DAI') return prices['dai']?.usd ?? 0;
-      if (stable === 'USDT') return prices['tether']?.usd ?? 1;
-      return prices['usd-coin']?.usd ?? 1;
-    };
-
-    const getUsd = (tx: typeof list[0]) => {
-      if (tx.valueUsd) return tx.valueUsd;
-      const a = tx.asset.toUpperCase();
-      if (a === 'ETH') return tx.amount * ethPrice;
-      if (a === 'PLS') return tx.amount * plsPrice;
-      if (a.includes('USDT') || a.includes('TETHER')) return tx.amount * getStablePrice(tx, 'USDT');
-      if (a.includes('DAI')) return tx.amount * getStablePrice(tx, 'DAI');
-      return tx.amount * getStablePrice(tx, 'USDC'); // USDC and other stables
-    };
-
-    const byAsset: Record<string, { amount: number; valueUsd: number }> = {};
-    list.forEach(tx => {
-      const assetUpper = tx.asset.toUpperCase();
-      const key = assetUpper === 'PLS' ? 'PLS' :
-                  assetUpper === 'ETH' ? 'ETH' :
-                  assetUpper.includes('DAI') ? 'DAI' :
-                  assetUpper.includes('USDT') || assetUpper.includes('TETHER') ? 'USDT' : 'USDC';
-      if (!byAsset[key]) byAsset[key] = { amount: 0, valueUsd: 0 };
-      byAsset[key].amount += tx.amount;
-      byAsset[key].valueUsd += getUsd(tx);
-    });
-
-    const totalValue = list.reduce((acc, tx) => acc + getUsd(tx), 0);
-
-    return { list, totalValue, byAsset };
-  }, [currentTransactions, prices, receivedCoinFilter, receivedChainFilter]);
-
-  // PLS/WPLS Movement Tracker - includes all PLS/WPLS transfers (in/out) and swaps on PulseChain
-  // This works even when PulseChain transactions are typed as 'transfer_in'/'transfer_out'
-  // because Blockscout does not tag on-chain swaps as type='swap'.
-  const plsSwapData = useMemo(() => {
-    const isPls = (sym: string) => {
-      const u = (sym || '').toUpperCase();
-      return u === 'PLS' || u === 'WPLS';
-    };
-    const plsPrice = prices['pulsechain']?.usd || 0;
-
-    const rows = currentTransactions
-      .filter(tx => {
-        // Include swaps where PLS is on either leg
-        if (tx.type === 'swap' && (isPls(tx.asset) || isPls(tx.counterAsset || ''))) return true;
-        // Include all PLS/WPLS native transfers on PulseChain (since Blockscout doesn't tag swaps)
-        if (tx.chain === 'pulsechain' && isPls(tx.asset) && (tx.type === 'deposit' || tx.type === 'withdraw')) return true;
-        return false;
-      })
-      .map(tx => {
-        let plsReceived = 0;
-        let plsSpent = 0;
-        if (tx.type === 'swap') {
-          plsReceived = isPls(tx.asset) ? tx.amount : 0;
-          plsSpent = isPls(tx.counterAsset || '') ? (tx.counterAmount || 0) : 0;
-        } else if (tx.type === 'deposit') {
-          plsReceived = tx.amount;
-        } else if (tx.type === 'withdraw') {
-          plsSpent = tx.amount;
-        }
-        const netPls = plsReceived - plsSpent;
-        return { tx, plsReceived, plsSpent, netPls };
-      })
-      .sort((a, b) => b.tx.timestamp - a.tx.timestamp);
-
-    const totalReceived = rows.reduce((s, r) => s + r.plsReceived, 0);
-    const totalSpent = rows.reduce((s, r) => s + r.plsSpent, 0);
-    const totalNet = totalReceived - totalSpent;
-    const netUsd = totalNet * plsPrice;
-    return { rows, totalReceived, totalSpent, totalNet, netUsd, plsPrice };
-  }, [currentTransactions, prices]);
-
-  useEffect(() => {
-    const fetchMarketData = async () => {
-      for (const id of expandedAssetIds) {
-        if (tokenMarketData[id]) continue;
-        const asset = currentAssets.find(a => a.id === id);
-        if (!asset) continue;
-        const addr = (asset as any).address;
-        if (!addr || addr === 'native') continue;
-        try {
-          const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${addr}`);
-          if (!res.ok) continue;
-          const data = await res.json();
-          const pairs = data.pairs || [];
-          if (pairs.length === 0) continue;
-          const sorted = [...pairs].sort((a: any, b: any) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0));
-          const top = sorted[0];
-          setTokenMarketData(prev => ({
-            ...prev,
-            [id]: {
-              liquidity:      sorted.reduce((s: number, p: any) => s + (p.liquidity?.usd || 0), 0),
-              volume24h:      sorted.reduce((s: number, p: any) => s + (p.volume?.h24  || 0), 0),
-              marketCap:      top?.marketCap || null,
-              fdv:            top?.fdv || null,
-              pools:          pairs.length,
-              txns24h:        sorted.reduce((s: number, p: any) => s + (p.txns?.h24?.buys || 0) + (p.txns?.h24?.sells || 0), 0),
-              nativePriceUsd: top?.priceNative || null,
-              priceChange1h:  top?.priceChange?.h1  ?? null,
-              priceChange6h:  top?.priceChange?.h6  ?? null,
-              priceChange24h: top?.priceChange?.h24 ?? null,
-              priceChange7d:  top?.priceChange?.d7  ?? null,
-              description:    top?.info?.description || FALLBACK_DESCRIPTIONS[addr ? addr.toLowerCase() : ''] || null,
-              websites:       top?.info?.websites    || [],
-              socials:        top?.info?.socials     || [],
-            }
-          }));
-          // Also cache the DexScreener image into tokenLogos so overview cards pick it up
-          const dsImg = top?.info?.imageUrl;
-          if (dsImg && !STATIC_LOGOS[addr.toLowerCase()]) setTokenLogos(prev => ({ ...prev, [addr.toLowerCase()]: dsImg }));
-        } catch { /* ignore */ }
-      }
-    };
-    fetchMarketData();
-  }, [expandedAssetIds]); // intentionally omits tokenMarketData (cache check) and currentAssets (stable ref) to avoid re-fetching on unrelated renders
-
-  // -- Fetch market data when token card modal opens ------------------------
-  // For native PLS, use the WPLS contract address since DexScreener tracks WPLS pairs.
-  const WPLS_ADDR = '0xa1077a294dde1b09bb078844df40758a5d0f9a27';
-  useEffect(() => {
-    if (!selectedProductAsset) return;
-    const id = selectedProductAsset.id;
-    const rawAddr = selectedProductAsset.address;
-    // PLS is native - fall back to WPLS so we can show DexScreener market data
-    const isNativePls = (!rawAddr || rawAddr === 'native') && selectedProductAsset.chain === 'pulsechain';
-    const addr = isNativePls ? WPLS_ADDR : rawAddr;
-    if (!addr || addr === 'native') return;
-    if (tokenMarketData[id]) { setProductPageLoading(false); return; }
-    setProductPageLoading(true);
-    (async () => {
-      try {
-        const bsBase = resolveBlockscoutBase();
-        const [dsResult, holderResult] = await Promise.allSettled([
-          fetch(`https://api.dexscreener.com/latest/dex/tokens/${addr}`).then(r => r.ok ? r.json() : null),
-          selectedProductAsset.chain === 'pulsechain' && !isNativePls
-            ? fetch(`${bsBase}/tokens/${addr}`).then(r => r.ok ? r.json() : null)
-            : Promise.resolve(null),
-        ]);
-        const data = dsResult.status === 'fulfilled' ? dsResult.value : null;
-        const holderData = holderResult.status === 'fulfilled' ? holderResult.value : null;
-        const holders: number | null = holderData?.holders ? (parseInt(String(holderData.holders), 10) || null) : null;
-        if (!data) return;
-        const pairs = data.pairs || [];
-        if (pairs.length === 0) return;
-        const sorted = [...pairs].sort((a: any, b: any) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0));
-        const top = sorted[0];
-        setTokenMarketData(prev => ({
-          ...prev,
-          [id]: {
-            liquidity:      sorted.reduce((s: number, p: any) => s + (p.liquidity?.usd || 0), 0),
-            volume24h:      sorted.reduce((s: number, p: any) => s + (p.volume?.h24 || 0), 0),
-            marketCap:      top?.marketCap || null,
-            fdv:            top?.fdv || null,
-            pools:          pairs.length,
-            txns24h:        sorted.reduce((s: number, p: any) => s + (p.txns?.h24?.buys || 0) + (p.txns?.h24?.sells || 0), 0),
-            nativePriceUsd: top?.priceNative || null,
-            priceChange1h:  top?.priceChange?.h1  ?? null,
-            priceChange6h:  top?.priceChange?.h6  ?? null,
-            priceChange24h: top?.priceChange?.h24 ?? null,
-            priceChange7d:  top?.priceChange?.d7  ?? null,
-            description:    top?.info?.description || FALLBACK_DESCRIPTIONS[addr ? addr.toLowerCase() : ''] || null,
-            websites:       top?.info?.websites    || [],
-            socials:        top?.info?.socials     || [],
-            ...(holders != null ? { holders } : {}),
-          },
-        }));
-        // Cache DexScreener image into tokenLogos (helps dashboard cards)
-        const dsImg = top?.info?.imageUrl;
-        if (dsImg && !isNativePls && !STATIC_LOGOS[addr.toLowerCase()]) setTokenLogos(prev => ({ ...prev, [addr.toLowerCase()]: dsImg }));
-      } catch { /* ignore */ }
-      finally { setProductPageLoading(false); }
-    })();
-  }, [selectedProductAsset?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // -- Auto-fetch market data for top 9 dashboard assets when Dashboard is active --
-  // This ensures all cards show live market data (mcap, liquidity, vol) without requiring
-  // the user to click each card individually.
-  useEffect(() => {
-    if (activeTab !== 'home' || currentAssets.length === 0) return;
-    const topAssets = [...currentAssets].sort((a, b) => b.value - a.value).slice(0, 9);
-    const toFetch = topAssets.filter(a => {
-      const addr = (a as any).address;
-      return addr && addr !== 'native' && !tokenMarketData[a.id];
-    });
-    if (toFetch.length === 0) return;
-    Promise.all(toFetch.map(async (asset) => {
-      const addr = (asset as any).address as string;
-      const bsBase = resolveBlockscoutBase();
-      try {
-        // Fetch DexScreener data + Blockscout holder count in parallel
-        const [dsResult, holderResult] = await Promise.allSettled([
-          fetch(`https://api.dexscreener.com/latest/dex/tokens/${addr}`).then(r => r.ok ? r.json() : null),
-          asset.chain === 'pulsechain'
-            ? fetch(`${bsBase}/tokens/${addr}`).then(r => r.ok ? r.json() : null)
-            : Promise.resolve(null),
-        ]);
-        const data = dsResult.status === 'fulfilled' ? dsResult.value : null;
-        const holderData = holderResult.status === 'fulfilled' ? holderResult.value : null;
-        const holders: number | null = holderData?.holders ? (parseInt(String(holderData.holders), 10) || null) : null;
-        if (!data) return;
-        const pairs: any[] = data.pairs || [];
-        if (pairs.length === 0) return;
-        const sorted = [...pairs].sort((a: any, b: any) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0));
-        const top = sorted[0];
-        setTokenMarketData(prev => ({
-          ...prev,
-          [asset.id]: {
-            ...prev[asset.id],
-            liquidity:      sorted.reduce((s: number, p: any) => s + (p.liquidity?.usd || 0), 0),
-            volume24h:      sorted.reduce((s: number, p: any) => s + (p.volume?.h24  || 0), 0),
-            marketCap:      top?.marketCap || null,
-            fdv:            top?.fdv || null,
-            pools:          pairs.length,
-            txns24h:        sorted.reduce((s: number, p: any) => s + (p.txns?.h24?.buys || 0) + (p.txns?.h24?.sells || 0), 0),
-            nativePriceUsd: top?.priceNative || null,
-            priceChange1h:  top?.priceChange?.h1  ?? null,
-            priceChange6h:  top?.priceChange?.h6  ?? null,
-            priceChange24h: top?.priceChange?.h24 ?? null,
-            priceChange7d:  top?.priceChange?.d7  ?? null,
-            description:    top?.info?.description || FALLBACK_DESCRIPTIONS[addr ? addr.toLowerCase() : ''] || null,
-            websites:       top?.info?.websites    || [],
-            socials:        top?.info?.socials     || [],
-            ...(holders != null ? { holders } : {}),
-          },
-        }));
-        // Cache DexScreener image into tokenLogos - but never overwrite STATIC_LOGOS entries
-        const dsImg = top?.info?.imageUrl;
-        if (dsImg && !STATIC_LOGOS[addr.toLowerCase()]) setTokenLogos(prev => ({ ...prev, [addr.toLowerCase()]: dsImg }));
-      } catch { /* ignore */ }
-    }));
-  }, [activeTab, currentAssets.length]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // -- tokenPrices: symbol -> USD price map for LP hook ---------------------
-  const tokenPrices = useMemo<Record<string, number>>(() => {
-    const p = prices;
-    const wplsUsd = p['pulsechain']?.usd ?? p['pulsechain:native']?.usd ?? 0;
-    return {
-      'WPLS':  wplsUsd,
-      'PLS':   wplsUsd,
-      'PLSX':  p['pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab']?.usd ?? p['pulsex']?.usd ?? 0,
-      'INC':   p['pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d']?.usd ?? p['incentive']?.usd ?? 0,
-      'pHEX':  p['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd ?? p['pulsechain:hex']?.usd ?? 0,
-      'pWETH': p['pulsechain:0x02dcdd04e3f455d838cd1249292c58f3b79e3c3c']?.usd ?? p['ethereum']?.usd ?? 0,
-      'pWBTC': p['pulsechain:0xb17d901469b9208b17d916112988a3fed19b5ca1']?.usd ?? p['wrapped-bitcoin']?.usd ?? 0,
-      'pDAI':  p['pulsechain:0xefd766ccb38eaf1dfd701853bfce31359239f305']?.usd ?? 0,
-      'pUSDC': p['pulsechain:0x15d38573d2feeb82e7ad5187ab8c1d52810b1f07']?.usd ?? 0,
-      'pUSDT': p['pulsechain:0x0cb6f5a34ad42ec934882a05265a7d5f59b51a2f']?.usd ?? 0,
-    };
-  }, [prices]);
-
-  const CHAIN_COLORS: Record<string, string> = {
-    pulsechain: '#f739ff',
-    ethereum: '#627EEA',
-    base: '#0052FF',
-  };
-
-  const explorerUrl = (chain: string, address: string) => {
-    if (!address || address === 'native') return null;
-    if (chain === 'pulsechain') return `https://scan.pulsechain.com/token/${address}`;
-    if (chain === 'ethereum') return `https://etherscan.io/token/${address}`;
-    if (chain === 'base') return `https://base.blockscout.com/token/${address}`;
-    return null;
-  };
-
-  const dexScreenerUrl = (chain: string, address: string) => {
-    if (!address || address === 'native') return null;
-    const slug = chain === 'pulsechain' ? 'pulsechain' : chain === 'base' ? 'base' : 'ethereum';
-    return `https://dexscreener.com/${slug}/${address}`;
-  };
-
-  const getTokenLogoUrl = (asset: Asset): string => {
-    // 0. STATIC_LOGOS always wins - curated logos that must never be overwritten by any remote source
-    const addrKey0 = (asset as any).address?.toLowerCase?.() as string | undefined;
-    if (addrKey0 && STATIC_LOGOS[addrKey0]) return STATIC_LOGOS[addrKey0];
-    // 1. Use any logo already fetched and stored on the asset (CoinGecko / DeFi Llama)
-    if (asset.logoUrl) return asset.logoUrl;
-    // 2. Well-known native / base tokens
-    if (asset.symbol === 'ETH') return 'https://assets.coingecko.com/coins/images/279/small/ethereum.png';
-    if (asset.symbol === 'PLS' || asset.symbol === 'WPLS') return 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png';
-    // 3. PulseChain tokens via PulseX CDN (URL path is case-sensitive - must use checksummed address)
-    if (asset.chain === 'pulsechain') {
-      const tokenConfig = TOKENS.pulsechain.find(t => t.symbol === asset.symbol);
-      if (tokenConfig && tokenConfig.address !== 'native') {
-        try { return `https://tokens.app.pulsex.com/images/tokens/${getAddress(tokenConfig.address)}.png`; } catch { /* invalid address */ }
-      }
-      // Also try the address stored directly on the asset (for discovered tokens)
-      const addrOnAsset = (asset as any).address;
-      if (addrOnAsset && addrOnAsset !== 'native') {
-        try { return `https://tokens.app.pulsex.com/images/tokens/${getAddress(addrOnAsset)}.png`; } catch { /* invalid address */ }
-      }
-    }
-    // 4. Ethereum + Base tokens via TrustWallet (also case-sensitive)
-    if (asset.chain === 'ethereum' || asset.chain === 'base') {
-      const chainName = asset.chain === 'base' ? 'base' : 'ethereum';
-      const tokenConfig = (TOKENS[asset.chain] as any[]).find((t: any) => t.symbol === asset.symbol);
-      if (tokenConfig && tokenConfig.address !== 'native') {
-        try { return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${chainName}/assets/${getAddress(tokenConfig.address)}/logo.png`; } catch { /* invalid address */ }
-      }
-    }
-    // 5. Fall back to tokenLogos map (covers DexScreener CDN images cached during market-data fetch)
-    if (addrKey0 && tokenLogos[addrKey0]) return tokenLogos[addrKey0];
-    return '';
-  };
-
-  const activeProductAsset = selectedProductAsset
-    ? currentAssets.find(asset => asset.id === selectedProductAsset.id) || selectedProductAsset
-    : null;
-
-  // -- RENDER ----------------------------------------------------------------
-
-  // Shared compact price formatter - used by both the header ticker and core-coins panel
-  const fmtPrice = (p: number) => {
-    if (p === 0) return '-';
-    if (p < 0.00001) return `$${p.toFixed(10)}`;
-    if (p < 0.001)   return `$${p.toFixed(8)}`;
-    if (p < 0.01)    return `$${p.toFixed(6)}`;
-    if (p < 1)       return `$${p.toFixed(4)}`;
-    return `$${p.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
-  };
-
-  const fmtMarket = (v?: number | null) =>
-    v == null ? '-' :
-    v >= 1e12 ? `$${(v/1e12).toFixed(2)}T` :
-    v >= 1e9 ? `$${(v/1e9).toFixed(2)}B` :
-    v >= 1e6 ? `$${(v/1e6).toFixed(2)}M` :
-    v >= 1e3 ? `$${(v/1e3).toFixed(1)}K` :
-    `$${v.toFixed(0)}`;
-
-  const getFrontMarketChange = (marketData: any, priceData: any, asset?: Asset | null): number | null => {
-    if (frontMarketPeriod === '5m') return marketData?.priceChange5m ?? null;
-    if (frontMarketPeriod === '1h') return marketData?.priceChange1h ?? priceData?.usd_1h_change ?? asset?.priceChange1h ?? null;
-    if (frontMarketPeriod === '6h') return marketData?.priceChange6h ?? null;
-    if (frontMarketPeriod === '7d') return marketData?.priceChange7d ?? priceData?.usd_7d_change ?? asset?.priceChange7d ?? null;
-    return marketData?.priceChange24h ?? priceData?.usd_24h_change ?? asset?.priceChange24h ?? asset?.pnl24h ?? null;
-  };
-
-  type PortfolioPriceCard = {
-    id: string;
-    symbol: string;
-    name: string;
-    price: number;
-    change24h: number | null;
-    marketCap?: number | null;
-    volume24h?: number | null;
-    accent?: string;
-    logo?: string;
-    dexUrl: string;
-  };
-
-  const coreLiveTokens = useMemo(() => ([
-    { id: 'PLS',  symbol: 'PLS',  name: 'PulseChain',    priceKey: 'pulsechain',                                                    changeKey: 'pulsechain:native', accent: 'linear-gradient(90deg,#4263EB,#60A5FA)', tokenAddr: '0xa1077a294dde1b09bb078844df40758a5d0f9a27', logo: 'https://tokens.app.pulsex.com/images/tokens/0xA1077a294dDE1B09bB078844df40758a5D0f9a27.png' },
-    { id: 'PLSX', symbol: 'PLSX', name: 'PulseX',        priceKey: 'pulsechain:0x95b303987a60c71504d99aa1b13b4da07b0790ab',            accent: 'linear-gradient(90deg,#ff00bf,#7b00ff)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x95B303987A60C71504D99Aa1b13B4DA07b0790ab.png' },
-    { id: 'INC',  symbol: 'INC',  name: 'Incentive',     priceKey: 'pulsechain:0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d',            accent: 'linear-gradient(90deg,#4263EB,#4263EB)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d.png' },
-    { id: 'HEX',  symbol: 'HEX',  name: 'pHEX',          priceKey: 'pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39',            accent: 'linear-gradient(90deg,#ff6b35,#f7931a)',                                              logo: 'https://tokens.app.pulsex.com/images/tokens/0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39.png' },
-    { id: 'PRVX', symbol: 'PRVX', name: 'PrivacyX',      priceKey: 'pulsechain:0xf6f8db0aba00007681f8faf16a0fda1c9b030b11',            accent: 'linear-gradient(90deg,#6c3ce1,#b044ff)',                                              logo: 'https://cdn.dexscreener.com/cms/images/ODHYYN7yppDHnd6u?width=64&height=64&fit=crop&quality=95&format=auto' },
-    { id: 'eHEX', symbol: 'eHEX', name: 'Ethereum HEX',  priceKey: 'ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39',              accent: 'linear-gradient(90deg,#ff0080,#ff6b35,#ffeb3b,#4263EB,#60A5FA,#7b00ff)',             logo: 'https://cdn.dexscreener.com/cms/images/a46bd12940d8501c2aacdd10ad4780e818bdedaba1ec8eb46b52e4d8313d4a93?width=64&height=64&fit=crop&quality=95&format=auto' },
-  ]), []);
-
-  useEffect(() => {
-    if (activeTab !== 'home') return;
-    const missing = coreLiveTokens.filter(token => !tokenMarketData[`live:${token.id}`]);
-    if (missing.length === 0) return;
-    const WPLS = '0xa1077a294dde1b09bb078844df40758a5d0f9a27';
-    missing.forEach(async (token) => {
-      const rawAddr = token.priceKey === 'pulsechain' ? WPLS : token.priceKey.includes(':') ? token.priceKey.split(':')[1] : null;
-      if (!rawAddr) return;
-      try {
-        const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${rawAddr.toLowerCase()}`);
-        if (!res.ok) return;
-        const data = await res.json();
-        const pairs: any[] = data.pairs || [];
-        if (pairs.length === 0) return;
-        const expectedChain = token.priceKey.includes(':') ? token.priceKey.split(':')[0] : 'pulsechain';
-        const chainPairs = pairs.filter((p: any) => p.chainId === expectedChain);
-        const sorted = [...(chainPairs.length ? chainPairs : pairs)].sort((a: any, b: any) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0));
-        const top = sorted[0];
-        setTokenMarketData(prev => ({
-          ...prev,
-          [`live:${token.id}`]: {
-            volume24h: sorted.reduce((s: number, p: any) => s + (p.volume?.h24 || 0), 0),
-            marketCap: top?.marketCap || null,
-            fdv: top?.fdv || null,
-            priceChange5m: top?.priceChange?.m5 ?? null,
-            priceChange1h: top?.priceChange?.h1 ?? null,
-            priceChange6h: top?.priceChange?.h6 ?? null,
-            priceChange24h: top?.priceChange?.h24 ?? null,
-            priceChange7d: top?.priceChange?.d7 ?? null,
-          },
-        }));
-      } catch { /* ignore */ }
-    });
-  }, [activeTab, coreLiveTokens]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const topHoldingCards = useMemo<PortfolioPriceCard[]>(() => {
-    return coreLiveTokens.map(token => {
-      const md = prices[token.priceKey] || prices[token.changeKey ?? ''];
-      const tokenAddress = token.priceKey.includes(':')
-        ? token.priceKey.split(':')[1]?.toLowerCase()
-        : (token as any).tokenAddr?.toLowerCase() ?? '';
-      const chain = token.priceKey.includes(':') ? token.priceKey.split(':')[0] : 'pulsechain';
-      const heldAsset = currentAssets.find(asset =>
-        (tokenAddress && (asset as any).address?.toLowerCase?.() === tokenAddress) ||
-        asset.symbol.toUpperCase() === token.symbol.toUpperCase()
-      );
-      const liveMarketData = tokenMarketData[`live:${token.id}`] || (heldAsset ? tokenMarketData[heldAsset.id] : null);
-      const dexUrl = tokenAddress
-        ? `https://dexscreener.com/${chain}/${tokenAddress}`
-        : `https://dexscreener.com/search?q=${encodeURIComponent(token.symbol)}`;
-      return {
-        id: token.id,
-        symbol: token.symbol,
-        name: token.name,
-        price: md?.usd || heldAsset?.price || 0,
-        change24h: getFrontMarketChange(liveMarketData, md, heldAsset),
-        marketCap: liveMarketData?.marketCap ?? liveMarketData?.fdv ?? null,
-        volume24h: liveMarketData?.volume24h ?? null,
-        accent: token.accent,
-        logo: token.logo,
-        dexUrl,
-      };
-    });
-  }, [coreLiveTokens, currentAssets, prices, tokenMarketData, frontMarketPeriod]);
-
-  const frontPageGridTokens = useMemo<PortfolioPriceCard[]>(() => {
-    const cards = new Map<string, PortfolioPriceCard>();
-    const add = (card: PortfolioPriceCard) => {
-      const key = card.symbol.toUpperCase();
-      if (!cards.has(key)) cards.set(key, card);
-    };
-
-    topHoldingCards.forEach(add);
-
-    const sourceAssets = currentAssets.length > 0 ? currentAssets : MOCK_ASSETS;
-    [...sourceAssets]
-      .filter(asset => asset.value > 0)
-      .sort((a, b) => b.value - a.value)
-      .forEach(asset => {
-        const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()] || (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()] || getTokenLogoUrl(asset);
-        const chainColor = CHAIN_COLORS[asset.chain] || '#4263EB';
-        const address = (asset as any).address?.toLowerCase?.();
-        const dexUrl = address
-          ? `https://dexscreener.com/${asset.chain}/${address}`
-          : `https://dexscreener.com/search?q=${encodeURIComponent(asset.symbol)}`;
-        add({
-          id: `${asset.chain}:${asset.symbol}`,
-          symbol: asset.symbol,
-          name: asset.name || asset.chain,
-          price: asset.price,
-          change24h: getFrontMarketChange(tokenMarketData[asset.id], null, asset),
-          marketCap: tokenMarketData[asset.id]?.marketCap ?? tokenMarketData[asset.id]?.fdv ?? null,
-          volume24h: tokenMarketData[asset.id]?.volume24h ?? null,
-          accent: `linear-gradient(90deg, ${chainColor}, var(--accent-glow, rgba(66,99,235,0.7)))`,
-          logo,
-          dexUrl,
-        });
-      });
-
-    return [...cards.values()].slice(0, 9);
-  }, [topHoldingCards, currentAssets, tokenMarketData, tokenLogos, frontMarketPeriod]);
-
-  const frontPagePortfolioRows = useMemo(() => {
-    const assets = currentAssets.length > 0 ? currentAssets : MOCK_ASSETS;
-    return assets
-      .filter(asset => asset.value > 0)
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 5);
-  }, [currentAssets]);
-
-  const frontPageChainRows = useMemo(() => {
-    const entries = Object.entries(summary.chainDistribution)
-      .map(([chain, value]) => ({ chain, value: value as number }))
-      .filter(row => row.value > 0)
-      .sort((a, b) => b.value - a.value);
-    if (entries.length > 0) return entries;
-    return [
-      { chain: 'pulsechain', value: 74 },
-      { chain: 'ethereum', value: 18 },
-      { chain: 'base', value: 8 },
-    ];
-  }, [summary.chainDistribution]);
-
-  const frontPageMarketStats = useMemo(() => {
-    const totalVolume = topHoldingCards.reduce((sum, token) => sum + (token.volume24h || 0), 0);
-    const pulseCoins = topHoldingCards.filter(token => token.id !== 'eHEX');
-    const strongest = [...topHoldingCards]
-      .filter(token => token.change24h != null)
-      .sort((a, b) => (b.change24h ?? -Infinity) - (a.change24h ?? -Infinity))[0];
-    const weakest = [...topHoldingCards]
-      .filter(token => token.change24h != null)
-      .sort((a, b) => (a.change24h ?? Infinity) - (b.change24h ?? Infinity))[0];
-
-    return [
-      {
-        label: 'Core Pulse assets',
-        value: `${pulseCoins.length}`,
-        detail: 'PLS, PLSX, HEX, INC, PRVX',
-      },
-      {
-        label: 'Tracked 24h volume',
-        value: totalVolume > 0 ? `$${fmtCompact(totalVolume)}` : 'Syncing',
-        detail: 'Across live core pairs',
-      },
-      {
-        label: 'Strongest today',
-        value: strongest ? strongest.symbol : 'Live',
-        detail: strongest?.change24h != null ? `${strongest.change24h >= 0 ? '+' : ''}${strongest.change24h.toFixed(2)}%` : 'Waiting for market data',
-      },
-      {
-        label: 'Needs attention',
-        value: weakest ? weakest.symbol : 'Wallet',
-        detail: weakest?.change24h != null ? `${weakest.change24h >= 0 ? '+' : ''}${weakest.change24h.toFixed(2)}%` : 'Paste one address to start',
-      },
-    ];
-  }, [topHoldingCards]);
-
-  const frontInfoCards = useMemo(() => [
-    {
-      label: 'On / Offramp',
-      value: 'Move money in and out',
-      detail: 'Start with a tiny test. Use known routes, confirm the token contract, then scale once the bridge or swap lands.',
-      action: 'Bridge safely',
-      href: 'https://bridge.pulsechain.com/',
-      icon: ArrowLeftRight,
-    },
-    {
-      label: 'PulseX',
-      value: 'Swap and add liquidity',
-      detail: 'Use PulseX for core PulseChain swaps, then watch price, volume, liquidity, and pair depth before you size up.',
-      action: 'Open PulseX',
-      href: 'https://app.pulsex.com/',
-      icon: Droplets,
-    },
-    {
-      label: 'Liberty Swap',
-      value: 'Stablecoin routes',
-      detail: 'Good onboarding cards should explain which stablecoin path is easiest, what network it starts on, and what lands on PulseChain.',
-      action: 'Compare route',
-      href: null,
-      icon: ArrowRight,
-    },
-    {
-      label: 'Hyperlane',
-      value: 'Extra bridge paths',
-      detail: 'Useful for cross-chain assets beyond the official bridge. Keep the UI focused on route, token, fee, and arrival chain.',
-      action: 'Open Hyperlane',
-      href: 'https://hyperlane.xyz/',
-      icon: Layers,
-    },
-    {
-      label: 'Volume / TVL',
-      value: 'Liquidity context',
-      detail: 'Show 24h volume, TVL, liquidity by pair, and where depth is thin so the portfolio screen explains the market around the wallet.',
-      action: 'Pulse stats',
-      href: 'https://www.pulsechainstats.com/',
-      icon: BarChart2,
-    },
-    {
-      label: 'HEX staking',
-      value: 'Days, yield, shares',
-      detail: 'Make stake cards about days remaining, T-shares, accrued HEX, emergency end-stake risk, and current USD/PLS value.',
-      action: 'View stakes',
-      href: null,
-      icon: Lock,
-      tab: 'stakes' as ActiveTab,
-    },
-  ], []);
-
-  const openProductPage = (asset: Asset, origin: ActiveTab = activeTab) => {
-    const nextOrigin = origin === 'product' ? productReturnTab : origin;
-    setSelectedProductAsset(asset);
-    setProductReturnTab(nextOrigin);
-    setActiveTab('product');
-  };
-
-  const handleAtlasNavigate = (target: string) => {
-    if (target === 'overview') {
-      setActiveTab('home');
-      return;
-    }
-
-    const atlasTabs: ActiveTab[] = ['home', 'assets', 'stakes', 'history', 'tracker', 'defi', 'bridge'];
-    if (atlasTabs.includes(target as ActiveTab)) {
-      setActiveTab(target as ActiveTab);
-      return;
-    }
-
-    if (target.startsWith('product:')) {
-      const assetId = target.slice('product:'.length);
-      const asset = currentAssets.find(candidate => candidate.id === assetId);
-      if (asset) openProductPage(asset, activeTab);
-    }
-  };
-
-  const handleDashboardAtlasNavigate = (target: string) => {
-    if (target === 'planner') {
-      setProfitPlannerOpen(true);
-      return;
-    }
-
-    if (target === 'overview:rebalance') {
-      setActiveTab('assets');
-      setAllocationCalculatorOpen(true);
-      return;
-    }
-
-    handleAtlasNavigate(target);
-  };
-
-  const runHomeSearch = (raw: string) => {
-    const q = raw.trim();
-    if (!q) return;
-    if (/^\d+$/.test(q)) {
-      window.open(`https://scan.pulsechain.com/block/${q}`, '_blank', 'noopener,noreferrer');
-      return;
-    }
-    if (/^0x[a-fA-F0-9]{64}$/.test(q)) {
-      window.open(`https://scan.pulsechain.com/tx/${q}`, '_blank', 'noopener,noreferrer');
-      return;
-    }
-    // Contract address or wallet → search DexScreener (shows token pairs if CA, wallet if address)
-    window.open(`https://dexscreener.com/search?q=${encodeURIComponent(q)}`, '_blank', 'noopener,noreferrer');
-  };
-
-  const navItems = [
-    { id: 'home', label: 'Dashboard', icon: Activity },
-    { id: 'tracker', label: 'Portfolio Insights', icon: LayoutDashboard },
-    { id: 'assets', label: 'Wallets', icon: Coins },
-    { id: 'stakes', label: 'HEX Stakes', icon: Lock },
-    { id: 'history', label: 'Transactions', icon: HistoryIcon },
-    { id: 'bridge', label: 'Bridges', icon: ArrowLeftRight },
-    { id: 'defi', label: 'DeFi', icon: Droplets },
-  ] as const;
-  const pageMeta: Record<string, { title: string; subtitle: string }> = {
-    home: {
-      title: 'Dashboard',
-      subtitle: 'Current portfolio state across PulseChain, Ethereum, and Base.',
-    },
-    tracker: {
-      title: 'Portfolio Insights',
-      subtitle: 'Per-coin invested basis, current value, and performance from synced transaction history.',
-    },
-    stakes: {
-      title: 'HEX Staking',
-      subtitle: 'Liquid and staked HEX exposure across PulseChain and Ethereum.',
-    },
-    assets: {
-      title: 'Wallets',
-      subtitle: 'Wallet-level holdings and cross-chain balances.',
-    },
-    history: {
-      title: 'Transactions',
-      subtitle: 'Full ledger for bridges, swaps, and cost-basis drill-down.',
-    },
-    bridge: {
-      title: 'Bridges',
-      subtitle: 'Bridge routes, token references, and cross-chain operational context.',
-    },
-    defi: {
-      title: 'DeFi',
-      subtitle: 'Liquidity, farms, and protocol-level PulseChain positions.',
-    },
-  };
-  const pageTitle = activeTab === 'product'
-    ? (activeProductAsset ? `${activeProductAsset.symbol} product page` : 'Token product page')
-    : pageMeta[activeTab as keyof typeof pageMeta]?.title || 'Pulseport';
-  const pageSubtitle = activeTab === 'product'
-    ? (activeProductAsset
-        ? `${activeProductAsset.name || activeProductAsset.symbol} across your dashboard, portfolio insights, and holdings data surfaces.`
-        : 'Token-level wallet detail.')
-    : pageMeta[activeTab as keyof typeof pageMeta]?.subtitle || '';
-  const mobilePrimaryNavItems = navItems.filter(item => ['home', 'assets', 'stakes'].includes(item.id));
-  const mobileMoreNavItems = navItems.filter(item => !['home', 'assets', 'stakes'].includes(item.id));
-  const mobileMoreActive = mobileMoreNavItems.some(item => item.id === activeTab);
+  const total = sorted.reduce((s, h) => s + h.value, 0)
 
   return (
-    <div className="app-shell gopulse-shell min-h-screen font-sans flex" style={{ fontSize: 14 }}>
-      {/* -- SIDEBAR BACKDROP (mobile) -- */}
-      <div className={`sidebar-backdrop${sidebarOpen ? ' open' : ''}`} onClick={() => setSidebarOpen(false)} />
-      {/* -- SIDEBAR -- */}
-      <aside className={`app-sidebar gopulse-sidebar flex flex-col sticky top-0 h-screen overflow-y-auto custom-scrollbar${sidebarOpen ? ' open' : ''}`}>
-        {/* Logo */}
-        <div className="gopulse-sidebar__brand flex items-center gap-3">
-          <div className="gopulse-sidebar__logo">
-            <img src={BRAND_ASSETS.logo} alt="Pulseport logo" />
-          </div>
-          <div className="gopulse-sidebar__identity">
-            <img className="app-sidebar-wordmark" src={BRAND_ASSETS.wordmark} alt="Pulseport wordmark" />
-            <div className="gopulse-sidebar__tagline">Portfolio intelligence</div>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Holdings</h2>
+          <div className="text-sm mt-0.5" style={{ color: 'var(--muted-foreground)', fontFamily: 'var(--font-family-mono)' }}>
+            {sorted.length} assets · {fmtUsd(total)}
           </div>
         </div>
+        <div className="flex gap-2">
+          {(['ALL', 'PLS', 'ETH'] as const).map(c => (
+            <button key={c} onClick={() => setFilterChain(c)}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+              style={{
+                fontFamily: 'var(--font-family-mono)',
+                background: filterChain === c ? 'var(--primary)' : 'var(--secondary)',
+                color: filterChain === c ? '#fff' : 'var(--muted-foreground)',
+              }}>{c}</button>
+          ))}
+        </div>
+      </div>
 
-        {/* Nav */}
-        <nav style={{ padding: '10px 8px' }} className="flex flex-col gap-0.5">
-          {navItems.map(({ id, label, icon: Icon }) => {
-            const isDefi = id === 'defi';
-            const isActive = activeTab === id;
-            const defiColor = 'var(--chain-pulse)';
-            const defiDim   = 'color-mix(in srgb, var(--chain-pulse) 12%, transparent)';
-            const defiLine  = 'var(--chain-pulse)';
-            return (
-              <button key={id} onClick={() => { setActiveTab(id); setSidebarOpen(false); }}
-                className={`app-nav-item${isActive ? ' nav-item-active' : ''}`}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '9px 12px', borderRadius: 8,
-                  background: isActive ? (isDefi ? defiDim : 'var(--accent-dim)') : 'transparent',
-                  color: isActive ? (isDefi ? defiColor : 'var(--accent)') : 'var(--fg-muted)',
-                  fontWeight: isActive ? 600 : 500,
-                  fontSize: 13, border: '1px solid transparent', cursor: 'pointer',
-                  transition: 'all .15s', width: '100%', textAlign: 'left',
-                  borderLeft: isActive ? `2px solid ${isDefi ? defiLine : 'var(--accent)'}` : '2px solid transparent',
-                }}
-                onMouseOver={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)'; (e.currentTarget as HTMLElement).style.color = 'var(--fg)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent-border)'; } }}
-                onMouseOut={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--fg-muted)'; (e.currentTarget as HTMLElement).style.borderColor = 'transparent'; } }}
-              >
-                <Icon size={16} />
-                {label}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Wallets section */}
-        <div className="sidebar-wallet-zone" style={{ padding: '10px 8px 0', marginTop: 'auto' }}>
-          <button
-            onClick={() => setSidebarWalletsOpen(v => !v)}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              width: '100%', padding: '9px 12px', borderRadius: 8,
-              background: 'transparent', color: 'var(--fg-muted)',
-              fontSize: 13, border: 'none', cursor: 'pointer', transition: 'all .15s',
-            }}
-            onMouseOver={e => (e.currentTarget.style.color = 'var(--fg)')}
-            onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-muted)')}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <WalletIcon size={16} />
-              <span style={{ fontWeight: 600, fontSize: 13 }}>Wallets</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', background: 'var(--accent-dim)', padding: '1px 7px', borderRadius: 100, border: '1px solid var(--accent-border)' }}>{wallets.length}</span>
-              {sidebarWalletsOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-            </div>
-          </button>
-          {sidebarWalletsOpen && (
-            <div style={{ paddingBottom: 8 }}>
-              {wallets.length > 0 && (
-                <button
-                  onClick={() => {
-                    setSelectedWalletAddr('all');
-                    setActiveWallet(null);
-                    setActiveTab('assets');
-                    setSidebarOpen(false);
-                  }}
-                  style={{
-                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '7px 10px', borderRadius: 8,
-                    background: selectedWalletAddr === 'all' && activeWallet === null ? 'var(--accent-dim)' : 'transparent',
-                    border: `1px solid ${selectedWalletAddr === 'all' && activeWallet === null ? 'var(--accent-border)' : 'transparent'}`,
-                    color: selectedWalletAddr === 'all' && activeWallet === null ? 'var(--accent)' : 'var(--fg)',
-                    cursor: 'pointer', transition: 'all .12s', marginBottom: 4,
-                  }}
-                >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, fontWeight: 700 }}>
-                    <span className="wallet-dot wallet-dot-multi" />
-                    All wallets
-                  </span>
-                  <span style={{ fontSize: 10, color: 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace' }}>
-                    ${currentAssets.reduce((sum, asset) => sum + asset.value, 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                  </span>
-                </button>
-              )}
-              <div className="overflow-y-auto custom-scrollbar" style={{ maxHeight: 180, padding: '2px 0', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {wallets.map((w, wIdx) => {
-                  const dotColors = ['var(--accent)', 'var(--chain-pulse)', 'var(--chain-eth)', 'var(--chain-base)', 'var(--warning)', 'var(--fg-subtle)'];
-                  const isActive = selectedWalletAddr === w.address.toLowerCase() && activeTab === 'assets';
-                  const walletKey = w.address.toLowerCase();
-                  const walletValue = (walletAssets[walletKey] || []).reduce((sum, asset) => sum + asset.value, 0);
-                  return (
-                    <div key={w.address}
-                      onClick={() => { setSelectedWalletAddr(w.address.toLowerCase()); setActiveWallet(w.address); setActiveTab('assets'); setSidebarOpen(false); }}
-                      style={{
-                        padding: '7px 10px', borderRadius: 8,
-                        background: isActive ? 'var(--accent-dim)' : 'transparent',
-                        border: `1px solid ${isActive ? 'var(--accent-border)' : 'transparent'}`,
-                        cursor: 'pointer', transition: 'all .12s',
-                      }}
-                      className="group flex items-center justify-between"
-                      onMouseOver={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)'; }}
-                      onMouseOut={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
-                        <div style={{ width: 7, height: 7, borderRadius: '50%', background: dotColors[wIdx % dotColors.length], flexShrink: 0 }} />
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: isActive ? 'var(--accent)' : 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.name}</div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                            <code style={{ fontSize: 10, color: 'var(--fg-muted)' }}>{w.address.slice(0,6)}...{w.address.slice(-4)}</code>
-                            <span style={{ fontSize: 10, color: isActive ? 'var(--accent)' : 'var(--fg-subtle)', fontFamily: 'JetBrains Mono, monospace', whiteSpace: 'nowrap' }}>
-                              {walletValue > 0 ? `$${walletValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '$0'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="touch-visible-actions opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                        <button onClick={e => { e.stopPropagation(); setEditingWalletAddress(w.address); setEditWalletName(w.name); }}
-                          style={{ color: 'var(--fg-muted)', padding: 3, cursor: 'pointer', border: 'none', background: 'none', borderRadius: 4 }}
-                          onMouseOver={e => (e.currentTarget.style.color = 'var(--accent)')}
-                          onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-muted)')}>
-                          <Pencil size={10} />
-                        </button>
-                        <button onClick={(e) => { e.stopPropagation(); removeWallet(w.address); }}
-                          style={{ color: 'var(--fg-muted)', padding: 3, cursor: 'pointer', border: 'none', background: 'none', borderRadius: 4 }}
-                          onMouseOver={e => (e.currentTarget.style.color = 'var(--negative)')}
-                          onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-muted)')}>
-                          <Trash2 size={10} />
-                        </button>
-                      </div>
+      <div className="rounded-xl border overflow-hidden" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b" style={{ borderColor: 'var(--border)' }}>
+              {[
+                { label: 'Asset', key: 'symbol' },
+                { label: 'Balance', key: null },
+                { label: 'Price', key: null },
+                { label: 'Value', key: 'value' },
+                { label: '24h PnL', key: 'pnl' },
+                { label: 'Chain', key: null },
+                { label: 'Share', key: null },
+              ].map(col => (
+                <th key={col.label}
+                  className={`px-4 py-3 text-left font-medium text-xs tracking-wide ${col.key ? 'cursor-pointer hover:text-purple-400' : ''}`}
+                  style={{ color: 'var(--muted-foreground)', fontFamily: 'var(--font-family-mono)' }}
+                  onClick={() => col.key && setSortBy(col.key as any)}>
+                  {col.label} {col.key === sortBy ? '↓' : ''}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((h) => (
+              <tr key={h.symbol} className="border-b last:border-0 hover:bg-white/[0.02] transition-colors cursor-pointer" style={{ borderColor: 'var(--border)' }}>
+                <td className="px-4 py-3.5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                      style={{ background: h.color + '33', border: `1px solid ${h.color}55`, color: h.color }}>
+                      {h.symbol[0]}
                     </div>
-                  );
-                })}
-                {wallets.length === 0 && (
-                  <div style={{ padding: '8px 10px', fontSize: 12, color: 'var(--fg-subtle)', fontStyle: 'italic' }}>No wallets added yet</div>
-                )}
-              </div>
-              <div style={{ padding: '4px 2px 8px' }}>
-                <button onClick={() => setIsAddingWallet(true)}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    background: 'var(--accent-dim)', color: 'var(--accent)', fontWeight: 700, fontSize: 12,
-                    border: '1px solid var(--accent-border)', borderRadius: 8, padding: '8px 0', cursor: 'pointer',
-                    transition: 'all .15s', width: '100%',
-                  }}
-                  onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'color-mix(in srgb, var(--accent) 18%, transparent)'; }}
-                  onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent-dim)'; }}>
-                  <Plus size={13} /> Add Wallet
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </aside>
+                    <div>
+                      <div className="font-semibold">{h.symbol}</div>
+                      <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>{h.name}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-4 py-3.5" style={{ fontFamily: 'var(--font-family-mono)' }}>
+                  <span className="text-sm">{fmtCompact(h.balance)}</span>
+                </td>
+                <td className="px-4 py-3.5" style={{ fontFamily: 'var(--font-family-mono)' }}>
+                  <span className="text-sm">{h.price < 0.001 ? h.price.toFixed(8) : h.price.toFixed(4)}</span>
+                </td>
+                <td className="px-4 py-3.5" style={{ fontFamily: 'var(--font-family-mono)' }}>
+                  <span className="text-sm font-medium">{fmtUsd(h.value)}</span>
+                </td>
+                <td className="px-4 py-3.5" style={{ fontFamily: 'var(--font-family-mono)' }}>
+                  <div>
+                    <span className="text-sm font-medium" style={{ color: h.pnl >= 0 ? 'var(--gain)' : 'var(--loss)' }}>
+                      {h.pnl >= 0 ? '+' : ''}{h.pnl.toFixed(2)}%
+                    </span>
+                    <div className="text-xs" style={{ color: h.pnlAmt >= 0 ? 'var(--gain)' : 'var(--loss)' }}>
+                      {h.pnlAmt >= 0 ? '+' : ''}{fmtUsd(Math.abs(h.pnlAmt))}
+                    </div>
+                  </div>
+                </td>
+                <td className="px-4 py-3.5"><ChainBadge chain={h.chain} /></td>
+                <td className="px-4 py-3.5">
+                  <div className="w-20">
+                    <div className="text-xs mb-1" style={{ color: 'var(--muted-foreground)', fontFamily: 'var(--font-family-mono)' }}>
+                      {((h.value / total) * 100).toFixed(1)}%
+                    </div>
+                    <ProgressBar value={(h.value / total) * 100} color={h.color} />
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
 
-      {/* -- MAIN -- */}
-      <main className="app-main flex-1 min-w-0 flex flex-col">
-        {/* Top Nav / Header */}
-        <header className="app-header gopulse-header shrink-0">
-          <div className="app-header-main">
-            {/* Page title */}
-            <div className="flex items-center gap-3">
+function StakesPage() {
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <h2 className="text-lg font-semibold">HEX Stakes</h2>
+        <div className="text-sm mt-0.5" style={{ color: 'var(--muted-foreground)', fontFamily: 'var(--font-family-mono)' }}>
+          {stakes.length} active · {fmtUsd(stakes.reduce((s, st) => s + (st.principal * 0.00831), 0))} principal
+        </div>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+        {stakes.map(stake => (
+          <div key={stake.id} className="rounded-xl border p-5 hover:border-purple-700/40 transition-all" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+            <div className="flex items-start justify-between mb-4">
               <div>
-                <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', marginBottom: 4 }}>
-                  Pulseport Workspace
-                </div>
-                <div style={{ fontFamily: 'var(--font-shell-display)', fontSize: 26, lineHeight: 1.05, letterSpacing: '-0.04em', color: 'var(--fg)', fontWeight: 800 }}>
-                  {pageTitle}
-                </div>
-                <div style={{ color: 'var(--fg-muted)', fontSize: 13, marginTop: 4 }}>
-                  {pageSubtitle}
-                </div>
-              </div>
-            </div>
-
-            {/* Right controls */}
-            <div className="app-header-actions">
-              {/* Live indicator */}
-              <div className="hidden sm:flex items-center gap-2">
-                <div className={`status-dot ${lastUpdated ? 'status-dot-live' : ''}`} />
-                {lastUpdated && (
-                  <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontVariantNumeric: 'tabular-nums' }}>
-                    {timeSinceLastUpdate}s ago
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold">{stake.token}</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: '#06b6d422', color: '#06b6d4', border: '1px solid #06b6d433', fontFamily: 'var(--font-family-mono)' }}>
+                    Active
                   </span>
-                )}
+                </div>
+                <div className="text-xs mt-1" style={{ color: 'var(--muted-foreground)', fontFamily: 'var(--font-family-mono)' }}>{stake.id}</div>
               </div>
+              <div className="text-right">
+                <div className="text-sm font-semibold" style={{ color: 'var(--gain)', fontFamily: 'var(--font-family-mono)' }}>+{stake.pnl}%</div>
+              </div>
+            </div>
 
-              {/* Theme toggle */}
-              <button
-                onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
-                className="theme-toggle"
-                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
-                {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-              </button>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              {[
+                { label: 'PRINCIPAL', value: fmtCompact(stake.principal) },
+                { label: 'SHARES', value: fmtCompact(stake.shares) },
+                { label: 'INTEREST', value: fmtCompact(stake.interest) },
+                { label: 'PROGRESS', value: `${stake.progress}%` },
+              ].map(item => (
+                <div key={item.label}>
+                  <div className="text-xs mb-1" style={{ color: 'var(--muted-foreground)', fontFamily: 'var(--font-family-mono)' }}>{item.label}</div>
+                  <div className="text-sm font-semibold" style={{ fontFamily: 'var(--font-family-mono)' }}>{item.value}</div>
+                </div>
+              ))}
+            </div>
 
-              {/* API Key */}
-              <button onClick={openApiKeyModal}
-                title={etherscanApiKey ? 'API key set' : 'Set Etherscan API key'}
-                aria-label={etherscanApiKey ? 'API key set. Open API key settings' : 'Open API key settings'}
-                className="header-action-btn"
-                style={etherscanApiKey ? {
-                  background: 'var(--accent-dim)',
-                  borderColor: 'var(--accent-border)',
-                  color: 'var(--accent)',
-                } : {}}>
-                {etherscanApiKey ? <Check size={12} /> : <Settings size={12} />}
-                <span>{etherscanApiKey ? 'API set' : 'API'}</span>
-              </button>
+            <div className="mb-3">
+              <div className="flex justify-between text-xs mb-1.5" style={{ color: 'var(--muted-foreground)', fontFamily: 'var(--font-family-mono)' }}>
+                <span>{stake.start}</span>
+                <span>{stake.end}</span>
+              </div>
+              <ProgressBar value={stake.progress} color={stake.progress > 80 ? '#10b981' : '#7c3aed'} />
+            </div>
 
-              {/* Refresh */}
-              <button onClick={() => fetchPortfolio()}
-                className={`header-action-btn${isLoading ? ' btn-loading' : ''}`}
-                style={{ color: 'var(--fg)' }}>
-                <RefreshCcw size={12} className={isLoading ? 'animate-spin' : ''} />
-                <span className="hidden sm:inline">Refresh</span>
-              </button>
+            <button className="w-full py-2 rounded-lg text-xs font-semibold transition-all hover:opacity-90"
+              style={{ background: 'var(--secondary)', color: 'var(--foreground)' }}>
+              View Details
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function LiquidityPage() {
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <h2 className="text-lg font-semibold">Liquidity Positions</h2>
+        <div className="text-sm mt-0.5" style={{ color: 'var(--muted-foreground)', fontFamily: 'var(--font-family-mono)' }}>
+          {liquidityPositions.length} positions · {fmtUsd(liquidityPositions.reduce((s, p) => s + p.value, 0))} total
+        </div>
+      </div>
+      <div className="flex flex-col gap-3">
+        {liquidityPositions.map((pos) => (
+          <div key={pos.pair} className="rounded-xl border p-5 hover:border-cyan-700/30 transition-all" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+            <div className="flex items-start justify-between mb-5">
+              <div>
+                <div className="font-semibold text-base">{pos.pair}</div>
+                <div className="text-xs mt-1" style={{ color: 'var(--muted-foreground)', fontFamily: 'var(--font-family-mono)' }}>{pos.dex}</div>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-semibold" style={{ fontFamily: 'var(--font-family-mono)' }}>{fmtUsd(pos.value)}</div>
+                <div className="text-xs" style={{ color: 'var(--gain)', fontFamily: 'var(--font-family-mono)' }}>{pos.apr.toFixed(1)}% APR</div>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { label: 'POOL SHARE', value: `${(pos.share * 100).toFixed(4)}%` },
+                { label: '24H FEES', value: fmtUsd(pos.fees24h) },
+                { label: 'RANGE', value: pos.range ? `${pos.range[0].toFixed(7)}–${pos.range[1].toFixed(7)}` : 'Full range' },
+              ].map(item => (
+                <div key={item.label}>
+                  <div className="text-xs mb-1" style={{ color: 'var(--muted-foreground)', fontFamily: 'var(--font-family-mono)' }}>{item.label}</div>
+                  <div className="text-sm font-semibold" style={{ fontFamily: 'var(--font-family-mono)' }}>{item.value}</div>
+                </div>
+              ))}
             </div>
           </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
-          <nav className="app-top-nav hidden">
-            {navItems.map(({ id, label, icon: Icon }) => {
-              const isActive = activeTab === id;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  className={`app-top-nav-btn${isActive ? ' is-active' : ''}`}
-                  onClick={() => setActiveTab(id)}
-                >
-                  <Icon size={15} />
-                  <span>{label}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </header>
+function TransactionsPage() {
+  const [filter, setFilter] = useState<'All' | 'Swap' | 'Stake' | 'Bridge'>('All')
+  const filtered = transactions.filter(t => filter === 'All' || t.type === filter || (filter === 'Stake' && (t.type === 'Stake' || t.type === 'Unstake')))
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar pb-24 md:pb-0">
-          <div style={{ maxWidth: 1400, margin: '0 auto' }} className="space-y-5 px-3 py-4 sm:px-5 sm:py-6">
+  const TYPE_ICONS: Record<string, string> = {
+    Swap: '⇄', 'Add Liquidity': '+', Stake: '⬡', Unstake: '○', Bridge: '⇒',
+  }
 
-          <AnimatePresence mode="wait">
-            {activeTab === 'home' && (
-              <motion.div key="home" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="front-page">
-                <AtlasHomeSurface snapshot={atlasHomeSnapshot} onNavigate={handleDashboardAtlasNavigate} />
-              </motion.div>
-            )}
-
-            {false && activeTab === 'home' && (
-              <motion.div key="home" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="front-page dashboard-premium">
-                <section className="front-hero">
-                  <div className="front-data-field" aria-hidden="true">
-                    {Array.from({ length: 18 }).map((_, i) => (
-                      <span key={i} style={{ ['--i' as any]: i }} />
-                    ))}
-                  </div>
-
-                  <div className="front-hero-copy">
-                    <span className="front-eyebrow">PulsePort Live</span>
-                    <h1>{wallets.length > 0 ? 'Portfolio command center.' : 'Track PulseChain without the noise.'}</h1>
-                    <p>
-                      {wallets.length > 0
-                        ? 'Wallet value, HEX stakes, DeFi positions, transactions, and live PulseChain market data in one compact dashboard.'
-                        : 'Add a wallet to connect holdings, stakes, liquidity, and transactions with live market context.'}
-                    </p>
-                    <div className="front-hero-metrics">
-                      <div>
-                        <span>Total Value</span>
-                        <strong>${summary.totalValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong>
-                      </div>
-                      <div>
-                        <span>24h Move</span>
-                        <strong className={summary.pnl24h >= 0 ? 'is-up' : 'is-down'}>
-                          {summary.pnl24h >= 0 ? '+' : '-'}${Math.abs(summary.pnl24h).toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                        </strong>
-                      </div>
-                      <div>
-                        <span>Wallets</span>
-                        <strong>{wallets.length}</strong>
-                      </div>
-                    </div>
-                    <div className="front-insight-strip">
-                      {pulsechainInsights.map((insight) => (
-                        <div key={insight.id} className={`front-insight-pill tone-${insight.tone}`}>
-                          <span>{insight.label}</span>
-                          <strong>{insight.value}</strong>
-                        </div>
-                      ))}
-                    </div>
-                    <BackendDashboardTransitionPanel
-                      backendWalletAddress={backendWalletAddress}
-                      backendDashboardLoading={backendDashboardLoading}
-                      backendDashboardError={backendDashboardError}
-                      backendDashboardResponse={backendDashboardResponse}
-                    />
-                    <BackendHexStakeTransitionPanel
-                      backendWalletAddress={backendWalletAddress}
-                      backendHexStakeLoading={backendHexStakeLoading}
-                      backendHexStakeError={backendHexStakeError}
-                      backendHexStakeResponse={backendHexStakeResponse}
-                    />
-                    <div className="front-actions">
-                      <button className="btn-primary front-primary-action" onClick={() => wallets.length > 0 ? setActiveTab('tracker') : setIsAddingWallet(true)}>
-                        {wallets.length > 0 ? 'Portfolio Insights' : 'Add Wallet'} <ArrowRight size={15} />
-                      </button>
-                      <button className="btn-ghost front-secondary-action" onClick={() => setActiveTab('assets')}>
-                        Wallets <WalletIcon size={14} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="front-market-board">
-                    <form
-                      className="front-search-shell"
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        runHomeSearch(homeSearch);
-                      }}
-                    >
-                      <Search size={18} />
-                      <input
-                        value={homeSearch}
-                        onChange={(e) => setHomeSearch(e.target.value)}
-                        aria-label="Search token, block, tx hash, or contract address"
-                        placeholder="Symbol, contract address, block, or tx..."
-                      />
-                      <button type="submit">Search</button>
-                    </form>
-
-                    <div className="front-market-kicker">
-                      <strong>Day 1071</strong>
-                      <div className="front-time-tabs">
-                        {FRONT_MARKET_PERIODS.map(label => (
-                          <button
-                            type="button"
-                            key={label}
-                            className={frontMarketPeriod === label ? 'active' : ''}
-                            onClick={() => setFrontMarketPeriod(label)}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="front-price-board-head">
-                      <div>
-                        <span>Live prices</span>
-                        <strong>PulseChain market</strong>
-                      </div>
-                      <a href="https://dexscreener.com/pulsechain" target="_blank" rel="noopener noreferrer" className="front-price-board-head-link">
-                        DexScreener <ExternalLink size={13} />
-                      </a>
-                    </div>
-
-                    <div className="front-price-grid">
-                      {frontPageGridTokens.map((token, i) => (
-                        <a
-                          key={`${token.id}-${i}`}
-                          className="front-price-box"
-                          href={token.dexUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ animationDelay: `${i * 38}ms` }}
-                        >
-                          <span className="front-price-accent" style={{ background: token.accent }} />
-                          <span className="front-price-topline">
-                            <span className="front-token-logo">
-                              {token.logo ? <img src={token.logo} alt={token.symbol} /> : token.symbol.slice(0, 1)}
-                            </span>
-                            <span>
-                              <strong>{token.symbol}</strong>
-                              <small>{token.name}</small>
-                            </span>
-                          </span>
-                          <span className="front-price-main">
-                            <strong>{fmtPrice(token.price)}</strong>
-                            <small className={(token.change24h ?? 0) >= 0 ? 'is-up' : 'is-down'}>
-                              {token.change24h == null ? 'Live' : `${token.change24h >= 0 ? '+' : ''}${token.change24h.toFixed(2)}% ${frontMarketPeriod}`}
-                            </small>
-                          </span>
-                          <span className="front-price-footer">
-                            <span>Vol {fmtMarket(token.volume24h)}</span>
-                            <span>MCap {fmtMarket(token.marketCap)}</span>
-                          </span>
-                        </a>
-                      ))}
-                    </div>
-
-                    <div className="front-market-actions">
-                      <button onClick={() => fetchPortfolio()} className="front-refresh-btn">
-                        <RefreshCcw size={13} className={isLoading ? 'animate-spin' : ''} />
-                        Refresh
-                      </button>
-                    </div>
-                  </div>
-                </section>
-
-                <section className="front-section front-section-tight">
-                  <div className="front-section-head">
-                    <span>Market pulse</span>
-                    <h2>Chain stats at a glance.</h2>
-                  </div>
-                  <div className="front-stat-strip">
-                    {frontPageMarketStats.map(stat => (
-                      <div className="front-stat" key={stat.label}>
-                        <span>{stat.label}</span>
-                        <strong>{stat.value}</strong>
-                        <small>{stat.detail}</small>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-
-                <section className="front-section front-section-tight">
-                  <div className="front-section-head">
-                    <span>Workspace access</span>
-                    <h2>Quick navigation.</h2>
-                  </div>
-                  <div className="front-info-grid">
-                    {[
-                      { eyebrow: 'Portfolio', title: 'Insights', detail: 'Per-coin invested basis and current value.', icon: LayoutDashboard, action: () => setActiveTab('tracker') },
-                      { eyebrow: 'Wallets', title: 'Wallets', detail: 'Holdings and balances by wallet.', icon: WalletIcon, action: () => setActiveTab('assets') },
-                      { eyebrow: 'HEX', title: 'HEX stakes', detail: 'pHEX and eHEX stake tracker.', icon: Lock, action: () => setActiveTab('stakes') },
-                      { eyebrow: 'Transactions', title: 'History', detail: 'Swaps, transfers, and filters.', icon: HistoryIcon, action: () => setActiveTab('history') },
-                      { eyebrow: 'DeFi', title: 'Liquidity & farms', detail: 'LP and farm positions.', icon: Droplets, action: () => setActiveTab('defi') },
-                      { eyebrow: 'Bridges', title: 'Bridges', detail: 'Bridge routes and references.', icon: ArrowLeftRight, action: () => setActiveTab('bridge') },
-                    ].map(({ eyebrow, title, detail, icon: Icon, action }) => (
-                      <button key={title} className="front-info-card" onClick={action}>
-                        <span className="front-info-icon">
-                          <Icon size={16} />
-                        </span>
-                        <span className="front-info-copy">
-                          <small>{eyebrow}</small>
-                          <strong>{title}</strong>
-                          <em>{detail}</em>
-                          <b>
-                            Open <ChevronRight size={13} />
-                          </b>
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </section>
-
-                <section className="front-section front-section-tight">
-                  <div className="front-section-head">
-                    <span>Explorer shortcuts</span>
-                    <h2>External tools.</h2>
-                  </div>
-                  <div className="front-info-grid">
-                    {[
-                      { eyebrow: 'PulseChain', title: 'PulseScan', detail: 'Wallets, tokens, and contracts.', icon: Shield, href: 'https://scan.pulsechain.com' },
-                      { eyebrow: 'Ethereum', title: 'Etherscan', detail: 'Ethereum token and wallet explorer.', icon: ExternalLink, href: 'https://etherscan.io' },
-                      { eyebrow: 'Base', title: 'Base explorer', detail: 'Base activity and balances.', icon: Layers, href: 'https://base.blockscout.com' },
-                      { eyebrow: 'Market', title: 'DexScreener', detail: 'Live token pair activity.', icon: Activity, href: 'https://dexscreener.com/pulsechain' },
-                    ].map(({ eyebrow, title, detail, icon: Icon, href }) => (
-                      <a key={title} className="front-info-card" href={href} target="_blank" rel="noopener noreferrer">
-                        <span className="front-info-icon">
-                          <Icon size={16} />
-                        </span>
-                        <span className="front-info-copy">
-                          <small>{eyebrow}</small>
-                          <strong>{title}</strong>
-                          <em>{detail}</em>
-                          <b>
-                            Launch <ArrowUpRight size={13} />
-                          </b>
-                        </span>
-                      </a>
-                    ))}
-                  </div>
-                </section>
-
-                <section className="front-split-section">
-                  <div className="front-portfolio-preview">
-                    <div className="front-section-head">
-                      <span>Your wallet</span>
-                      <h2>{wallets.length > 0 ? 'Your portfolio is ready.' : 'Track the wallet right from the portfolio view.'}</h2>
-                    </div>
-                    <div className="front-value-row">
-                      <div>
-                        <span>Total value</span>
-                        <strong>${summary.totalValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong>
-                        {!wallets.length && <small style={{ color: 'var(--fg-muted)', fontSize: 12, lineHeight: 1.5 }}>Paste a wallet. See the full picture.</small>}
-                      </div>
-                      <div>
-                        <span>24h move</span>
-                        <strong className={summary.pnl24h >= 0 ? 'is-up' : 'is-down'}>
-                          {summary.pnl24h >= 0 ? '+' : '-'}${Math.abs(summary.pnl24h).toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                        </strong>
-                      </div>
-                    </div>
-                    <div className="front-holding-list">
-                      {frontPagePortfolioRows.map(asset => {
-                        const logo = STATIC_LOGOS[(asset as any).address?.toLowerCase?.()] || (asset as any).logoUrl || tokenLogos[(asset as any).address?.toLowerCase?.()] || getTokenLogoUrl(asset);
-                        return (
-                          <button key={asset.id} className="front-holding-row" onClick={() => openProductPage(asset, 'home')}>
-                            <span className="front-holding-logo">{logo ? <img src={logo} alt={asset.symbol} /> : asset.symbol.slice(0, 1)}</span>
-                            <span>
-                              <strong>{asset.symbol}</strong>
-                              <small>{asset.chain}</small>
-                            </span>
-                            <span>
-                              <strong>${asset.value.toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong>
-                              <small className={(asset.pnl24h ?? asset.priceChange24h ?? 0) >= 0 ? 'is-up' : 'is-down'}>
-                                {(asset.pnl24h ?? asset.priceChange24h ?? 0) >= 0 ? '+' : ''}{(asset.pnl24h ?? asset.priceChange24h ?? 0).toFixed(2)}%
-                              </small>
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <button className="front-inline-link" onClick={() => wallets.length > 0 ? setActiveTab('tracker') : setIsAddingWallet(true)}>
-                      {wallets.length > 0 ? 'Open portfolio insights' : 'Add your first wallet'} <ChevronRight size={14} />
-                    </button>
-                  </div>
-
-                  <div className="front-intel-panel">
-                    <div className="front-section-head">
-                      <span>Portfolio intel</span>
-                      <h2>Your on-chain activity, unified.</h2>
-                    </div>
-                    <div className="front-chain-stack">
-                      {frontPageChainRows.map(row => {
-                        const pct = summary.totalValue > 0 ? (row.value / summary.totalValue) * 100 : row.value;
-                        const chainColor = CHAIN_COLORS[row.chain] || 'var(--accent)';
-                        return (
-                          <div className="front-chain-row" key={row.chain}>
-                            <div>
-                              <span style={{ background: chainColor }} />
-                              <strong>{row.chain.charAt(0).toUpperCase() + row.chain.slice(1)}</strong>
-                            </div>
-                            <small>{Math.max(0, pct).toFixed(1)}%</small>
-                            <em><i style={{ width: `${Math.min(100, Math.max(4, pct))}%`, background: chainColor }} /></em>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div className="front-intel-links">
-                      {[
-                        { label: 'HEX stakes', tab: 'stakes' as const, icon: Lock },
-                        { label: 'DeFi positions', tab: 'defi' as const, icon: Droplets },
-                        { label: 'Transactions', tab: 'history' as const, icon: HistoryIcon },
-                        { label: 'Wallets', tab: 'assets' as const, icon: WalletIcon },
-                      ].map(({ label, tab, icon: Icon }) => (
-                        <button key={label} onClick={() => setActiveTab(tab)}>
-                          <Icon size={15} />
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </section>
-
-
-              </motion.div>
-            )}
-
-            {activeTab === 'product' && activeProductAsset && (
-              <motion.div key="product" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
-                <TokenProductPage
-                  asset={activeProductAsset}
-                  portfolioTotal={summary.totalValue}
-                  plsUsdPrice={prices['pulsechain']?.usd || 0}
-                  logoUrl={STATIC_LOGOS[activeProductAsset.address?.toLowerCase?.() ?? ''] || activeProductAsset.logoUrl || tokenLogos[activeProductAsset.address?.toLowerCase?.() ?? ''] || getTokenLogoUrl(activeProductAsset)}
-                  marketData={tokenMarketData[activeProductAsset.id]}
-                  isLoadingMarketData={productPageLoading}
-                  theme={theme}
-                  explorerUrl={explorerUrl(activeProductAsset.chain, activeProductAsset.address || '')}
-                  dexScreenerUrl={dexScreenerUrl(activeProductAsset.chain, activeProductAsset.address || '')}
-                  transactions={currentTransactions}
-                  wallets={wallets}
-                  allAssets={currentAssets}
-                  tokenLogos={tokenLogos}
-                  getTokenLogoUrl={getTokenLogoUrl}
-                  onBack={() => {
-                    setActiveTab(productReturnTab === 'product' ? 'home' : productReturnTab);
-                    setSelectedProductAsset(null);
-                  }}
-                  onOpenPnl={asset => setPnlAsset(asset)}
-                />
-              </motion.div>
-            )}
-
-            {activeTab === 'tracker' && (
-              <motion.div key="tracker" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <PortfolioInsightsPage
-                  wallets={wallets}
-                  assets={currentAssets}
-                  transactions={currentTransactions}
-                  summary={summary}
-                  onOpenProduct={(asset) => {
-                    setSelectedProductAsset(asset);
-                    setProductReturnTab('tracker');
-                    setActiveTab('product');
-                  }}
-                  onOpenPnl={(asset) => setPnlAsset(asset)}
-                  onOpenHistory={() => setActiveTab('history')}
-                  onOpenWallets={() => setActiveTab('assets')}
-                />
-              </motion.div>
-            )}
-
-            {activeTab === 'assets' && (
-              <motion.div key="assets" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <WalletsPage
-                  wallets={wallets}
-                  selectedWalletAddr={selectedWalletAddr}
-                  currentAssets={currentAssets}
-                  currentStakes={currentStakes}
-                  currentTransactions={currentTransactions}
-                  walletAssets={walletAssets}
-                  hiddenAssetRows={hiddenAssetRows}
-                  hiddenTokens={hiddenTokens}
-                  spamTokenIds={spamTokenIds}
-                  customCoinsCount={customCoins.length}
-                  hideDust={hideDust}
-                  hideSpam={hideSpam}
-                  isScanning={isScanning}
-                  scanResult={scanResult}
-                  isLoading={isLoading}
-                  walletChainFilter={walletChainFilter}
-                  setWalletChainFilter={setWalletChainFilter}
-                  coinVisibilityMenuOpen={coinVisibilityMenuOpen}
-                  setCoinVisibilityMenuOpen={setCoinVisibilityMenuOpen}
-                  priceChangePeriod={priceChangePeriod}
-                  setPriceChangePeriod={setPriceChangePeriod}
-                  assetSortField={assetSortField as HoldingSortField}
-                  assetSortDir={assetSortDir}
-                  setAssetSortField={setAssetSortField}
-                  setAssetSortDir={setAssetSortDir}
-                  expandedAssetIds={expandedAssetIds}
-                  setExpandedAssetIds={setExpandedAssetIds}
-                  manualEntries={manualEntries}
-                  setManualEntries={setManualEntries}
-                  tokenLogos={tokenLogos}
-                  tokenMarketData={tokenMarketData}
-                  staticLogos={STATIC_LOGOS}
-                  chainColors={CHAIN_COLORS}
-                  plsUsdPrice={prices['pulsechain']?.usd || 0.00005}
-                  totalPortfolioUsd={summary.totalValue}
-                  summaryLiquidUsd={summary.liquidValue}
-                  summaryStakingUsd={summary.stakingValueUsd}
-                  walletStakingUsdByAddress={stakeValuation.byWallet}
-                  showHiddenCoins={showHiddenCoins}
-                  allocationCalculatorOpen={allocationCalculatorOpen}
-                  allocationCalculatorRows={allocationCalculatorRows}
-                  allocationDraftPercentages={allocationDraftPercentages}
-                  onSelectWallet={(walletAddress) => {
-                    if (!walletAddress) {
-                      setSelectedWalletAddr('all');
-                      setActiveWallet(null);
-                      return;
-                    }
-                    setSelectedWalletAddr(walletAddress.toLowerCase());
-                    setActiveWallet(walletAddress);
-                  }}
-                  onOpenAddWallet={() => setIsAddingWallet(true)}
-                  onOpenRenameWallet={(walletAddress, name) => {
-                    setEditingWalletAddress(walletAddress);
-                    setEditWalletName(name);
-                  }}
-                  onOpenOverview={() => setActiveTab('tracker')}
-                  onOpenTransactions={() => setActiveTab('history')}
-                  onToggleHiddenCoins={() => setShowHiddenCoins(v => !v)}
-                  onToggleAllocationCalculator={() => setAllocationCalculatorOpen(v => !v)}
-                  onSetAllocationDraftPercentage={(name, value) => {
-                    setAllocationDraftPercentages(prev => ({ ...prev, [name]: value }));
-                  }}
-                  onRefreshPortfolio={fetchPortfolio}
-                  onOpenCustomCoins={() => setIsCustomCoinsModalOpen(true)}
-                  onScanForSpam={scanForSpam}
-                  onSetHideDust={setHideDust}
-                  onSetHideSpam={setHideSpam}
-                  onResetCoinVisibility={() => {
-                    setHiddenTokens([]);
-                    setShowHiddenCoins(false);
-                  }}
-                  onShowEverything={() => {
-                    setHideDust(false);
-                    setHideSpam(false);
-                    setShowHiddenCoins(true);
-                  }}
-                  onHideToken={hideToken}
-                  onUnhideToken={unhideToken}
-                  onSelectAsset={(asset) => openProductPage(asset, 'assets')}
-                  onOpenPnl={setPnlAsset}
-                  normalizeHoldingAssets={normalizeHoldingAssets}
-                  getTokenLogoUrl={getTokenLogoUrl}
-                  explorerUrl={explorerUrl}
-                  dexScreenerUrl={dexScreenerUrl}
-                />
-                {/* -- Transactions -- */}
-                <div style={{ marginTop: 8 }}>
-                  {/* Type filter pills + active filter chips */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-                    {([
-                      { value: 'all', label: 'All' },
-                      { value: 'deposit', label: 'Received' },
-                      { value: 'withdraw', label: 'Sent' },
-                      { value: 'swap', label: 'Swaps' },
-                    ] as { value: string; label: string }[]).map(({ value, label }) => (
-                      <button key={value}
-                        onClick={() => setTxTypeFilter(value)}
-                        className={`filter-pill${txTypeFilter === value ? ' active' : ''}`}>
-                        {label}
-                      </button>
-                    ))}
-                    {(txAssetFilter !== 'all' || txYearFilter !== 'all' || txCoinCategory !== 'all') && (
-                      <>
-                        <div style={{ width: 1, height: 18, background: 'var(--border)', flexShrink: 0 }} />
-                        {txAssetFilter !== 'all' && (
-                          <button className="filter-chip" onClick={() => setTxAssetFilter('all')}>
-                            {txAssetFilter}<span className="chip-x">x</span>
-                          </button>
-                        )}
-                        {txYearFilter !== 'all' && (
-                          <button className="filter-chip" onClick={() => setTxYearFilter('all')}>
-                            {txYearFilter}<span className="chip-x">x</span>
-                          </button>
-                        )}
-                        {txCoinCategory !== 'all' && (
-                          <button className="filter-chip" onClick={() => setTxCoinCategory('all')}>
-                            {txCoinCategory === 'stablecoins' ? 'Stablecoins' : txCoinCategory === 'eth_weth' ? 'ETH/WETH' : txCoinCategory === 'hex' ? 'HEX/eHEX' : txCoinCategory === 'pls_wpls' ? 'PLS/WPLS' : 'Bridged'}<span className="chip-x">x</span>
-                          </button>
-                        )}
-                        <button
-                          onClick={() => { setTxTypeFilter('all'); setTxAssetFilter('all'); setTxYearFilter('all'); setTxCoinCategory('all'); }}
-                          style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', background: 'none', border: 'none', cursor: 'pointer', padding: '3px 6px', textDecoration: 'underline' }}>
-                          Clear all
-                        </button>
-                      </>
-                    )}
-                  </div>
-
-                  <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, overflow: 'hidden' }} className="md-elevation-1">
-                    <div style={{ padding: '14px 18px', borderBottom: isCollapsed('holdings-txs') ? 'none' : `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: 14, fontWeight: 600, color: t.text }}>Transaction</span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent-border)', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
-                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', display: 'inline-block', animation: 'pulse 2s infinite' }} />
-                          PulseChain
-                        </span>
-                        <span style={{ fontSize: 12, color: t.textTertiary }}>{holdingsPulsechainTransactions.length} tx</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                        <button onClick={() => setViewAsYou(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}>
-                          <div style={{ width: 36, height: 20, borderRadius: 10, background: viewAsYou ? 'var(--accent)' : 'var(--bg-elevated)', border: '1px solid var(--border)', transition: 'background .15s', position: 'relative', flexShrink: 0 }}>
-                            <div style={{ position: 'absolute', top: 2, left: viewAsYou ? 18 : 2, width: 14, height: 14, borderRadius: '50%', background: 'white', transition: 'left .15s', boxShadow: '0 1px 3px rgba(0,0,0,0.4)' }} />
-                          </div>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg-muted)', whiteSpace: 'nowrap' }}>
-                            View as <span style={{ color: 'var(--accent)' }}>You</span>
-                          </span>
-                        </button>
-                        <button onClick={() => setTxCompact(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}>
-                          <div style={{ width: 36, height: 20, borderRadius: 10, background: txCompact ? 'var(--accent)' : 'var(--bg-elevated)', border: '1px solid var(--border)', transition: 'background .15s', position: 'relative', flexShrink: 0 }}>
-                            <div style={{ position: 'absolute', top: 2, left: txCompact ? 18 : 2, width: 14, height: 14, borderRadius: '50%', background: 'white', transition: 'left .15s', boxShadow: '0 1px 3px rgba(0,0,0,0.4)' }} />
-                          </div>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg-muted)', whiteSpace: 'nowrap' }}>Compact</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            const hdrs = ['Date', 'Type', 'Asset', 'Amount', 'Counter Asset', 'Counter Amount', 'Value USD', 'Chain', 'Hash'];
-                            const rows = holdingsPulsechainTransactions.map(tx => [
-                              new Date(tx.timestamp).toISOString().slice(0, 10),
-                              tx.type, tx.asset, tx.amount, tx.counterAsset ?? '', tx.counterAmount ?? '', tx.valueUsd ?? '', tx.chain, tx.hash ?? '',
-                            ]);
-                            exportCSV(`pulseport-history-${Date.now()}.csv`, hdrs, rows);
-                          }}
-                          title="Export CSV"
-                          className="history-csv-btn"
-                          style={{ padding: '5px 10px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 6, cursor: 'pointer', color: 'var(--accent)', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <Download size={12} /> CSV
-                        </button>
-                        <button onClick={() => toggleSection('holdings-txs')}
-                          style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: t.textTertiary, transition: 'color .12s', flexShrink: 0 }}
-                          onMouseOver={e => (e.currentTarget.style.color = t.text)}
-                          onMouseOut={e => (e.currentTarget.style.color = t.textMuted)}
-                          title={isCollapsed('holdings-txs') ? 'Expand' : 'Collapse'}>
-                          {isCollapsed('holdings-txs') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-                        </button>
-                      </div>
-                    </div>
-                    {!isCollapsed('holdings-txs') && (<>
-                    {/* Filter row */}
-                    <div className="tx-filter-row history-filter-row" style={{ padding: '8px 18px', borderBottom: `1px solid ${t.border}`, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {[
-                        { value: txAssetFilter, onChange: setTxAssetFilter, options: [['all','All Tokens'], ...Array.from(new Set(currentTransactions.filter(tx => tx.chain === 'pulsechain').flatMap(tx => [tx.asset, tx.counterAsset].filter(Boolean) as string[]))).sort().map(a => [a,a])] as [string,string][] },
-                        { value: txYearFilter, onChange: setTxYearFilter, options: [['all','All Years'],['2026','2026'],['2025','2025'],['2024','2024'],['2023','2023'],['2022','2022'],['2021','2021']] as [string,string][] },
-                        { value: txCoinCategory, onChange: setTxCoinCategory, options: [['all','All Coins'],['stablecoins','Stablecoins'],['eth_weth','ETH/WETH'],['hex','HEX/eHEX'],['pls_wpls','PLS/WPLS'],['bridged','Bridged']] as [string,string][] },
-                      ].map(({ value, onChange, options }, i) => (
-                        <select key={i} value={value} onChange={e => onChange(e.target.value)}
-                          className="history-filter-select"
-                          style={{ background: t.cardHigh, border: `1px solid ${t.border}`, borderRadius: 6, color: t.text, fontSize: 13, padding: '5px 10px', cursor: 'pointer', outline: 'none' }}>
-                          {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                        </select>
-                      ))}
-                    </div>
-                    {/* Active filter chips */}
-                    {(txAssetFilter !== 'all' || txYearFilter !== 'all' || txCoinCategory !== 'all') && (
-                      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, padding: '8px 18px', borderBottom: '1px solid var(--border)' }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: '.5px', marginRight: 4 }}>Filtering by:</span>
-                        {txAssetFilter !== 'all' && (<button className="filter-chip" onClick={() => setTxAssetFilter('all')}>{txAssetFilter}<span className="chip-x">&#x2715;</span></button>)}
-                        {txYearFilter !== 'all' && (<button className="filter-chip" onClick={() => setTxYearFilter('all')}>{txYearFilter}<span className="chip-x">&#x2715;</span></button>)}
-                        {txCoinCategory !== 'all' && (<button className="filter-chip" onClick={() => setTxCoinCategory('all')}>{txCoinCategory === 'stablecoins' ? 'Stablecoins' : txCoinCategory === 'eth_weth' ? 'ETH/WETH' : txCoinCategory === 'hex' ? 'HEX/eHEX' : txCoinCategory === 'pls_wpls' ? 'PLS/WPLS' : 'Bridged'}<span className="chip-x">&#x2715;</span></button>)}
-                        <button onClick={() => { setTxTypeFilter('all'); setTxAssetFilter('all'); setTxYearFilter('all'); setTxCoinCategory('all'); }} style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-subtle)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', textDecoration: 'underline', marginLeft: 4 }}>Clear all</button>
-                      </div>
-                    )}
-                    {/* -- Wallet-style transaction cards -- */}
-                    <div className="custom-scrollbar tx-module-list wallet-tx-list">
-                      <TransactionList
-                        transactions={holdingsPulsechainTransactions}
-                        viewAsYou={viewAsYou}
-                        wallets={wallets}
-                        compact={txCompact}
-                        assets={currentAssets}
-                        getTokenLogoUrl={getTokenLogoUrl}
-                        tokenLogos={tokenLogos}
-                        hideIds={hiddenTxIds}
-                        onToggleHide={id => setHiddenTxIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
-                        showHidden={showHiddenTxs}
-                        onFilterByAsset={symbol => setTxAssetFilter(symbol)}
-                        emptyMessage="No transactions found for these filters."
-                      />
-                      {/* Hidden transactions bar */}
-                      {hiddenTxIds.length > 0 && (
-                        <div style={{ marginTop: 8, padding: '8px 0', borderTop: `1px solid ${t.borderLight}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ fontSize: 12, color: t.textTertiary }}>{hiddenTxIds.length} hidden event{hiddenTxIds.length > 1 ? 's' : ''}</span>
-                          <div style={{ display: 'flex', gap: 10 }}>
-                            <button onClick={() => setShowHiddenTxs(v => !v)} style={{ fontSize: 12, color: t.textSecondary, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>{showHiddenTxs ? 'Hide' : 'Show'}</button>
-                            <button onClick={() => setHiddenTxIds([])} style={{ fontSize: 12, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Clear all</button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    </>)}
-                  </div>
-                  </div>
-              </motion.div>
-            )}
-
-            {activeTab === 'stakes' && (
-              <motion.div key="stakes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                {(() => {
-                  const HEX_ADDR = '0x2b591e99afe9f32eaa6214f7b7629768c40eeb39';
-                  const pHexLiquid = currentAssets
-                    .filter(a => a.chain === 'pulsechain' && (a as any).address?.toLowerCase() === HEX_ADDR)
-                    .reduce((sum, asset) => sum + asset.balance, 0);
-                  const eHexLiquid = currentAssets
-                    .filter(a =>
-                      (a.chain === 'ethereum' && (a as any).address?.toLowerCase() === HEX_ADDR) ||
-                      (a.chain === 'pulsechain' && a.symbol.toLowerCase() === 'ehex')
-                    )
-                    .reduce((sum, asset) => sum + asset.balance, 0);
-                  return (
-                    <div className="stakes-page-shell">
-                      <StakesSection
-                        stakes={currentStakes}
-                        hexUsdPrice={prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0}
-                        phexUsdPrice={prices['pulsechain:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['pulsechain:hex']?.usd || 0}
-                        ehexUsdPrice={prices['ethereum:0x2b591e99afe9f32eaa6214f7b7629768c40eeb39']?.usd || prices['hex']?.usd || 0}
-                        avgPayoutPulse={hexDailyData.avgPayoutPulse || undefined}
-                        avgPayoutEth={hexDailyData.avgPayoutEth || undefined}
-                        liquidPHex={pHexLiquid}
-                        liquidEHex={eHexLiquid}
-                        walletAddresses={wallets.map(w => w.address)}
-                        walletLabels={Object.fromEntries(wallets.filter(w => w.name).map(w => [w.address, w.name!]))}
-                      />
-                    </div>
-                  );
-                })()}
-              </motion.div>
-            )}
-
-
-        {activeTab === 'history' && (
-          <motion.div key="history" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <TransactionsPage
-              wallets={wallets}
-              currentAssets={currentAssets}
-              currentTransactions={currentTransactions}
-              filteredTransactions={filteredTransactions}
-              txTypeFilter={txTypeFilter}
-              setTxTypeFilter={setTxTypeFilter}
-              txAssetFilter={txAssetFilter}
-              setTxAssetFilter={setTxAssetFilter}
-              txYearFilter={txYearFilter}
-              setTxYearFilter={setTxYearFilter}
-              txCoinCategory={txCoinCategory}
-              setTxCoinCategory={setTxCoinCategory}
-              onClearFilters={() => {
-                setTxTypeFilter('all');
-                setTxAssetFilter('all');
-                setTxYearFilter('all');
-                setTxCoinCategory('all');
-              }}
-              viewAsYou={viewAsYou}
-              setViewAsYou={setViewAsYou}
-              txCompact={txCompact}
-              setTxCompact={setTxCompact}
-              onExportCsv={() => {
-                const hdrs = ['Date', 'Type', 'Asset', 'Amount', 'Counter Asset', 'Counter Amount', 'Value USD', 'Chain', 'Hash'];
-                const rows = filteredTransactions.map(tx => [
-                  new Date(tx.timestamp).toISOString().slice(0, 10),
-                  tx.swapLegOnly ? 'swap' : tx.type,
-                  tx.asset,
-                  tx.amount,
-                  tx.counterAsset ?? '',
-                  tx.counterAmount ?? '',
-                  tx.valueUsd ?? '',
-                  tx.chain,
-                  tx.hash ?? '',
-                ]);
-                exportCSV(`pulseport-transactions-${Date.now()}.csv`, hdrs, rows);
-              }}
-              transactionsCollapsed={isCollapsed('history-ledger')}
-              onToggleTransactionsCollapsed={() => toggleSection('history-ledger')}
-              hiddenTxIds={hiddenTxIds}
-              onToggleHiddenTx={(id) => setHiddenTxIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
-              showHiddenTxs={showHiddenTxs}
-              onToggleShowHiddenTxs={() => setShowHiddenTxs(v => !v)}
-              onClearHiddenTxs={() => setHiddenTxIds([])}
-              tokenLogos={tokenLogos}
-              getTokenLogoUrl={getTokenLogoUrl}
-              plsSwapData={plsSwapData}
-              plsFlowCollapsed={isCollapsed('history-pls')}
-              onTogglePlsFlowCollapsed={() => toggleSection('history-pls')}
-              pulseUsdPrice={prices['pulsechain']?.usd ?? 0}
-              isLoading={isLoading}
-              onSyncSwaps={fetchPortfolio}
-              onOpenOverview={() => setActiveTab('tracker')}
-              onOpenWallets={() => setActiveTab('assets')}
-            />
-          </motion.div>
-        )}
-
-        {activeTab === 'bridge' && (
-          <motion.div key="bridge" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <BridgeDashboardPage
-              afterOfficialBridge={(
-                <div className="tx-module-card received-token-module">
-                  <div className="received-header tx-module-header" style={{ borderBottom: isCollapsed('received-assets') ? 'none' : '1px solid var(--border)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
-                      <ArrowDownLeft size={16} style={{ color: '#627EEA', flexShrink: 0 }} />
-                      <span style={{ fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}>MultiChain Transactions</span>
-                      <select value={receivedChainFilter === 'pulsechain' ? 'all' : receivedChainFilter} onChange={e => setReceivedChainFilter(e.target.value)}
-                        className="history-filter-select"
-                        style={{ background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 6, color: 'var(--fg)', fontSize: 13, padding: '4px 8px', cursor: 'pointer', outline: 'none' }}>
-                        <option value="all">All Chains</option>
-                        <option value="ethereum">Ethereum</option>
-                        <option value="base">Base</option>
-                      </select>
-                      <select value={receivedCoinFilter} onChange={e => setReceivedCoinFilter(e.target.value)}
-                        className="history-filter-select"
-                        style={{ background: 'var(--bg-elevated)', border: `1px solid ${t.border}`, borderRadius: 6, color: 'var(--fg)', fontSize: 13, padding: '4px 8px', cursor: 'pointer', outline: 'none' }}>
-                        <option value="all">All Coins</option>
-                        <option value="ETH">ETH</option>
-                        <option value="USDC">USDC</option>
-                        <option value="USDT">USDT</option>
-                        <option value="DAI">DAI</option>
-                      </select>
-                    </div>
-                    <div className="received-totals" style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginBottom: 2, fontWeight: 600, letterSpacing: '.5px', textTransform: 'uppercase' }}>Total Received</div>
-                        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)' }}>${receivedAssetsData.totalValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
-                        <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{receivedAssetsData.list.length} tx</div>
-                      </div>
-                      <button onClick={() => toggleSection('received-assets')}
-                        style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-subtle)', transition: 'color .12s', flexShrink: 0 }}
-                        onMouseOver={e => (e.currentTarget.style.color = 'var(--fg)')}
-                        onMouseOut={e => (e.currentTarget.style.color = 'var(--fg-subtle)')}
-                        title={isCollapsed('received-assets') ? 'Expand' : 'Collapse'}>
-                        {isCollapsed('received-assets') ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-                      </button>
-                    </div>
-                  </div>
-                  {!isCollapsed('received-assets') && (<>
-                  {receivedAssetsData.list.length > 0 && (
-                    <div tabIndex={0} className="received-asset-summary-row custom-scrollbar">
-                      {(Object.entries(receivedAssetsData.byAsset) as [string, { amount: number; valueUsd: number }][]).map(([sym, data]) => (
-                        <div key={sym} className="received-asset-summary-card">
-                          <div className="received-asset-symbol">{sym}</div>
-                          <div className="received-asset-amount">
-                            {sym === 'ETH' ? data.amount.toLocaleString('en-US', { maximumFractionDigits: 4 }) : data.amount.toLocaleString('en-US', { maximumFractionDigits: 0 })} {sym}
-                          </div>
-                          <div className="received-asset-value">${data.valueUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div className="received-history-list custom-scrollbar tx-module-list">
-                    {receivedAssetsData.list.length === 0 ? (
-                      <div style={{ padding: '48px 20px', textAlign: 'center', color: 'var(--fg-muted)', fontSize: 13 }}>
-                        {wallets.length === 0
-                          ? 'Add wallets to see received assets history.'
-                          : ['ethereum', 'base'].includes(receivedChainFilter === 'pulsechain' ? 'all' : receivedChainFilter) && !etherscanApiKey
-                          ? <span>
-                              No Ethereum/Base transactions loaded.{' '}
-                              <button
-                                onClick={openApiKeyModal}
-                                style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontSize: 13, padding: 0 }}>
-                                Add an Etherscan API key
-                              </button>
-                              {' '}for reliable ETH/Base history.
-                            </span>
-                          : 'No ETH or stablecoin inbound transfers found since 2021.'}
-                      </div>
-                    ) : (
-                      <TransactionList
-                        transactions={receivedAssetsData.list.map(tx => {
-                          const assetUp = tx.asset.toUpperCase();
-                          const isEth = assetUp === 'ETH';
-                          const isPls = assetUp === 'PLS';
-                          const pulseDaiPrice = prices['pulsechain:0xefd766ccb38eaf1dfd701853bfce31359239f305']?.usd
-                            ?? prices['pulsechain:0x6b175474e89094c44da98b954eedeac495271d0f']?.usd
-                            ?? prices['pulsechain:dai']?.usd
-                            ?? 0;
-                          const daiPrice = tx.chain === 'pulsechain' ? pulseDaiPrice : (prices['dai']?.usd ?? 0);
-                          const usdtPrice = tx.chain === 'pulsechain'
-                            ? (prices['pulsechain:0x0cb6f5a34ad42ec934882a05265a7d5f59b51a2f']?.usd ?? 0)
-                            : (prices['tether']?.usd ?? 1);
-                          const usdcPrice = tx.chain === 'pulsechain'
-                            ? (prices['pulsechain:0x15d38573d2feeb82e7ad5187ab8c1d52810b1f07']?.usd ?? 0)
-                            : (prices['usd-coin']?.usd ?? 1);
-                          const displayUsd = tx.valueUsd || (
-                            isEth ? tx.amount * (prices['ethereum']?.usd || 3400) :
-                            isPls ? tx.amount * (prices['pulsechain']?.usd || 0.00005) :
-                            assetUp.includes('USDT') || assetUp.includes('TETHER') ? tx.amount * usdtPrice :
-                            assetUp.includes('DAI') ? tx.amount * daiPrice :
-                            tx.amount * usdcPrice
-                          );
-                          return { ...tx, valueUsd: displayUsd };
-                        })}
-                        viewAsYou={viewAsYou}
-                        wallets={wallets}
-                        assets={currentAssets}
-                        getTokenLogoUrl={getTokenLogoUrl}
-                        tokenLogos={tokenLogos}
-                        hideIds={hiddenTxIds}
-                        onToggleHide={id => setHiddenTxIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
-                        showHidden={showHiddenTxs}
-                        emptyMessage="No received token transactions found for these filters."
-                      />
-                    )}
-                  </div>
-                  </>)}
-                </div>
-              )}
-            />
-          </motion.div>
-        )}
-
-              </AnimatePresence>
-          </div>
-
-          {/* Footer */}
-          <footer className="border-t border-white/5 py-6 px-8 text-center text-white/20 text-xs font-medium uppercase tracking-[0.2em]">
-            PulsePort &copy; 2026 &bull; Powered by PulseChain, Ethereum &amp; Base
-          </footer>
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Transactions</h2>
+          <div className="text-sm mt-0.5" style={{ color: 'var(--muted-foreground)', fontFamily: 'var(--font-family-mono)' }}>{filtered.length} results</div>
         </div>
-      </main>
-
-      {/* -- MOBILE BOTTOM NAV -- */}
-      <nav aria-label="Mobile navigation" className="mobile-bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-50"
-        style={{
-          background: 'var(--bg-header)',
-          borderTop: '1px solid var(--border)',
-        }}>
-        <div inert={!mobileMoreOpen} aria-hidden={!mobileMoreOpen} className={`mobile-more-sheet${mobileMoreOpen ? ' is-open' : ''}`}>
-          {mobileMoreNavItems.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              tabIndex={mobileMoreOpen ? 0 : -1}
-              aria-current={activeTab === id ? 'page' : undefined}
-              className={`mobile-more-link${activeTab === id ? ' is-active' : ''}`}
-              onClick={() => {
-                setActiveTab(id);
-                setMobileMoreOpen(false);
-              }}
-            >
-              <Icon size={16} />
-              <span>{label}</span>
+        <div className="flex gap-2">
+          {(['All', 'Swap', 'Stake', 'Bridge'] as const).map(f => (
+            <button key={f} onClick={() => setFilter(f)}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+              style={{ fontFamily: 'var(--font-family-mono)', background: filter === f ? 'var(--primary)' : 'var(--secondary)', color: filter === f ? '#fff' : 'var(--muted-foreground)' }}>
+              {f}
             </button>
           ))}
         </div>
-        <div className="mobile-bottom-nav-inner">
-        {mobilePrimaryNavItems.map(({ id, label, icon: Icon }) => (
-          <button key={id} type="button" aria-label={label} aria-current={activeTab === id ? 'page' : undefined} onClick={() => setActiveTab(id)}
-            className="mobile-nav-tab-btn"
-            style={{
-              color: activeTab === id ? 'var(--accent)' : 'var(--fg-muted)',
-            }}>
-            <div className={activeTab === id ? 'bottom-nav-dot' : ''}>
-              <Icon size={19} />
+      </div>
+      <div className="rounded-xl border overflow-hidden" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+        {filtered.map((tx) => (
+          <div key={tx.hash} className="flex items-center justify-between px-5 py-4 border-b last:border-0 hover:bg-white/[0.02] transition-colors" style={{ borderColor: 'var(--border)' }}>
+            <div className="flex items-center gap-4">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center text-sm"
+                style={{ background: 'var(--secondary)', color: 'var(--primary)' }}>
+                {TYPE_ICONS[tx.type] ?? '·'}
+              </div>
+              <div>
+                <div className="font-medium text-sm">{tx.type}</div>
+                <div className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)', fontFamily: 'var(--font-family-mono)' }}>
+                  {tx.hash}
+                </div>
+              </div>
             </div>
-            <span style={{ fontSize: 9, fontWeight: activeTab === id ? 700 : 500, lineHeight: 1, marginTop: 3 }}>{label}</span>
-          </button>
+            <div className="flex items-center gap-4">
+              {tx.to !== '—' && (
+                <div className="hidden md:flex items-center gap-2 text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                  <span className="px-2 py-0.5 rounded text-xs" style={{ background: 'var(--secondary)', fontFamily: 'var(--font-family-mono)' }}>{tx.from}</span>
+                  <span>→</span>
+                  <span className="px-2 py-0.5 rounded text-xs" style={{ background: 'var(--secondary)', fontFamily: 'var(--font-family-mono)' }}>{tx.to}</span>
+                </div>
+              )}
+              <ChainBadge chain={tx.chain} />
+              <div className="text-right min-w-[80px]">
+                <div className="font-semibold text-sm" style={{ fontFamily: 'var(--font-family-mono)' }}>{tx.amount}</div>
+                <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>{tx.time}</div>
+              </div>
+              <div className="w-2 h-2 rounded-full" style={{ background: 'var(--gain)', flexShrink: 0 }} />
+            </div>
+          </div>
         ))}
-          <button
-            type="button"
-            aria-label="More destinations"
-            aria-expanded={mobileMoreOpen}
-            onClick={() => setMobileMoreOpen(v => !v)}
-            className="mobile-nav-tab-btn"
-            style={{
-              color: mobileMoreOpen || mobileMoreActive ? 'var(--accent)' : 'var(--fg-muted)',
-            }}
-          >
-            <div className={mobileMoreOpen || mobileMoreActive ? 'bottom-nav-dot' : ''}>
-              <Layers size={19} />
-            </div>
-            <span style={{ fontSize: 9, fontWeight: mobileMoreOpen || mobileMoreActive ? 700 : 500, lineHeight: 1, marginTop: 3 }}>More</span>
-          </button>
-        </div>
-      </nav>
-
-      {/* Add Wallet Modal */}
-      <AnimatePresence>
-        {isAddingWallet && (
-          <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-6">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsAddingWallet(false)}
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ opacity: 0, y: '100%' }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: '100%' }}
-              transition={{ type: 'spring', damping: 20, stiffness: 90 }}
-              style={{
-                position: 'relative', width: '100%', maxWidth: 480,
-                background: t.card, border: `1px solid ${t.border}`,
-                borderRadius: '20px 20px 0 0', padding: 28,
-              }}
-              className="sm:rounded-[20px]"
-            >
-              {/* Drag handle (mobile) */}
-              <div className="sm:hidden" style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-                <div style={{ width: 36, height: 4, borderRadius: 2, background: t.border }} />
-              </div>
-              <h2 style={{ fontSize: 20, fontWeight: 800, color: t.text, marginBottom: 20 }}>Add New Wallet</h2>
-              <div className="space-y-4">
-                <div>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 }}>
-                    Wallet Address
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="0x..."
-                    inputMode="text"
-                    value={newWalletAddress}
-                    onChange={(e) => {
-                      setNewWalletAddress(e.target.value);
-                      if (walletFormError) setWalletFormError('');
-                    }}
-                    onKeyDown={e => { if (e.key === 'Enter') addWallet(); }}
-                    style={{ width: '100%', background: t.cardHigh, border: `1px solid ${t.border}`,
-                      borderRadius: 10, color: t.text, fontSize: 14, padding: '11px 14px',
-                      outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace', transition: 'border-color .15s' }}
-                    onFocus={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
-                    onBlur={e => (e.currentTarget.style.borderColor = t.border)}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 }}>
-                    Wallet Name <span style={{ color: t.textMuted, fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="My Main Wallet"
-                    value={newWalletName}
-                    onChange={(e) => {
-                      setNewWalletName(e.target.value);
-                      if (walletFormError) setWalletFormError('');
-                    }}
-                    onKeyDown={e => { if (e.key === 'Enter') addWallet(); }}
-                    style={{ width: '100%', background: t.cardHigh, border: `1px solid ${t.border}`,
-                      borderRadius: 10, color: t.text, fontSize: 14, padding: '11px 14px',
-                      outline: 'none', boxSizing: 'border-box', transition: 'border-color .15s' }}
-                    onFocus={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
-                    onBlur={e => (e.currentTarget.style.borderColor = t.border)}
-                  />
-                </div>
-                <div style={{ fontSize: 12, color: walletFormError ? 'var(--negative)' : t.textMuted, minHeight: 18 }}>
-                  {walletFormError || 'Tip: Wallets are read-only. PulsePort never requests private keys.'}
-                </div>
-                <div style={{ paddingTop: 8, display: 'flex', gap: 10 }}>
-                  <button
-                    onClick={() => {
-                      setIsAddingWallet(false);
-                      setWalletFormError('');
-                    }}
-                    style={{ flex: 1, minHeight: 44, borderRadius: 10, background: t.cardHigh,
-                      border: `1px solid ${t.border}`, color: t.text, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={addWallet}
-                    disabled={!newWalletAddress.trim()}
-                    style={{ flex: 1, minHeight: 44, borderRadius: 10, background: newWalletAddress.trim() ? 'var(--accent)' : 'var(--border)',
-                      border: 'none', color: newWalletAddress.trim() ? '#000' : 'var(--fg-subtle)', fontWeight: 700, fontSize: 13, cursor: newWalletAddress.trim() ? 'pointer' : 'not-allowed' }}
-                  >
-                    Add Wallet
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Edit Wallet Modal */}
-      <AnimatePresence>
-        {editingWalletAddress && (
-          <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-6">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setEditingWalletAddress(null)}
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ opacity: 0, y: '100%' }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: '100%' }}
-              transition={{ type: 'spring', damping: 20, stiffness: 90 }}
-              style={{
-                position: 'relative', width: '100%', maxWidth: 480,
-                background: t.card, border: `1px solid ${t.border}`,
-                borderRadius: '20px 20px 0 0', padding: 24,
-              }}
-              className="sm:rounded-[20px]"
-            >
-              {/* Drag handle (mobile) */}
-              <div className="sm:hidden" style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-                <div style={{ width: 36, height: 4, borderRadius: 2, background: t.border }} />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-                <Pencil size={18} style={{ color: 'var(--accent)' }} />
-                <span style={{ fontSize: 16, fontWeight: 700, color: t.text }}>Rename Wallet</span>
-              </div>
-              <div style={{ fontSize: 12, color: t.textMuted, fontFamily: 'monospace', marginBottom: 16, padding: '6px 10px', background: t.cardHigh, borderRadius: 6 }}>
-                {editingWalletAddress}
-              </div>
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 }}>
-                  Wallet Name
-                </label>
-                <input
-                  type="text"
-                  value={editWalletName}
-                  onChange={e => setEditWalletName(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') renameWallet(editingWalletAddress, editWalletName); }}
-                  autoFocus
-                  style={{ width: '100%', background: t.cardHigh, border: `1px solid ${t.border}`,
-                    borderRadius: 10, color: t.text, fontSize: 14, padding: '11px 14px',
-                    outline: 'none', boxSizing: 'border-box', transition: 'border-color .15s' }}
-                  onFocus={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
-                  onBlur={e => (e.currentTarget.style.borderColor = t.border)}
-                />
-              </div>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button onClick={() => setEditingWalletAddress(null)}
-                  style={{ flex: 1, padding: '11px 0', borderRadius: 10, background: t.cardHigh,
-                    border: `1px solid ${t.border}`, color: t.text, fontWeight: 600, fontSize: 13, cursor: 'pointer', minHeight: 44 }}>
-                  Cancel
-                </button>
-                <button onClick={() => renameWallet(editingWalletAddress, editWalletName)}
-                  style={{ flex: 1, padding: '11px 0', borderRadius: 10, background: 'var(--accent)',
-                    border: 'none', color: '#000', fontWeight: 700, fontSize: 13, cursor: 'pointer', minHeight: 44 }}>
-                  Save
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* -- P&L Modal -- */}
-      {pnlAsset && (
-        <PnLModal
-          asset={pnlAsset}
-          transactions={currentTransactions}
-          prices={prices}
-          logoUrl={STATIC_LOGOS[(pnlAsset as any).address?.toLowerCase?.()] || (pnlAsset as any).logoUrl || tokenLogos[(pnlAsset as any).address?.toLowerCase?.()] || getTokenLogoUrl(pnlAsset)}
-          onClose={() => setPnlAsset(null)}
-          walletAddress={selectedWalletAddr !== 'all' ? selectedWalletAddr : undefined}
-        />
-      )}
-
-      <AnimatePresence>
-        {isCustomCoinsModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-6">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsCustomCoinsModalOpen(false)}
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ opacity: 0, y: '100%' }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: '100%' }}
-              transition={{ type: 'spring', damping: 22, stiffness: 120 }}
-              className="custom-coin-modal sm:rounded-[20px]"
-            >
-              <div className="custom-coin-modal-head">
-                <Plus size={18} />
-                <div>
-                  <strong>Add coin manually</strong>
-                  <span>Use this when a wallet token has no reliable price feed yet.</span>
-                </div>
-              </div>
-              <div className="custom-coin-grid">
-                <label>
-                  Symbol
-                  <input value={customCoinDraft.symbol} onChange={e => setCustomCoinDraft(prev => ({ ...prev, symbol: e.target.value }))} placeholder="GO" autoFocus />
-                </label>
-                <label>
-                  Name
-                  <input value={customCoinDraft.name} onChange={e => setCustomCoinDraft(prev => ({ ...prev, name: e.target.value }))} placeholder="GoPulse" />
-                </label>
-                <label>
-                  Balance
-                  <input type="number" min="0" step="any" value={customCoinDraft.balance} onChange={e => setCustomCoinDraft(prev => ({ ...prev, balance: e.target.value }))} placeholder="1000" />
-                </label>
-                <label>
-                  Price USD
-                  <input type="number" min="0" step="any" value={customCoinDraft.price} onChange={e => setCustomCoinDraft(prev => ({ ...prev, price: e.target.value }))} placeholder="0.001" onKeyDown={e => { if (e.key === 'Enter') submitCustomCoin(); }} />
-                </label>
-              </div>
-              <div className="custom-coin-actions">
-                <button type="button" onClick={() => setIsCustomCoinsModalOpen(false)}>Cancel</button>
-                <button type="button" className="custom-coin-submit" onClick={submitCustomCoin}>Add to portfolio</button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* -- Profit Planner Modal -- */}
-      {profitPlannerOpen && (
-        <ProfitPlannerModal
-          open={profitPlannerOpen}
-          onClose={() => setProfitPlannerOpen(false)}
-          assets={currentAssets}
-          totalValue={summary?.totalValue ?? 0}
-        />
-      )}
-
-      {/* API Key Modal */}
-      <AnimatePresence>
-        {isApiKeyModalOpen && (
-          <div className="api-key-backdrop fixed inset-0 z-[300] flex items-end sm:items-center justify-center sm:p-6" role="dialog" aria-modal="true" aria-label="Etherscan API key settings">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 z-0 bg-black/80 backdrop-blur-sm" onMouseDown={() => setIsApiKeyModalOpen(false)} />
-            <motion.div initial={{ opacity: 0, scale: 0.98, y: 24 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.98, y: 24 }}
-              className="api-key-panel relative z-10 w-full max-w-[560px] mx-2 sm:mx-0" onMouseDown={(e) => e.stopPropagation()} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 18, boxShadow: '0 24px 80px rgba(0,0,0,0.45)', padding: '18px 18px 16px', color: 'var(--fg-primary)' }}>
-              <div className="api-key-drag-handle" />
-              <div className="api-key-head">
-                <div className="api-key-head-icon">
-                  <Settings size={18} />
-                </div>
-                <div>
-                  <span>API Key</span>
-                  <small>Optional, but recommended for Ethereum history</small>
-                </div>
-              </div>
-              <div className="api-key-info-grid">
-                <div>
-                  <strong>Who provides it?</strong>
-                  <span>Etherscan. A free Etherscan V2 API key lets PulsePort read your public Ethereum transactions more reliably.</span>
-                </div>
-                <div>
-                  <strong>Why is it here?</strong>
-                  <span>It improves ETH deposits, stablecoin inflows, transaction history, and invested/P&L calculations. Your key is kept only for this browser tab and is not sent to our servers.</span>
-                </div>
-                <div>
-                  <strong>What still works without it?</strong>
-                  <span>PulseChain balances, PulseChain transactions, Base via Blockscout, prices, Market Watch, and manual coins still work.</span>
-                </div>
-              </div>
-              <a className="api-key-link" href="https://etherscan.io/myapikey" target="_blank" rel="noopener noreferrer">
-                Get a free key from Etherscan <ExternalLink size={12} />
-              </a>
-              <label className="api-key-input-label" style={{ display: 'flex', flexDirection: 'column', gap: 8, color: 'var(--fg-primary)', fontSize: 13, fontWeight: 600 }}>
-                Etherscan API key
-                <input type="text" placeholder="Paste your Etherscan API key..." style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', background: 'var(--bg-surface)', color: 'var(--fg-primary)', outline: 'none' }}
-                value={apiKeyInput} onChange={e => setApiKeyInput(e.target.value)}
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                />
-              </label>
-              <div className="api-key-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 14 }}>
-                {etherscanApiKey && (
-                  <button type="button" onClick={removeEtherscanApiKey} style={{ border: '1px solid var(--border)', background: 'var(--bg-surface)', color: 'var(--fg-primary)', borderRadius: 10, padding: '9px 14px', fontWeight: 600, cursor: 'pointer' }}>
-                    Remove key
-                  </button>
-                )}
-                <button type="button" onClick={() => setIsApiKeyModalOpen(false)} style={{ border: '1px solid var(--border)', background: 'var(--bg-surface)', color: 'var(--fg-primary)', borderRadius: 10, padding: '9px 14px', fontWeight: 600, cursor: 'pointer' }}>
-                  Cancel
-                </button>
-                <button type="button" onClick={() => {
-                  const ethKey = apiKeyInput.trim();
-                  try {
-                    if (ethKey) {
-                      sessionStorage.setItem('pulseport_etherscan_key', ethKey);
-                    } else {
-                      sessionStorage.removeItem('pulseport_etherscan_key');
-                    }
-                  } catch {
-                    // Browser storage may be unavailable in some contexts
-                  }
-                  setEtherscanApiKey(ethKey);
-                  setIsApiKeyModalOpen(false);
-                  setTimeout(() => fetchPortfolio(ethKey), 100);
-                }}
-                  className="api-key-save" style={{ border: '1px solid var(--accent-border)', background: 'var(--accent)', color: '#fff', borderRadius: 10, padding: '9px 14px', fontWeight: 700, cursor: 'pointer' }}>
-                  Save &amp; Refresh
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
+      </div>
     </div>
-  );
+  )
 }
 
+function BridgePage() {
+  const [fromChain, setFromChain] = useState('ETH')
+  const [toChain, setToChain] = useState('PLS')
+  const [amount, setAmount] = useState('1000')
+
+  const chains = ['ETH', 'PLS', 'BNB']
+
+  return (
+    <div className="flex flex-col gap-4 max-w-xl">
+      <div>
+        <h2 className="text-lg font-semibold">Bridge</h2>
+        <div className="text-sm mt-0.5" style={{ color: 'var(--muted-foreground)' }}>Transfer assets across chains</div>
+      </div>
+      <div className="rounded-xl border p-6" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+        <div className="flex items-center gap-3 mb-5">
+          <div className="flex-1">
+            <div className="text-xs mb-2" style={{ color: 'var(--muted-foreground)', fontFamily: 'var(--font-family-mono)' }}>FROM</div>
+            <div className="flex gap-2">
+              {chains.map(c => (
+                <button key={c} onClick={() => setFromChain(c)}
+                  className="flex-1 py-2 rounded-lg text-xs font-semibold transition-all"
+                  style={{ fontFamily: 'var(--font-family-mono)', background: fromChain === c ? (CHAIN_COLORS[c] + '33') : 'var(--secondary)', color: fromChain === c ? CHAIN_COLORS[c] : 'var(--muted-foreground)', border: `1px solid ${fromChain === c ? CHAIN_COLORS[c] + '55' : 'transparent'}` }}>
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="text-2xl" style={{ color: 'var(--muted-foreground)', marginTop: 20 }}>⇄</div>
+          <div className="flex-1">
+            <div className="text-xs mb-2" style={{ color: 'var(--muted-foreground)', fontFamily: 'var(--font-family-mono)' }}>TO</div>
+            <div className="flex gap-2">
+              {chains.map(c => (
+                <button key={c} onClick={() => setToChain(c)}
+                  className="flex-1 py-2 rounded-lg text-xs font-semibold transition-all"
+                  style={{ fontFamily: 'var(--font-family-mono)', background: toChain === c ? (CHAIN_COLORS[c] + '33') : 'var(--secondary)', color: toChain === c ? CHAIN_COLORS[c] : 'var(--muted-foreground)', border: `1px solid ${toChain === c ? CHAIN_COLORS[c] + '55' : 'transparent'}` }}>
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <div className="text-xs mb-2" style={{ color: 'var(--muted-foreground)', fontFamily: 'var(--font-family-mono)' }}>AMOUNT (USDC)</div>
+          <div className="flex items-center gap-2 rounded-lg px-4 py-3 border" style={{ background: 'var(--secondary)', borderColor: 'var(--border)' }}>
+            <input
+              type="number" value={amount} onChange={e => setAmount(e.target.value)}
+              className="flex-1 bg-transparent text-sm font-semibold outline-none"
+              style={{ fontFamily: 'var(--font-family-mono)', color: 'var(--foreground)' }} />
+            <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>≈ ${Number(amount).toLocaleString()}</span>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2 mb-5 text-xs" style={{ fontFamily: 'var(--font-family-mono)' }}>
+          {[
+            ['Bridge Fee', '0.05%'],
+            ['Estimated Time', '~3–5 min'],
+            ['You Receive', `$${(Number(amount) * 0.9995).toFixed(2)}`],
+          ].map(([k, v]) => (
+            <div key={k} className="flex justify-between">
+              <span style={{ color: 'var(--muted-foreground)' }}>{k}</span>
+              <span>{v}</span>
+            </div>
+          ))}
+        </div>
+
+        <button className="w-full py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+          style={{ background: 'var(--primary)', color: '#fff' }}>
+          Bridge {fromChain} → {toChain}
+        </button>
+      </div>
+
+      <div className="rounded-xl border p-5" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+        <div className="text-sm font-medium mb-3">Recent Bridges</div>
+        {transactions.filter(t => t.type === 'Bridge').map(tx => (
+          <div key={tx.hash} className="flex items-center justify-between py-3 border-b last:border-0" style={{ borderColor: 'var(--border)' }}>
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full" style={{ background: 'var(--gain)' }} />
+              <div>
+                <div className="text-sm">{tx.from} → {tx.to}</div>
+                <div className="text-xs" style={{ color: 'var(--muted-foreground)', fontFamily: 'var(--font-family-mono)' }}>{tx.hash}</div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-semibold" style={{ fontFamily: 'var(--font-family-mono)' }}>{tx.amount}</div>
+              <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>{tx.time}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function InsightsPage() {
+  const totalValue = holdings.reduce((s, h) => s + h.value, 0)
+  const topHolder = [...holdings].sort((a, b) => b.value - a.value)[0]
+  const bestPerformer = [...holdings].sort((a, b) => b.pnl - a.pnl)[0]
+
+  const metrics = [
+    { label: 'Portfolio Score', value: '87 / 100', sub: 'Well diversified', color: '#10b981' },
+    { label: 'Risk Level', value: 'Medium', sub: 'Balanced exposure', color: '#f59e0b' },
+    { label: 'Largest Position', value: topHolder.symbol, sub: `${((topHolder.value / totalValue) * 100).toFixed(1)}% of portfolio`, color: '#7c3aed' },
+    { label: 'Best Performer', value: bestPerformer.symbol, sub: `+${bestPerformer.pnl.toFixed(1)}% 24h`, color: '#10b981' },
+  ]
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <h2 className="text-lg font-semibold">Portfolio Insights</h2>
+        <div className="text-sm mt-0.5" style={{ color: 'var(--muted-foreground)' }}>AI-powered analysis of your holdings</div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {metrics.map(m => (
+          <div key={m.label} className="rounded-xl border p-4" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+            <div className="text-xs mb-2" style={{ color: 'var(--muted-foreground)', fontFamily: 'var(--font-family-mono)' }}>{m.label}</div>
+            <div className="text-xl font-bold" style={{ color: m.color, fontFamily: 'var(--font-family-mono)' }}>{m.value}</div>
+            <div className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>{m.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-xl border p-5" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+        <div className="text-sm font-medium mb-4">Chain Exposure</div>
+        {[
+          { chain: 'PLS', pct: 68, value: totalValue * 0.68, color: '#7c3aed' },
+          { chain: 'ETH', pct: 32, value: totalValue * 0.32, color: '#627eea' },
+        ].map(item => (
+          <div key={item.chain} className="mb-4">
+            <div className="flex justify-between text-sm mb-2">
+              <div className="flex items-center gap-2">
+                <ChainBadge chain={item.chain} />
+                <span style={{ fontFamily: 'var(--font-family-mono)', color: 'var(--muted-foreground)' }}>{item.pct}%</span>
+              </div>
+              <span style={{ fontFamily: 'var(--font-family-mono)' }}>{fmtUsd(item.value)}</span>
+            </div>
+            <ProgressBar value={item.pct} color={item.color} />
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-xl border p-5" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+        <div className="text-sm font-medium mb-4">Recommendations</div>
+        <div className="flex flex-col gap-3">
+          {[
+            { icon: '💡', text: 'Consider rebalancing PLSX — it represents only 0.2% of your portfolio while showing negative momentum.', type: 'info' },
+            { icon: '📈', text: 'INC has strong 24h performance (+8.9%). Your position size may be too small to maximize gains.', type: 'gain' },
+            { icon: '⚠️', text: 'Stake maturity approaching: PHEX stake ends in ~34 days. Prepare an end-stake strategy.', type: 'warn' },
+          ].map((rec, i) => (
+            <div key={i} className="flex gap-3 p-4 rounded-lg" style={{ background: 'var(--secondary)' }}>
+              <span className="text-lg flex-shrink-0">{rec.icon}</span>
+              <p className="text-sm" style={{ color: 'var(--muted-foreground)', lineHeight: 1.6 }}>{rec.text}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Sidebar ─────────────────────────────────────────────────────────────────
+
+const NAV_ITEMS: { id: NavPage; label: string; icon: string }[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: '◈' },
+  { id: 'holdings', label: 'Holdings', icon: '⬡' },
+  { id: 'stakes', label: 'Stakes', icon: '⬟' },
+  { id: 'liquidity', label: 'Liquidity', icon: '◎' },
+  { id: 'transactions', label: 'Transactions', icon: '↕' },
+  { id: 'bridge', label: 'Bridge', icon: '⇄' },
+  { id: 'insights', label: 'Insights', icon: '◉' },
+]
+
+function Sidebar({ page, onNav, collapsed }: { page: NavPage; onNav: (p: NavPage) => void; collapsed: boolean }) {
+  return (
+    <aside
+      className="flex flex-col h-full border-r transition-all duration-300"
+      style={{
+        background: 'var(--card)',
+        borderColor: 'var(--border)',
+        width: collapsed ? 64 : 220,
+        minWidth: collapsed ? 64 : 220,
+      }}>
+      {/* Logo */}
+      <div className="flex items-center gap-3 px-4 py-5 border-b" style={{ borderColor: 'var(--border)' }}>
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+          style={{ background: 'linear-gradient(135deg, #7c3aed, #06b6d4)' }}>
+          P
+        </div>
+        {!collapsed && (
+          <div>
+            <div className="font-bold text-sm tracking-tight">PulsePort</div>
+            <div className="text-xs" style={{ color: 'var(--muted-foreground)', fontFamily: 'var(--font-family-mono)' }}>Portfolio</div>
+          </div>
+        )}
+      </div>
+
+      {/* Nav */}
+      <nav className="flex flex-col gap-0.5 p-2 flex-1">
+        {NAV_ITEMS.map(item => {
+          const active = page === item.id
+          return (
+            <button
+              key={item.id}
+              onClick={() => onNav(item.id)}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 w-full text-left"
+              style={{
+                background: active ? 'var(--primary)' : 'transparent',
+                color: active ? '#fff' : 'var(--muted-foreground)',
+              }}
+              onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'var(--secondary)' }}
+              onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent' }}>
+              <span className="text-base flex-shrink-0" style={{ opacity: active ? 1 : 0.7 }}>{item.icon}</span>
+              {!collapsed && <span>{item.label}</span>}
+            </button>
+          )
+        })}
+      </nav>
+
+      {/* Wallet status */}
+      {!collapsed && (
+        <div className="p-3 border-t" style={{ borderColor: 'var(--border)' }}>
+          <div className="rounded-lg p-3" style={{ background: 'var(--secondary)' }}>
+            <div className="flex items-center gap-2 mb-1">
+              <LiveDot />
+              <span className="text-xs font-medium">Connected</span>
+            </div>
+            <div className="text-xs" style={{ color: 'var(--muted-foreground)', fontFamily: 'var(--font-family-mono)' }}>
+              0x4f2a...8c91
+            </div>
+          </div>
+        </div>
+      )}
+    </aside>
+  )
+}
+
+// ─── Header ───────────────────────────────────────────────────────────────────
+
+function Header({ page, onToggleSidebar }: { page: NavPage; onToggleSidebar: () => void }) {
+  const [tick, setTick] = useState(0)
+  const plsPrice = 0.0000472 + Math.sin(tick * 0.08) * 0.000001
+
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 2000)
+    return () => clearInterval(id)
+  }, [])
+
+  const label = NAV_ITEMS.find(n => n.id === page)?.label ?? page
+
+  return (
+    <header className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'var(--border)', background: 'var(--card)' }}>
+      <div className="flex items-center gap-3">
+        <button onClick={onToggleSidebar} className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors hover:bg-white/5"
+          style={{ color: 'var(--muted-foreground)' }}>
+          ☰
+        </button>
+        <h1 className="text-base font-semibold">{label}</h1>
+      </div>
+
+      <div className="flex items-center gap-4">
+        {/* Live price ticker */}
+        <div className="hidden md:flex items-center gap-3 text-xs" style={{ fontFamily: 'var(--font-family-mono)' }}>
+          <div className="flex items-center gap-1.5">
+            <span style={{ color: 'var(--muted-foreground)' }}>PLS</span>
+            <span className="font-medium">${plsPrice.toFixed(8)}</span>
+            <span style={{ color: 'var(--gain)' }}>+3.2%</span>
+          </div>
+          <div className="w-px h-4" style={{ background: 'var(--border)' }} />
+          <div className="flex items-center gap-1.5">
+            <span style={{ color: 'var(--muted-foreground)' }}>HEX</span>
+            <span className="font-medium">$0.00831</span>
+            <span style={{ color: 'var(--gain)' }}>+5.7%</span>
+          </div>
+        </div>
+
+        {/* Connect wallet btn */}
+        <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+          style={{ background: 'var(--primary)', color: '#fff' }}>
+          <span className="text-xs">◈</span>
+          <span className="hidden sm:inline">0x4f2a...8c91</span>
+          <span className="sm:hidden">Wallet</span>
+        </button>
+      </div>
+    </header>
+  )
+}
+
+// ─── App ─────────────────────────────────────────────────────────────────────
+
+export default function App() {
+  const [page, setPage] = useState<NavPage>('dashboard')
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
+  const PAGE_MAP: Record<NavPage, JSX.Element> = {
+    dashboard: <DashboardPage />,
+    holdings: <HoldingsPage />,
+    stakes: <StakesPage />,
+    liquidity: <LiquidityPage />,
+    transactions: <TransactionsPage />,
+    bridge: <BridgePage />,
+    insights: <InsightsPage />,
+  }
+
+  return (
+    <div className="flex h-screen overflow-hidden mesh-bg" style={{ background: 'var(--background)' }}>
+      <Sidebar page={page} onNav={setPage} collapsed={sidebarCollapsed} />
+      <div className="flex flex-col flex-1 min-w-0">
+        <Header page={page} onToggleSidebar={() => setSidebarCollapsed(c => !c)} />
+        <main className="flex-1 overflow-y-auto p-6">
+          {PAGE_MAP[page]}
+        </main>
+      </div>
+    </div>
+  )
+}
