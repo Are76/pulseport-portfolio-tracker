@@ -1017,6 +1017,8 @@ export default function App() {
 
       // 1c. Fetch PulseChain prices from on-chain LP reserves (authoritative source per skill doc)
       // Uses getReserves() on PulseX V2 LP pairs - more reliable than subgraph which can lag/rate-limit
+      fetchedPrices.pulsechain = { usd: 0, status: 'unavailable', reason: 'independent-usd-quote-unavailable' };
+      fetchedPrices['pulsechain:native'] = { ...fetchedPrices.pulsechain };
       try {
         const GET_RESERVES = '0x0902f1ac';
         const pcRpc = CHAINS.pulsechain.rpc;
@@ -1025,7 +1027,7 @@ export default function App() {
 
         // DexScreener observations are independent, exact-asset USD inputs. Pool symbols alone
         // never establish a dollar peg; without a fresh observation WPLS/USD remains unavailable.
-        const quoteBatch = await createDexScreenerPriceProvider().getPriceObservations([
+        const quoteBatch = await createDexScreenerPriceProvider({ signal: AbortSignal.timeout(8_000) }).getPriceObservations([
           { assetId: PUSDC_ASSET_ID, chainId: 369 },
           { assetId: PUSDT_ASSET_ID, chainId: 369 },
         ]);
@@ -1039,6 +1041,7 @@ export default function App() {
               priceUsd,
               observedAt: observation.observedAt,
               staleAfter: observation.staleAfter,
+              sourcePairAddress: observation.metadata.selectedPairAddress,
             });
           }
         });
@@ -1077,8 +1080,6 @@ export default function App() {
 
         // --- WPLS price from independently priced exact quote assets ---
         const [daiR0, daiR1]   = parseRes(reserveResult('WPLS_DAI'));
-        const [usdcR0, usdcR1] = parseRes(reserveResult('WPLS_USDC'));
-        const [usdtR0, usdtR1] = parseRes(reserveResult('WPLS_USDT'));
         const [usdcR0Raw, usdcR1Raw] = parseResRaw(reserveResult('WPLS_USDC'));
         const [usdtR0Raw, usdtR1Raw] = parseResRaw(reserveResult('WPLS_USDT'));
 
@@ -1089,6 +1090,7 @@ export default function App() {
             quoteDecimals: 6,
             wplsReserveRaw: usdcR1Raw,
             quoteUsd: quoteUsdByAssetId.get(PUSDC_ASSET_ID) ?? null,
+            excludedSourcePairAddresses: [PULSEX_LP_PAIRS.WPLS_USDC],
           },
           {
             quoteAssetId: PUSDT_ASSET_ID,
@@ -1096,6 +1098,7 @@ export default function App() {
             quoteDecimals: 6,
             wplsReserveRaw: usdtR1Raw,
             quoteUsd: quoteUsdByAssetId.get(PUSDT_ASSET_ID) ?? null,
+            excludedSourcePairAddresses: [PULSEX_LP_PAIRS.WPLS_USDT],
           },
         ]);
         const wplsUSD = wplsQuote?.priceUsd ?? 0;
@@ -1213,9 +1216,6 @@ export default function App() {
           const pusdcUsd = quoteUsdByAssetId.get(PUSDC_ASSET_ID)?.priceUsd;
           if (prvxR0 > 0 && prvxR1 > 0 && pusdcUsd)
             setTokenPrice('0xf6f8db0aba00007681f8faf16a0fda1c9b030b11', ((prvxR0 / 1e6) / (prvxR1 / 1e18)) * pusdcUsd);
-        } else {
-          fetchedPrices.pulsechain = { usd: 0, status: 'unavailable', reason: 'independent-usd-quote-unavailable' };
-          fetchedPrices['pulsechain:native'] = { ...fetchedPrices.pulsechain };
         }
       } catch (e) {
         console.warn('Could not fetch PulseChain on-chain LP prices:', e);
@@ -2431,8 +2431,8 @@ export default function App() {
 
       // Save a history point
       const totalValue = Object.values(assetMap).reduce((acc, curr) => acc + curr.value, 0);
-      const plsPrice = fetchedPrices['pulsechain']?.usd || 0.00005;
-      const nativeValue = totalValue / plsPrice;
+      const plsPrice = fetchedPrices['pulsechain']?.usd || 0;
+      const nativeValue = plsPrice > 0 ? totalValue / plsPrice : 0;
 
       // Calculate chain-specific PNL for the history point
       const chainPnl: Record<Chain, number> = { pulsechain: 0, ethereum: 0, base: 0 };
@@ -2798,7 +2798,7 @@ export default function App() {
     });
 
     // Native Value (Portfolio Value in PLS terms)
-    const plsPrice = assets.find(a => a.symbol === 'PLS')?.price || 0.00005;
+    const plsPrice = assets.find(a => a.symbol === 'PLS')?.price || 0;
     const nativeValue = totalValue / plsPrice;
 
     const nativePlsBalance = assets.find(a => a.symbol === 'PLS' && a.chain === 'pulsechain')?.balance || 0;
@@ -3069,7 +3069,7 @@ export default function App() {
   const rotationSummary = useMemo(() => {
     let totalRotationPnlPls = 0;
     let totalRotationPnlUsd = 0;
-    const plsPrice = prices['pulsechain']?.usd || 0.00005;
+    const plsPrice = prices['pulsechain']?.usd || 0;
 
     realAssets.forEach(asset => {
       const entryPls = manualEntries[asset.id];
@@ -3137,7 +3137,7 @@ export default function App() {
     const list = [...coinFiltered].sort((a, b) => a.timestamp - b.timestamp);
 
     // Per-asset totals
-    const plsPrice = prices['pulsechain']?.usd || 0.00005;
+    const plsPrice = prices['pulsechain']?.usd || 0;
     const getStablePrice = (tx: typeof list[0], stable: 'USDC' | 'USDT' | 'DAI') => {
       if (tx.chain === 'pulsechain') {
         if (stable === 'DAI') {
@@ -4476,7 +4476,7 @@ export default function App() {
                   tokenMarketData={tokenMarketData}
                   staticLogos={STATIC_LOGOS}
                   chainColors={CHAIN_COLORS}
-                  plsUsdPrice={prices['pulsechain']?.usd || 0.00005}
+                  plsUsdPrice={prices['pulsechain']?.usd || 0}
                   totalPortfolioUsd={summary.totalValue}
                   summaryLiquidUsd={summary.liquidValue}
                   summaryStakingUsd={summary.stakingValueUsd}
@@ -4864,7 +4864,7 @@ export default function App() {
                             : (prices['usd-coin']?.usd ?? 1);
                           const displayUsd = tx.valueUsd || (
                             isEth ? tx.amount * (prices['ethereum']?.usd || 3400) :
-                            isPls ? tx.amount * (prices['pulsechain']?.usd || 0.00005) :
+                            isPls ? tx.amount * (prices['pulsechain']?.usd || 0) :
                             assetUp.includes('USDT') || assetUp.includes('TETHER') ? tx.amount * usdtPrice :
                             assetUp.includes('DAI') ? tx.amount * daiPrice :
                             tx.amount * usdcPrice

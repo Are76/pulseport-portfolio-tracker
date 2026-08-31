@@ -18,7 +18,9 @@ describe('deriveWplsUsdFromQuotePools', () => {
           priceUsd: 0.73,
           observedAt: '2026-08-31T12:00:00.000Z',
           staleAfter: '2026-08-31T12:05:00.000Z',
+          sourcePairAddress: '0x1111111111111111111111111111111111111111',
         },
+        excludedSourcePairAddresses: ['0x6753560538eca67617a9ce605178f788be7e524e'],
       },
     ], Date.parse('2026-08-31T12:01:00.000Z'));
 
@@ -34,6 +36,45 @@ describe('deriveWplsUsdFromQuotePools', () => {
     expect(result?.priceUsd).not.toBe(0.0002);
   });
 
+  it('rejects an observation sourced from the same WPLS oracle pool', () => {
+    expect(deriveWplsUsdFromQuotePools([{
+      quoteAssetId: pusdcAssetId,
+      quoteReserveRaw: 2_000_000_000n,
+      quoteDecimals: 6,
+      wplsReserveRaw: 10_000_000n * 10n ** 18n,
+      excludedSourcePairAddresses: ['0x6753560538eca67617a9ce605178f788be7e524e'],
+      quoteUsd: {
+        assetId: pusdcAssetId,
+        chainId: 369,
+        priceUsd: 0.73,
+        observedAt: '2026-08-31T12:00:00.000Z',
+        staleAfter: '2026-08-31T12:05:00.000Z',
+        sourcePairAddress: '0x6753560538eca67617a9ce605178f788be7e524e',
+      },
+    }], Date.parse('2026-08-31T12:01:00.000Z'))).toBeNull();
+  });
+
+  it.each([-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, Number.MAX_SAFE_INTEGER + 1])(
+    'rejects invalid quote decimals %s',
+    (quoteDecimals) => {
+      expect(deriveWplsUsdFromQuotePools([{
+        quoteAssetId: pusdcAssetId,
+        quoteReserveRaw: 2_000_000_000n,
+        quoteDecimals,
+        wplsReserveRaw: 10_000_000n * 10n ** 18n,
+        excludedSourcePairAddresses: [],
+        quoteUsd: {
+          assetId: pusdcAssetId,
+          chainId: 369,
+          priceUsd: 0.73,
+          observedAt: '2026-08-31T12:00:00.000Z',
+          staleAfter: '2026-08-31T12:05:00.000Z',
+          sourcePairAddress: '0x1111111111111111111111111111111111111111',
+        },
+      }], Date.parse('2026-08-31T12:01:00.000Z'))).toBeNull();
+    },
+  );
+
   it('fails closed when the exact quote asset has no independent USD observation', () => {
     expect(deriveWplsUsdFromQuotePools([
       {
@@ -42,6 +83,7 @@ describe('deriveWplsUsdFromQuotePools', () => {
         quoteDecimals: 6,
         wplsReserveRaw: 10_000_000n * 10n ** 18n,
         quoteUsd: null,
+        excludedSourcePairAddresses: ['0x6753560538eca67617a9ce605178f788be7e524e'],
       },
     ])).toBeNull();
   });

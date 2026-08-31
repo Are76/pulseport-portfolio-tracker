@@ -141,6 +141,20 @@ describe('DexScreenerPriceProvider', () => {
     expect(result.unsupportedAssets).toHaveLength(1);
   });
 
+  it('forwards an abort signal to bound upstream latency', async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new DOMException('Aborted', 'AbortError'));
+    const signal = AbortSignal.timeout(1);
+    const provider = createDexScreenerPriceProvider({ fetchImpl: fetchMock as unknown as typeof fetch, signal });
+
+    const result = await provider.getPriceObservations([{ assetId: supportedAssetId, chainId: 369 }]);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.dexscreener.com/latest/dex/tokens/0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      { signal },
+    );
+    expect(result.observations).toEqual([]);
+  });
+
   it('non-200 HTTP response fails closed', async () => {
     const fetchMock = vi.fn().mockResolvedValue(buildJsonResponse({ message: 'error' }, 503));
     const provider = buildProvider(fetchMock);

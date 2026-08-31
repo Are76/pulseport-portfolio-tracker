@@ -13,6 +13,7 @@ export type DexScreenerPriceProviderOptions = {
   fetchImpl?: typeof fetch;
   now?: () => Date;
   maxConcurrency?: number;
+  signal?: AbortSignal;
 };
 
 type DexScreenerPair = {
@@ -135,6 +136,7 @@ export function createDexScreenerPriceProvider(options: DexScreenerPriceProvider
   const fetchImpl = options.fetchImpl ?? fetch;
   const now = options.now ?? (() => new Date());
   const maxConcurrency = resolveMaxConcurrency(options.maxConcurrency);
+  const signal = options.signal;
 
   return {
     metadata: {
@@ -196,7 +198,7 @@ export function createDexScreenerPriceProvider(options: DexScreenerPriceProvider
         await acquireFetchSlot();
         try {
           ingestedAt = now().toISOString();
-          response = await fetchImpl(`https://api.dexscreener.com/latest/dex/tokens/${contractAddress}`);
+          response = await fetchImpl(`https://api.dexscreener.com/latest/dex/tokens/${contractAddress}`, { signal });
         } catch {
           unsupportedAssets.push(unsupported(request.assetId, request.chainId, 'Malformed or unreachable upstream payload.'));
           return;

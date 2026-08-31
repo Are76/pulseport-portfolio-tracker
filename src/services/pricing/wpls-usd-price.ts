@@ -4,6 +4,7 @@ export type IndependentUsdQuote = {
   priceUsd: number;
   observedAt: string;
   staleAfter: string;
+  sourcePairAddress: string;
 };
 
 export type WplsQuotePool = {
@@ -12,6 +13,7 @@ export type WplsQuotePool = {
   quoteDecimals: number;
   wplsReserveRaw: bigint;
   quoteUsd: IndependentUsdQuote | null;
+  excludedSourcePairAddresses: string[];
 };
 
 export type WplsUsdPrice = {
@@ -36,6 +38,11 @@ export function deriveWplsUsdFromQuotePools(
       || quote.chainId !== 369
       || !Number.isFinite(quote.priceUsd)
       || quote.priceUsd <= 0
+      || !Number.isSafeInteger(pool.quoteDecimals)
+      || pool.quoteDecimals < 0
+      || pool.excludedSourcePairAddresses.some(
+        (address) => address.toLowerCase() === quote.sourcePairAddress.toLowerCase(),
+      )
       || !Number.isFinite(observedAtMs)
       || !Number.isFinite(staleAfterMs)
       || observedAtMs > asOfMs
