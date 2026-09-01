@@ -86,7 +86,15 @@ import { AtlasHomeSurface } from './components/atlas/AtlasHomeSurface';
 import { buildAtlasHomeSnapshot } from './components/atlas/atlas-portfolio-snapshot';
 import { PortfolioInsightsPage } from './components/PortfolioInsightsPage';
 import { createDexScreenerPriceProvider } from './server/portfolio/dexscreener-price-provider';
-import { deriveWplsUsdFromQuotePools, type IndependentUsdQuote } from './services/pricing/wpls-usd-price';
+import {
+  BRIDGED_DAI_ASSET_ID,
+  BRIDGED_USDC_ASSET_ID,
+  BRIDGED_USDT_ASSET_ID,
+  deriveWplsUsdFromQuotePools,
+  unavailableWplsDerivedPrices,
+  valueInAsset,
+  type ExternalUsdObservation,
+} from './services/pricing/wpls-usd-price';
 
 const ERC20_ABI = [
   {
@@ -1017,25 +1025,32 @@ export default function App() {
 
       // 1c. Fetch PulseChain prices from on-chain LP reserves (authoritative source per skill doc)
       // Uses getReserves() on PulseX V2 LP pairs - more reliable than subgraph which can lag/rate-limit
-      fetchedPrices.pulsechain = { usd: 0, status: 'unavailable', reason: 'independent-usd-quote-unavailable' };
-      fetchedPrices['pulsechain:native'] = { ...fetchedPrices.pulsechain };
+      // Overwrite every WPLS-derived key before acquisition so a failed refresh cannot
+      // preserve a prior valid-looking price through the later state merge.
+      Object.assign(fetchedPrices, unavailableWplsDerivedPrices());
       try {
         const GET_RESERVES = '0x0902f1ac';
         const pcRpc = CHAINS.pulsechain.rpc;
-        const PUSDC_ASSET_ID = 'erc20:369:0x15d38573d2feeb82e7ad5187ab8c1d52810b1f07';
-        const PUSDT_ASSET_ID = 'erc20:369:0x0cb6f5a34ad42ec934882a05265a7d5f59b51a2f';
-
-        // DexScreener observations are independent, exact-asset USD inputs. Pool symbols alone
-        // never establish a dollar peg; without a fresh observation WPLS/USD remains unavailable.
-        const quoteBatch = await createDexScreenerPriceProvider({ signal: AbortSignal.timeout(8_000) }).getPriceObservations([
-          { assetId: PUSDC_ASSET_ID, chainId: 369 },
-          { assetId: PUSDT_ASSET_ID, chainId: 369 },
+        // DexScreener supplies exact-asset market USD observations, but cannot prove their
+        // complete economic ancestry. Exclude each reserve oracle pool before pair ranking;
+        // without another fresh exact-asset source, that anchor remains unavailable.
+        const quoteBatch = await createDexScreenerPriceProvider({
+          signal: AbortSignal.timeout(8_000),
+          excludedPairAddressesByAssetId: {
+            [BRIDGED_USDC_ASSET_ID]: [PULSEX_LP_PAIRS.WPLS_USDC],
+            [BRIDGED_USDT_ASSET_ID]: [PULSEX_LP_PAIRS.WPLS_USDT],
+            [BRIDGED_DAI_ASSET_ID]: [PULSEX_LP_PAIRS.WPLS_DAI],
+          },
+        }).getPriceObservations([
+          { assetId: BRIDGED_USDC_ASSET_ID, chainId: 369 },
+          { assetId: BRIDGED_USDT_ASSET_ID, chainId: 369 },
+          { assetId: BRIDGED_DAI_ASSET_ID, chainId: 369 },
         ]);
-        const quoteUsdByAssetId = new Map<string, IndependentUsdQuote>();
+        const externalUsdByAssetId = new Map<string, ExternalUsdObservation>();
         quoteBatch.observations.forEach((observation) => {
           const priceUsd = Number(observation.priceUsdAtomic) / 1_000_000;
           if (Number.isFinite(priceUsd) && priceUsd > 0) {
-            quoteUsdByAssetId.set(observation.assetId, {
+            externalUsdByAssetId.set(observation.assetId, {
               assetId: observation.assetId,
               chainId: observation.chainId,
               priceUsd,
@@ -1078,32 +1093,41 @@ export default function App() {
           return idx >= 0 ? (batchData[idx]?.result ?? '0x') : '0x';
         };
 
-        // --- WPLS price from independently priced exact quote assets ---
-        const [daiR0, daiR1]   = parseRes(reserveResult('WPLS_DAI'));
+        // --- WPLS price from qualified external exact-asset USD observations ---
+        const [daiR0Raw, daiR1Raw] = parseResRaw(reserveResult('WPLS_DAI'));
         const [usdcR0Raw, usdcR1Raw] = parseResRaw(reserveResult('WPLS_USDC'));
         const [usdtR0Raw, usdtR1Raw] = parseResRaw(reserveResult('WPLS_USDT'));
 
         const wplsQuote = deriveWplsUsdFromQuotePools([
           {
-            quoteAssetId: PUSDC_ASSET_ID,
+            quoteAssetId: BRIDGED_USDC_ASSET_ID,
             quoteReserveRaw: usdcR0Raw,
             quoteDecimals: 6,
             wplsReserveRaw: usdcR1Raw,
-            quoteUsd: quoteUsdByAssetId.get(PUSDC_ASSET_ID) ?? null,
+            externalUsdObservation: externalUsdByAssetId.get(BRIDGED_USDC_ASSET_ID) ?? null,
             excludedSourcePairAddresses: [PULSEX_LP_PAIRS.WPLS_USDC],
           },
           {
-            quoteAssetId: PUSDT_ASSET_ID,
+            quoteAssetId: BRIDGED_USDT_ASSET_ID,
             quoteReserveRaw: usdtR0Raw,
             quoteDecimals: 6,
             wplsReserveRaw: usdtR1Raw,
-            quoteUsd: quoteUsdByAssetId.get(PUSDT_ASSET_ID) ?? null,
+            externalUsdObservation: externalUsdByAssetId.get(BRIDGED_USDT_ASSET_ID) ?? null,
             excludedSourcePairAddresses: [PULSEX_LP_PAIRS.WPLS_USDT],
+          },
+          {
+            quoteAssetId: BRIDGED_DAI_ASSET_ID,
+            // WPLS/DAI is reversed: token0=WPLS, token1=bridged DAI.
+            quoteReserveRaw: daiR1Raw,
+            quoteDecimals: 18,
+            wplsReserveRaw: daiR0Raw,
+            externalUsdObservation: externalUsdByAssetId.get(BRIDGED_DAI_ASSET_ID) ?? null,
+            excludedSourcePairAddresses: [PULSEX_LP_PAIRS.WPLS_DAI],
           },
         ]);
         const wplsUSD = wplsQuote?.priceUsd ?? 0;
 
-        for (const quote of quoteUsdByAssetId.values()) {
+        for (const quote of externalUsdByAssetId.values()) {
           fetchedPrices[`pulsechain:${quote.assetId.slice('erc20:369:'.length)}`] = {
             usd: quote.priceUsd,
             observedAt: quote.observedAt,
@@ -1114,11 +1138,11 @@ export default function App() {
 
         if (wplsUSD > 0) {
           fetchedPrices.pulsechain = {
-            ...(fetchedPrices.pulsechain ?? {}),
             usd: wplsUSD,
             observedAt: wplsQuote?.observedAt,
             staleAfter: wplsQuote?.staleAfter,
             quoteAssetId: wplsQuote?.quoteAssetId,
+            source: 'qualified-external-anchor',
           };
           fetchedPrices['pulsechain:native'] = { ...fetchedPrices.pulsechain };
 
@@ -1199,21 +1223,17 @@ export default function App() {
           if (wbtcR0 > 0 && wbtcR1 > 0)
             setTokenPrice('0xb17d901469b9208b17d916112988a3fed19b5ca1', ((wbtcR0 / 1e18) / (wbtcR1 / 1e8)) * wplsUSD, 'wrapped-bitcoin');
 
-          // Bridged stablecoin prices derived from LP - these do NOT trade at $1 on PulseChain
-          // WPLS/DAI: token0=WPLS(18), token1=pDAI(18) -> pDAI_USD = (daiR0/daiR1) * wplsUSD
-          if (daiR0 > 0 && daiR1 > 0)
-            setTokenPrice('0xefd766ccb38eaf1dfd701853bfce31359239f305', (daiR0 / daiR1) * wplsUSD);
-          // pUSDC/pUSDT retain their independent exact-asset observations above; deriving them
-          // back through the WPLS pool would recreate the circular $1 assumption.
+          // All three bridged anchors retain their external exact-asset observations above;
+          // deriving them back through WPLS would recreate a circular observation.
           // System copy pDAI (0x6b175474... - Ethereum's DAI address, fork-copied)
           // token0=pDAI_sys(18dec), token1=WPLS(18dec) -> pDAI_sys_USD = (sysR1/sysR0) * wplsUSD
           const [sysR0, sysR1] = parseRes(reserveResult('PDAI_SYS_WPLS'));
           if (sysR0 > 0 && sysR1 > 0)
             setTokenPrice('0x6b175474e89094c44da98b954eedeac495271d0f', (sysR1 / sysR0) * wplsUSD);
           // PRVX: use high-liquidity USDC pair ($1M) - token0=pUSDC(6dec), token1=PRVX(18dec)
-          // Apply the independently observed exact pUSDC/USD value to the pool ratio.
+          // Apply the external exact bridged-USDC/USD observation to the pool ratio.
           const [prvxR0, prvxR1] = parseRes(reserveResult('PRVX_USDC'));
-          const pusdcUsd = quoteUsdByAssetId.get(PUSDC_ASSET_ID)?.priceUsd;
+          const pusdcUsd = externalUsdByAssetId.get(BRIDGED_USDC_ASSET_ID)?.priceUsd;
           if (prvxR0 > 0 && prvxR1 > 0 && pusdcUsd)
             setTokenPrice('0xf6f8db0aba00007681f8faf16a0fda1c9b030b11', ((prvxR0 / 1e6) / (prvxR1 / 1e18)) * pusdcUsd);
         }
@@ -2799,13 +2819,13 @@ export default function App() {
 
     // Native Value (Portfolio Value in PLS terms)
     const plsPrice = assets.find(a => a.symbol === 'PLS')?.price || 0;
-    const nativeValue = totalValue / plsPrice;
+    const nativeValue = valueInAsset(totalValue, plsPrice);
 
     const nativePlsBalance = assets.find(a => a.symbol === 'PLS' && a.chain === 'pulsechain')?.balance || 0;
     const stakedPlsValue = currentStakes.reduce((acc, curr) => (
-      (curr.daysRemaining ?? 0) > 0 ? acc + (curr.estimatedValueUsd / plsPrice) : acc
+      (curr.daysRemaining ?? 0) > 0 ? acc + valueInAsset(curr.estimatedValueUsd, plsPrice) : acc
     ), 0);
-    const tokenPlsValue = nativeValue - nativePlsBalance - stakedPlsValue;
+    const tokenPlsValue = plsPrice > 0 ? nativeValue - nativePlsBalance - stakedPlsValue : 0;
 
     // Net Investment = total stablecoin + ETH received from external addresses into own wallets
     // Matches what's shown in Received Assets History: only ETH and stables, from external sources
@@ -3073,8 +3093,8 @@ export default function App() {
 
     realAssets.forEach(asset => {
       const entryPls = manualEntries[asset.id];
-      if (entryPls && entryPls > 0) {
-        const currentPlsValue = asset.value / plsPrice;
+      if (plsPrice > 0 && entryPls && entryPls > 0) {
+        const currentPlsValue = valueInAsset(asset.value, plsPrice);
         const pnlPls = currentPlsValue - entryPls;
         totalRotationPnlPls += pnlPls;
         totalRotationPnlUsd += pnlPls * plsPrice;
