@@ -155,10 +155,10 @@ export const HEX_ABI = [
 // PulseX LP pair addresses for on-chain price calculation
 // token0/token1 order matters for reserve math - verified against chain
 export const PULSEX_LP_PAIRS = {
-  // WPLS price oracle pairs (token0 = stablecoin, token1 = WPLS)
-  WPLS_DAI:  '0xe56043671df55de5cdf8459710433c10324de0ae',  // token0=WPLS(18),  token1=pDAI(18)
-  WPLS_USDC: '0x6753560538eca67617a9ce605178f788be7e524e',  // token0=pUSDC(6),  token1=WPLS(18)
-  WPLS_USDT: '0x322df7921f28f1146cdf62afdac0d6bc0ab80711',  // token0=pUSDT(6),  token1=WPLS(18)
+  // WPLS price oracle pairs. These are Ethereum-bridged assets, not fork copies.
+  WPLS_DAI:  '0xe56043671df55de5cdf8459710433c10324de0ae',  // token0=WPLS(18), token1=bridged DAI(18)
+  WPLS_USDC: '0x6753560538eca67617a9ce605178f788be7e524e',  // token0=bridged USDC(6), token1=WPLS(18)
+  WPLS_USDT: '0x322df7921f28f1146cdf62afdac0d6bc0ab80711',  // token0=bridged USDT(6), token1=WPLS(18)
   // Token/WPLS pairs (token0 = token, token1 = WPLS, except pWBTC which is reversed)
   PLSX_WPLS:  '0x1b45b9148791d3a104184cd5dfe5ce57193a3ee9', // token0=PLSX(18),  token1=WPLS(18)
   INC_WPLS:   '0xf808bb6265e9ca27002c0a04562bf50d4fe37eaa', // token0=INC(18),   token1=WPLS(18)

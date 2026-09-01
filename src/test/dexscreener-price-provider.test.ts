@@ -141,6 +141,62 @@ describe('DexScreenerPriceProvider', () => {
     expect(result.unsupportedAssets).toHaveLength(1);
   });
 
+  it('forwards an abort signal to bound upstream latency', async () => {
+    const controller = new AbortController();
+    const fetchMock = vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+      init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
+    }));
+    const signal = controller.signal;
+    const provider = createDexScreenerPriceProvider({ fetchImpl: fetchMock as unknown as typeof fetch, signal });
+
+    const pending = provider.getPriceObservations([{ assetId: supportedAssetId, chainId: 369 }]);
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    controller.abort();
+    const result = await pending;
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.dexscreener.com/latest/dex/tokens/0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      { signal },
+    );
+    expect(result.observations).toEqual([]);
+  });
+
+  it('filters forbidden pairs before ranking and selects the best remaining pair', async () => {
+    const forbidden = '0x0000000000000000000000000000000000000001';
+    const eligible = '0x0000000000000000000000000000000000000002';
+    const fetchMock = vi.fn().mockResolvedValue(buildJsonResponse({
+      pairs: [
+        buildPair('0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', forbidden, '1.00', 1_000_000),
+        buildPair('0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', eligible, '0.97', 500_000),
+      ],
+    }));
+    const provider = createDexScreenerPriceProvider({
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      excludedPairAddressesByAssetId: { [supportedAssetId]: [forbidden] },
+    });
+
+    const result = await provider.getPriceObservations([{ assetId: supportedAssetId, chainId: 369 }]);
+
+    expect(result.observations[0].metadata.selectedPairAddress).toBe(eligible);
+    expect(result.observations[0].priceUsdAtomic).toBe('970000');
+  });
+
+  it('fails closed when only forbidden source pairs are available', async () => {
+    const forbidden = '0x0000000000000000000000000000000000000001';
+    const fetchMock = vi.fn().mockResolvedValue(buildJsonResponse({
+      pairs: [buildPair('0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', forbidden, '1.00', 1_000_000)],
+    }));
+    const provider = createDexScreenerPriceProvider({
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      excludedPairAddressesByAssetId: { [supportedAssetId]: [forbidden] },
+    });
+
+    const result = await provider.getPriceObservations([{ assetId: supportedAssetId, chainId: 369 }]);
+
+    expect(result.observations).toEqual([]);
+    expect(result.unsupportedAssets[0].reason).toContain('No supported PulseChain pair');
+  });
+
   it('non-200 HTTP response fails closed', async () => {
     const fetchMock = vi.fn().mockResolvedValue(buildJsonResponse({ message: 'error' }, 503));
     const provider = buildProvider(fetchMock);

@@ -13,6 +13,8 @@ export type DexScreenerPriceProviderOptions = {
   fetchImpl?: typeof fetch;
   now?: () => Date;
   maxConcurrency?: number;
+  signal?: AbortSignal;
+  excludedPairAddressesByAssetId?: Readonly<Record<string, readonly string[]>>;
 };
 
 type DexScreenerPair = {
@@ -106,11 +108,16 @@ function asPairs(payload: unknown): DexScreenerPair[] {
   return maybePairs;
 }
 
-function selectBestPair(pairs: DexScreenerPair[], expectedBaseTokenAddress: string): DexScreenerPair | null {
+function selectBestPair(
+  pairs: DexScreenerPair[],
+  expectedBaseTokenAddress: string,
+  excludedPairAddresses: ReadonlySet<string>,
+): DexScreenerPair | null {
   const baseCandidates = pairs
     .filter((pair) => typeof pair.chainId === 'string' && pair.chainId.toLowerCase() === DEXSCREENER_PULSECHAIN_SLUG)
     .filter((pair) => typeof pair.baseToken?.address === 'string' && normalizeAddress(pair.baseToken.address) === expectedBaseTokenAddress)
     .filter((pair) => parsePriceUsdAtomic(pair.priceUsd) !== null)
+    .filter((pair) => typeof pair.pairAddress === 'string' && !excludedPairAddresses.has(normalizeAddress(pair.pairAddress)))
     .map((pair) => ({
       pair,
       liquidityUsd: parseLiquidityUsd(pair.liquidity),
@@ -135,6 +142,13 @@ export function createDexScreenerPriceProvider(options: DexScreenerPriceProvider
   const fetchImpl = options.fetchImpl ?? fetch;
   const now = options.now ?? (() => new Date());
   const maxConcurrency = resolveMaxConcurrency(options.maxConcurrency);
+  const signal = options.signal;
+  const exclusionsByAssetId = new Map(
+    Object.entries(options.excludedPairAddressesByAssetId ?? {}).map(([assetId, addresses]) => [
+      assetId.toLowerCase(),
+      new Set(addresses.map(normalizeAddress)),
+    ]),
+  );
 
   return {
     metadata: {
@@ -196,7 +210,7 @@ export function createDexScreenerPriceProvider(options: DexScreenerPriceProvider
         await acquireFetchSlot();
         try {
           ingestedAt = now().toISOString();
-          response = await fetchImpl(`https://api.dexscreener.com/latest/dex/tokens/${contractAddress}`);
+          response = await fetchImpl(`https://api.dexscreener.com/latest/dex/tokens/${contractAddress}`, { signal });
         } catch {
           unsupportedAssets.push(unsupported(request.assetId, request.chainId, 'Malformed or unreachable upstream payload.'));
           return;
@@ -217,7 +231,11 @@ export function createDexScreenerPriceProvider(options: DexScreenerPriceProvider
             return;
           }
 
-          const selectedPair = selectBestPair(pairs, contractAddress);
+          const selectedPair = selectBestPair(
+            pairs,
+            contractAddress,
+            exclusionsByAssetId.get(request.assetId.toLowerCase()) ?? new Set<string>(),
+          );
           if (!selectedPair) {
             unsupportedAssets.push(unsupported(request.assetId, request.chainId, 'No supported PulseChain pair with valid price/liquidity.'));
             return;
